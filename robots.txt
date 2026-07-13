@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://lorvion.com/sitemap.xml

@@ -1,0 +1,15 @@
+{
+  "name": "LORVION STUDIO",
+  "short_name": "LORVION",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#04050a",
+  "theme_color": "#04050a",
+  "icons": [
+    {
+      "src": "./assets/images/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
