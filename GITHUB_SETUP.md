@@ -1,4 +1,4 @@
-# LORVION STUDIO — GitHub 연결 안내
+# EUN GARAGE — GitHub 연결 안내
 
 이 폴더는 GitHub Pages 자동 배포 준비가 완료되어 있습니다.
 
@@ -42,9 +42,9 @@ GitHub 사용자명이 `example`이라면:
 - 사이트: `https://example.github.io/lorvion-studio-website/`
 - LUNAI 개인정보처리방침: `https://example.github.io/lorvion-studio-website/privacy.html`
 
-나중에 `lorvion.com`을 연결하면 개인정보처리방침 주소는:
+나중에 `eungarage.com`을 연결하면 개인정보처리방침 주소는:
 
-`https://lorvion.com/privacy.html`
+`https://eungarage.com/privacy.html`
 
 ## 앱에 넣을 주소
 GitHub Pages 배포가 끝난 뒤 LUNAI의 개인정보처리방침 URL 상수에 실제 공개 URL을 넣습니다.

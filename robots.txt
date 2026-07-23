@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://lorvion.com/sitemap.xml
+Sitemap: https://eungarage.com/sitemap.xml

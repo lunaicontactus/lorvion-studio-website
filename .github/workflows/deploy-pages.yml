@@ -1,4 +1,4 @@
-name: Deploy LORVION STUDIO to GitHub Pages
+name: Deploy EUN GARAGE to GitHub Pages
 
 on:
   push:

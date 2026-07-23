@@ -1,6 +1,6 @@
-# LORVION STUDIO 공식 웹사이트
+# EUN GARAGE 공식 웹사이트
 
-업로드된 LUNAI, LIMINAL, WORM UP! 대표 이미지와 LORVION 로고를 사용해 제작한
+업로드된 LUNAI, LIMINAL, WORM UP! 대표 이미지와 EUN GARAGE 로고를 사용해 제작한
 반응형 시네마틱 정적 웹사이트입니다.
 
 ## 포함 파일
@@ -29,7 +29,7 @@ python3 -m http.server 8080
 4. Framework preset: None
 5. Build command: 비워두기
 6. Output directory: `/`
-7. 배포 완료 후 Custom domains에서 `lorvion.com` 연결
+7. 배포 완료 후 Custom domains에서 `eungarage.com` 연결
 
 ## Vercel 배포
 1. GitHub 저장소를 Vercel에 Import
@@ -58,7 +58,7 @@ python3 -m http.server 8080
 
 
 ## v6 변경 사항
-- LORVION 로고 에셋을 새로 교체했습니다.
+- EUN GARAGE 로고 에셋을 새로 교체했습니다.
 - 검은 배경에서 추출한 깨끗한 워드마크/심볼/조합형으로 업데이트했습니다.
 - 히어로 로고 필터를 줄여 가장자리 잔상이 덜 보이도록 조정했습니다.
 

@@ -273,6 +273,32 @@ img{display:block;max-width:100%}
   .subpage{padding-top:118px}
   .subpage h1{font-size:15vw}
 }
+/* ============================================================
+   EUN GARAGE text wordmark (accessible replacement for raster
+   brand logos — no baked-in letters, scales cleanly everywhere)
+   ============================================================ */
+.wordmark{
+  display:inline-block;white-space:nowrap;text-transform:uppercase;
+  font-weight:650;letter-spacing:.2em;line-height:1;
+  background:linear-gradient(177deg,#ffffff 0%,#e2e6f1 40%,#aeb6cb 72%,#8b93ab 100%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+}
+.brand-word{font-size:1.04rem;letter-spacing:.2em}
+.hero-word-wrap{width:auto;max-width:94vw;overflow:visible;padding:.12em .14em}
+.hero-word{
+  font-size:clamp(2rem,7.2vw,4.5rem);letter-spacing:.12em;font-weight:600;
+  filter:drop-shadow(0 8px 20px rgba(0,0,0,.42));
+}
+.footer-word{font-size:1.14rem;letter-spacing:.2em;margin-bottom:12px}
+.preloader-lockup{display:flex;flex-direction:column;align-items:center;gap:24px}
+.preloader-mark{width:min(210px,44vw);height:auto;filter:drop-shadow(0 0 22px rgba(140,124,255,.14))}
+.preloader-word{font-size:clamp(1.55rem,5vw,2.35rem);letter-spacing:.24em}
+@media(max-width:560px){
+  .brand-word{font-size:.94rem;letter-spacing:.16em}
+  .hero-word{letter-spacing:.09em}
+}
+
 @media(pointer:coarse),(prefers-reduced-motion:reduce){
   .cursor,.cursor-dot{display:none}
 }
