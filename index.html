@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#04050a">
 <link rel="icon" href="./assets/images/favicon.png">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="preload" as="image" href="./assets/images/eun-garage-orbit-logo.png" fetchpriority="high">
 <link rel="stylesheet" href="./assets/css/style.css">
 <meta property="og:type" content="website">
 <meta property="og:image" content="./assets/images/og-image.jpg">
@@ -19,6 +20,17 @@
 <meta property="og:description" content="Emotion. Character. Worlds beyond the ordinary.">
 </head>
 <body class="loading">
+<div id="garageIntro" class="garage-intro">
+  <div class="garage-door" aria-hidden="true">
+    <div class="garage-door__branding">
+      <img class="garage-door__logo" src="./assets/images/eun-garage-orbit-logo.png"
+           alt="" width="1016" height="824" fetchpriority="high" decoding="async">
+    </div>
+    <span class="garage-door__handle" aria-hidden="true"></span>
+    <span class="garage-door__light" aria-hidden="true"></span>
+  </div>
+  <button id="garageSkip" class="garage-intro__skip" type="button" aria-label="오프닝 건너뛰기">SKIP</button>
+</div>
 <div class="preloader"><div class="preloader-inner"><div class="preloader-lockup"><img class="preloader-mark" src="./assets/images/eungarage-mark.png" alt=""><span class="wordmark preloader-word">EUN GARAGE</span></div><div class="load-line"><span></span></div></div></div>
 
 <div class="noise"></div>
@@ -49,20 +61,13 @@
       <div class="ghost three"><img src="./assets/images/worm-up-keyart.webp" alt=""></div>
     </div>
     <div class="container hero-content">
-      <div class="hero-logo-stage" aria-label="EUN GARAGE">
-        <div class="logo-halo logo-halo-a"></div>
-        <div class="logo-halo logo-halo-b"></div>
-        <div class="hero-symbol-wrap">
-          <img class="hero-symbol" src="./assets/images/eungarage-mark.png" alt="">
-          <i class="logo-star logo-star-1"></i>
-          <i class="logo-star logo-star-2"></i>
-          <i class="logo-star logo-star-3"></i>
-        </div>
-        <div class="hero-word-wrap">
-          <span class="wordmark hero-word">EUN GARAGE</span>
-        </div>
+      <div class="hero-logo-stage">
+        <img class="hero-logo" src="./assets/images/eun-garage-orbit-logo.png"
+             width="1016" height="824" fetchpriority="high" decoding="async"
+             alt="한국 전통 별자리와 구름, 파도 문양을 결합한 EUN GARAGE 로고">
+        <h1 class="visually-hidden">EUN GARAGE</h1>
+        <p class="visually-hidden">MADE BY HAND · FELT BY HEART</p>
       </div>
-      <div class="hero-kicker">Made by hand · Felt by heart</div>
       <h1>감정이 궤도를 넘어, <em>하나의 세계가 됩니다.</em></h1>
       <p class="hero-copy">EUN GARAGE는 캐릭터와 이야기를 중심으로 오래 기억될 게임과 디지털 경험을 만듭니다.</p>
     </div>

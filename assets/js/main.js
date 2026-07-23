@@ -7,6 +7,67 @@
   const navLinks = document.querySelector('.nav-links');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // ── Garage-door opening intro ─────────────────────────────
+  (function garageIntro(){
+    const intro = document.getElementById('garageIntro');
+    if(!intro || intro.dataset.init) return;   // defensive + no double init
+    intro.dataset.init = '1';
+    const KEY = 'eunGarageIntroPlayed';
+    const door = intro.querySelector('.garage-door');
+    const skip = document.getElementById('garageSkip');
+    let cleaned = false, opened = false;
+
+    const cleanup = () => {
+      if(cleaned) return; cleaned = true;
+      body.classList.remove('garage-lock');
+      intro.classList.add('garage-intro--done');
+      if(intro.parentNode) intro.parentNode.removeChild(intro);
+    };
+
+    const open = () => {
+      if(opened || cleaned) return; opened = true;
+      intro.classList.add('garage-intro--open');
+      let finished = false;
+      const finish = () => { if(finished) return; finished = true; cleanup(); };
+      if(door) door.addEventListener('transitionend', e => {
+        if(e.propertyName === 'transform') finish();
+      });
+      setTimeout(finish, 1600);              // fallback if transitionend never fires
+    };
+
+    // Already seen this tab, or reduced motion → reveal immediately, no shutter.
+    let played = false;
+    try { played = sessionStorage.getItem(KEY) === 'true'; } catch(e){}
+    if(played || reduce){
+      try { sessionStorage.setItem(KEY, 'true'); } catch(e){}
+      cleanup();
+      return;
+    }
+
+    try { sessionStorage.setItem(KEY, 'true'); } catch(e){}
+    body.classList.add('garage-lock');
+
+    if(skip){
+      skip.addEventListener('click', cleanup);            // SKIP = instant reveal
+    }
+    document.addEventListener('keydown', e => {
+      if(e.key === 'Escape' && !cleaned) cleanup();
+    });
+
+    // Open once the logo (or a short wait) is ready, with a short hold.
+    const logo = intro.querySelector('.garage-door__logo');
+    const start = Date.now(), minHold = 420;
+    const ready = () => setTimeout(open, Math.max(0, minHold - (Date.now() - start)));
+    if(logo && !logo.complete){
+      logo.addEventListener('load', ready);
+      logo.addEventListener('error', ready);
+      setTimeout(ready, 1400);              // don't wait forever for the image
+    } else {
+      ready();
+    }
+    setTimeout(() => { open(); setTimeout(cleanup, 1600); }, 3500);  // hard safety net
+  })();
+
   window.addEventListener('load', () => {
     setTimeout(() => {
       preloader?.classList.add('done');

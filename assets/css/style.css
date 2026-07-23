@@ -305,3 +305,93 @@ img{display:block;max-width:100%}
 @media(prefers-reduced-motion:reduce){
   *{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* ============================================================
+   Korean constellation hero logo + garage-door opening intro
+   (scoped classes only — does not alter existing layout/content)
+   ============================================================ */
+
+/* Accessible visually-hidden helper (screen-reader only) */
+.visually-hidden{
+  position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+
+/* New central hero logo (transparent PNG, never stretched) */
+.hero-logo{
+  display:block;margin:0 auto;
+  width:clamp(250px,38vw,520px);height:auto;max-height:56svh;
+  aspect-ratio:1016 / 824;object-fit:contain;
+  opacity:0;transform:translateY(14px);
+  animation:heroLogoIn 1s .18s var(--ease) forwards;
+}
+@keyframes heroLogoIn{to{opacity:1;transform:none}}
+@media(max-width:900px){ .hero-logo{width:min(48vw,420px)} }
+@media(max-width:768px){ .hero-logo{width:min(76vw,340px);padding:0} }
+
+/* Body scroll-lock while the intro plays */
+body.garage-lock{overflow:hidden!important}
+
+/* Fixed opening overlay */
+.garage-intro{
+  position:fixed;inset:0;z-index:9999;overflow:hidden;background:#04050a;
+}
+.garage-intro--done{opacity:0;visibility:hidden;pointer-events:none}
+
+/* The metal shutter */
+.garage-door{
+  position:absolute;inset:0;will-change:transform;transform:translateY(0);
+  background-color:#0a0e1c;
+  background-image:
+    linear-gradient(90deg,rgba(0,0,0,.34) 0%,rgba(0,0,0,0) 11%,rgba(0,0,0,0) 89%,rgba(0,0,0,.34) 100%),
+    repeating-linear-gradient(180deg,
+      #151b30 0px,
+      #0f1526 17px,
+      #090d19 37px,
+      #05070f 38px,
+      #151b30 40px);
+  box-shadow:inset 0 -1px 0 rgba(255,255,255,.04);
+  transition:transform 1.3s cubic-bezier(0.77,0,0.18,1);
+}
+.garage-intro--open .garage-door{transform:translateY(-105%)}
+
+/* Branding centred on the shutter */
+.garage-door__branding{position:absolute;inset:0;display:grid;place-items:center;padding:24px}
+.garage-door__logo{
+  width:clamp(170px,42vw,400px);height:auto;
+  aspect-ratio:1016 / 824;object-fit:contain;
+  filter:drop-shadow(0 8px 26px rgba(0,0,0,.55));
+}
+
+/* Minimal handle + light seam at the bottom gap */
+.garage-door__handle{
+  position:absolute;left:50%;bottom:46px;transform:translateX(-50%);
+  width:min(120px,26vw);height:6px;border-radius:6px;
+  background:linear-gradient(180deg,rgba(214,224,247,.32),rgba(120,132,160,.18));
+  box-shadow:0 1px 0 rgba(0,0,0,.4);opacity:.7;
+}
+.garage-door__light{
+  position:absolute;left:-5%;right:-5%;bottom:0;height:16px;
+  background:linear-gradient(to top,rgba(226,238,255,.95),rgba(196,222,255,.32) 42%,transparent);
+  filter:blur(7px);opacity:0;transition:opacity .4s ease .05s;
+}
+.garage-intro--open .garage-door__light{opacity:1}
+
+/* SKIP button — keyboard accessible, inside safe area */
+.garage-intro__skip{
+  position:absolute;z-index:2;
+  right:max(18px,env(safe-area-inset-right));
+  bottom:max(20px,env(safe-area-inset-bottom));
+  padding:9px 16px;border:1px solid rgba(226,232,246,.4);border-radius:999px;
+  background:rgba(8,11,20,.5);color:#e7ebf4;cursor:pointer;
+  font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;
+  transition:background .25s,border-color .25s;
+}
+.garage-intro__skip:hover{background:rgba(20,26,44,.8);border-color:rgba(226,232,246,.7)}
+.garage-intro__skip:focus-visible{outline:2px solid #cdd6ea;outline-offset:3px}
+
+/* Reduced motion: never animate the shutter, reveal instantly */
+@media(prefers-reduced-motion:reduce){
+  .garage-intro{display:none}
+  .hero-logo{opacity:1;transform:none;animation:none}
+}
