@@ -1,4 +1,4 @@
-name: Deploy EUN GARAGE to GitHub Pages
+name: Deploy EUNGARAGE to GitHub Pages
 
 on:
   push:

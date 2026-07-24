@@ -1,17 +1,16 @@
 
 (() => {
   const body = document.body;
-  const preloader = document.querySelector('.preloader');
   const nav = document.querySelector('.site-nav');
   const menu = document.querySelector('.menu-toggle');
   const navLinks = document.querySelector('.nav-links');
   const reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
   const reduce = reduceMQ.matches;
 
-  // ── Garage-door opening intro ─────────────────────────────
+  // ── Garage-door opening intro (symbol only) ───────────────
   (function garageIntro(){
     const intro = document.getElementById('garageIntro');
-    if(!intro || intro.dataset.init) return;   // defensive + no double init
+    if(!intro || intro.dataset.init) return;
     intro.dataset.init = '1';
     const KEY = 'eunGarageIntroPlayed';
     const door = intro.querySelector('.garage-door');
@@ -24,19 +23,15 @@
       intro.classList.add('garage-intro--done');
       if(intro.parentNode) intro.parentNode.removeChild(intro);
     };
-
     const open = () => {
       if(opened || cleaned) return; opened = true;
       intro.classList.add('garage-intro--open');
       let finished = false;
       const finish = () => { if(finished) return; finished = true; cleanup(); };
-      if(door) door.addEventListener('transitionend', e => {
-        if(e.propertyName === 'transform') finish();
-      });
-      setTimeout(finish, 1600);              // fallback if transitionend never fires
+      if(door) door.addEventListener('transitionend', e => { if(e.propertyName === 'transform') finish(); });
+      setTimeout(finish, 1500);
     };
 
-    // Already seen this tab, or reduced motion → reveal immediately, no shutter.
     let played = false;
     try { played = sessionStorage.getItem(KEY) === 'true'; } catch(e){}
     if(played || reduce){
@@ -44,37 +39,24 @@
       cleanup();
       return;
     }
-
     try { sessionStorage.setItem(KEY, 'true'); } catch(e){}
     body.classList.add('garage-lock');
 
-    if(skip){
-      skip.addEventListener('click', cleanup);            // SKIP = instant reveal
-    }
-    document.addEventListener('keydown', e => {
-      if(e.key === 'Escape' && !cleaned) cleanup();
-    });
+    if(skip) skip.addEventListener('click', cleanup);
+    document.addEventListener('keydown', e => { if(e.key === 'Escape' && !cleaned) cleanup(); });
 
-    // Open once the logo (or a short wait) is ready, with a short hold.
     const logo = intro.querySelector('.garage-door__logo');
-    const start = Date.now(), minHold = 420;
+    const start = Date.now(), minHold = 380;
     const ready = () => setTimeout(open, Math.max(0, minHold - (Date.now() - start)));
     if(logo && !logo.complete){
       logo.addEventListener('load', ready);
       logo.addEventListener('error', ready);
-      setTimeout(ready, 1400);              // don't wait forever for the image
-    } else {
-      ready();
-    }
-    setTimeout(() => { open(); setTimeout(cleanup, 1600); }, 3500);  // hard safety net
+      setTimeout(ready, 1400);
+    } else { ready(); }
+    setTimeout(() => { open(); setTimeout(cleanup, 1500); }, 3500);   // hard safety net
   })();
 
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      preloader?.classList.add('done');
-      body.classList.remove('loading');
-    }, reduce ? 20 : 620);
-  });
+  window.addEventListener('load', () => { body.classList.remove('loading'); });
 
   // ── Menu ──────────────────────────────────────────────────
   menu?.addEventListener('click', () => {
@@ -90,227 +72,154 @@
   const onScroll = () => nav?.classList.toggle('scrolled', scrollY > 30);
   addEventListener('scroll', onScroll, {passive:true}); onScroll();
 
-  // ── Scroll reveal ─────────────────────────────────────────
+  // ── Scroll reveal (+ project shutter via .project.is-visible) ──
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
-      if(entry.isIntersecting){
-        entry.target.classList.add('is-visible');
-        if(entry.target.classList.contains('project')){
-          document.documentElement.style.setProperty('--active-accent', getComputedStyle(entry.target).getPropertyValue('--project-accent'));
-        }
-      }
+      if(entry.isIntersecting){ entry.target.classList.add('is-visible'); observer.unobserve(entry.target); }
     });
   }, {threshold:.18});
   document.querySelectorAll('.reveal,.project,.manifesto-copy span').forEach(el => observer.observe(el));
 
-  // ── Background starfield (slow, paused when tab hidden) ────
-  const canvas=document.getElementById('starfield');
-  if(canvas && !reduce){
-    const ctx=canvas.getContext('2d');
-    let stars=[],w=0,h=0,dpr=Math.min(devicePixelRatio||1,2),sfRAF=null;
-    const resize=()=>{
-      w=canvas.clientWidth;h=canvas.clientHeight;
-      canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
-      const count=Math.min(170,Math.floor(w*h/7500));
-      stars=Array.from({length:count},()=>({
-        x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.25+.15,
-        a:Math.random()*.7+.15,s:Math.random()*.002+.0008,p:Math.random()*6.28
-      }));
-    };
-    const draw=t=>{
-      ctx.clearRect(0,0,w,h);
-      stars.forEach(st=>{
-        const a=st.a*(.58+.42*Math.sin(t*st.s+st.p));
-        ctx.beginPath();ctx.fillStyle=`rgba(215,220,255,${a})`;ctx.arc(st.x,st.y,st.r,0,Math.PI*2);ctx.fill();
-      });
-      sfRAF=requestAnimationFrame(draw);
-    };
-    const startSF=()=>{ if(sfRAF==null) sfRAF=requestAnimationFrame(draw); };
-    const stopSF=()=>{ if(sfRAF!=null){ cancelAnimationFrame(sfRAF); sfRAF=null; } };
-    resize();addEventListener('resize',resize,{passive:true});
-    document.addEventListener('visibilitychange',()=> document.hidden ? stopSF() : startSF());
-    startSF();
-  }
-
-  // ── ORBIT NAVIGATOR — probe rides the hero ring by pointer angle ──
-  (function orbitNavigator(){
-    const navigator = document.querySelector('.orbit-navigator');
+  // ── Starfield + CONSTELLATION MAGNET (one canvas, one rAF, one pointermove) ──
+  (function starfield(){
+    const canvas = document.getElementById('starfield');
     const hero = document.querySelector('.hero');
-    const probe = navigator && navigator.querySelector('.orbit-navigator__probe');
-    const status = document.querySelector('.orbit-status');
-    if(!navigator || !hero || !probe) return;
-
-    const fineMQ = matchMedia('(hover:hover) and (pointer:fine)');
-    const REST = -Math.PI/2;                         // resting position: top of ring
-    const nodes = [...navigator.querySelectorAll('.orbit-node')];
-    const baseAngle = { lunai:-2.53, liminal:-0.61, wormup:0.96 }; // radians, spread around
-    const signal = {
-      lunai:   ['BAY 01','SIGNAL · LUNAI','AI MUSIC SYSTEM'],
-      liminal: ['BAY 02','SIGNAL · LIMINAL','STORY WORLD'],
-      wormup:  ['BAY 03','SIGNAL · WORM UP!','ACTION WORLD']
-    };
-
-    let cx=0, cy=0, R=0;
-    let curAngle=REST, targetAngle=REST, lastPointerAngle=REST;
-    let pointerInside=false, dockKey=null, locked=false;
+    if(!canvas || !hero) return;
+    const ctx = canvas.getContext('2d');
+    const fine = matchMedia('(hover:hover) and (pointer:fine)').matches;
+    let stars=[], w=0, h=0, dpr=Math.min(devicePixelRatio||1,2);
     let rafId=null, heroVisible=true;
+    let pointer={x:-9999,y:-9999,inside:false,lastMove:0};
+    let heroRect=null;
 
-    const shortest = (a)=> Math.atan2(Math.sin(a), Math.cos(a));
-
-    const placeProbe = (ang)=>{
-      probe.style.transform =
-        `translate(-50%,-50%) translate(${Math.cos(ang)*R}px, ${Math.sin(ang)*R}px)`;
-    };
-    const placeNode = (el, ang)=>{
-      el.style.transform =
-        `translate(-50%,-50%) translate(${Math.cos(ang)*R}px, ${Math.sin(ang)*R}px)`;
-    };
-
-    const measure = ()=>{
-      const r = navigator.getBoundingClientRect();
-      cx = r.left + r.width/2;
-      cy = r.top  + r.height/2;
-      R  = r.width/2;
-      nodes.forEach(n => placeNode(n, baseAngle[n.dataset.project] ?? REST));
-      placeProbe(curAngle);
-    };
-
-    const running = ()=> fineMQ.matches && heroVisible && !document.hidden;
-    const loop = ()=>{
-      const t = reduceMQ.matches ? 1 : 0.09;
-      curAngle += shortest(targetAngle - curAngle) * t;
-      placeProbe(curAngle);
-      if(Math.abs(shortest(targetAngle - curAngle)) < 0.0008){
-        curAngle = targetAngle; placeProbe(curAngle); rafId=null; return; // settled → stop
-      }
-      rafId = requestAnimationFrame(loop);
-    };
-    const kick = ()=>{ if(rafId==null && running()) rafId=requestAnimationFrame(loop); };
-    const settleNow = ()=>{ curAngle=targetAngle; placeProbe(curAngle); };
-
-    const setTarget = (ang)=>{
-      targetAngle = ang;
-      if(running()) kick(); else settleNow();  // if hero hidden, just snap invisibly
-    };
-
-    // Docking (hover / focus of a project)
-    const setStatus = (key, lockedText)=>{
-      if(!status) return;
-      if(key && signal[key]){
-        const [a,b,c] = signal[key];
-        status.innerHTML =
-          `<span class="orbit-status__bay">${a}</span>`+
-          `<span class="orbit-status__sig">${lockedText || b}</span>`+
-          `<span class="orbit-status__world">${c}</span>`;
-        status.classList.add('is-on');
-      } else {
-        status.classList.remove('is-on');
-      }
-    };
-    const dock = (key)=>{
-      if(!(key in baseAngle)) return;
-      dockKey = key;
-      nodes.forEach(n => n.classList.toggle('is-active', n.dataset.project===key));
-      if(fineMQ.matches) setTarget(baseAngle[key]);
-      setStatus(key);
-    };
-    const undock = ()=>{
-      if(locked) return;
-      dockKey = null;
-      nodes.forEach(n => n.classList.remove('is-active'));
-      setStatus(null);
-      setTarget(pointerInside && fineMQ.matches ? lastPointerAngle : REST);
-    };
-
-    // Pointer angle tracking (fine pointers only, not reduced-motion)
-    if(!reduce){
-      hero.addEventListener('pointerenter', e=>{
-        if(!fineMQ.matches || e.pointerType==='touch') return;
-        pointerInside = true; measure();
+    const measureRect = ()=>{ heroRect = hero.getBoundingClientRect(); };
+    const resize=()=>{
+      w=canvas.clientWidth; h=canvas.clientHeight;
+      canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
+      const count=Math.min(120, Math.max(70, Math.floor(w*h/13000)));   // ~90-120 desktop
+      stars=Array.from({length:count},()=>{
+        const bx=Math.random()*w, by=Math.random()*h, big=Math.random()<0.05;
+        return {baseX:bx,baseY:by,x:bx,y:by,
+          radius: big ? 0.85+Math.random()*0.25 : 0.2+Math.random()*0.6,
+          alpha: 0.1+Math.random()*0.48, s:0.0004+Math.random()*0.0008, phase:Math.random()*6.28};
       });
-      hero.addEventListener('pointerleave', ()=>{
-        pointerInside = false;
-        if(!dockKey && !locked) setTarget(REST);
-      });
+      measureRect();
+    };
+
+    const radiusFor = ()=> Math.max(130, Math.min(170, w*0.12));
+    const drawStatic = ()=>{
+      ctx.clearRect(0,0,w,h);
+      for(const st of stars){ ctx.beginPath(); ctx.fillStyle=`rgba(210,216,232,${st.alpha})`; ctx.arc(st.baseX,st.baseY,st.radius,0,6.283); ctx.fill(); }
+    };
+    const draw = (t)=>{
+      ctx.clearRect(0,0,w,h);
+      // nearest-3 stars to pointer (single pass, no full sort)
+      let sel=[];
+      if(fine && pointer.inside){
+        const R2=radiusFor()**2; const best=[];
+        for(let i=0;i<stars.length;i++){
+          const dx=stars[i].baseX-pointer.x, dy=stars[i].baseY-pointer.y, d2=dx*dx+dy*dy;
+          if(d2>R2) continue;
+          if(best.length<3){ best.push({i,d2}); best.sort((a,b)=>a.d2-b.d2); }
+          else if(d2<best[2].d2){ best[2]={i,d2}; best.sort((a,b)=>a.d2-b.d2); }
+        }
+        sel=best.map(b=>b.i);
+      }
+      const selSet = sel.length ? new Set(sel) : null;
+      for(let i=0;i<stars.length;i++){
+        const st=stars[i];
+        let tx=st.baseX, ty=st.baseY;
+        if(selSet && selSet.has(i)){
+          const dx=pointer.x-st.baseX, dy=pointer.y-st.baseY, d=Math.hypot(dx,dy)||1;
+          tx=st.baseX+(dx/d)*4; ty=st.baseY+(dy/d)*4;   // max 4px toward pointer
+        }
+        st.x+=(tx-st.x)*0.12; st.y+=(ty-st.y)*0.12;
+        const a=st.alpha*(0.62+0.38*Math.sin(t*st.s+st.phase));
+        ctx.beginPath(); ctx.fillStyle=`rgba(210,216,232,${a})`; ctx.arc(st.x,st.y,st.radius,0,6.283); ctx.fill();
+      }
+      if(sel.length===3){
+        const since = performance.now()-pointer.lastMove;
+        let lineA;
+        if(since<280) lineA=0.11;
+        else if(since<650) lineA=0.11+(since-280)/370*0.17;      // dwell → brighten (max ~0.28)
+        else lineA=Math.max(0.10, 0.28-(since-650)/500*0.18);   // then fade back
+        ctx.lineWidth=0.7; ctx.strokeStyle=`rgba(214,220,236,${lineA})`;
+        ctx.beginPath();
+        ctx.moveTo(stars[sel[0]].x,stars[sel[0]].y);
+        ctx.lineTo(stars[sel[1]].x,stars[sel[1]].y);
+        ctx.lineTo(stars[sel[2]].x,stars[sel[2]].y);
+        ctx.stroke();
+      }
+      rafId=requestAnimationFrame(draw);
+    };
+
+    const running=()=> heroVisible && !document.hidden;
+    const stop=()=>{ if(rafId!=null){ cancelAnimationFrame(rafId); rafId=null; } };
+    const startLoop=()=>{ if(rafId==null && running()) rafId=requestAnimationFrame(draw); };
+
+    resize();
+    if(reduce){ drawStatic(); return; }      // static stars, no motion, no magnet
+
+    if(fine){
+      hero.addEventListener('pointerleave', ()=>{ pointer.inside=false; });
       hero.addEventListener('pointermove', e=>{
-        if(!fineMQ.matches || e.pointerType==='touch' || dockKey || locked) return;
-        pointerInside = true;
-        lastPointerAngle = Math.atan2(e.clientY - cy, e.clientX - cx);
-        setTarget(lastPointerAngle);
+        if(e.pointerType==='touch' || !heroRect) return;
+        pointer.x=e.clientX-heroRect.left; pointer.y=e.clientY-heroRect.top;
+        pointer.inside=true; pointer.lastMove=performance.now();
       }, {passive:true});
     }
-
-    // Wire project sections + links via data-project (no name string compares)
-    document.querySelectorAll('[data-project]').forEach(el=>{
-      const key = el.dataset.project;
-      el.addEventListener('mouseenter', ()=>{ if(fineMQ.matches) dock(key); });
-      el.addEventListener('mouseleave', ()=>{ if(fineMQ.matches) undock(); });
-      el.addEventListener('focusin', ()=> dock(key));
-      el.addEventListener('focusout', ()=> undock());
-    });
-
-    // Mechanical lock feedback on project-link click, then navigate
-    document.querySelectorAll('a.project-link[data-project]').forEach(link=>{
-      link.addEventListener('click', e=>{
-        const key = link.dataset.project;
-        const href = link.getAttribute('href');
-        const newTab = link.target === '_blank' || link.hasAttribute('download');
-        const modified = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
-        const keyboard = e.detail === 0;                 // activated via keyboard
-        if(!href || newTab || modified || keyboard || reduce) return; // normal behaviour
-        e.preventDefault();
-        locked = true;
-        dock(key);
-        navigator.classList.add('is-locked');
-        const node = nodes.find(n => n.dataset.project===key);
-        node && node.classList.add('is-locked');
-        if(fineMQ.matches) setTarget(baseAngle[key]);
-        setStatus(key, 'SIGNAL LOCKED');
-        setTimeout(()=>{ window.location.href = href; }, 150);
-      });
-    });
-
-    // Pause / resume with hero visibility and tab visibility
-    const io = new IntersectionObserver(([entry])=>{
-      heroVisible = entry.isIntersecting;
-      if(running()) kick();
-      else if(rafId!=null){ cancelAnimationFrame(rafId); rafId=null; }
-    }, {threshold:0});
+    addEventListener('resize', resize, {passive:true});
+    addEventListener('orientationchange', resize, {passive:true});
+    addEventListener('scroll', measureRect, {passive:true});
+    document.addEventListener('visibilitychange', ()=> document.hidden ? stop() : startLoop());
+    const io = new IntersectionObserver(([e])=>{ heroVisible=e.isIntersecting; heroVisible ? startLoop() : stop(); }, {threshold:0});
     io.observe(hero);
-    document.addEventListener('visibilitychange', ()=>{ if(running()) kick(); });
-
-    addEventListener('resize', measure, {passive:true});
-    addEventListener('orientationchange', measure, {passive:true});
-    fineMQ.addEventListener?.('change', ()=>{ measure(); if(!fineMQ.matches){ curAngle=targetAngle=REST; placeProbe(REST); } });
-
-    measure();
-    placeProbe(REST);
+    startLoop();
   })();
 
-  // ── GARAGE LOG — reveal once when it enters the viewport ──
-  (function garageLog(){
-    const board = document.querySelector('[data-garage-log]');
-    if(!board) return;
-    const sysmsg = board.querySelector('[data-log-sysmsg]');
-    const rows = board.querySelectorAll('[data-log-row]');
-    let done = false;
-    const run = ()=>{
-      if(done) return; done = true;            // run once
-      board.classList.add('is-active');
-      if(reduce) return;                       // instant content, no calibration/sysmsg
-      const after = rows.length * 130 + 520;   // once the last row has settled
-      setTimeout(()=>{
-        if(!sysmsg) return;
-        sysmsg.classList.add('is-on');
-        setTimeout(()=> sysmsg.classList.remove('is-on'), 800);
-      }, after);
+  // ── WORLD BLUEPRINT ───────────────────────────────────────
+  (function blueprints(){
+    const openers=[...document.querySelectorAll('.blueprint-open')];
+    if(!openers.length) return;
+    let current=null;   // {panel, opener}
+
+    const close=(returnFocus=true)=>{
+      if(!current) return;
+      const {panel,opener}=current; current=null;
+      panel.classList.remove('is-open');
+      opener.setAttribute('aria-expanded','false');
+      const hide=()=>{ if(!panel.classList.contains('is-open')) panel.setAttribute('hidden',''); panel.removeEventListener('transitionend',hide); };
+      panel.addEventListener('transitionend',hide);
+      setTimeout(hide, 400);
+      if(returnFocus) opener.focus();
     };
-    const io = new IntersectionObserver((entries, obs)=>{
-      entries.forEach(e=>{ if(e.isIntersecting){ run(); obs.disconnect(); } });
-    }, {threshold:0.35});
-    io.observe(board);
-    // safety net: never leave the log permanently hidden if IO doesn't fire
-    setTimeout(()=>{ if(!done){ run(); io.disconnect(); } }, 4000);
+    const open=(opener)=>{
+      const panel=document.getElementById(opener.getAttribute('aria-controls'));
+      if(!panel) return;
+      if(current) close(false);
+      panel.removeAttribute('hidden');
+      void panel.offsetWidth;               // reflow so the transition runs
+      panel.classList.add('is-open');
+      opener.setAttribute('aria-expanded','true');
+      current={panel,opener};
+      (panel.querySelector('.blueprint__close') || panel).focus();
+    };
+
+    openers.forEach(op => op.addEventListener('click', ()=>{
+      const panel=document.getElementById(op.getAttribute('aria-controls'));
+      (current && current.panel===panel) ? close() : open(op);
+    }));
+    document.querySelectorAll('.blueprint__close').forEach(btn => btn.addEventListener('click', ()=> close()));
+    document.addEventListener('keydown', e=>{
+      if(!current) return;
+      if(e.key==='Escape'){ close(); return; }
+      if(e.key==='Tab'){ e.preventDefault(); (current.panel.querySelector('.blueprint__close')||current.panel).focus(); } // simple trap
+    });
+    document.addEventListener('click', e=>{
+      if(!current) return;
+      if(current.panel.contains(e.target) || current.opener.contains(e.target)) return;
+      close();
+    });
   })();
 
   document.querySelectorAll('[data-year]').forEach(el=>el.textContent=new Date().getFullYear());

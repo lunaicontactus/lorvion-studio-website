@@ -1,4 +1,4 @@
-# EUN GARAGE — GitHub 연결 안내
+# EUNGARAGE — GitHub 연결 안내
 
 이 폴더는 GitHub Pages 자동 배포 준비가 완료되어 있습니다.
 

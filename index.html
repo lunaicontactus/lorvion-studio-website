@@ -7,46 +7,37 @@
 <meta name="theme-color" content="#04050a">
 <link rel="icon" href="./assets/images/favicon.png">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-<link rel="preload" as="image" href="./assets/images/eun-garage-lockup.webp" fetchpriority="high">
+<link rel="preload" as="image" href="./assets/images/eungarage-symbol.png" fetchpriority="high">
 <link rel="stylesheet" href="./assets/css/style.css">
 <meta property="og:type" content="website">
 <meta property="og:image" content="./assets/images/og-image.jpg">
-<meta property="og:site_name" content="EUN GARAGE">
+<meta property="og:site_name" content="EUNGARAGE">
 <meta name="twitter:card" content="summary_large_image">
 
-<title>EUN GARAGE — Worlds Beyond the Ordinary</title>
-<meta name="description" content="EUN GARAGE는 감정, 캐릭터, 독특한 세계가 오래 기억되는 게임을 만듭니다. LUNAI, LIMINAL, WORM UP!">
-<meta property="og:title" content="EUN GARAGE">
+<title>EUNGARAGE — Worlds Beyond the Ordinary</title>
+<meta name="description" content="EUNGARAGE는 감정, 캐릭터, 독특한 세계가 오래 기억되는 게임을 만듭니다. LUNAI, LIMINAL, WORM UP!">
+<meta property="og:title" content="EUNGARAGE">
 <meta property="og:description" content="Emotion. Character. Worlds beyond the ordinary.">
 </head>
 <body class="loading">
+
+<!-- Garage-door opening (symbol only) -->
 <div id="garageIntro" class="garage-intro">
   <div class="garage-door" aria-hidden="true">
     <div class="garage-door__branding">
-      <img class="garage-door__logo" src="./assets/images/eun-garage-symbol-transparent.png"
+      <img class="garage-door__logo" src="./assets/images/eungarage-symbol.png"
            alt="" width="420" height="312" fetchpriority="high" decoding="async">
     </div>
-    <span class="garage-door__handle" aria-hidden="true"></span>
     <span class="garage-door__light" aria-hidden="true"></span>
   </div>
   <button id="garageSkip" class="garage-intro__skip" type="button" aria-label="오프닝 건너뛰기">SKIP</button>
 </div>
-<div class="preloader"><div class="preloader-inner"><div class="preloader-lockup"><img class="preloader-mark" src="./assets/images/eun-garage-symbol-transparent.png" alt="" width="420" height="312"><span class="wordmark preloader-word">EUN GARAGE</span></div><div class="load-line"><span></span></div></div></div>
 
 <div class="noise"></div>
-<div class="garage-frame" aria-hidden="true">
-  <span class="garage-frame__rail garage-frame__rail--l"></span>
-  <span class="garage-frame__rail garage-frame__rail--r"></span>
-  <span class="garage-frame__housing"></span>
-  <span class="garage-frame__bolt garage-frame__bolt--tl"></span>
-  <span class="garage-frame__bolt garage-frame__bolt--tr"></span>
-  <span class="garage-frame__bolt garage-frame__bolt--bl"></span>
-  <span class="garage-frame__bolt garage-frame__bolt--br"></span>
-</div>
 <nav class="site-nav">
   <div class="container nav-inner">
-    <a class="brand" href="./index.html" aria-label="EUN GARAGE home">
-      <span class="wordmark brand-word">EUN GARAGE</span>
+    <a class="brand" href="./index.html" aria-label="EUNGARAGE home">
+      <span class="brand-wordmark brand-word" role="img" aria-label="EUNGARAGE"><span class="brand-wordmark__eun">EUN</span><span class="brand-wordmark__garage">GARAGE</span></span>
     </a>
     <div class="nav-links">
       <a href="./index.html#projects">Games</a>
@@ -60,49 +51,34 @@
 
 <main>
   <section class="hero" id="top">
-    <canvas id="starfield"></canvas>
-    <div class="hero-orbit"></div>
-    <div class="orbit-status" aria-hidden="true"></div>
-    <div class="studio-status" aria-hidden="true"><span class="studio-status__dot"></span><span>STUDIO ONLINE</span><span class="studio-status__loc">SEOUL · KR</span></div>
-    <div class="hero-sill" aria-hidden="true"></div>
+    <canvas id="starfield" aria-hidden="true"></canvas>
+    <div class="hero-orbit" aria-hidden="true"></div>
     <div class="ghost-posters" aria-hidden="true">
       <div class="ghost one"><img src="./assets/images/lunai-keyart.webp" alt=""></div>
       <div class="ghost two"><img src="./assets/images/liminal-keyart.webp" alt=""></div>
       <div class="ghost three"><img src="./assets/images/worm-up-keyart.webp" alt=""></div>
     </div>
     <div class="container hero-content">
-      <p class="hero-eyebrow">INDEPENDENT GAME · APP · AI WORKSHOP</p>
+      <p class="hero-tag">INDEPENDENT GAME &amp; APP STUDIO</p>
       <div class="hero-logo-stage">
-        <div class="orbit-navigator" aria-hidden="true">
-          <span class="orbit-node" data-project="lunai"><i></i><b>01 · LUNAI</b></span>
-          <span class="orbit-node" data-project="liminal"><i></i><b>02 · LIMINAL</b></span>
-          <span class="orbit-node" data-project="wormup"><i></i><b>03 · WORM UP!</b></span>
-          <span class="orbit-navigator__probe"></span>
-        </div>
-        <img class="hero-logo" src="./assets/images/eun-garage-lockup.webp"
-             width="1016" height="824" fetchpriority="high" decoding="async"
-             alt="한국 전통 별자리와 구름, 파도 문양을 결합한 EUN GARAGE 로고">
-        <h1 class="visually-hidden">EUN GARAGE</h1>
-        <p class="visually-hidden">MADE BY HAND · FELT BY HEART</p>
+        <img class="hero-symbol" src="./assets/images/eungarage-symbol.png"
+             width="420" height="312" fetchpriority="high" decoding="async"
+             alt="한국 전통 별자리와 구름, 파도 문양을 결합한 EUNGARAGE 심볼">
+        <span class="brand-wordmark hero-wordmark" role="img" aria-label="EUNGARAGE"><span class="brand-wordmark__eun">EUN</span><span class="brand-wordmark__garage">GARAGE</span></span>
+        <p class="hero-slogan">MADE BY HAND · FELT BY HEART</p>
       </div>
       <h1>감정이 궤도를 넘어, <em>하나의 세계가 됩니다.</em></h1>
-      <p class="hero-copy">EUN GARAGE는 캐릭터와 이야기를 중심으로 오래 기억될 게임과 디지털 경험을 만듭니다.</p>
+      <p class="hero-copy">EUNGARAGE는 캐릭터와 이야기를 중심으로 오래 기억될 게임과 디지털 경험을 만듭니다.</p>
     </div>
     <a class="scroll-cue" href="#manifesto"><span>SCROLL</span><i></i></a>
   </section>
 
   <div class="marquee">
     <div class="marquee-track">
-      <span><b>EUN GARAGE</b> · EMOTION · CHARACTER · STORY · UNUSUAL WORLDS · </span>
-      <span><b>EUN GARAGE</b> · EMOTION · CHARACTER · STORY · UNUSUAL WORLDS · </span>
-      <span><b>EUN GARAGE</b> · EMOTION · CHARACTER · STORY · UNUSUAL WORLDS · </span>
-      <span><b>EUN GARAGE</b> · EMOTION · CHARACTER · STORY · UNUSUAL WORLDS · </span>
-    </div>
-    <div class="marquee-track marquee-track--alt">
-      <span><b>IDEA</b> · BUILD · TEST · PLAY · RELEASE · </span>
-      <span><b>IDEA</b> · BUILD · TEST · PLAY · RELEASE · </span>
-      <span><b>IDEA</b> · BUILD · TEST · PLAY · RELEASE · </span>
-      <span><b>IDEA</b> · BUILD · TEST · PLAY · RELEASE · </span>
+      <span>EUNGARAGE · EMOTION · CHARACTER · STORY · UNUSUAL WORLDS · </span>
+      <span>EUNGARAGE · EMOTION · CHARACTER · STORY · UNUSUAL WORLDS · </span>
+      <span>EUNGARAGE · EMOTION · CHARACTER · STORY · UNUSUAL WORLDS · </span>
+      <span>EUNGARAGE · EMOTION · CHARACTER · STORY · UNUSUAL WORLDS · </span>
     </div>
   </div>
 
@@ -125,31 +101,46 @@
     <h2 class="reveal">OUR<br>GAMES.</h2>
   </header>
 
-  <section class="project lunai" data-project="lunai">
+  <section class="project lunai">
     <div class="project-blur" style="background-image:url('./assets/images/lunai-keyart.webp')"></div>
     <div class="container project-inner">
       <div class="project-copy reveal">
-        <div class="project-bay"><span class="project-bay__tag"><span class="project-bay__dot"></span>PROJECT BAY 01</span><span class="project-bay__cat">AI EMOTION MUSIC</span></div>
+        <div class="project-bay"><span class="project-bay__no">BAY 01</span><span class="project-bay__cat">AI EMOTION MUSIC</span></div>
         <h2 class="project-title">LUNAI</h2>
         <p class="project-sub">감정을 음악으로, 이야기를 노래로.</p>
         <p class="project-desc">각기 다른 성격의 캐릭터와 대화하며 오늘의 감정을 발견하고, 그 순간을 나만의 음악으로 완성하는 AI 캐릭터 음악 앱.</p>
         <div class="project-meta"><span>Mobile</span><span>Music</span><span>AI Character</span><span>In development</span></div>
         <div class="project-actions">
-          <a class="project-link" href="./support.html" data-project="lunai"><i>↗</i> LUNAI SUPPORT</a>
-          <a class="project-link project-link-secondary" href="./privacy.html" data-project="lunai"><i>↗</i> PRIVACY POLICY</a>
+          <a class="project-link" href="./support.html"><i>↗</i> LUNAI SUPPORT</a>
+          <a class="project-link project-link-secondary" href="./privacy.html"><i>↗</i> PRIVACY POLICY</a>
         </div>
       </div>
       <div class="project-media">
-        <figure class="poster-frame"><img src="./assets/images/lunai-keyart.webp" alt="LUNAI 대표 이미지"><span class="pbrackets" aria-hidden="true"><i></i><i></i><i></i><i></i></span></figure>
+        <figure class="poster-frame">
+          <img src="./assets/images/lunai-keyart.webp" alt="LUNAI 대표 이미지" loading="lazy">
+          <span class="poster-shutter" aria-hidden="true"></span>
+          <button class="blueprint-open" type="button" aria-expanded="false" aria-controls="bp-lunai">OPEN BLUEPRINT<span class="visually-hidden"> · 세계 설계도 열기</span></button>
+          <div class="blueprint" id="bp-lunai" role="dialog" aria-modal="true" aria-labelledby="bp-lunai-title" hidden>
+            <div class="blueprint__inner">
+              <p class="blueprint__eyebrow" id="bp-lunai-title">WORLD BLUEPRINT · BAY 01</p>
+              <dl class="blueprint__list">
+                <div><dt>CORE EMOTION</dt><dd>오늘의 감정을 발견하는 경험</dd></div>
+                <div><dt>PLAYER ACTION</dt><dd>캐릭터와 대화하고 음악으로 완성</dd></div>
+                <div><dt>WORLD SYSTEM</dt><dd>AI CHARACTER · EMOTION · MUSIC</dd></div>
+              </dl>
+              <button class="blueprint__close" type="button">CLOSE<span class="visually-hidden"> 설계도 닫기</span></button>
+            </div>
+          </div>
+        </figure>
       </div>
     </div>
   </section>
 
-  <section class="project liminal" data-project="liminal">
+  <section class="project liminal">
     <div class="project-blur" style="background-image:url('./assets/images/liminal-keyart.webp')"></div>
     <div class="container project-inner">
       <div class="project-copy reveal">
-        <div class="project-bay"><span class="project-bay__tag"><span class="project-bay__dot"></span>PROJECT BAY 02</span><span class="project-bay__cat">STORY ADVENTURE</span></div>
+        <div class="project-bay"><span class="project-bay__no">BAY 02</span><span class="project-bay__cat">STORY ADVENTURE</span></div>
         <h2 class="project-title">LIMINAL</h2>
         <p class="project-sub">예정에 없던 죽음이 머무는 경계.</p>
         <p class="project-desc">삶과 죽음 사이의 경계관리국. 망자의 사연을 마주하고, 기록하고, 때로는 다시 삶으로 돌려보내는 동양 판타지 스토리 게임.</p>
@@ -157,16 +148,31 @@
         <span class="project-link"><i>—</i> COMING LATER</span>
       </div>
       <div class="project-media">
-        <figure class="poster-frame"><img src="./assets/images/liminal-keyart.webp" alt="LIMINAL 대표 이미지"><span class="pbrackets" aria-hidden="true"><i></i><i></i><i></i><i></i></span></figure>
+        <figure class="poster-frame">
+          <img src="./assets/images/liminal-keyart.webp" alt="LIMINAL 대표 이미지" loading="lazy">
+          <span class="poster-shutter" aria-hidden="true"></span>
+          <button class="blueprint-open" type="button" aria-expanded="false" aria-controls="bp-liminal">OPEN BLUEPRINT<span class="visually-hidden"> · 세계 설계도 열기</span></button>
+          <div class="blueprint" id="bp-liminal" role="dialog" aria-modal="true" aria-labelledby="bp-liminal-title" hidden>
+            <div class="blueprint__inner">
+              <p class="blueprint__eyebrow" id="bp-liminal-title">WORLD BLUEPRINT · BAY 02</p>
+              <dl class="blueprint__list">
+                <div><dt>CORE EMOTION</dt><dd>끝내 전하지 못한 마음</dd></div>
+                <div><dt>PLAYER ACTION</dt><dd>사건을 조사하고 망자의 기록을 완성</dd></div>
+                <div><dt>WORLD SYSTEM</dt><dd>LIFE · DEATH · MEMORY</dd></div>
+              </dl>
+              <button class="blueprint__close" type="button">CLOSE<span class="visually-hidden"> 설계도 닫기</span></button>
+            </div>
+          </div>
+        </figure>
       </div>
     </div>
   </section>
 
-  <section class="project worm" data-project="wormup">
+  <section class="project worm">
     <div class="project-blur" style="background-image:url('./assets/images/worm-up-keyart.webp')"></div>
     <div class="container project-inner">
       <div class="project-copy reveal">
-        <div class="project-bay"><span class="project-bay__tag"><span class="project-bay__dot"></span>PROJECT BAY 03</span><span class="project-bay__cat">CASUAL ACTION</span></div>
+        <div class="project-bay"><span class="project-bay__no">BAY 03</span><span class="project-bay__cat">CASUAL ACTION</span></div>
         <h2 class="project-title">WORM<br>UP!</h2>
         <p class="project-sub">여자친구를 되찾기 위한 눈물겨운 등산기.</p>
         <p class="project-desc">작고 약한 지렁이가 끝없이 높은 산을 오릅니다. 단순한 조작, 끈질긴 도전, 엉뚱하지만 진심인 사랑을 담은 2D 액션 게임.</p>
@@ -174,49 +180,32 @@
         <span class="project-link"><i>—</i> COMING LATER</span>
       </div>
       <div class="project-media">
-        <figure class="poster-frame"><img src="./assets/images/worm-up-keyart.webp" alt="WORM UP! 대표 이미지"><span class="pbrackets" aria-hidden="true"><i></i><i></i><i></i><i></i></span></figure>
-      </div>
-    </div>
-  </section>
-
-  <section class="garage-log" id="garage-log">
-    <div class="container">
-      <div class="section-label reveal">GARAGE LOG</div>
-      <h2 class="garage-log__title reveal">WHAT WE'RE BUILDING NOW</h2>
-      <div class="garage-log__board" data-garage-log>
-        <span class="garage-log__calib" aria-hidden="true"></span>
-        <div class="garage-log__row" data-log-row style="transition-delay:0ms">
-          <p class="garage-log__bay"><span class="garage-log__dot" aria-hidden="true"></span><span class="garage-log__no">BAY 01</span> · LUNAI</p>
-          <div class="garage-log__fields">
-            <p class="garage-log__field"><span class="garage-log__k">CURRENT BUILD</span><span class="garage-log__v">캐릭터 대화와 감정 발견, 음악 생성 기능을 다듬는 중</span></p>
-            <p class="garage-log__field"><span class="garage-log__k">NEXT TEST</span><span class="garage-log__v">모바일 개발 빌드 점검 중</span></p>
+        <figure class="poster-frame">
+          <img src="./assets/images/worm-up-keyart.webp" alt="WORM UP! 대표 이미지" loading="lazy">
+          <span class="poster-shutter" aria-hidden="true"></span>
+          <button class="blueprint-open" type="button" aria-expanded="false" aria-controls="bp-worm">OPEN BLUEPRINT<span class="visually-hidden"> · 세계 설계도 열기</span></button>
+          <div class="blueprint" id="bp-worm" role="dialog" aria-modal="true" aria-labelledby="bp-worm-title" hidden>
+            <div class="blueprint__inner">
+              <p class="blueprint__eyebrow" id="bp-worm-title">WORLD BLUEPRINT · BAY 03</p>
+              <dl class="blueprint__list">
+                <div><dt>CORE EMOTION</dt><dd>사랑과 끈질긴 도전</dd></div>
+                <div><dt>PLAYER ACTION</dt><dd>장애물을 넘고 동료와 함께 등반</dd></div>
+                <div><dt>WORLD SYSTEM</dt><dd>CLIMB · COMPANION · ACTION</dd></div>
+              </dl>
+              <button class="blueprint__close" type="button">CLOSE<span class="visually-hidden"> 설계도 닫기</span></button>
+            </div>
           </div>
-        </div>
-        <div class="garage-log__row" data-log-row style="transition-delay:130ms">
-          <p class="garage-log__bay"><span class="garage-log__dot" aria-hidden="true"></span><span class="garage-log__no">BAY 02</span> · LIMINAL</p>
-          <div class="garage-log__fields">
-            <p class="garage-log__field"><span class="garage-log__k">CURRENT BUILD</span><span class="garage-log__v">망자의 사연을 기록하는 동양 판타지 스토리 제작 중</span></p>
-            <p class="garage-log__field"><span class="garage-log__k">NEXT TEST</span><span class="garage-log__v">정식 공개 준비 중 · COMING LATER</span></p>
-          </div>
-        </div>
-        <div class="garage-log__row" data-log-row style="transition-delay:260ms">
-          <p class="garage-log__bay"><span class="garage-log__dot" aria-hidden="true"></span><span class="garage-log__no">BAY 03</span> · WORM UP!</p>
-          <div class="garage-log__fields">
-            <p class="garage-log__field"><span class="garage-log__k">CURRENT BUILD</span><span class="garage-log__v">200 스테이지 2D 액션 등반 제작 중</span></p>
-            <p class="garage-log__field"><span class="garage-log__k">NEXT TEST</span><span class="garage-log__v">정식 공개 준비 중 · COMING LATER</span></p>
-          </div>
-        </div>
-        <p class="garage-log__updated"><span class="garage-log__k">LAST UPDATED</span> 2026.07.24<span class="garage-log__sysmsg" data-log-sysmsg aria-hidden="true">SYSTEM LOG UPDATED</span></p>
+        </figure>
       </div>
     </div>
   </section>
 
   <section class="about" id="studio">
     <div class="container">
-      <div class="section-label reveal">About EUN GARAGE</div>
+      <div class="section-label reveal">About EUNGARAGE</div>
       <div class="about-quote reveal">WE DON'T JUST<br>BUILD GAMES.<br><span class="dim">WE BUILD MEMORIES.</span></div>
       <div class="about-grid">
-        <p class="reveal">EUN GARAGE는 작은 차고에서 무언가를 손수 만들던 마음에서 출발했습니다. 거창한 설비 대신 진심과 상상으로, 감정과 캐릭터가 살아 숨 쉬는 세계를 한 편씩 조립해 나갑니다.</p>
+        <p class="reveal">EUNGARAGE는 작은 차고에서 무언가를 손수 만들던 마음에서 출발했습니다. 거창한 설비 대신 진심과 상상으로, 감정과 캐릭터가 살아 숨 쉬는 세계를 한 편씩 조립해 나갑니다.</p>
         <div class="values reveal">
           <div class="value"><b>Emotion first</b><span>01</span></div>
           <div class="value"><b>Character driven</b><span>02</span></div>
@@ -224,20 +213,14 @@
           <div class="value"><b>Play with sincerity</b><span>04</span></div>
         </div>
       </div>
-      <ol class="process reveal" aria-label="제작 공정">
-        <li class="process__step"><span class="process__node"></span><b>01 IDEA</b><span>감정과 이야기</span></li>
-        <li class="process__step"><span class="process__node"></span><b>02 BUILD</b><span>캐릭터와 플레이</span></li>
-        <li class="process__step"><span class="process__node"></span><b>03 TEST</b><span>선택과 다듬기</span></li>
-        <li class="process__step"><span class="process__node process__node--brass"></span><b>04 WORLD</b><span>기억되는 경험</span></li>
-      </ol>
     </div>
   </section>
 
   <section class="contact" id="contact">
-    <div class="contact-orbit"></div>
+    <div class="contact-orbit" aria-hidden="true"></div>
     <div class="container contact-content reveal">
       <div class="section-label" style="justify-content:center">Start a conversation</div>
-      <h2>HELLO,<br>EUN GARAGE.</h2>
+      <h2>HELLO,<br><span class="brand-wordmark contact-wordmark" role="img" aria-label="EUNGARAGE"><span class="brand-wordmark__eun">EUN</span><span class="brand-wordmark__garage">GARAGE</span></span>.</h2>
       <p>게임, 제휴, 고객지원에 관한 문의를 받고 있습니다.</p>
       <a class="mail-link" href="mailto:lorvionstudio@gmail.com">lorvionstudio@gmail.com <span>↗</span></a>
     </div>
@@ -247,7 +230,7 @@
 <footer class="site-footer">
   <div class="container footer-inner">
     <div class="footer-brand">
-      <span class="wordmark footer-word">EUN GARAGE</span>
+      <span class="brand-wordmark footer-word" role="img" aria-label="EUNGARAGE"><span class="brand-wordmark__eun">EUN</span><span class="brand-wordmark__garage">GARAGE</span></span>
       <p>Independent game studio creating emotion-driven worlds.</p>
     </div>
     <div class="footer-links">
@@ -258,7 +241,7 @@
       <a href="mailto:lorvionstudio@gmail.com">Email</a>
     </div>
     <div class="footer-copy">
-      <span>© <span data-year></span> EUN GARAGE. All rights reserved.</span>
+      <span>© <span data-year></span> EUNGARAGE. All rights reserved.</span>
       <span>Seoul, Republic of Korea · Independent studio</span>
     </div>
   </div>

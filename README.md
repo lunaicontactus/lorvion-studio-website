@@ -1,13 +1,13 @@
-# EUN GARAGE
+# EUNGARAGE
 
-EUN GARAGE — 감정과 이야기를 중심으로 게임과 디지털 경험을 만드는 게임·앱 스튜디오의 공식 웹사이트입니다.
-운영 주체(게임·앱·법률 문서 주체)는 EUN GARAGE입니다.
+EUNGARAGE — 감정과 이야기를 중심으로 게임과 디지털 경험을 만드는 게임·앱 스튜디오의 공식 웹사이트입니다.
+운영 주체(게임·앱·법률 문서 주체)는 EUNGARAGE입니다.
 
 > 참고: 이 저장소 이름과 GitHub Pages 경로는 여전히 `lorvion-studio-website`(구 브랜드 시절 생성)입니다.
 > 저장소 이름 변경 계획/권한이 확정되지 않아 아직 변경하지 않았습니다. 공식 문의 이메일도 기존
-> `lorvionstudio@gmail.com`을 그대로 사용합니다(신규 EUN GARAGE 이메일은 아직 준비되지 않음).
+> `lorvionstudio@gmail.com`을 그대로 사용합니다(신규 EUNGARAGE 이메일은 아직 준비되지 않음).
 
-LUNAI, LIMINAL, WORM UP! 대표 이미지와 EUN GARAGE 로고를 사용해 제작한 반응형 시네마틱 정적 웹사이트입니다.
+LUNAI, LIMINAL, WORM UP! 대표 이미지와 EUNGARAGE 로고를 사용해 제작한 반응형 시네마틱 정적 웹사이트입니다.
 
 ## 포함 파일
 - `index.html` — 브랜드 및 게임 메인페이지
@@ -64,7 +64,7 @@ python3 -m http.server 8080
 
 
 ## v6 변경 사항
-- EUN GARAGE 로고 에셋을 새로 교체했습니다.
+- EUNGARAGE 로고 에셋을 새로 교체했습니다.
 - 검은 배경에서 추출한 깨끗한 워드마크/심볼/조합형으로 업데이트했습니다.
 - 히어로 로고 필터를 줄여 가장자리 잔상이 덜 보이도록 조정했습니다.
 

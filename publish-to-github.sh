@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 REPO_NAME="lorvion-studio-website"
 
 echo ""
-echo "EUN GARAGE GitHub 배포를 시작합니다."
+echo "EUNGARAGE GitHub 배포를 시작합니다."
 echo ""
 
 if ! command -v git >/dev/null 2>&1; then
@@ -37,7 +37,7 @@ fi
 
 git add .
 if ! git diff --cached --quiet; then
-  git commit -m "Launch EUN GARAGE website"
+  git commit -m "Launch EUNGARAGE website"
 fi
 git branch -M main
 
@@ -51,7 +51,7 @@ else
   echo "새 공개 저장소를 만듭니다: $OWNER/$REPO_NAME"
   gh repo create "$OWNER/$REPO_NAME" \
     --public \
-    --description "Official website for EUN GARAGE" \
+    --description "Official website for EUNGARAGE" \
     --source=. \
     --remote=origin \
     --push
