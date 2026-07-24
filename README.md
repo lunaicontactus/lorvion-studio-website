@@ -1,7 +1,13 @@
-# EUN GARAGE 공식 웹사이트
+# EUN GARAGE
 
-업로드된 LUNAI, LIMINAL, WORM UP! 대표 이미지와 EUN GARAGE 로고를 사용해 제작한
-반응형 시네마틱 정적 웹사이트입니다.
+EUN GARAGE — 감정과 이야기를 중심으로 게임과 디지털 경험을 만드는 게임·앱 스튜디오의 공식 웹사이트입니다.
+운영 주체(게임·앱·법률 문서 주체)는 EUN GARAGE입니다.
+
+> 참고: 이 저장소 이름과 GitHub Pages 경로는 여전히 `lorvion-studio-website`(구 브랜드 시절 생성)입니다.
+> 저장소 이름 변경 계획/권한이 확정되지 않아 아직 변경하지 않았습니다. 공식 문의 이메일도 기존
+> `lorvionstudio@gmail.com`을 그대로 사용합니다(신규 EUN GARAGE 이메일은 아직 준비되지 않음).
+
+LUNAI, LIMINAL, WORM UP! 대표 이미지와 EUN GARAGE 로고를 사용해 제작한 반응형 시네마틱 정적 웹사이트입니다.
 
 ## 포함 파일
 - `index.html` — 브랜드 및 게임 메인페이지

@@ -358,9 +358,9 @@ body.garage-lock{overflow:hidden!important}
 /* Branding centred on the shutter */
 .garage-door__branding{position:absolute;inset:0;display:grid;place-items:center;padding:24px}
 .garage-door__logo{
-  width:clamp(170px,42vw,400px);height:auto;
-  aspect-ratio:1016 / 824;object-fit:contain;
-  filter:drop-shadow(0 8px 26px rgba(0,0,0,.55));
+  width:clamp(150px,34vw,300px);height:auto;
+  aspect-ratio:420 / 312;object-fit:contain;
+  filter:drop-shadow(0 8px 26px rgba(0,0,0,.5));
 }
 
 /* Minimal handle + light seam at the bottom gap */
