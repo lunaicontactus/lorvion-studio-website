@@ -520,3 +520,60 @@ body.garage-lock{overflow:hidden!important}
   .orbit-node b,.orbit-node::before,.orbit-status,.pbrackets i{transition:none!important}
   .hero-eyebrow{opacity:1;animation:none}
 }
+
+/* ============================================================
+   GARAGE LOG — single work-log board (real build status)
+   ============================================================ */
+.garage-log{padding:120px 0;background:linear-gradient(180deg,#04050a,#050a16)}
+.garage-log__title{
+  font-size:clamp(1.9rem,4.4vw,3.4rem);line-height:1;letter-spacing:-.03em;
+  font-weight:440;margin:18px 0 40px;
+}
+.garage-log__board{
+  position:relative;border:1px solid var(--line);border-radius:14px;
+  background:linear-gradient(180deg,rgba(8,18,38,.55),rgba(6,10,22,.5));
+  padding:8px clamp(16px,3vw,34px);overflow:hidden;
+}
+/* calibration line sweeps once when active */
+.garage-log__calib{
+  position:absolute;left:0;top:0;height:1px;width:100%;transform-origin:left;transform:scaleX(0);
+  background:linear-gradient(90deg,transparent,var(--garage-cyan-muted),var(--garage-silver-muted),transparent);
+  opacity:.8;
+}
+.garage-log__board.is-active .garage-log__calib{transition:transform .8s var(--ease);transform:scaleX(1)}
+.garage-log__row{
+  display:grid;grid-template-columns:minmax(150px,.42fr) 1fr;gap:12px 4vw;align-items:start;
+  padding:26px 0;border-top:1px solid var(--line);
+  opacity:0;transform:translateY(10px);
+  transition:opacity .5s var(--ease),transform .5s var(--ease);
+}
+.garage-log__row:first-of-type{border-top:0}
+.garage-log__board.is-active .garage-log__row{opacity:1;transform:none}
+.garage-log__bay{
+  margin:0;font-family:var(--mono);font-size:.82rem;letter-spacing:.06em;color:var(--silver);
+  display:flex;align-items:center;gap:9px;
+}
+.garage-log__dot{width:7px;height:7px;border-radius:50%;background:var(--garage-brass);flex:none}
+.garage-log__no{color:var(--garage-brass);letter-spacing:.1em}
+.garage-log__fields{display:flex;flex-direction:column;gap:12px}
+.garage-log__field{margin:0;display:flex;flex-direction:column;gap:4px}
+.garage-log__k{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;color:var(--garage-silver-muted);text-transform:uppercase}
+.garage-log__v{font-size:.98rem;color:#c4c9d6;line-height:1.45}
+.garage-log__updated{
+  margin:0;padding:18px 0 12px;border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;color:var(--garage-silver-muted);
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.garage-log__sysmsg{
+  color:var(--garage-cyan-muted);opacity:0;transition:opacity .35s var(--ease);
+}
+.garage-log__sysmsg.is-on{opacity:1}
+@media(max-width:768px){
+  .garage-log{padding:90px 0}
+  .garage-log__row{grid-template-columns:1fr;gap:14px;padding:22px 0}
+}
+@media(prefers-reduced-motion:reduce){
+  .garage-log__row{opacity:1;transform:none;transition:none}
+  .garage-log__calib{display:none}
+  .garage-log__sysmsg{display:none}
+}

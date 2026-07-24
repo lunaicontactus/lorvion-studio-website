@@ -287,5 +287,31 @@
     placeProbe(REST);
   })();
 
+  // ── GARAGE LOG — reveal once when it enters the viewport ──
+  (function garageLog(){
+    const board = document.querySelector('[data-garage-log]');
+    if(!board) return;
+    const sysmsg = board.querySelector('[data-log-sysmsg]');
+    const rows = board.querySelectorAll('[data-log-row]');
+    let done = false;
+    const run = ()=>{
+      if(done) return; done = true;            // run once
+      board.classList.add('is-active');
+      if(reduce) return;                       // instant content, no calibration/sysmsg
+      const after = rows.length * 130 + 520;   // once the last row has settled
+      setTimeout(()=>{
+        if(!sysmsg) return;
+        sysmsg.classList.add('is-on');
+        setTimeout(()=> sysmsg.classList.remove('is-on'), 800);
+      }, after);
+    };
+    const io = new IntersectionObserver((entries, obs)=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ run(); obs.disconnect(); } });
+    }, {threshold:0.35});
+    io.observe(board);
+    // safety net: never leave the log permanently hidden if IO doesn't fire
+    setTimeout(()=>{ if(!done){ run(); io.disconnect(); } }, 4000);
+  })();
+
   document.querySelectorAll('[data-year]').forEach(el=>el.textContent=new Date().getFullYear());
 })();
