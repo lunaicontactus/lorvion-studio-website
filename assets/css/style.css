@@ -44,9 +44,11 @@ img{display:block;max-width:100%}
 }
 .brand-wordmark__eun{font-weight:680}
 .brand-wordmark__garage{font-weight:380}
-.brand-word{font-size:1.06rem}
+/* header nav wordmark: calmer weights + wider tracking */
+.brand-word{font-size:1.02rem;letter-spacing:.12em}
+.brand-word .brand-wordmark__eun{font-weight:640}
+.brand-word .brand-wordmark__garage{font-weight:500}
 .footer-word{font-size:1.2rem}
-.hero-wordmark{font-size:clamp(2rem,7vw,4.4rem)}
 .contact-wordmark{font-size:inherit;letter-spacing:-.04em}
 
 /* ── Nav ── */
@@ -77,23 +79,16 @@ img{display:block;max-width:100%}
   border:1px solid rgba(255,255,255,.05);border-radius:50%;
 }
 .hero-content{position:relative;z-index:7;text-align:center;padding-top:20px}
-.hero-tag{
-  font-family:var(--mono);font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;
-  color:var(--silver-muted);margin:0 0 18px;opacity:0;animation:softIn .8s .25s var(--ease) forwards;
-}
-.hero-logo-stage{display:grid;justify-items:center;gap:16px}
-.hero-symbol{
-  width:clamp(200px,30vw,360px);height:auto;object-fit:contain;aspect-ratio:420 / 312;
-  opacity:0;transform:translateY(6px);animation:heroLogoIn 1s .12s var(--ease) forwards;
+.hero-logo-stage{display:grid;justify-items:center}
+.hero-lockup{
+  display:block;margin:0 auto;pointer-events:none;
+  width:clamp(420px,48vw,680px);max-width:92vw;max-height:68vh;
+  height:auto;aspect-ratio:1312 / 947;object-fit:contain;
+  opacity:0;transform:translateY(6px);animation:heroLogoIn .7s .12s var(--ease) forwards;
 }
 @keyframes heroLogoIn{to{opacity:1;transform:none}}
-@keyframes softIn{to{opacity:1}}
-.hero-slogan{
-  margin:2px 0 0;font-size:clamp(.6rem,1.4vw,.74rem);letter-spacing:.3em;text-transform:uppercase;
-  color:var(--silver-muted);opacity:0;animation:softIn .9s .5s var(--ease) forwards;
-}
-.hero h1{font-size:clamp(1.45rem,2.8vw,2.8rem);font-weight:350;letter-spacing:-.035em;margin:26px auto 15px;max-width:920px;opacity:0;transform:translateY(16px);animation:textLift 1s .7s var(--ease) forwards}
-.hero h1 em{font-style:normal;color:#fff}
+.hero-headline{font-size:clamp(1.45rem,2.8vw,2.8rem);font-weight:350;letter-spacing:-.035em;margin:22px auto 15px;max-width:920px;color:var(--text);opacity:0;transform:translateY(16px);animation:textLift 1s .55s var(--ease) forwards}
+.hero-headline em{font-style:normal;color:#fff}
 .hero-copy{color:var(--muted);max-width:620px;margin:0 auto;font-size:clamp(.96rem,1.5vw,1.12rem);opacity:0;transform:translateY(14px);animation:textLift 1s .84s var(--ease) forwards}
 @keyframes textLift{to{opacity:1;transform:none}}
 .scroll-cue{position:absolute;z-index:4;left:50%;bottom:30px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;font-size:.65rem;letter-spacing:.25em;color:#9da2b1}
@@ -269,7 +264,7 @@ body.garage-lock{overflow:hidden!important}
 }
 .garage-intro--open .garage-door{transform:translateY(-105%)}
 .garage-door__branding{position:absolute;inset:0;display:grid;place-items:center;padding:24px}
-.garage-door__logo{width:clamp(150px,32vw,290px);height:auto;aspect-ratio:420 / 312;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,.5))}
+.garage-door__logo{width:clamp(200px,40vw,360px);height:auto;aspect-ratio:720 / 347;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,.5))}
 .garage-door__light{position:absolute;left:-5%;right:-5%;bottom:0;height:14px;background:linear-gradient(to top,rgba(226,238,255,.9),rgba(196,222,255,.28) 42%,transparent);filter:blur(6px);opacity:0;transition:opacity .35s ease .05s}
 .garage-intro--open .garage-door__light{opacity:1}
 .garage-intro__skip{
@@ -289,6 +284,7 @@ body.garage-lock{overflow:hidden!important}
   .menu-toggle{display:block;z-index:2}
   .menu-toggle.open span:first-child{transform:translateY(3.5px) rotate(45deg)}
   .menu-toggle.open span:last-child{transform:translateY(-3.5px) rotate(-45deg)}
+  .hero-lockup{width:min(72vw,520px)}
   .ghost{width:33vw;opacity:.9}.ghost.one{left:-9%}.ghost.two{right:-10%}.ghost.three{display:none}
   .manifesto{padding:110px 0}
   .manifesto-grid,.about-grid{grid-template-columns:1fr;gap:45px}
@@ -305,10 +301,8 @@ body.garage-lock{overflow:hidden!important}
   .support-grid{grid-template-columns:1fr}
 }
 @media(max-width:560px){
-  .hero-symbol{width:min(58vw,240px)}
-  .hero-wordmark{font-size:12.5vw}
-  .hero-tag{letter-spacing:.22em;font-size:.54rem}
-  .hero h1{font-size:1.7rem}
+  .hero-lockup{width:min(86vw,390px)}
+  .hero-headline{font-size:1.7rem}
   .manifesto-copy{font-size:14vw}
   .poster-frame{max-width:94vw}
   .poster-frame img{width:100%;height:auto;max-height:none}
@@ -321,7 +315,7 @@ body.garage-lock{overflow:hidden!important}
 @media(prefers-reduced-motion:reduce){
   *{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   .garage-intro{display:none}
-  .hero-symbol,.hero-tag,.hero-slogan,.hero h1,.hero-copy{opacity:1;transform:none;animation:none}
+  .hero-lockup,.hero-headline,.hero-copy{opacity:1;transform:none;animation:none}
   .poster-shutter{transform:translateY(-100%)}
   .blueprint-open{opacity:1}
   .marquee-track{animation:none}
