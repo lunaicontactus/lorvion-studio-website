@@ -179,46 +179,116 @@
 
   // ── WORLD BLUEPRINT ───────────────────────────────────────
   (function blueprints(){
-    const openers=[...document.querySelectorAll('.blueprint-open')];
-    if(!openers.length) return;
-    let current=null;   // {panel, opener}
+    const frames=[...document.querySelectorAll('.poster-frame')].filter(f=>f.querySelector('.blueprint'));
+    if(!frames.length) return;
+    const fineMQ=matchMedia('(hover: hover) and (pointer: fine)');
 
-    const close=(returnFocus=true)=>{
-      if(!current) return;
-      const {panel,opener}=current; current=null;
-      panel.classList.remove('is-open');
+    // single source of truth: one blueprint at a time
+    let cur={frame:null,panel:null,opener:null,mode:'idle',closeTimer:null};
+    let openTimer=null;
+
+    const setPreviewAria=(panel,opener)=>{      // non-modal: visual aid only
+      panel.setAttribute('aria-hidden','true');
+      panel.removeAttribute('role'); panel.removeAttribute('aria-modal');
       opener.setAttribute('aria-expanded','false');
+    };
+    const setPinnedAria=(panel,opener)=>{       // real dialog
+      panel.removeAttribute('aria-hidden');
+      panel.setAttribute('role','dialog'); panel.setAttribute('aria-modal','true');
+      opener.setAttribute('aria-expanded','true');
+    };
+    const restoreStaticAria=(panel)=>{          // back to markup defaults (hidden anyway)
+      panel.removeAttribute('aria-hidden');
+      panel.setAttribute('role','dialog'); panel.setAttribute('aria-modal','true');
+    };
+
+    const close=(returnFocus)=>{
+      if(cur.mode==='idle') return;
+      const {panel,frame,opener,mode}=cur;
+      clearTimeout(cur.closeTimer); clearTimeout(openTimer); openTimer=null;
+      cur={frame:null,panel:null,opener:null,mode:'idle',closeTimer:null};
+      panel.classList.remove('is-open','is-pinned');
+      frame.classList.remove('is-bp-dim','is-bp-pinned');
+      opener.setAttribute('aria-expanded','false');
+      restoreStaticAria(panel);
       const hide=()=>{ if(!panel.classList.contains('is-open')) panel.setAttribute('hidden',''); panel.removeEventListener('transitionend',hide); };
       panel.addEventListener('transitionend',hide);
-      setTimeout(hide, 400);
-      if(returnFocus) opener.focus();
-    };
-    const open=(opener)=>{
-      const panel=document.getElementById(opener.getAttribute('aria-controls'));
-      if(!panel) return;
-      if(current) close(false);
-      panel.removeAttribute('hidden');
-      void panel.offsetWidth;               // reflow so the transition runs
-      panel.classList.add('is-open');
-      opener.setAttribute('aria-expanded','true');
-      current={panel,opener};
-      (panel.querySelector('.blueprint__close') || panel).focus();
+      setTimeout(hide,420);                      // fallback if transitionend never fires
+      if(returnFocus && mode==='pinned') opener.focus();
     };
 
-    openers.forEach(op => op.addEventListener('click', ()=>{
-      const panel=document.getElementById(op.getAttribute('aria-controls'));
-      (current && current.panel===panel) ? close() : open(op);
-    }));
-    document.querySelectorAll('.blueprint__close').forEach(btn => btn.addEventListener('click', ()=> close()));
-    document.addEventListener('keydown', e=>{
-      if(!current) return;
-      if(e.key==='Escape'){ close(); return; }
-      if(e.key==='Tab'){ e.preventDefault(); (current.panel.querySelector('.blueprint__close')||current.panel).focus(); } // simple trap
+    const show=(frame,mode)=>{
+      const panel=frame.querySelector('.blueprint');
+      const opener=frame.querySelector('.blueprint-open');
+      if(!panel||!opener) return;
+      if(cur.frame && cur.frame!==frame) close(false);          // only one at a time
+      clearTimeout(cur.closeTimer);
+      const wasVisible = cur.frame===frame && cur.mode!=='idle';
+      cur={frame,panel,opener,mode,closeTimer:null};
+      if(!wasVisible){                                          // no re-animation on preview→pinned
+        panel.removeAttribute('hidden');
+        void panel.offsetWidth;                                 // reflow so the transition runs
+        panel.classList.add('is-open');
+        frame.classList.add('is-bp-dim');
+      }
+      if(mode==='pinned'){
+        panel.classList.add('is-pinned');
+        frame.classList.add('is-bp-pinned');
+        setPinnedAria(panel,opener);
+        (panel.querySelector('.blueprint__close')||panel).focus();
+      }else{
+        setPreviewAria(panel,opener);
+      }
+    };
+
+    frames.forEach(frame=>{
+      const opener=frame.querySelector('.blueprint-open');
+
+      // desktop hover preview (fine pointers only, never on touch)
+      frame.addEventListener('pointerenter',e=>{
+        if(!fineMQ.matches||e.pointerType==='touch') return;
+        if(cur.mode==='pinned') return;                         // a pinned panel wins
+        clearTimeout(cur.closeTimer); cur.closeTimer=null;      // re-entry cancels pending close
+        if(cur.frame===frame && cur.mode==='preview') return;
+        clearTimeout(openTimer);
+        openTimer=setTimeout(()=>show(frame,'preview'),80);
+      });
+      frame.addEventListener('pointerleave',e=>{
+        if(!fineMQ.matches||e.pointerType==='touch') return;
+        clearTimeout(openTimer); openTimer=null;
+        if(cur.frame===frame && cur.mode==='preview'){
+          cur.closeTimer=setTimeout(()=>close(false),170);
+        }
+      });
+
+      // click / tap / Enter / Space → pin (or toggle-close when already pinned)
+      opener.addEventListener('click',()=>{
+        if(cur.frame===frame && cur.mode==='pinned'){ close(true); return; }
+        show(frame,'pinned');
+      });
     });
-    document.addEventListener('click', e=>{
-      if(!current) return;
-      if(current.panel.contains(e.target) || current.opener.contains(e.target)) return;
-      close();
+
+    document.querySelectorAll('.blueprint__close').forEach(btn=>btn.addEventListener('click',()=>close(true)));
+
+    document.addEventListener('keydown',e=>{
+      if(cur.mode!=='pinned') return;
+      if(e.key==='Escape'){ close(true); return; }
+      if(e.key==='Tab'){
+        const f=[...cur.panel.querySelectorAll('button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')]
+          .filter(el=>!el.disabled && el.offsetParent!==null);
+        if(!f.length) return;
+        const first=f[0], last=f[f.length-1];
+        if(!cur.panel.contains(document.activeElement)){ e.preventDefault(); first.focus(); }
+        else if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+        else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+      }
+    });
+
+    // outside click closes only a pinned panel (the opening tap is guarded)
+    document.addEventListener('click',e=>{
+      if(cur.mode!=='pinned') return;
+      if(cur.panel.contains(e.target)||cur.opener.contains(e.target)) return;
+      close(false);
     });
   })();
 

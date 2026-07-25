@@ -161,7 +161,7 @@ img{display:block;max-width:100%}
 .poster-frame:hover{transform:scale(1.01)}
 .poster-frame::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:var(--brass);opacity:0;transition:opacity .4s var(--ease);z-index:4;pointer-events:none}
 .poster-frame:hover::before,.poster-frame:focus-within::before{opacity:.5}
-.poster-frame img{height:min(80svh,900px);width:auto;object-fit:contain;display:block}
+.poster-frame img{height:min(80svh,900px);width:auto;object-fit:contain;display:block;transition:filter .35s var(--ease)}
 .poster-shutter{position:absolute;inset:0;z-index:2;background:#05070e;transform:translateY(0);transition:transform .72s cubic-bezier(.77,0,.18,1);pointer-events:none}
 .project.is-visible .poster-shutter{transform:translateY(-100%)}
 
@@ -178,9 +178,17 @@ img{display:block;max-width:100%}
 .blueprint-open:focus-visible{outline:2px solid #cdd6ea;outline-offset:2px}
 .blueprint{
   position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;
-  padding:22px;background:rgba(6,11,24,.9);opacity:0;transition:opacity .32s var(--ease);
+  padding:22px;background:rgba(5,10,22,.82);opacity:0;transition:opacity .32s var(--ease);
+  pointer-events:none;
 }
 .blueprint.is-open{opacity:1}
+.blueprint.is-pinned{pointer-events:auto}
+/* dimmed poster behind an open blueprint */
+.poster-frame.is-bp-dim img{filter:brightness(.44) saturate(.78)}
+/* during hover preview the opener stays visible and clickable above the panel */
+.poster-frame.is-bp-dim:not(.is-bp-pinned) .blueprint-open{
+  z-index:7;color:var(--silver);border-color:rgba(226,232,246,.5);background:rgba(6,10,20,.85);
+}
 .blueprint__inner{position:relative;width:100%;max-width:440px;max-height:100%;overflow:auto;
   border:1px solid rgba(219,224,235,.16);border-radius:12px;padding:26px 24px;background:rgba(8,16,34,.6)}
 .blueprint__inner:before{content:"";position:absolute;left:24px;right:24px;top:18px;height:1px;transform:scaleX(0);transform-origin:left;background:linear-gradient(90deg,var(--silver-muted),transparent);transition:transform .5s .05s var(--ease)}
