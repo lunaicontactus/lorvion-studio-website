@@ -39,8 +39,8 @@ bash publish-to-github.sh
 ## 최종 URL 형식
 GitHub 사용자명이 `example`이라면:
 
-- 사이트: `https://example.github.io/lorvion-studio-website/`
-- LUNAI 개인정보처리방침: `https://example.github.io/lorvion-studio-website/privacy.html`
+- 사이트: `https://example.github.io/eungarage-website/`
+- LUNAI 개인정보처리방침: `https://example.github.io/eungarage-website/privacy.html`
 
 나중에 `eungarage.com`을 연결하면 개인정보처리방침 주소는:
 

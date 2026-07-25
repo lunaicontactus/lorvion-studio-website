@@ -3,7 +3,7 @@ set -e
 
 cd "$(dirname "$0")"
 
-REPO_NAME="lorvion-studio-website"
+REPO_NAME="eungarage-website"
 
 echo ""
 echo "EUNGARAGE GitHub 배포를 시작합니다."

@@ -2,12 +2,12 @@
 
 EUNGARAGE — 감정과 이야기를 중심으로 게임과 디지털 경험을 만드는 게임·앱 스튜디오의 공식 웹사이트입니다.
 
-공식 주소: **https://eungarage.com/** (기술적 이전 주소: lunaicontactus.github.io/lorvion-studio-website)
+공식 주소: **https://eungarage.com/** (기술적 이전 주소: eungarage.com/eungarage-website)
 운영 주체(게임·앱·법률 문서 주체)는 EUNGARAGE입니다.
 
-> 참고: 이 저장소 이름과 GitHub Pages 경로는 여전히 `lorvion-studio-website`(구 브랜드 시절 생성)입니다.
+> 참고: 이 저장소 이름과 GitHub Pages 경로는 여전히 `eungarage-website`(구 브랜드 시절 생성)입니다.
 > 저장소 이름 변경 계획/권한이 확정되지 않아 아직 변경하지 않았습니다. 공식 문의 이메일도 기존
-> `lorvionstudio@gmail.com`을 그대로 사용합니다(신규 EUNGARAGE 이메일은 아직 준비되지 않음).
+> `eungarage@gmail.com`을 그대로 사용합니다(신규 EUNGARAGE 이메일은 아직 준비되지 않음).
 
 LUNAI, LIMINAL, WORM UP! 대표 이미지와 EUNGARAGE 로고를 사용해 제작한 반응형 시네마틱 정적 웹사이트입니다.
 
@@ -54,7 +54,7 @@ python3 -m http.server 8080
 5. 공식 이메일을 도메인 이메일로 바꿀 경우 전체 링크 교체
 6. `sitemap.xml`의 도메인이 실제 구매 도메인과 일치하는지 확인
 
-현재 공식 문의 이메일은 `lorvionstudio@gmail.com`으로 연결되어 있습니다.
+현재 공식 문의 이메일은 `eungarage@gmail.com`으로 연결되어 있습니다.
 법률 문서는 디자인·구조 및 운영 초안이며 전문 법률 검토를 대신하지 않습니다.
 
 
@@ -85,7 +85,7 @@ python3 -m http.server 8080
 
 
 ## v9 이메일 변경
-- 공식 문의 이메일을 `lorvionstudio@gmail.com`으로 교체했습니다.
+- 공식 문의 이메일을 `eungarage@gmail.com`으로 교체했습니다.
 
 
 ## v10 GitHub Ready
@@ -93,4 +93,4 @@ python3 -m http.server 8080
 - GitHub 프로젝트 경로에서도 작동하도록 링크를 상대경로로 변경
 - LUNAI 프로젝트 영역에 개인정보처리방침 링크 추가
 - 개인정보처리방침 공개 주소: `privacy.html`
-- 공식 이메일: `lorvionstudio@gmail.com`
+- 공식 이메일: `eungarage@gmail.com`
