@@ -77,10 +77,17 @@ img{display:block;max-width:100%}
 }
 .hero-content{position:relative;z-index:7;text-align:center;padding-top:20px}
 .hero-logo-stage{display:grid;justify-items:center}
+.hero-brand__descriptor{
+  margin:0 0 clamp(10px,1.3vw,18px);
+  color:rgba(224,229,237,.64);
+  font-size:clamp(.58rem,.7vw,.72rem);font-weight:500;line-height:1;
+  letter-spacing:.22em;text-align:center;white-space:nowrap;
+  opacity:0;animation:heroLogoIn .7s .12s var(--ease) forwards;
+}
 .hero-lockup{
   display:block;margin:0 auto;pointer-events:none;
   width:clamp(420px,48vw,680px);max-width:92vw;max-height:68vh;
-  height:auto;aspect-ratio:1312 / 947;object-fit:contain;
+  height:auto;aspect-ratio:1312 / 850;object-fit:contain;
   opacity:0;transform:translateY(6px);animation:heroLogoIn .7s .12s var(--ease) forwards;
 }
 @keyframes heroLogoIn{to{opacity:1;transform:none}}
@@ -299,6 +306,7 @@ body.garage-lock{overflow:hidden!important}
 }
 @media(max-width:560px){
   .hero-lockup{width:min(86vw,390px)}
+  .hero-brand__descriptor{letter-spacing:.14em;font-size:.56rem}
   .hero-headline{font-size:1.7rem}
   .manifesto-copy{font-size:14vw}
   .poster-frame{max-width:94vw}
@@ -312,7 +320,7 @@ body.garage-lock{overflow:hidden!important}
 @media(prefers-reduced-motion:reduce){
   *{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   .garage-intro{display:none}
-  .hero-lockup,.hero-headline,.hero-copy{opacity:1;transform:none;animation:none}
+  .hero-lockup,.hero-brand__descriptor,.hero-headline,.hero-copy{opacity:1;transform:none;animation:none}
   .poster-shutter{transform:translateY(-100%)}
   .blueprint-open{opacity:1}
   .marquee-track{animation:none}
