@@ -1,6 +1,8 @@
 # EUNGARAGE
 
 EUNGARAGE — 감정과 이야기를 중심으로 게임과 디지털 경험을 만드는 게임·앱 스튜디오의 공식 웹사이트입니다.
+
+공식 주소: **https://eungarage.com/** (기술적 이전 주소: lunaicontactus.github.io/lorvion-studio-website)
 운영 주체(게임·앱·법률 문서 주체)는 EUNGARAGE입니다.
 
 > 참고: 이 저장소 이름과 GitHub Pages 경로는 여전히 `lorvion-studio-website`(구 브랜드 시절 생성)입니다.

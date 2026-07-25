@@ -1,7 +1,8 @@
 {
   "name": "EUNGARAGE",
   "short_name": "EUNGARAGE",
-  "start_url": "./",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#04050a",
   "theme_color": "#04050a",
