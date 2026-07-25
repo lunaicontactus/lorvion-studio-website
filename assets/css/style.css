@@ -42,12 +42,9 @@ img{display:block;max-width:100%}
   background:linear-gradient(180deg,#ffffff 0%,#d3dae7 58%,#aab2c4 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
 }
-.brand-wordmark__eun{font-weight:680}
-.brand-wordmark__garage{font-weight:380}
-/* header nav wordmark: calmer weights + wider tracking */
+/* single-word wordmark: plain text, one weight */
+.brand-wordmark{font-weight:600}
 .brand-word{font-size:1.02rem;letter-spacing:.12em}
-.brand-word .brand-wordmark__eun{font-weight:640}
-.brand-word .brand-wordmark__garage{font-weight:500}
 .footer-word{font-size:1.2rem}
 .contact-wordmark{font-size:inherit;letter-spacing:-.04em}
 
@@ -264,7 +261,7 @@ body.garage-lock{overflow:hidden!important}
 }
 .garage-intro--open .garage-door{transform:translateY(-105%)}
 .garage-door__branding{position:absolute;inset:0;display:grid;place-items:center;padding:24px}
-.garage-door__logo{width:clamp(200px,40vw,360px);height:auto;aspect-ratio:720 / 347;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,.5))}
+.garage-door__logo{width:clamp(180px,32vw,300px);height:auto;aspect-ratio:467 / 344;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,.5))}
 .garage-door__light{position:absolute;left:-5%;right:-5%;bottom:0;height:14px;background:linear-gradient(to top,rgba(226,238,255,.9),rgba(196,222,255,.28) 42%,transparent);filter:blur(6px);opacity:0;transition:opacity .35s ease .05s}
 .garage-intro--open .garage-door__light{opacity:1}
 .garage-intro__skip{
