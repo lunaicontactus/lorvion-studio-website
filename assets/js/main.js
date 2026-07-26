@@ -98,6 +98,9 @@
     const REST=-Math.PI/2;                       // resting position: top of ring
     let earthAngle=REST, earthTarget=REST, earthOpacity=0, orbitR=0;
     let moonPhase=Math.random()*6.28, moonR=14;  // moon's own slow turn around the earth
+    // SHOOTING STAR — one at a time, rare, desktop only
+    const allowShooting = !reduce && matchMedia('(hover:hover) and (pointer:fine)').matches;
+    let shoot=null, nextShoot=0;
     const shortest=(a)=>Math.atan2(Math.sin(a),Math.cos(a));
 
     // star palette: silver-white, a little pale blue, a rare warm white
@@ -108,6 +111,29 @@
     // the logo + headline sit here; keep constellation lines out so text stays readable
     const safeZone = ()=>({x:w*0.25, y:h*0.15, w:w*0.5, h:h*0.7});
     const inSafeZone=(x,y)=>{ const s=safeZone(); return x>s.x && x<s.x+s.w && y>s.y && y<s.y+s.h; };
+
+    // start in the upper band, travel diagonally, never cross the logo/headline
+    const spawnShoot=(t)=>{
+      const s=safeZone();
+      const clear=(x,y)=> !(x>s.x-20 && x<s.x+s.w+20 && y>s.y-20 && y<s.y+s.h+20) && y<h*0.66;
+      for(let a=0;a<14;a++){
+        const x0=Math.random()*w, y0=Math.random()*h*0.4;
+        const theta=(18+Math.random()*24)*Math.PI/180;      // 18-42 degrees below horizontal
+        const dirX=Math.random()<0.5?-1:1;
+        const dist=180+Math.random()*160;
+        const dx=dirX*Math.cos(theta)*dist, dy=Math.sin(theta)*dist;
+        let ok=true;
+        for(let k=0;k<=5;k++){
+          const px=x0+dx*(k/5), py=y0+dy*(k/5);
+          if(px<-40||px>w+40||py<-40||!clear(px,py)){ ok=false; break; }
+        }
+        if(!ok) continue;
+        shoot={t0:t, dur:600+Math.random()*500, x0, y0, dx, dy,
+               ux:dx/dist, uy:dy/dist, tail:80+Math.random()*100};
+        return;
+      }
+      nextShoot=t+2000;                                     // no clean path right now, retry soon
+    };
 
     const makeStars=()=>{
       const count=Math.max(80, Math.min(210, Math.round(w*h/6800)));
@@ -327,6 +353,29 @@
         if(since>=300 && since<1150){
           const n=stars[sel[0]], g=Math.min(1,(since-300)/220)*Math.max(0,1-(since-750)/400);
           if(g>0.01) glint(n.x,n.y,5+n.radius*1.6,0.42*g);
+        }
+      }
+
+      // ── shooting star: at most one, quiet, well under the logo in weight ──
+      if(allowShooting){
+        if(!nextShoot) nextShoot=t+3000+Math.random()*5000;
+        if(!shoot && t>=nextShoot) spawnShoot(t);
+        if(shoot){
+          const p=(t-shoot.t0)/shoot.dur;
+          if(p>=1){ shoot=null; nextShoot=t+5000+Math.random()*7000; }
+          else{
+            const x=shoot.x0+shoot.dx*p, y=shoot.y0+shoot.dy*p;
+            const env=Math.sin(Math.PI*p);                  // in, peak, out
+            const a=0.5*env, len=shoot.tail*env;
+            const g=ctx.createLinearGradient(x,y,x-shoot.ux*len,y-shoot.uy*len);
+            g.addColorStop(0,`rgba(228,236,250,${a.toFixed(3)})`);
+            g.addColorStop(1,'rgba(228,236,250,0)');
+            ctx.lineCap='round'; ctx.lineWidth=1.1; ctx.strokeStyle=g;
+            ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-shoot.ux*len,y-shoot.uy*len); ctx.stroke();
+            ctx.lineCap='butt';
+            ctx.beginPath(); ctx.fillStyle=`rgba(240,246,255,${(a*0.85).toFixed(3)})`;
+            ctx.arc(x,y,1.1,0,6.283); ctx.fill();
+          }
         }
       }
 
