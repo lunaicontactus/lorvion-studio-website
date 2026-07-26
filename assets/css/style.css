@@ -70,7 +70,7 @@ img{display:block;max-width:100%}
     radial-gradient(circle at 50% 44%,rgba(120,132,160,.08),transparent 34%),
     linear-gradient(180deg,#030409,#050711 72%,#04050a);
 }
-#starfield{position:absolute;inset:0;width:100%;height:100%;opacity:.8}
+#starfield{position:absolute;inset:0;width:100%;height:100%}
 .hero-orbit{
   /* z-index 8 keeps the earth above .hero-content (7) and below the nav (100).
      The ring has to be readable as a path — .05 white was invisible. */

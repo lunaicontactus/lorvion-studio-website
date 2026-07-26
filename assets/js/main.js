@@ -80,7 +80,7 @@
   }, {threshold:.18});
   document.querySelectorAll('.reveal,.project,.manifesto-copy span').forEach(el => observer.observe(el));
 
-  // ── Starfield + CONSTELLATION MAGNET (one canvas, one rAF, one pointermove) ──
+  // ── Night sky: stars, constellations, earth + moon (one canvas, one rAF, one pointermove) ──
   (function starfield(){
     const canvas = document.getElementById('starfield');
     const hero = document.querySelector('.hero');
@@ -100,80 +100,167 @@
     let moonPhase=Math.random()*6.28, moonR=14;  // moon's own slow turn around the earth
     const shortest=(a)=>Math.atan2(Math.sin(a),Math.cos(a));
 
+    // star palette: silver-white, a little pale blue, a rare warm white
+    const TINTS=[[214,220,236],[214,220,236],[205,216,240],[238,233,222]];
+
     const measureRect = ()=>{ heroRect = hero.getBoundingClientRect(); };
+
+    // the logo + headline sit here; keep constellation lines out so text stays readable
+    const safeZone = ()=>({x:w*0.25, y:h*0.15, w:w*0.5, h:h*0.7});
+    const inSafeZone=(x,y)=>{ const s=safeZone(); return x>s.x && x<s.x+s.w && y>s.y && y<s.y+s.h; };
+
+    const makeStars=()=>{
+      const count=Math.max(80, Math.min(210, Math.round(w*h/6800)));
+      stars=Array.from({length:count},()=>{
+        const r=Math.random();
+        const tier = r<0.06 ? 2 : (r<0.28 ? 1 : 0);          // 6% anchor, 22% mid, rest small
+        const radius = tier===2 ? 1.8+Math.random()*0.6
+                     : tier===1 ? 1.2+Math.random()*0.5
+                                : 0.55+Math.random()*0.6;
+        const alpha  = tier===2 ? 0.62+Math.random()*0.28
+                     : tier===1 ? 0.46+Math.random()*0.26
+                                : 0.30+Math.random()*0.28;
+        const tw     = tier===2 ? 0.18+Math.random()*0.10
+                     : tier===1 ? 0.14+Math.random()*0.08
+                                : 0.10+Math.random()*0.08;
+        return {
+          baseX:Math.random()*w, baseY:Math.random()*h, x:0, y:0, tier, inCon:false, anchor:false,
+          radius, alpha, tw,
+          sh: 0.03+Math.random()*0.04,                        // faint fast shimmer on top of the slow wave
+          s: 0.00055+Math.random()*0.0011, phase:Math.random()*6.28,
+          s2:0.0022+Math.random()*0.0026, phase2:Math.random()*6.28,
+          tint:TINTS[(Math.random()*TINTS.length)|0]
+        };
+      });
+      stars.forEach(st=>{ st.x=st.baseX; st.y=st.baseY; });
+    };
+
+    // Build constellations as explicit node + edge sets, spread across six sectors,
+    // each with its own shape (branching chain / open V / open polygon).
+    const buildConstellations = ()=>{
+      constellations=[];
+      stars.forEach(st=>{ st.inCon=false; st.anchor=false; });
+      if(stars.length<12) return;
+      const target=Math.max(3, Math.min(14, Math.round(w/150)));
+      const sectors=[];
+      for(let cx=0;cx<2;cx++) for(let cy=0;cy<3;cy++)
+        sectors.push({x:cx*w/2, y:cy*h/3, w:w/2, h:h/3});
+      const used=new Set();
+      const reach=Math.min(w,h)*0.22;
+
+      for(let n=0;n<target;n++){
+        const sec=sectors[n%sectors.length];
+        // seed: a free star inside this sector and outside the logo safe zone
+        let seed=-1;
+        for(let t=0;t<60;t++){
+          const i=(Math.random()*stars.length)|0;
+          if(used.has(i)) continue;
+          const st=stars[i];
+          if(st.baseX<sec.x||st.baseX>sec.x+sec.w||st.baseY<sec.y||st.baseY>sec.y+sec.h) continue;
+          if(inSafeZone(st.baseX,st.baseY)) continue;
+          seed=i; break;
+        }
+        if(seed<0) continue;
+
+        // gather 4-7 nearby free stars, none of them inside the safe zone
+        const size=4+((Math.random()*4)|0);
+        const nodes=[seed]; used.add(seed);
+        while(nodes.length<size){
+          let best=-1,bd=Infinity;
+          for(let i=0;i<stars.length;i++){
+            if(used.has(i)) continue;
+            const st=stars[i];
+            if(inSafeZone(st.baseX,st.baseY)) continue;
+            let d=Infinity;
+            for(const j of nodes) d=Math.min(d, Math.hypot(st.baseX-stars[j].baseX, st.baseY-stars[j].baseY));
+            if(d<bd && d<reach){ bd=d; best=i; }
+          }
+          if(best<0) break;
+          nodes.push(best); used.add(best);
+        }
+        if(nodes.length<4) continue;
+
+        // order by angle around the centroid so the outline reads as a shape, not a zigzag
+        const cx=nodes.reduce((a,i)=>a+stars[i].baseX,0)/nodes.length;
+        const cy=nodes.reduce((a,i)=>a+stars[i].baseY,0)/nodes.length;
+        nodes.sort((a,b)=>Math.atan2(stars[a].baseY-cy,stars[a].baseX-cx)-Math.atan2(stars[b].baseY-cy,stars[b].baseX-cx));
+
+        const edges=[];
+        const shape=n%3;
+        if(shape===0){                                   // open path with one branch
+          for(let k=0;k<nodes.length-1;k++) edges.push([k,k+1]);
+          if(nodes.length>=5) edges.push([1, nodes.length-1]);
+        } else if(shape===1){                            // gentle V / open chain
+          for(let k=0;k<nodes.length-1;k++) edges.push([k,k+1]);
+        } else {                                         // open polygon — deliberately not closed
+          for(let k=0;k<nodes.length-1;k++) edges.push([k,k+1]);
+          if(nodes.length>=6) edges.push([0,2]);
+        }
+
+        nodes.forEach(i=>{ stars[i].inCon=true; });
+        // one clear anchor star per constellation
+        let anchor=nodes[0];
+        for(const i of nodes) if(stars[i].radius>stars[anchor].radius) anchor=i;
+        stars[anchor].anchor=true;
+        constellations.push({nodes, edges, phase:Math.random()*6.28});
+      }
+    };
+
     const resize=()=>{
       w=canvas.clientWidth; h=canvas.clientHeight;
       canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
-      const count=Math.min(120, Math.max(70, Math.floor(w*h/13000)));   // ~90-120 desktop
-      stars=Array.from({length:count},()=>{
-        const bx=Math.random()*w, by=Math.random()*h, big=Math.random()<0.09;
-        return {baseX:bx,baseY:by,x:bx,y:by,big,inCon:false,
-          radius: big ? 1.05+Math.random()*0.45 : 0.35+Math.random()*0.6,
-          alpha: big ? 0.4+Math.random()*0.26 : 0.2+Math.random()*0.3,
-          // twinkle you can actually see, still different per star
-          tw: big ? 0.22+Math.random()*0.1 : 0.12+Math.random()*0.09,
-          s:0.0006+Math.random()*0.0011, phase:Math.random()*6.28};
-      });
+      makeStars();
       buildConstellations();
       measureRect();
       if(orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2;     // ride exactly on the drawn ring
       if(earth){ const ew=earth.getBoundingClientRect().width||18; moonR=ew*0.72+5; }
-      return w>0 && h>0;                       // false when the layout isn't ready yet
-    };
-
-    // a handful of quiet constellations across the whole sky, rebuilt on resize
-    const buildConstellations = ()=>{
-      constellations=[];
-      stars.forEach(st=>st.inCon=false);
-      if(stars.length<10) return;
-      const groups=Math.max(3, Math.min(6, Math.round(w*h/380000)));
-      const maxLink=Math.min(w,h)*0.17;
-      const used=new Set();
-      for(let g=0; g<groups; g++){
-        let seed=-1;
-        for(let t=0;t<40;t++){ const i=(Math.random()*stars.length)|0; if(!used.has(i)){ seed=i; break; } }
-        if(seed<0) break;
-        const chain=[seed]; used.add(seed);
-        for(let k=0;k<3;k++){
-          const last=stars[chain[chain.length-1]];
-          let best=-1, bd=Infinity;
-          for(let i=0;i<stars.length;i++){
-            if(used.has(i)) continue;
-            const d=Math.hypot(stars[i].baseX-last.baseX, stars[i].baseY-last.baseY);
-            if(d<bd && d<maxLink){ bd=d; best=i; }
-          }
-          if(best<0) break;
-          chain.push(best); used.add(best);
-        }
-        if(chain.length>=3){ chain.forEach(i=>stars[i].inCon=true); constellations.push(chain); }
-      }
+      return w>0 && h>0;
     };
 
     const radiusFor = ()=> Math.max(130, Math.min(170, w*0.12));
+    const starAlpha = (st,t)=> st.alpha + st.tw*Math.sin(t*st.s+st.phase) + st.sh*Math.sin(t*st.s2+st.phase2);
+
     const drawStatic = ()=>{
       ctx.clearRect(0,0,w,h);
-      ctx.lineWidth=0.6; ctx.strokeStyle='rgba(196,208,232,.1)';
+      ctx.lineWidth=0.9; ctx.strokeStyle='rgba(198,211,235,.2)';
       for(const c of constellations){
-        ctx.beginPath(); ctx.moveTo(stars[c[0]].baseX,stars[c[0]].baseY);
-        for(let k=1;k<c.length;k++) ctx.lineTo(stars[c[k]].baseX,stars[c[k]].baseY);
-        ctx.stroke();
-      }
-      for(const st of stars){ ctx.beginPath(); ctx.fillStyle=`rgba(210,216,232,${st.alpha})`; ctx.arc(st.baseX,st.baseY,st.radius,0,6.283); ctx.fill(); }
-    };
-    const draw = (t)=>{
-      ctx.clearRect(0,0,w,h);
-      // background constellations — quiet, but readable
-      if(constellations.length){
-        ctx.lineWidth=0.6;
-        for(const c of constellations){
-          const brk=0.085+0.03*Math.sin(t*0.0004+c[0]);   // very slow breath
-          ctx.strokeStyle=`rgba(196,208,232,${brk.toFixed(3)})`;
-          ctx.beginPath(); ctx.moveTo(stars[c[0]].x,stars[c[0]].y);
-          for(let k=1;k<c.length;k++) ctx.lineTo(stars[c[k]].x,stars[c[k]].y);
-          ctx.stroke();
+        for(const [a,b] of c.edges){
+          const p=stars[c.nodes[a]], q=stars[c.nodes[b]];
+          ctx.beginPath(); ctx.moveTo(p.baseX,p.baseY); ctx.lineTo(q.baseX,q.baseY); ctx.stroke();
         }
       }
-      // nearest-4 stars to pointer (single pass, no full sort)
+      for(const st of stars){
+        const [r,g,b]=st.tint;
+        const a=st.alpha+(st.inCon?0.15:0);
+        ctx.beginPath(); ctx.fillStyle=`rgba(${r},${g},${b},${a})`;
+        ctx.arc(st.baseX,st.baseY,st.radius+(st.inCon?0.25:0),0,6.283); ctx.fill();
+      }
+    };
+
+    const glint=(x,y,len,a)=>{
+      ctx.lineWidth=0.7; ctx.strokeStyle=`rgba(233,238,248,${a.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.moveTo(x-len,y); ctx.lineTo(x+len,y);
+      ctx.moveTo(x,y-len); ctx.lineTo(x,y+len);
+      ctx.stroke();
+    };
+
+    const render = (t)=>{
+      ctx.clearRect(0,0,w,h);
+
+      // ── background constellations: readable, each breathing on its own phase ──
+      for(const c of constellations){
+        const a=0.20+0.06*Math.sin(t*0.00035+c.phase);      // ~0.14 – 0.26
+        ctx.lineWidth=0.9; ctx.strokeStyle=`rgba(198,211,235,${a.toFixed(3)})`;
+        ctx.beginPath();
+        for(const [i,j] of c.edges){
+          const p=stars[c.nodes[i]], q=stars[c.nodes[j]];
+          ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y);
+        }
+        ctx.stroke();
+      }
+
+      // ── nearest-4 stars to the pointer (single pass, no full sort) ──
       let sel=[];
       if(finePointerActive && pointer.inside){
         const R2=radiusFor()**2; const best=[];
@@ -186,6 +273,8 @@
         sel=best.map(b=>b.i);
       }
       const selSet = sel.length ? new Set(sel) : null;
+
+      // ── stars ──
       for(let i=0;i<stars.length;i++){
         const st=stars[i];
         let tx=st.baseX, ty=st.baseY;
@@ -194,40 +283,56 @@
           tx=st.baseX+(dx/d)*4; ty=st.baseY+(dy/d)*4;   // max 4px toward pointer
         }
         st.x+=(tx-st.x)*0.12; st.y+=(ty-st.y)*0.12;
-        // whole sky breathes: small absolute alpha shift, own phase, slow
-        let a=st.alpha+st.tw*Math.sin(t*st.s+st.phase);
-        if(st.inCon) a+=0.06;                     // constellation members read a touch stronger
-        if(selSet && selSet.has(i)) a+=0.2;       // picked stars clearly lift
-        a=Math.max(0,Math.min(0.95,a));
-        ctx.beginPath(); ctx.fillStyle=`rgba(210,216,232,${a})`; ctx.arc(st.x,st.y,st.radius,0,6.283); ctx.fill();
+
+        let a=starAlpha(st,t);
+        let rad=st.radius;
+        if(st.inCon){ a+=0.15; rad+=0.25; }
+        if(st.anchor) rad=Math.max(rad,1.9);
+        if(selSet && selSet.has(i)){ a+=0.26; rad+=0.4; }
+        a=Math.max(0,Math.min(0.96,a));
+        const [r,g,b]=st.tint;
+        ctx.beginPath(); ctx.fillStyle=`rgba(${r},${g},${b},${a})`;
+        ctx.arc(st.x,st.y,rad,0,6.283); ctx.fill();
+
+        // anchor stars flash a very short cross at the top of their own wave
+        if(st.tier===2){
+          const peak=Math.sin(t*st.s+st.phase);
+          if(peak>0.93) glint(st.x, st.y, 4+st.radius*1.6, 0.25*(peak-0.93)/0.07);
+        }
       }
+
+      // ── pointer constellation: 3 shortest edges over the 4 picks (never a closed box) ──
       if(sel.length>=3){
         const since = performance.now()-pointer.lastMove;
         let lineA;
-        if(since<280) lineA=0.2;                                 // moving: present but quiet
-        else if(since<700) lineA=0.2+(since-280)/420*0.2;        // dwell → a clear little constellation (~0.4)
-        else lineA=Math.max(0.18, 0.4-(since-700)/600*0.22);    // then settles back
-        ctx.lineWidth=0.85; ctx.strokeStyle=`rgba(219,227,243,${lineA})`;
+        if(since<300) lineA=0.34;
+        else if(since<650) lineA=0.34+(since-300)/350*0.2;    // dwell → clearly readable (~0.54)
+        else lineA=Math.max(0.3, 0.54-(since-650)/600*0.24);
+        ctx.lineWidth=1.05; ctx.strokeStyle=`rgba(221,229,245,${lineA.toFixed(3)})`;
+        // minimum spanning tree over the picks
+        const inTree=[sel[0]], rest=sel.slice(1);
         ctx.beginPath();
-        ctx.moveTo(stars[sel[0]].x,stars[sel[0]].y);
-        for(let k=1;k<sel.length;k++) ctx.lineTo(stars[sel[k]].x,stars[sel[k]].y);
-        ctx.stroke();
-        // nearest star gets a short glint while the pointer rests
-        if(since>=280 && since<1100){
-          const n=stars[sel[0]], g=Math.min(1,(since-280)/220)*Math.max(0,1-(since-700)/400);
-          if(g>0.01){
-            const len=3.5+n.radius*2.2;
-            ctx.lineWidth=0.7; ctx.strokeStyle=`rgba(230,236,247,${(0.4*g).toFixed(3)})`;
-            ctx.beginPath();
-            ctx.moveTo(n.x-len,n.y); ctx.lineTo(n.x+len,n.y);
-            ctx.moveTo(n.x,n.y-len); ctx.lineTo(n.x,n.y+len);
-            ctx.stroke();
+        while(rest.length){
+          let bi=0,bj=0,bd=Infinity;
+          for(let a=0;a<inTree.length;a++) for(let b=0;b<rest.length;b++){
+            const p=stars[inTree[a]], q=stars[rest[b]];
+            const d=Math.hypot(p.x-q.x,p.y-q.y);
+            if(d<bd){ bd=d; bi=a; bj=b; }
           }
+          const p=stars[inTree[bi]], q=stars[rest[bj]];
+          ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y);
+          inTree.push(rest[bj]); rest.splice(bj,1);
+        }
+        ctx.stroke();
+        if(since>=300 && since<1150){
+          const n=stars[sel[0]], g=Math.min(1,(since-300)/220)*Math.max(0,1-(since-750)/400);
+          if(g>0.01) glint(n.x,n.y,5+n.radius*1.6,0.42*g);
         }
       }
-      // ORBIT EARTH: rides the ring by pointer angle; the moon travels with it
+
+      // ── ORBIT EARTH: rides the ring by pointer angle; the moon travels with it ──
       if(earth && finePointerActive){
-        if(!orbitR && orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2;     // recover a bad first measure
+        if(!orbitR && orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2;
         const idle = performance.now()-pointer.lastMove > 850;
         const wantOpacity = pointer.inside ? (idle ? 0.68 : 0.96) : 0;
         earthTarget = pointer.inside ? earthTarget : REST;
@@ -242,15 +347,17 @@
             `translate(-50%,-50%) translate(${(Math.cos(moonPhase)*moonR).toFixed(2)}px, ${(Math.sin(moonPhase)*moonR*0.62).toFixed(2)}px)`;
         }
       }
-      rafId=requestAnimationFrame(draw);
     };
+
+    const draw = (t)=>{ render(t); rafId=requestAnimationFrame(draw); };
 
     const running=()=> heroVisible && !document.hidden;
     const stop=()=>{ if(rafId!=null){ cancelAnimationFrame(rafId); rafId=null; } };
     const startLoop=()=>{ if(rafId==null && running()) rafId=requestAnimationFrame(draw); };
 
     resize();
-    if(reduce){ drawStatic(); return; }      // static stars, no motion, no magnet
+    if(reduce){ drawStatic(); return; }      // static sky, no motion, no magnet
+    render(performance.now());               // paint the sky immediately, don't wait for the first frame
 
     hero.addEventListener('pointerleave', ()=>{ pointer.inside=false; });
     hero.addEventListener('pointermove', e=>{
@@ -263,11 +370,11 @@
       pointer.inside=true; pointer.lastMove=performance.now();
       if(earth) earthTarget=Math.atan2(e.clientY-(heroRect.top+heroRect.height/2), e.clientX-(heroRect.left+heroRect.width/2));
     }, {passive:true});
-    addEventListener('resize', resize, {passive:true});
-    addEventListener('orientationchange', resize, {passive:true});
-    addEventListener('load', resize);                            // layout is only reliable after load
-    if(!w || !h) requestAnimationFrame(resize);                  // and retry immediately if it was zero
-    if(typeof ResizeObserver!=='undefined') new ResizeObserver(()=>resize()).observe(hero);
+    addEventListener('resize', ()=>{ resize(); render(performance.now()); }, {passive:true});
+    addEventListener('orientationchange', ()=>{ resize(); render(performance.now()); }, {passive:true});
+    addEventListener('load', ()=>{ resize(); render(performance.now()); });
+    if(!w || !h) requestAnimationFrame(()=>{ resize(); render(performance.now()); });
+    if(typeof ResizeObserver!=='undefined') new ResizeObserver(()=>{ resize(); render(performance.now()); }).observe(hero);
     addEventListener('scroll', measureRect, {passive:true});
     document.addEventListener('visibilitychange', ()=> document.hidden ? stop() : startLoop());
     const io = new IntersectionObserver(([e])=>{ heroVisible=e.isIntersecting; heroVisible ? startLoop() : stop(); }, {threshold:0});
