@@ -100,7 +100,7 @@
     let moonPhase=Math.random()*6.28, moonR=14;  // moon's own slow turn around the earth
     // SHOOTING STAR — one at a time, rare, desktop only
     const allowShooting = !reduce && matchMedia('(hover:hover) and (pointer:fine)').matches;
-    let shoot=null, nextShoot=0;
+    let shoot=null, nextShoot=0, logoBox=null, textSafe=null;
     const shortest=(a)=>Math.atan2(Math.sin(a),Math.cos(a));
 
     // star palette: silver-white, a little pale blue, a rare warm white
@@ -112,27 +112,53 @@
     const safeZone = ()=>({x:w*0.25, y:h*0.15, w:w*0.5, h:h*0.7});
     const inSafeZone=(x,y)=>{ const s=safeZone(); return x>s.x && x<s.x+s.w && y>s.y && y<s.y+s.h; };
 
-    // start in the upper band, travel diagonally, never cross the logo/headline
+    // measure the logo and the text block in canvas-local coordinates
+    const measureHeroBoxes=()=>{
+      const hr=hero.getBoundingClientRect();
+      const lk=document.querySelector('.hero-lockup');
+      if(lk){
+        const r=lk.getBoundingClientRect();
+        logoBox={cx:r.left-hr.left+r.width/2, cy:r.top-hr.top+r.height/2,
+                 core:Math.min(r.width,r.height)*0.42};
+      }
+      const els=[document.querySelector('.hero-headline'), document.querySelector('.hero-copy')].filter(Boolean);
+      if(els.length){
+        let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+        for(const el of els){
+          const r=el.getBoundingClientRect();
+          x0=Math.min(x0,r.left-hr.left); y0=Math.min(y0,r.top-hr.top);
+          x1=Math.max(x1,r.right-hr.left); y1=Math.max(y1,r.bottom-hr.top);
+        }
+        textSafe={x:x0-14,y:y0-14,w:(x1-x0)+28,h:(y1-y0)+28};
+      }
+    };
+
+    // a diagonal that grazes past the logo — offset to the side so it never bisects it
     const spawnShoot=(t)=>{
-      const s=safeZone();
-      const clear=(x,y)=> !(x>s.x-20 && x<s.x+s.w+20 && y>s.y-20 && y<s.y+s.h+20) && y<h*0.66;
-      for(let a=0;a<14;a++){
-        const x0=Math.random()*w, y0=Math.random()*h*0.4;
-        const theta=(18+Math.random()*24)*Math.PI/180;      // 18-42 degrees below horizontal
-        const dirX=Math.random()<0.5?-1:1;
-        const dist=180+Math.random()*160;
-        const dx=dirX*Math.cos(theta)*dist, dy=Math.sin(theta)*dist;
+      if(!logoBox) measureHeroBoxes();
+      const cx=logoBox?logoBox.cx:w/2, cy=logoBox?logoBox.cy:h/2;
+      const R=orbitR||Math.min(w,h)*0.38;
+      for(let a=0;a<16;a++){
+        const dirX=Math.random()<0.5?1:-1;                   // top-left→bottom-right or the mirror
+        const theta=(28+Math.random()*22)*Math.PI/180;       // 28-50 degrees below horizontal
+        const ux=dirX*Math.cos(theta), uy=Math.sin(theta);
+        const px=-uy, py=ux;                                 // perpendicular
+        const off=(Math.random()<0.5?-1:1)*(R*0.34+Math.random()*R*0.42);   // graze, don't bisect
+        const mx=cx+px*off, my=cy+py*off;
+        const len=R*1.2+Math.random()*R*0.5;
+        const x0=mx-ux*len/2, y0=my-uy*len/2;
+        const dx=ux*len, dy=uy*len;
         let ok=true;
-        for(let k=0;k<=5;k++){
-          const px=x0+dx*(k/5), py=y0+dy*(k/5);
-          if(px<-40||px>w+40||py<-40||!clear(px,py)){ ok=false; break; }
+        for(let k=0;k<=8;k++){
+          const sx=x0+dx*(k/8), sy=y0+dy*(k/8);
+          if(textSafe && sx>textSafe.x && sx<textSafe.x+textSafe.w && sy>textSafe.y && sy<textSafe.y+textSafe.h){ ok=false; break; }
         }
         if(!ok) continue;
-        shoot={t0:t, dur:600+Math.random()*500, x0, y0, dx, dy,
-               ux:dx/dist, uy:dy/dist, tail:80+Math.random()*100};
+        shoot={t0:t, dur:700+Math.random()*500, x0, y0, dx, dy,
+               ux:dx/len, uy:dy/len, tail:100+Math.random()*80};
         return;
       }
-      nextShoot=t+2000;                                     // no clean path right now, retry soon
+      nextShoot=t+2500;                                      // no clean path right now, retry soon
     };
 
     const makeStars=()=>{
@@ -240,6 +266,7 @@
       measureRect();
       if(orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2;     // ride exactly on the drawn ring
       if(earth){ const ew=earth.getBoundingClientRect().width||18; moonR=ew*0.72+5; }
+      measureHeroBoxes();
       return w>0 && h>0;
     };
 
@@ -358,15 +385,21 @@
 
       // ── shooting star: at most one, quiet, well under the logo in weight ──
       if(allowShooting){
-        if(!nextShoot) nextShoot=t+3000+Math.random()*5000;
+        if(!nextShoot) nextShoot=t+4000+Math.random()*5000;
         if(!shoot && t>=nextShoot) spawnShoot(t);
         if(shoot){
           const p=(t-shoot.t0)/shoot.dur;
-          if(p>=1){ shoot=null; nextShoot=t+5000+Math.random()*7000; }
+          if(p>=1){ shoot=null; nextShoot=t+7000+Math.random()*7000; }
           else{
             const x=shoot.x0+shoot.dx*p, y=shoot.y0+shoot.dy*p;
             const env=Math.sin(Math.PI*p);                  // in, peak, out
-            const a=0.5*env, len=shoot.tail*env;
+            // fade down while passing the logo core so the wordmark stays readable
+            let dim=1;
+            if(logoBox){
+              const d=Math.hypot(x-logoBox.cx, y-logoBox.cy);
+              if(d<logoBox.core) dim=0.42+0.58*(d/logoBox.core);
+            }
+            const a=0.44*env*dim, len=shoot.tail*env;
             const g=ctx.createLinearGradient(x,y,x-shoot.ux*len,y-shoot.uy*len);
             g.addColorStop(0,`rgba(228,236,250,${a.toFixed(3)})`);
             g.addColorStop(1,'rgba(228,236,250,0)');
