@@ -87,7 +87,9 @@
     if(!canvas || !hero) return;
     const ctx = canvas.getContext('2d');
     let finePointerActive = false;        // set by a real mouse/pen pointermove, not a one-shot media query
-    let stars=[], constellations=[], w=0, h=0, dpr=Math.min(devicePixelRatio||1,2);
+    let stars=[], w=0, h=0, dpr=Math.min(devicePixelRatio||1,2);
+    // constellations only exist while the cursor is near stars
+    let con=null, fading=null, lastPick={x:-9999,y:-9999};
     let rafId=null, heroVisible=true;
     let pointer={x:-9999,y:-9999,inside:false,lastMove:0};
     let heroRect=null;
@@ -154,8 +156,17 @@
     };
 
     const makeStars=()=>{
-      const count=Math.max(80, Math.min(210, Math.round(w*h/6800)));
+      const count=Math.max(80, Math.min(230, Math.round(w*h/6200)));
+      const lb=logoBox;
       stars=Array.from({length:count},()=>{
+        // thin the field a little right behind the logo so the wordmark stays clean
+        let bx=Math.random()*w, by=Math.random()*h;
+        if(lb){
+          for(let k=0;k<2;k++){
+            if(Math.hypot(bx-lb.cx,by-lb.cy)>lb.core*1.15 || Math.random()>0.55) break;
+            bx=Math.random()*w; by=Math.random()*h;
+          }
+        }
         const r=Math.random();
         const tier = r<0.06 ? 2 : (r<0.28 ? 1 : 0);          // 6% anchor, 22% mid, rest small
         const radius = tier===2 ? 1.8+Math.random()*0.6
@@ -168,7 +179,7 @@
                      : tier===1 ? 0.14+Math.random()*0.08
                                 : 0.10+Math.random()*0.08;
         return {
-          baseX:Math.random()*w, baseY:Math.random()*h, x:0, y:0, tier, inCon:false, anchor:false,
+          baseX:bx, baseY:by, x:0, y:0, tier,
           radius, alpha, tw,
           sh: 0.03+Math.random()*0.04,                        // faint fast shimmer on top of the slow wave
           s: 0.00055+Math.random()*0.0011, phase:Math.random()*6.28,
@@ -179,82 +190,11 @@
       stars.forEach(st=>{ st.x=st.baseX; st.y=st.baseY; });
     };
 
-    // Build constellations as explicit node + edge sets, spread across six sectors,
-    // each with its own shape (branching chain / open V / open polygon).
-    const buildConstellations = ()=>{
-      constellations=[];
-      stars.forEach(st=>{ st.inCon=false; st.anchor=false; });
-      if(stars.length<12) return;
-      const target=Math.max(3, Math.min(14, Math.round(w/150)));
-      const sectors=[];
-      for(let cx=0;cx<2;cx++) for(let cy=0;cy<3;cy++)
-        sectors.push({x:cx*w/2, y:cy*h/3, w:w/2, h:h/3});
-      const used=new Set();
-      const reach=Math.min(w,h)*0.22;
-
-      for(let n=0;n<target;n++){
-        const sec=sectors[n%sectors.length];
-        // seed: a free star inside this sector and outside the logo safe zone
-        let seed=-1;
-        for(let t=0;t<60;t++){
-          const i=(Math.random()*stars.length)|0;
-          if(used.has(i)) continue;
-          const st=stars[i];
-          if(st.baseX<sec.x||st.baseX>sec.x+sec.w||st.baseY<sec.y||st.baseY>sec.y+sec.h) continue;
-          if(inSafeZone(st.baseX,st.baseY)) continue;
-          seed=i; break;
-        }
-        if(seed<0) continue;
-
-        // gather 4-7 nearby free stars, none of them inside the safe zone
-        const size=4+((Math.random()*4)|0);
-        const nodes=[seed]; used.add(seed);
-        while(nodes.length<size){
-          let best=-1,bd=Infinity;
-          for(let i=0;i<stars.length;i++){
-            if(used.has(i)) continue;
-            const st=stars[i];
-            if(inSafeZone(st.baseX,st.baseY)) continue;
-            let d=Infinity;
-            for(const j of nodes) d=Math.min(d, Math.hypot(st.baseX-stars[j].baseX, st.baseY-stars[j].baseY));
-            if(d<bd && d<reach){ bd=d; best=i; }
-          }
-          if(best<0) break;
-          nodes.push(best); used.add(best);
-        }
-        if(nodes.length<4) continue;
-
-        // order by angle around the centroid so the outline reads as a shape, not a zigzag
-        const cx=nodes.reduce((a,i)=>a+stars[i].baseX,0)/nodes.length;
-        const cy=nodes.reduce((a,i)=>a+stars[i].baseY,0)/nodes.length;
-        nodes.sort((a,b)=>Math.atan2(stars[a].baseY-cy,stars[a].baseX-cx)-Math.atan2(stars[b].baseY-cy,stars[b].baseX-cx));
-
-        const edges=[];
-        const shape=n%3;
-        if(shape===0){                                   // open path with one branch
-          for(let k=0;k<nodes.length-1;k++) edges.push([k,k+1]);
-          if(nodes.length>=5) edges.push([1, nodes.length-1]);
-        } else if(shape===1){                            // gentle V / open chain
-          for(let k=0;k<nodes.length-1;k++) edges.push([k,k+1]);
-        } else {                                         // open polygon — deliberately not closed
-          for(let k=0;k<nodes.length-1;k++) edges.push([k,k+1]);
-          if(nodes.length>=6) edges.push([0,2]);
-        }
-
-        nodes.forEach(i=>{ stars[i].inCon=true; });
-        // one clear anchor star per constellation
-        let anchor=nodes[0];
-        for(const i of nodes) if(stars[i].radius>stars[anchor].radius) anchor=i;
-        stars[anchor].anchor=true;
-        constellations.push({nodes, edges, phase:Math.random()*6.28});
-      }
-    };
-
     const resize=()=>{
       w=canvas.clientWidth; h=canvas.clientHeight;
       canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
+      measureHeroBoxes();      // logoBox first: star density uses it
       makeStars();
-      buildConstellations();
       measureRect();
       if(orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2;     // ride exactly on the drawn ring
       if(earth){ const ew=earth.getBoundingClientRect().width||18; moonR=ew*0.72+5; }
@@ -262,23 +202,63 @@
       return w>0 && h>0;
     };
 
-    const radiusFor = ()=> Math.max(130, Math.min(170, w*0.12));
-    const starAlpha = (st,t)=> st.alpha + st.tw*Math.sin(t*st.s+st.phase) + st.sh*Math.sin(t*st.s2+st.phase2);
+    const radiusFor = ()=> Math.max(140, Math.min(220, w*0.145));
 
-    const drawStatic = ()=>{
-      ctx.clearRect(0,0,w,h);
-      ctx.lineWidth=0.9; ctx.strokeStyle='rgba(198,211,235,.2)';
-      for(const c of constellations){
-        for(const [a,b] of c.edges){
-          const p=stars[c.nodes[a]], q=stars[c.nodes[b]];
-          ctx.beginPath(); ctx.moveTo(p.baseX,p.baseY); ctx.lineTo(q.baseX,q.baseY); ctx.stroke();
+    // Pick the stars around the cursor and wire them with a minimum spanning tree,
+    // then order the edges outward from the anchor so the shape draws itself.
+    const buildCursorConstellation=(px,py)=>{
+      const R=radiusFor(), R2=R*R;
+      const near=[];
+      for(let i=0;i<stars.length;i++){
+        const dx=stars[i].baseX-px, dy=stars[i].baseY-py, d2=dx*dx+dy*dy;
+        if(d2>R2) continue;
+        // closer and brighter stars win, but keep it cheap: no full sort of the field
+        near.push({i, score:Math.sqrt(d2)-stars[i].alpha*46-stars[i].radius*14, d2});
+      }
+      if(near.length<3) return null;                      // nothing worth joining here
+      near.sort((a,b)=>a.score-b.score);
+      const take=Math.min(7, Math.max(3, near.length>=5?5+((Math.random()*3)|0):near.length));
+      const idx=near.slice(0,take).map(n=>n.i);
+      // anchor: the star closest to the cursor
+      let anchor=idx[0], ad=Infinity;
+      for(const i of idx){
+        const d=Math.hypot(stars[i].baseX-px, stars[i].baseY-py);
+        if(d<ad){ ad=d; anchor=i; }
+      }
+      // Prim's MST — n-1 edges, never a closed loop
+      const inTree=[anchor], rest=idx.filter(i=>i!==anchor), tree=[];
+      while(rest.length){
+        let bi=0,bj=0,bd=Infinity;
+        for(let a=0;a<inTree.length;a++) for(let b=0;b<rest.length;b++){
+          const p1=stars[inTree[a]], q=stars[rest[b]];
+          const d=Math.hypot(p1.baseX-q.baseX, p1.baseY-q.baseY);
+          if(d<bd){ bd=d; bi=a; bj=b; }
+        }
+        tree.push([inTree[bi], rest[bj]]);
+        inTree.push(rest[bj]); rest.splice(bj,1);
+      }
+      // order edges by depth from the anchor so lines run outward
+      const adj=new Map(); idx.forEach(i=>adj.set(i,[]));
+      tree.forEach(([a,b])=>{ adj.get(a).push([a,b]); adj.get(b).push([b,a]); });
+      const seen=new Set([anchor]), queue=[anchor], edges=[];
+      while(queue.length){
+        const cur=queue.shift();
+        for(const [from,to] of adj.get(cur)){
+          if(seen.has(to)) continue;
+          seen.add(to); edges.push([from,to]); queue.push(to);
         }
       }
+      return {stars:idx, set:new Set(idx), edges, anchor, t0:performance.now()};
+    };
+    const starAlpha = (st,t)=> st.alpha + st.tw*Math.sin(t*st.s+st.phase) + st.sh*Math.sin(t*st.s2+st.phase2);
+
+    // reduced motion: a still sky, no lines at all
+    const drawStatic = ()=>{
+      ctx.clearRect(0,0,w,h);
       for(const st of stars){
         const [r,g,b]=st.tint;
-        const a=st.alpha+(st.inCon?0.15:0);
-        ctx.beginPath(); ctx.fillStyle=`rgba(${r},${g},${b},${a})`;
-        ctx.arc(st.baseX,st.baseY,st.radius+(st.inCon?0.25:0),0,6.283); ctx.fill();
+        ctx.beginPath(); ctx.fillStyle=`rgba(${r},${g},${b},${st.alpha})`;
+        ctx.arc(st.baseX,st.baseY,st.radius,0,6.283); ctx.fill();
       }
     };
 
@@ -293,31 +273,10 @@
     const render = (t)=>{
       ctx.clearRect(0,0,w,h);
 
-      // ── background constellations: readable, each breathing on its own phase ──
-      for(const c of constellations){
-        const a=0.20+0.06*Math.sin(t*0.00035+c.phase);      // ~0.14 – 0.26
-        ctx.lineWidth=0.9; ctx.strokeStyle=`rgba(198,211,235,${a.toFixed(3)})`;
-        ctx.beginPath();
-        for(const [i,j] of c.edges){
-          const p=stars[c.nodes[i]], q=stars[c.nodes[j]];
-          ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y);
-        }
-        ctx.stroke();
-      }
-
-      // ── nearest-4 stars to the pointer (single pass, no full sort) ──
-      let sel=[];
-      if(finePointerActive && pointer.inside){
-        const R2=radiusFor()**2; const best=[];
-        for(let i=0;i<stars.length;i++){
-          const dx=stars[i].baseX-pointer.x, dy=stars[i].baseY-pointer.y, d2=dx*dx+dy*dy;
-          if(d2>R2) continue;
-          if(best.length<4){ best.push({i,d2}); best.sort((a,b)=>a.d2-b.d2); }
-          else if(d2<best[3].d2){ best[3]={i,d2}; best.sort((a,b)=>a.d2-b.d2); }
-        }
-        sel=best.map(b=>b.i);
-      }
-      const selSet = sel.length ? new Set(sel) : null;
+      // ── the only constellation is the one under the cursor ──
+      const now=performance.now();
+      if(fading && now-fading.fadeAt>240) fading=null;
+      const selSet = (con && finePointerActive && pointer.inside) ? con.set : null;
 
       // ── stars ──
       for(let i=0;i<stars.length;i++){
@@ -331,49 +290,47 @@
 
         let a=starAlpha(st,t);
         let rad=st.radius;
-        if(st.inCon){ a+=0.15; rad+=0.25; }
-        if(st.anchor) rad=Math.max(rad,1.9);
-        if(selSet && selSet.has(i)){ a+=0.26; rad+=0.4; }
+        if(selSet && selSet.has(i)){
+          a+=0.24; rad+=(i===con.anchor?0.5:0.3);      // picked stars read a touch clearer
+        }
         a=Math.max(0,Math.min(0.96,a));
         const [r,g,b]=st.tint;
         ctx.beginPath(); ctx.fillStyle=`rgba(${r},${g},${b},${a})`;
         ctx.arc(st.x,st.y,rad,0,6.283); ctx.fill();
-
-        // anchor stars flash a very short cross at the top of their own wave
-        if(st.tier===2){
-          const peak=Math.sin(t*st.s+st.phase);
-          if(peak>0.93) glint(st.x, st.y, 4+st.radius*1.6, 0.25*(peak-0.93)/0.07);
-        }
       }
 
-      // ── pointer constellation: 3 shortest edges over the 4 picks (never a closed box) ──
-      if(sel.length>=3){
-        const since = performance.now()-pointer.lastMove;
-        let lineA;
-        if(since<300) lineA=0.34;
-        else if(since<650) lineA=0.34+(since-300)/350*0.2;    // dwell → clearly readable (~0.54)
-        else lineA=Math.max(0.3, 0.54-(since-650)/600*0.24);
-        ctx.lineWidth=1.05; ctx.strokeStyle=`rgba(221,229,245,${lineA.toFixed(3)})`;
-        // minimum spanning tree over the picks
-        const inTree=[sel[0]], rest=sel.slice(1);
-        ctx.beginPath();
-        while(rest.length){
-          let bi=0,bj=0,bd=Infinity;
-          for(let a=0;a<inTree.length;a++) for(let b=0;b<rest.length;b++){
-            const p=stars[inTree[a]], q=stars[rest[b]];
-            const d=Math.hypot(p.x-q.x,p.y-q.y);
-            if(d<bd){ bd=d; bi=a; bj=b; }
-          }
-          const p=stars[inTree[bi]], q=stars[rest[bj]];
-          ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y);
-          inTree.push(rest[bj]); rest.splice(bj,1);
+      // ── draw the cursor constellation: edges appear outward from the anchor ──
+      const drawCon=(c, mul)=>{
+        if(!c || c.edges.length<2) return;
+        const age=now-c.t0;
+        const since=now-pointer.lastMove;
+        // dwell makes the shape a little clearer, then it settles back
+        let base=0.32;
+        if(since>300) base=Math.min(0.5, 0.32+(since-300)/350*0.18);
+        if(since>1100) base=Math.max(0.3, 0.5-(since-1100)/700*0.2);
+        ctx.lineWidth=0.95; ctx.lineCap='round';
+        for(let k=0;k<c.edges.length;k++){
+          const e=c.edges[k];
+          const p=(age-k*60)/200;                       // 60ms apart, 200ms each
+          if(p<=0) continue;
+          const grow=Math.min(1,p);
+          const A=base*mul*Math.min(1,p*1.4);
+          const s0=stars[e[0]], s1=stars[e[1]];
+          ctx.strokeStyle=`rgba(223,231,247,${A.toFixed(3)})`;
+          ctx.beginPath(); ctx.moveTo(s0.x,s0.y);
+          ctx.lineTo(s0.x+(s1.x-s0.x)*grow, s0.y+(s1.y-s0.y)*grow);
+          ctx.stroke();
         }
-        ctx.stroke();
-        if(since>=300 && since<1150){
-          const n=stars[sel[0]], g=Math.min(1,(since-300)/220)*Math.max(0,1-(since-750)/400);
-          if(g>0.01) glint(n.x,n.y,5+n.radius*1.6,0.42*g);
+        ctx.lineCap='butt';
+        // the star nearest the cursor gets one short glint once the pointer settles
+        if(mul>0.9 && since>=300 && since<1100){
+          const n=stars[c.anchor];
+          const g=Math.min(1,(since-300)/200)*Math.max(0,1-(since-800)/300);
+          if(g>0.01) glint(n.x,n.y,6+n.radius*1.2,0.4*g);
         }
-      }
+      };
+      if(fading) drawCon(fading, Math.max(0,1-(now-fading.fadeAt)/240));
+      if(selSet) drawCon(con,1);
 
       // ── shooting star: at most one, quiet, well under the logo in weight ──
       if(allowShooting){
@@ -438,7 +395,11 @@
     if(reduce){ drawStatic(); return; }      // static sky, no motion, no magnet
     render(performance.now());               // paint the sky immediately, don't wait for the first frame
 
-    hero.addEventListener('pointerleave', ()=>{ pointer.inside=false; });
+    hero.addEventListener('pointerleave', ()=>{
+      pointer.inside=false;
+      if(con){ fading={...con, fadeAt:performance.now()}; con=null; }
+      lastPick={x:-9999,y:-9999};
+    });
     hero.addEventListener('pointermove', e=>{
       if(e.pointerType==='touch') return;                       // touch never drives these effects
       if(e.pointerType==='mouse' || e.pointerType==='pen' || !e.pointerType) finePointerActive=true;
@@ -447,6 +408,17 @@
       if(!heroRect) return;
       pointer.x=e.clientX-heroRect.left; pointer.y=e.clientY-heroRect.top;
       pointer.inside=true; pointer.lastMove=performance.now();
+      // only rebuild after a real move, so small jitter doesn't reshuffle the shape
+      if(Math.hypot(pointer.x-lastPick.x, pointer.y-lastPick.y) > 26){
+        lastPick={x:pointer.x, y:pointer.y};
+        const next=buildCursorConstellation(pointer.x, pointer.y);
+        if(next){
+          if(con) fading={...con, fadeAt:performance.now()};
+          con=next;
+        } else if(con){
+          fading={...con, fadeAt:performance.now()}; con=null;
+        }
+      }
       if(earth) earthTarget=Math.atan2(e.clientY-(heroRect.top+heroRect.height/2), e.clientX-(heroRect.left+heroRect.width/2));
     }, {passive:true});
     addEventListener('resize', ()=>{ resize(); render(performance.now()); }, {passive:true});
