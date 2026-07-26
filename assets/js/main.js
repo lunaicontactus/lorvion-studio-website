@@ -198,6 +198,9 @@
       // makeStars() invalidates every index, so any live shape has to go with it
       con=null; fading=null; lastPick={x:-9999,y:-9999};
       measureRect();
+      // the ring belongs to the logo, not to the hero box: sit its centre on the
+      // lockup's centre so it reads as one concentric system
+      if(orbitEl && logoBox){ orbitEl.style.left=logoBox.cx+'px'; orbitEl.style.top=logoBox.cy+'px'; }
       if(orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2;     // ride exactly on the drawn ring
       if(earth){ const ew=earth.getBoundingClientRect().width||18; moonR=ew*0.72+5; }
       measureHeroBoxes();

@@ -73,8 +73,15 @@ img{display:block;max-width:100%}
 #starfield{position:absolute;inset:0;width:100%;height:100%}
 .hero-orbit{
   /* z-index 8 keeps the earth above .hero-content (7) and below the nav (100).
-     The ring has to be readable as a path — .05 white was invisible. */
-  position:absolute;width:min(66vw,760px);aspect-ratio:1;pointer-events:none;z-index:8;
+     The ring has to be readable as a path — .05 white was invisible.
+     JS re-centres this on the logo lockup; 50%/50% is the fallback if it never runs. */
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  /* One length feeds both axes through aspect-ratio, so the box can only ever be
+     square. The svh term caps the diameter to the hero's own height — without it a
+     short window clipped the top and bottom flat and the ring read as an ellipse. */
+  width:min(66vw,760px);
+  width:min(66vw,84svh,760px);
+  height:auto;aspect-ratio:1;pointer-events:none;z-index:8;
   border:1px solid rgba(198,214,238,.16);border-radius:50%;
 }
 /* ORBIT EARTH + MOON — the logo is the sun; a small earth rides the ring and
