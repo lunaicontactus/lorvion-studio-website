@@ -195,6 +195,8 @@
       canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
       measureHeroBoxes();      // logoBox first: star density uses it
       makeStars();
+      // makeStars() invalidates every index, so any live shape has to go with it
+      con=null; fading=null; lastPick={x:-9999,y:-9999};
       measureRect();
       if(orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2;     // ride exactly on the drawn ring
       if(earth){ const ew=earth.getBoundingClientRect().width||18; moonR=ew*0.72+5; }
@@ -316,6 +318,7 @@
           const grow=Math.min(1,p);
           const A=base*mul*Math.min(1,p*1.4);
           const s0=stars[e[0]], s1=stars[e[1]];
+          if(!s0||!s1) continue;                        // never let a stale index stop the whole loop
           ctx.strokeStyle=`rgba(223,231,247,${A.toFixed(3)})`;
           ctx.beginPath(); ctx.moveTo(s0.x,s0.y);
           ctx.lineTo(s0.x+(s1.x-s0.x)*grow, s0.y+(s1.y-s0.y)*grow);
@@ -326,7 +329,7 @@
         if(mul>0.9 && since>=300 && since<1100){
           const n=stars[c.anchor];
           const g=Math.min(1,(since-300)/200)*Math.max(0,1-(since-800)/300);
-          if(g>0.01) glint(n.x,n.y,6+n.radius*1.2,0.4*g);
+          if(n && g>0.01) glint(n.x,n.y,6+n.radius*1.2,0.4*g);
         }
       };
       if(fading) drawCon(fading, Math.max(0,1-(now-fading.fadeAt)/240));
