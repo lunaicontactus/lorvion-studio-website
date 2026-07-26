@@ -133,32 +133,24 @@
       }
     };
 
-    // a diagonal that grazes past the logo — offset to the side so it never bisects it
+    // a long straight diagonal: enters near a top corner, crosses the sky, leaves the far side
     const spawnShoot=(t)=>{
       if(!logoBox) measureHeroBoxes();
-      const cx=logoBox?logoBox.cx:w/2, cy=logoBox?logoBox.cy:h/2;
-      const R=orbitR||Math.min(w,h)*0.38;
-      for(let a=0;a<16;a++){
-        const dirX=Math.random()<0.5?1:-1;                   // top-left→bottom-right or the mirror
-        const theta=(28+Math.random()*22)*Math.PI/180;       // 28-50 degrees below horizontal
+      const ceiling = textSafe ? textSafe.y-24 : h*0.68;     // stay above the headline/copy band
+      for(let a=0;a<20;a++){
+        const dirX=Math.random()<0.5?1:-1;                   // top-left→bottom-right or top-right→bottom-left
+        const theta=(16+Math.random()*14)*Math.PI/180;       // 16-30 degrees: shallow, so it can cross
         const ux=dirX*Math.cos(theta), uy=Math.sin(theta);
-        const px=-uy, py=ux;                                 // perpendicular
-        const off=(Math.random()<0.5?-1:1)*(R*0.34+Math.random()*R*0.42);   // graze, don't bisect
-        const mx=cx+px*off, my=cy+py*off;
-        const len=R*1.2+Math.random()*R*0.5;
-        const x0=mx-ux*len/2, y0=my-uy*len/2;
+        const x0=dirX>0 ? -90 : w+90;                        // start just off the entering corner
+        const y0=-40+Math.random()*(h*0.24);
+        const len=(w+180)/Math.cos(theta);                   // always traverses the full width
         const dx=ux*len, dy=uy*len;
-        let ok=true;
-        for(let k=0;k<=8;k++){
-          const sx=x0+dx*(k/8), sy=y0+dy*(k/8);
-          if(textSafe && sx>textSafe.x && sx<textSafe.x+textSafe.w && sy>textSafe.y && sy<textSafe.y+textSafe.h){ ok=false; break; }
-        }
-        if(!ok) continue;
-        shoot={t0:t, dur:700+Math.random()*500, x0, y0, dx, dy,
-               ux:dx/len, uy:dy/len, tail:100+Math.random()*80};
+        if(y0+dy > ceiling) continue;                        // would run into the text block
+        shoot={t0:t, dur:800+Math.random()*600, x0, y0, dx, dy, ux, uy,
+               tail:Math.max(220, Math.min(420, Math.min(w,h)*0.34)) + Math.random()*60};
         return;
       }
-      nextShoot=t+2500;                                      // no clean path right now, retry soon
+      nextShoot=t+2500;                                      // no clean line right now, retry soon
     };
 
     const makeStars=()=>{
@@ -385,29 +377,34 @@
 
       // ── shooting star: at most one, quiet, well under the logo in weight ──
       if(allowShooting){
-        if(!nextShoot) nextShoot=t+4000+Math.random()*5000;
+        if(!nextShoot) nextShoot=t+5000+Math.random()*5000;
         if(!shoot && t>=nextShoot) spawnShoot(t);
         if(shoot){
           const p=(t-shoot.t0)/shoot.dur;
-          if(p>=1){ shoot=null; nextShoot=t+7000+Math.random()*7000; }
+          if(p>=1){ shoot=null; nextShoot=t+8000+Math.random()*8000; }
           else{
             const x=shoot.x0+shoot.dx*p, y=shoot.y0+shoot.dy*p;
             const env=Math.sin(Math.PI*p);                  // in, peak, out
-            // fade down while passing the logo core so the wordmark stays readable
+            // fade down over the logo core (and over the text, if a line ever clips it)
             let dim=1;
             if(logoBox){
               const d=Math.hypot(x-logoBox.cx, y-logoBox.cy);
-              if(d<logoBox.core) dim=0.42+0.58*(d/logoBox.core);
+              if(d<logoBox.core) dim=Math.min(dim, 0.42+0.58*(d/logoBox.core));
             }
-            const a=0.44*env*dim, len=shoot.tail*env;
-            const g=ctx.createLinearGradient(x,y,x-shoot.ux*len,y-shoot.uy*len);
-            g.addColorStop(0,`rgba(228,236,250,${a.toFixed(3)})`);
-            g.addColorStop(1,'rgba(228,236,250,0)');
-            ctx.lineCap='round'; ctx.lineWidth=1.1; ctx.strokeStyle=g;
-            ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-shoot.ux*len,y-shoot.uy*len); ctx.stroke();
+            if(textSafe && x>textSafe.x && x<textSafe.x+textSafe.w && y>textSafe.y && y<textSafe.y+textSafe.h) dim=Math.min(dim,0.35);
+            const a=0.58*env*dim;
+            const len=shoot.tail*(0.55+0.45*env);           // stays long; only eases at the ends
+            const tx=x-shoot.ux*len, ty=y-shoot.uy*len;
+            const g=ctx.createLinearGradient(x,y,tx,ty);
+            g.addColorStop(0,`rgba(232,239,252,${a.toFixed(3)})`);
+            g.addColorStop(0.3,`rgba(228,236,251,${(a*0.62).toFixed(3)})`);
+            g.addColorStop(0.7,`rgba(224,233,249,${(a*0.22).toFixed(3)})`);
+            g.addColorStop(1,'rgba(224,233,249,0)');
+            ctx.lineCap='round'; ctx.lineWidth=1.3; ctx.strokeStyle=g;
+            ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(tx,ty); ctx.stroke();
             ctx.lineCap='butt';
-            ctx.beginPath(); ctx.fillStyle=`rgba(240,246,255,${(a*0.85).toFixed(3)})`;
-            ctx.arc(x,y,1.1,0,6.283); ctx.fill();
+            ctx.beginPath(); ctx.fillStyle=`rgba(242,247,255,${(a*0.9).toFixed(3)})`;
+            ctx.arc(x,y,1.5,0,6.283); ctx.fill();
           }
         }
       }
