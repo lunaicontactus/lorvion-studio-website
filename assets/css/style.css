@@ -72,30 +72,45 @@ img{display:block;max-width:100%}
 }
 #starfield{position:absolute;inset:0;width:100%;height:100%;opacity:.8}
 .hero-orbit{
-  /* z-index 8 keeps the planet above .hero-content (7) and below the nav (100);
+  /* z-index 8 keeps the earth above .hero-content (7) and below the nav (100);
      the ring line itself is only 5% white so it never competes with the copy */
   position:absolute;width:min(66vw,760px);aspect-ratio:1;pointer-events:none;z-index:8;
   border:1px solid rgba(255,255,255,.05);border-radius:50%;
 }
-/* ORBIT MOON — a small quiet moon riding the ring.
-   Visibility is driven by a real mouse/pen pointermove in JS, never by viewport width. */
-.hero-orbit__moon{
+/* ORBIT EARTH + MOON — the logo is the sun; a small earth rides the ring and
+   the moon travels with it. Visibility comes from a real mouse/pen pointermove
+   in JS, never from viewport width. */
+.hero-orbit__earth{
   position:absolute;left:50%;top:50%;
-  width:clamp(14px,1.2vw,18px);height:clamp(14px,1.2vw,18px);
+  width:clamp(16px,1.35vw,22px);height:clamp(16px,1.35vw,22px);
   border-radius:50%;
   background:
-    radial-gradient(circle at 62% 66%,rgba(150,161,181,.28) 0 12%,transparent 13%),
-    radial-gradient(circle at 38% 58%,rgba(150,161,181,.22) 0 9%,transparent 10%),
-    radial-gradient(circle at 35% 30%,
-      rgba(245,247,252,.95) 0%,
-      rgba(226,231,240,.88) 42%,
-      rgba(171,181,198,.72) 72%,
-      rgba(113,123,142,.42) 100%);
-  border:1px solid rgba(235,239,247,.45);
+    /* muted land masses, barely readable */
+    radial-gradient(ellipse 42% 26% at 62% 40%,rgba(150,182,168,.34) 0 60%,transparent 61%),
+    radial-gradient(ellipse 30% 34% at 33% 64%,rgba(150,182,168,.26) 0 60%,transparent 61%),
+    /* ocean sphere with a soft terminator */
+    radial-gradient(circle at 34% 29%,
+      rgba(206,224,238,.92) 0%,
+      rgba(138,171,203,.86) 34%,
+      rgba(88,120,156,.74) 66%,
+      rgba(38,56,84,.5) 100%);
+  border:1px solid rgba(206,222,238,.4);
   pointer-events:none;opacity:0;will-change:transform,opacity;
   transform:translate(-50%,-50%);
 }
-@media(prefers-reduced-motion:reduce){ .hero-orbit__moon{display:none} }
+/* the moon is nested, so it inherits the earth's position and fade */
+.hero-orbit__moon{
+  position:absolute;left:50%;top:50%;
+  width:clamp(7px,.62vw,10px);height:clamp(7px,.62vw,10px);
+  border-radius:50%;
+  background:radial-gradient(circle at 36% 32%,
+    rgba(238,241,247,.92) 0%,
+    rgba(205,212,224,.8) 52%,
+    rgba(140,150,168,.56) 100%);
+  pointer-events:none;will-change:transform;
+  transform:translate(-50%,-50%);
+}
+@media(prefers-reduced-motion:reduce){ .hero-orbit__earth{display:none} }
 .hero-content{position:relative;z-index:7;text-align:center;padding-top:20px}
 .hero-logo-stage{display:grid;justify-items:center}
 .hero-brand__descriptor{

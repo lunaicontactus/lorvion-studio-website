@@ -91,11 +91,13 @@
     let rafId=null, heroVisible=true;
     let pointer={x:-9999,y:-9999,inside:false,lastMove:0};
     let heroRect=null;
-    // ORBIT MOON — a small moon riding .hero-orbit (shares this rAF + pointermove)
+    // ORBIT EARTH + MOON — the logo is the sun (shares this rAF + pointermove)
     const orbitEl=document.querySelector('.hero-orbit');
-    const moon=orbitEl && orbitEl.querySelector('.hero-orbit__moon');
+    const earth=orbitEl && orbitEl.querySelector('.hero-orbit__earth');
+    const moon=earth && earth.querySelector('.hero-orbit__moon');
     const REST=-Math.PI/2;                       // resting position: top of ring
-    let moonAngle=REST, moonTarget=REST, moonOpacity=0, orbitR=0;
+    let earthAngle=REST, earthTarget=REST, earthOpacity=0, orbitR=0;
+    let moonPhase=Math.random()*6.28, moonR=14;  // moon's own slow turn around the earth
     const shortest=(a)=>Math.atan2(Math.sin(a),Math.cos(a));
 
     const measureRect = ()=>{ heroRect = hero.getBoundingClientRect(); };
@@ -113,6 +115,7 @@
       });
       measureRect();
       if(orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2+8;   // just outside the ring line
+      if(earth){ const ew=earth.getBoundingClientRect().width||18; moonR=ew*0.72+5; }
       return w>0 && h>0;                       // false when the layout isn't ready yet
     };
 
@@ -174,17 +177,22 @@
           }
         }
       }
-      // ORBIT MOON: interpolate along the ring, no separate rAF
-      if(moon && finePointerActive){
+      // ORBIT EARTH: rides the ring by pointer angle; the moon travels with it
+      if(earth && finePointerActive){
         if(!orbitR && orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2+8;   // recover a bad first measure
         const idle = performance.now()-pointer.lastMove > 850;
-        const wantOpacity = pointer.inside ? (idle ? 0.66 : 0.96) : 0;
-        moonTarget = pointer.inside ? moonTarget : REST;
-        moonAngle += shortest(moonTarget-moonAngle)*0.1;
-        moonOpacity += (wantOpacity-moonOpacity)*0.14;
-        moon.style.opacity=moonOpacity.toFixed(3);
-        moon.style.transform=
-          `translate(-50%,-50%) translate(${(Math.cos(moonAngle)*orbitR).toFixed(2)}px, ${(Math.sin(moonAngle)*orbitR).toFixed(2)}px)`;
+        const wantOpacity = pointer.inside ? (idle ? 0.68 : 0.96) : 0;
+        earthTarget = pointer.inside ? earthTarget : REST;
+        earthAngle += shortest(earthTarget-earthAngle)*0.1;
+        earthOpacity += (wantOpacity-earthOpacity)*0.14;
+        earth.style.opacity=earthOpacity.toFixed(3);
+        earth.style.transform=
+          `translate(-50%,-50%) translate(${(Math.cos(earthAngle)*orbitR).toFixed(2)}px, ${(Math.sin(earthAngle)*orbitR).toFixed(2)}px)`;
+        if(moon && earthOpacity>0.01){
+          moonPhase += 0.009;                    // one slow turn about every 12s
+          moon.style.transform=
+            `translate(-50%,-50%) translate(${(Math.cos(moonPhase)*moonR).toFixed(2)}px, ${(Math.sin(moonPhase)*moonR*0.62).toFixed(2)}px)`;
+        }
       }
       rafId=requestAnimationFrame(draw);
     };
@@ -205,7 +213,7 @@
       if(!heroRect) return;
       pointer.x=e.clientX-heroRect.left; pointer.y=e.clientY-heroRect.top;
       pointer.inside=true; pointer.lastMove=performance.now();
-      if(moon) moonTarget=Math.atan2(e.clientY-(heroRect.top+heroRect.height/2), e.clientX-(heroRect.left+heroRect.width/2));
+      if(earth) earthTarget=Math.atan2(e.clientY-(heroRect.top+heroRect.height/2), e.clientX-(heroRect.left+heroRect.width/2));
     }, {passive:true});
     addEventListener('resize', resize, {passive:true});
     addEventListener('orientationchange', resize, {passive:true});
