@@ -86,7 +86,7 @@
     const hero = document.querySelector('.hero');
     if(!canvas || !hero) return;
     const ctx = canvas.getContext('2d');
-    const fine = matchMedia('(hover:hover) and (pointer:fine)').matches;
+    let finePointerActive = false;        // set by a real mouse/pen pointermove, not a one-shot media query
     let stars=[], w=0, h=0, dpr=Math.min(devicePixelRatio||1,2);
     let rafId=null, heroVisible=true;
     let pointer={x:-9999,y:-9999,inside:false,lastMove:0};
@@ -110,7 +110,8 @@
           alpha: 0.1+Math.random()*0.48, s:0.0004+Math.random()*0.0008, phase:Math.random()*6.28};
       });
       measureRect();
-      if(orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2;
+      if(orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2+8;   // just outside the ring line
+      return w>0 && h>0;                       // false when the layout isn't ready yet
     };
 
     const radiusFor = ()=> Math.max(130, Math.min(170, w*0.12));
@@ -122,7 +123,7 @@
       ctx.clearRect(0,0,w,h);
       // nearest-3 stars to pointer (single pass, no full sort)
       let sel=[];
-      if(fine && pointer.inside){
+      if(finePointerActive && pointer.inside){
         const R2=radiusFor()**2; const best=[];
         for(let i=0;i<stars.length;i++){
           const dx=stars[i].baseX-pointer.x, dy=stars[i].baseY-pointer.y, d2=dx*dx+dy*dy;
@@ -158,12 +159,13 @@
         ctx.stroke();
       }
       // ORBIT PLANET: interpolate along the ring, no separate rAF
-      if(planet && fine){
+      if(planet && finePointerActive){
+        if(!orbitR && orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2+8;   // recover a bad first measure
         const idle = performance.now()-pointer.lastMove > 850;
-        const wantOpacity = pointer.inside ? (idle ? 0.5 : 0.92) : 0;
+        const wantOpacity = pointer.inside ? (idle ? 0.72 : 1) : 0;
         planetTarget = pointer.inside ? planetTarget : REST;
-        planetAngle += shortest(planetTarget-planetAngle)*0.08;
-        planetOpacity += (wantOpacity-planetOpacity)*0.07;
+        planetAngle += shortest(planetTarget-planetAngle)*0.1;
+        planetOpacity += (wantOpacity-planetOpacity)*0.16;
         planet.style.opacity=planetOpacity.toFixed(3);
         planet.style.transform=
           `translate(-50%,-50%) translate(${(Math.cos(planetAngle)*orbitR).toFixed(2)}px, ${(Math.sin(planetAngle)*orbitR).toFixed(2)}px)`;
@@ -178,17 +180,22 @@
     resize();
     if(reduce){ drawStatic(); return; }      // static stars, no motion, no magnet
 
-    if(fine){
-      hero.addEventListener('pointerleave', ()=>{ pointer.inside=false; });
-      hero.addEventListener('pointermove', e=>{
-        if(e.pointerType==='touch' || !heroRect) return;
-        pointer.x=e.clientX-heroRect.left; pointer.y=e.clientY-heroRect.top;
-        pointer.inside=true; pointer.lastMove=performance.now();
-        if(planet && orbitR) planetTarget=Math.atan2(e.clientY-(heroRect.top+heroRect.height/2), e.clientX-(heroRect.left+heroRect.width/2));
-      }, {passive:true});
-    }
+    hero.addEventListener('pointerleave', ()=>{ pointer.inside=false; });
+    hero.addEventListener('pointermove', e=>{
+      if(e.pointerType==='touch') return;                       // touch never drives these effects
+      if(e.pointerType==='mouse' || e.pointerType==='pen' || !e.pointerType) finePointerActive=true;
+      if(!finePointerActive) return;
+      if(!heroRect || !orbitR) resize();                        // first move recovers a stale measure
+      if(!heroRect) return;
+      pointer.x=e.clientX-heroRect.left; pointer.y=e.clientY-heroRect.top;
+      pointer.inside=true; pointer.lastMove=performance.now();
+      if(planet) planetTarget=Math.atan2(e.clientY-(heroRect.top+heroRect.height/2), e.clientX-(heroRect.left+heroRect.width/2));
+    }, {passive:true});
     addEventListener('resize', resize, {passive:true});
     addEventListener('orientationchange', resize, {passive:true});
+    addEventListener('load', resize);                            // layout is only reliable after load
+    if(!w || !h) requestAnimationFrame(resize);                  // and retry immediately if it was zero
+    if(typeof ResizeObserver!=='undefined') new ResizeObserver(()=>resize()).observe(hero);
     addEventListener('scroll', measureRect, {passive:true});
     document.addEventListener('visibilitychange', ()=> document.hidden ? stop() : startLoop());
     const io = new IntersectionObserver(([e])=>{ heroVisible=e.isIntersecting; heroVisible ? startLoop() : stop(); }, {threshold:0});
