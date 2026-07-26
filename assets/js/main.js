@@ -91,6 +91,12 @@
     let rafId=null, heroVisible=true;
     let pointer={x:-9999,y:-9999,inside:false,lastMove:0};
     let heroRect=null;
+    // ORBIT PLANET — decorative saturn riding .hero-orbit (shares this rAF + pointermove)
+    const orbitEl=document.querySelector('.hero-orbit');
+    const planet=orbitEl && orbitEl.querySelector('.hero-orbit__planet');
+    const REST=-Math.PI/2;                       // resting position: top of ring
+    let planetAngle=REST, planetTarget=REST, planetOpacity=0, orbitR=0;
+    const shortest=(a)=>Math.atan2(Math.sin(a),Math.cos(a));
 
     const measureRect = ()=>{ heroRect = hero.getBoundingClientRect(); };
     const resize=()=>{
@@ -104,6 +110,7 @@
           alpha: 0.1+Math.random()*0.48, s:0.0004+Math.random()*0.0008, phase:Math.random()*6.28};
       });
       measureRect();
+      if(orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2;
     };
 
     const radiusFor = ()=> Math.max(130, Math.min(170, w*0.12));
@@ -150,6 +157,17 @@
         ctx.lineTo(stars[sel[2]].x,stars[sel[2]].y);
         ctx.stroke();
       }
+      // ORBIT PLANET: interpolate along the ring, no separate rAF
+      if(planet && fine){
+        const idle = performance.now()-pointer.lastMove > 850;
+        const wantOpacity = pointer.inside ? (idle ? 0.5 : 0.92) : 0;
+        planetTarget = pointer.inside ? planetTarget : REST;
+        planetAngle += shortest(planetTarget-planetAngle)*0.08;
+        planetOpacity += (wantOpacity-planetOpacity)*0.07;
+        planet.style.opacity=planetOpacity.toFixed(3);
+        planet.style.transform=
+          `translate(-50%,-50%) translate(${(Math.cos(planetAngle)*orbitR).toFixed(2)}px, ${(Math.sin(planetAngle)*orbitR).toFixed(2)}px)`;
+      }
       rafId=requestAnimationFrame(draw);
     };
 
@@ -166,6 +184,7 @@
         if(e.pointerType==='touch' || !heroRect) return;
         pointer.x=e.clientX-heroRect.left; pointer.y=e.clientY-heroRect.top;
         pointer.inside=true; pointer.lastMove=performance.now();
+        if(planet && orbitR) planetTarget=Math.atan2(e.clientY-(heroRect.top+heroRect.height/2), e.clientX-(heroRect.left+heroRect.width/2));
       }, {passive:true});
     }
     addEventListener('resize', resize, {passive:true});

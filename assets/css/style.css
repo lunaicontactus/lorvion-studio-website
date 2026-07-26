@@ -72,9 +72,24 @@ img{display:block;max-width:100%}
 }
 #starfield{position:absolute;inset:0;width:100%;height:100%;opacity:.8}
 .hero-orbit{
-  position:absolute;width:min(66vw,760px);aspect-ratio:1;pointer-events:none;
+  position:absolute;width:min(66vw,760px);aspect-ratio:1;pointer-events:none;z-index:2;
   border:1px solid rgba(255,255,255,.05);border-radius:50%;
 }
+/* ORBIT PLANET — small decorative Saturn riding the ring (desktop only) */
+.hero-orbit__planet{
+  position:absolute;left:50%;top:50%;width:12px;height:12px;
+  border:1px solid rgba(225,230,240,.72);border-radius:50%;
+  background:rgba(198,208,226,.12);
+  pointer-events:none;opacity:0;will-change:transform,opacity;
+  transform:translate(-50%,-50%);
+}
+.hero-orbit__planet::before{
+  content:"";position:absolute;left:50%;top:50%;width:28px;height:8px;
+  border:1px solid rgba(225,230,240,.5);border-radius:50%;
+  transform:translate(-50%,-50%) rotate(-14deg);
+}
+@media(hover:none),(pointer:coarse),(max-width:768px){ .hero-orbit__planet{display:none} }
+@media(prefers-reduced-motion:reduce){ .hero-orbit__planet{display:none} }
 .hero-content{position:relative;z-index:7;text-align:center;padding-top:20px}
 .hero-logo-stage{display:grid;justify-items:center}
 .hero-brand__descriptor{
@@ -178,7 +193,7 @@ img{display:block;max-width:100%}
 .blueprint-open:focus-visible{outline:2px solid #cdd6ea;outline-offset:2px}
 .blueprint{
   position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;
-  padding:22px;background:rgba(5,10,22,.82);opacity:0;transition:opacity .32s var(--ease);
+  padding:clamp(10px,2vw,18px);background:rgba(5,10,22,.82);opacity:0;transition:opacity .32s var(--ease);
   pointer-events:none;
 }
 .blueprint.is-open{opacity:1}
@@ -189,11 +204,11 @@ img{display:block;max-width:100%}
 .poster-frame.is-bp-dim:not(.is-bp-pinned) .blueprint-open{
   z-index:7;color:var(--silver);border-color:rgba(226,232,246,.5);background:rgba(6,10,20,.85);
 }
-.blueprint__inner{position:relative;width:100%;max-width:440px;max-height:100%;overflow:auto;
-  border:1px solid rgba(219,224,235,.16);border-radius:12px;padding:26px 24px;background:rgba(8,16,34,.6)}
+.blueprint__inner{position:relative;width:min(100%,520px);max-height:100%;overflow-y:auto;overflow-x:hidden;
+  border:1px solid rgba(219,224,235,.16);border-radius:12px;padding:clamp(18px,2.6vw,26px);background:rgba(8,16,34,.6)}
 .blueprint__inner:before{content:"";position:absolute;left:24px;right:24px;top:18px;height:1px;transform:scaleX(0);transform-origin:left;background:linear-gradient(90deg,var(--silver-muted),transparent);transition:transform .5s .05s var(--ease)}
 .blueprint.is-open .blueprint__inner:before{transform:scaleX(1)}
-.blueprint__eyebrow{margin:0 0 20px;font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--brass);display:flex;align-items:center;gap:9px}
+.blueprint__eyebrow{margin:0 0 20px;white-space:nowrap;font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--brass);display:flex;align-items:center;gap:9px}
 .blueprint__eyebrow:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--brass);flex:none}
 .blueprint__list{margin:0;display:grid;gap:16px}
 .blueprint__list>div{opacity:0;transform:translateY(6px);transition:opacity .35s var(--ease),transform .35s var(--ease)}
@@ -202,7 +217,11 @@ img{display:block;max-width:100%}
 .blueprint.is-open .blueprint__list>div:nth-child(2){transition-delay:.2s}
 .blueprint.is-open .blueprint__list>div:nth-child(3){transition-delay:.3s}
 .blueprint__list dt{font-family:var(--mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--silver-muted);margin-bottom:4px}
-.blueprint__list dd{margin:0;color:#d4d8e2;font-size:.98rem;line-height:1.4}
+.blueprint__list dd{
+  margin:0;color:#e2e5ed;font-weight:450;
+  font-size:clamp(.76rem,1.15vw,.96rem);line-height:1.35;letter-spacing:-.025em;
+  word-break:keep-all;overflow-wrap:normal;white-space:nowrap;
+}
 .blueprint__close{margin-top:24px;min-height:44px;padding:11px 18px;cursor:pointer;
   font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--silver);
   background:transparent;border:1px solid var(--line);border-radius:999px;transition:border-color .25s}
@@ -313,6 +332,12 @@ body.garage-lock{overflow:hidden!important}
   .support-grid{grid-template-columns:1fr}
 }
 @media(max-width:560px){
+  .blueprint{padding:8px}
+  .blueprint__inner{width:100%;padding:16px 10px}
+  .blueprint__list{gap:12px}
+  .blueprint__list dt{font-size:.53rem;letter-spacing:.1em}
+  .blueprint__list dd{font-size:clamp(.66rem,2.9vw,.84rem);letter-spacing:-.04em}
+  .blueprint__eyebrow{font-size:.52rem;letter-spacing:.08em;margin-bottom:14px}
   .hero-lockup{width:min(86vw,390px)}
   .hero-brand__descriptor{letter-spacing:.14em;font-size:.56rem}
   .hero-headline{font-size:1.7rem}
