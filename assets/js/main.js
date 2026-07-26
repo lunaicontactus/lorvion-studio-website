@@ -91,11 +91,11 @@
     let rafId=null, heroVisible=true;
     let pointer={x:-9999,y:-9999,inside:false,lastMove:0};
     let heroRect=null;
-    // ORBIT PLANET — decorative saturn riding .hero-orbit (shares this rAF + pointermove)
+    // ORBIT MOON — a small moon riding .hero-orbit (shares this rAF + pointermove)
     const orbitEl=document.querySelector('.hero-orbit');
-    const planet=orbitEl && orbitEl.querySelector('.hero-orbit__planet');
+    const moon=orbitEl && orbitEl.querySelector('.hero-orbit__moon');
     const REST=-Math.PI/2;                       // resting position: top of ring
-    let planetAngle=REST, planetTarget=REST, planetOpacity=0, orbitR=0;
+    let moonAngle=REST, moonTarget=REST, moonOpacity=0, orbitR=0;
     const shortest=(a)=>Math.atan2(Math.sin(a),Math.cos(a));
 
     const measureRect = ()=>{ heroRect = hero.getBoundingClientRect(); };
@@ -105,9 +105,11 @@
       const count=Math.min(120, Math.max(70, Math.floor(w*h/13000)));   // ~90-120 desktop
       stars=Array.from({length:count},()=>{
         const bx=Math.random()*w, by=Math.random()*h, big=Math.random()<0.05;
-        return {baseX:bx,baseY:by,x:bx,y:by,
+        return {baseX:bx,baseY:by,x:bx,y:by,big,
           radius: big ? 0.85+Math.random()*0.25 : 0.2+Math.random()*0.6,
-          alpha: 0.1+Math.random()*0.48, s:0.0004+Math.random()*0.0008, phase:Math.random()*6.28};
+          alpha: 0.1+Math.random()*0.48,
+          tw: big ? 0.09+Math.random()*0.03 : 0.045+Math.random()*0.03,  // absolute twinkle amplitude
+          s:0.00035+Math.random()*0.0007, phase:Math.random()*6.28};
       });
       measureRect();
       if(orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2+8;   // just outside the ring line
@@ -121,15 +123,15 @@
     };
     const draw = (t)=>{
       ctx.clearRect(0,0,w,h);
-      // nearest-3 stars to pointer (single pass, no full sort)
+      // nearest-4 stars to pointer (single pass, no full sort)
       let sel=[];
       if(finePointerActive && pointer.inside){
         const R2=radiusFor()**2; const best=[];
         for(let i=0;i<stars.length;i++){
           const dx=stars[i].baseX-pointer.x, dy=stars[i].baseY-pointer.y, d2=dx*dx+dy*dy;
           if(d2>R2) continue;
-          if(best.length<3){ best.push({i,d2}); best.sort((a,b)=>a.d2-b.d2); }
-          else if(d2<best[2].d2){ best[2]={i,d2}; best.sort((a,b)=>a.d2-b.d2); }
+          if(best.length<4){ best.push({i,d2}); best.sort((a,b)=>a.d2-b.d2); }
+          else if(d2<best[3].d2){ best[3]={i,d2}; best.sort((a,b)=>a.d2-b.d2); }
         }
         sel=best.map(b=>b.i);
       }
@@ -142,33 +144,47 @@
           tx=st.baseX+(dx/d)*4; ty=st.baseY+(dy/d)*4;   // max 4px toward pointer
         }
         st.x+=(tx-st.x)*0.12; st.y+=(ty-st.y)*0.12;
-        const a=st.alpha*(0.62+0.38*Math.sin(t*st.s+st.phase));
+        // whole sky breathes: small absolute alpha shift, own phase, slow
+        let a=st.alpha+st.tw*Math.sin(t*st.s+st.phase);
+        if(selSet && selSet.has(i)) a+=0.10;      // picked stars lift a little
+        a=Math.max(0,Math.min(0.9,a));
         ctx.beginPath(); ctx.fillStyle=`rgba(210,216,232,${a})`; ctx.arc(st.x,st.y,st.radius,0,6.283); ctx.fill();
       }
-      if(sel.length===3){
+      if(sel.length>=3){
         const since = performance.now()-pointer.lastMove;
         let lineA;
-        if(since<280) lineA=0.11;
-        else if(since<650) lineA=0.11+(since-280)/370*0.17;      // dwell → brighten (max ~0.28)
-        else lineA=Math.max(0.10, 0.28-(since-650)/500*0.18);   // then fade back
+        if(since<280) lineA=0.12;                                // moving: barely there
+        else if(since<700) lineA=0.12+(since-280)/420*0.16;      // dwell → a small constellation (~0.28)
+        else lineA=Math.max(0.10, 0.28-(since-700)/600*0.18);   // then settles back
         ctx.lineWidth=0.7; ctx.strokeStyle=`rgba(214,220,236,${lineA})`;
         ctx.beginPath();
         ctx.moveTo(stars[sel[0]].x,stars[sel[0]].y);
-        ctx.lineTo(stars[sel[1]].x,stars[sel[1]].y);
-        ctx.lineTo(stars[sel[2]].x,stars[sel[2]].y);
+        for(let k=1;k<sel.length;k++) ctx.lineTo(stars[sel[k]].x,stars[sel[k]].y);
         ctx.stroke();
+        // nearest star gets a short glint while the pointer rests
+        if(since>=280 && since<1100){
+          const n=stars[sel[0]], g=Math.min(1,(since-280)/220)*Math.max(0,1-(since-700)/400);
+          if(g>0.01){
+            const len=3.5+n.radius*2.2;
+            ctx.lineWidth=0.6; ctx.strokeStyle=`rgba(226,231,243,${(0.26*g).toFixed(3)})`;
+            ctx.beginPath();
+            ctx.moveTo(n.x-len,n.y); ctx.lineTo(n.x+len,n.y);
+            ctx.moveTo(n.x,n.y-len); ctx.lineTo(n.x,n.y+len);
+            ctx.stroke();
+          }
+        }
       }
-      // ORBIT PLANET: interpolate along the ring, no separate rAF
-      if(planet && finePointerActive){
+      // ORBIT MOON: interpolate along the ring, no separate rAF
+      if(moon && finePointerActive){
         if(!orbitR && orbitEl) orbitR=orbitEl.getBoundingClientRect().width/2+8;   // recover a bad first measure
         const idle = performance.now()-pointer.lastMove > 850;
-        const wantOpacity = pointer.inside ? (idle ? 0.72 : 1) : 0;
-        planetTarget = pointer.inside ? planetTarget : REST;
-        planetAngle += shortest(planetTarget-planetAngle)*0.1;
-        planetOpacity += (wantOpacity-planetOpacity)*0.16;
-        planet.style.opacity=planetOpacity.toFixed(3);
-        planet.style.transform=
-          `translate(-50%,-50%) translate(${(Math.cos(planetAngle)*orbitR).toFixed(2)}px, ${(Math.sin(planetAngle)*orbitR).toFixed(2)}px)`;
+        const wantOpacity = pointer.inside ? (idle ? 0.66 : 0.96) : 0;
+        moonTarget = pointer.inside ? moonTarget : REST;
+        moonAngle += shortest(moonTarget-moonAngle)*0.1;
+        moonOpacity += (wantOpacity-moonOpacity)*0.14;
+        moon.style.opacity=moonOpacity.toFixed(3);
+        moon.style.transform=
+          `translate(-50%,-50%) translate(${(Math.cos(moonAngle)*orbitR).toFixed(2)}px, ${(Math.sin(moonAngle)*orbitR).toFixed(2)}px)`;
       }
       rafId=requestAnimationFrame(draw);
     };
@@ -189,7 +205,7 @@
       if(!heroRect) return;
       pointer.x=e.clientX-heroRect.left; pointer.y=e.clientY-heroRect.top;
       pointer.inside=true; pointer.lastMove=performance.now();
-      if(planet) planetTarget=Math.atan2(e.clientY-(heroRect.top+heroRect.height/2), e.clientX-(heroRect.left+heroRect.width/2));
+      if(moon) moonTarget=Math.atan2(e.clientY-(heroRect.top+heroRect.height/2), e.clientX-(heroRect.left+heroRect.width/2));
     }, {passive:true});
     addEventListener('resize', resize, {passive:true});
     addEventListener('orientationchange', resize, {passive:true});
