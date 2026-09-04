@@ -1,0 +1,13 @@
+/* Single stylesheet entry. Vite extracts this into a real <link> at build time,
+   so there is no flash of unstyled content in production.
+
+   Order matters: tokens define the variables everything else reads, and
+   responsive.css overrides earlier rules at narrow widths. */
+@import './tokens.css';
+@import './base.css';
+@import './layout.css';
+@import './nav.css';
+@import './intro.css';
+@import './pages.css';
+@import './legacy-home.css';
+@import './responsive.css';
