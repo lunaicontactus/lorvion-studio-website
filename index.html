@@ -5,11 +5,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#04050a">
-<link rel="icon" href="./assets/images/favicon.png">
-<link rel="apple-touch-icon" href="./apple-touch-icon.png">
-<link rel="preload" as="image" href="./assets/images/brand/eungarage_planet_garage_symbol_v03.png" fetchpriority="high">
-<link rel="preload" as="image" href="./assets/images/brand/eungarage_hero_lockup_v05.webp" fetchpriority="high">
-<link rel="stylesheet" href="./assets/css/style.css">
+<link rel="icon" href="/assets/images/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="preload" as="image" href="/assets/images/brand/eungarage_planet_garage_symbol_v03.png" fetchpriority="high">
+<link rel="preload" as="image" href="/assets/images/brand/eungarage_hero_lockup_v05.webp" fetchpriority="high">
+<script type="module" src="/src/main.ts"></script>
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://eungarage.com/assets/images/og-image.jpg">
 <link rel="canonical" href="https://eungarage.com/">
@@ -24,16 +25,16 @@
 </head>
 <body class="loading">
 
-<!-- Garage-door opening (symbol only) -->
-<div id="garageIntro" class="garage-intro">
-  <div class="garage-door" aria-hidden="true">
-    <div class="garage-door__branding">
-      <img class="garage-door__logo" src="./assets/images/brand/eungarage_planet_garage_symbol_v03.png"
+<!-- Opening curtain. STEP 2 replaces the artwork with the alley shutter. -->
+<div id="intro" class="intro">
+  <div class="intro__curtain" aria-hidden="true">
+    <div class="intro__branding">
+      <img class="intro__art" src="/assets/images/brand/eungarage_planet_garage_symbol_v03.png"
            alt="" width="467" height="344" fetchpriority="high" decoding="async">
     </div>
-    <span class="garage-door__light" aria-hidden="true"></span>
+    <span class="intro__light" aria-hidden="true"></span>
   </div>
-  <button id="garageSkip" class="garage-intro__skip" type="button" aria-label="오프닝 건너뛰기">SKIP</button>
+  <button id="introSkip" class="intro__skip" type="button" aria-label="오프닝 건너뛰기">SKIP</button>
 </div>
 
 <div class="noise"></div>
@@ -57,14 +58,14 @@
     <canvas id="starfield" aria-hidden="true"></canvas>
     <div class="hero-orbit" aria-hidden="true"><span class="hero-orbit__earth"><span class="hero-orbit__moon"></span></span></div>
     <div class="ghost-posters" aria-hidden="true">
-      <div class="ghost one"><img src="./assets/images/lunai-keyart.webp" alt=""></div>
-      <div class="ghost two"><img src="./assets/images/liminal-keyart.webp" alt=""></div>
-      <div class="ghost three"><img src="./assets/images/worm-up-keyart.webp" alt=""></div>
+      <div class="ghost one"><img src="/assets/images/lunai-keyart.webp" alt=""></div>
+      <div class="ghost two"><img src="/assets/images/liminal-keyart.webp" alt=""></div>
+      <div class="ghost three"><img src="/assets/images/worm-up-keyart.webp" alt=""></div>
     </div>
     <div class="container hero-content">
       <div class="hero-logo-stage">
         <p class="hero-brand__descriptor">INDEPENDENT GAME &amp; APP STUDIO</p>
-        <img class="hero-lockup" src="./assets/images/brand/eungarage_hero_lockup_v05.webp"
+        <img class="hero-lockup" src="/assets/images/brand/eungarage_hero_lockup_v05.webp"
              width="1312" height="850" loading="eager" fetchpriority="high" decoding="async"
              alt="별자리 행성과 차고문 심볼을 결합한 EUNGARAGE 로고">
         <div class="hero-brand-copy visually-hidden">
@@ -107,7 +108,7 @@
   </header>
 
   <section class="project lunai">
-    <div class="project-blur" style="background-image:url('./assets/images/lunai-keyart.webp')"></div>
+    <div class="project-blur" style="background-image:url('/assets/images/lunai-keyart.webp')"></div>
     <div class="container project-inner">
       <div class="project-copy reveal">
         <div class="project-bay"><span class="project-bay__no">BAY 01</span><span class="project-bay__cat">AI EMOTION MUSIC</span></div>
@@ -122,7 +123,7 @@
       </div>
       <div class="project-media">
         <figure class="poster-frame">
-          <img src="./assets/images/lunai-keyart.webp" alt="LUNAI 대표 이미지" loading="lazy">
+          <img src="/assets/images/lunai-keyart.webp" alt="LUNAI 대표 이미지" loading="lazy">
           <span class="poster-shutter" aria-hidden="true"></span>
           <button class="blueprint-open" type="button" aria-expanded="false" aria-controls="bp-lunai">OPEN BLUEPRINT<span class="visually-hidden"> · 세계 설계도 열기</span></button>
           <div class="blueprint" id="bp-lunai" role="dialog" aria-modal="true" aria-labelledby="bp-lunai-title" hidden>
@@ -142,7 +143,7 @@
   </section>
 
   <section class="project liminal">
-    <div class="project-blur" style="background-image:url('./assets/images/liminal-keyart.webp')"></div>
+    <div class="project-blur" style="background-image:url('/assets/images/liminal-keyart.webp')"></div>
     <div class="container project-inner">
       <div class="project-copy reveal">
         <div class="project-bay"><span class="project-bay__no">BAY 02</span><span class="project-bay__cat">STORY ADVENTURE</span></div>
@@ -154,7 +155,7 @@
       </div>
       <div class="project-media">
         <figure class="poster-frame">
-          <img src="./assets/images/liminal-keyart.webp" alt="LIMINAL 대표 이미지" loading="lazy">
+          <img src="/assets/images/liminal-keyart.webp" alt="LIMINAL 대표 이미지" loading="lazy">
           <span class="poster-shutter" aria-hidden="true"></span>
           <button class="blueprint-open" type="button" aria-expanded="false" aria-controls="bp-liminal">OPEN BLUEPRINT<span class="visually-hidden"> · 세계 설계도 열기</span></button>
           <div class="blueprint" id="bp-liminal" role="dialog" aria-modal="true" aria-labelledby="bp-liminal-title" hidden>
@@ -174,7 +175,7 @@
   </section>
 
   <section class="project worm">
-    <div class="project-blur" style="background-image:url('./assets/images/worm-up-keyart.webp')"></div>
+    <div class="project-blur" style="background-image:url('/assets/images/worm-up-keyart.webp')"></div>
     <div class="container project-inner">
       <div class="project-copy reveal">
         <div class="project-bay"><span class="project-bay__no">BAY 03</span><span class="project-bay__cat">CASUAL ACTION</span></div>
@@ -186,7 +187,7 @@
       </div>
       <div class="project-media">
         <figure class="poster-frame">
-          <img src="./assets/images/worm-up-keyart.webp" alt="WORM UP! 대표 이미지" loading="lazy">
+          <img src="/assets/images/worm-up-keyart.webp" alt="WORM UP! 대표 이미지" loading="lazy">
           <span class="poster-shutter" aria-hidden="true"></span>
           <button class="blueprint-open" type="button" aria-expanded="false" aria-controls="bp-worm">OPEN BLUEPRINT<span class="visually-hidden"> · 세계 설계도 열기</span></button>
           <div class="blueprint" id="bp-worm" role="dialog" aria-modal="true" aria-labelledby="bp-worm-title" hidden>
@@ -252,6 +253,5 @@
     </div>
   </div>
 </footer>
-<script src="./assets/js/main.js"></script>
 
 </body></html>

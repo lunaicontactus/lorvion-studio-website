@@ -1,0 +1,25 @@
+.container{width:min(calc(100% - 48px),var(--max));margin-inline:auto}
+
+/* ── Brand wordmark: single word, EUN heavier than GARAGE, same colour ── */
+.brand-wordmark{
+  display:inline-flex;align-items:baseline;white-space:nowrap;letter-spacing:.055em;line-height:1;
+  background:linear-gradient(180deg,#ffffff 0%,#d3dae7 58%,#aab2c4 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+}
+/* single-word wordmark: plain text, one weight */
+.brand-wordmark{font-weight:600}
+.brand-word{font-size:1.02rem;letter-spacing:.12em}
+.footer-word{font-size:1.2rem}
+.contact-wordmark{font-size:inherit;letter-spacing:-.04em}
+
+/* ── Nav ── */
+.site-footer{border-top:1px solid var(--line);padding:36px 0 42px;background:#04050a}
+.footer-inner{display:grid;grid-template-columns:1fr auto;gap:30px;align-items:end}
+.footer-brand .footer-word{display:inline-block;margin-bottom:12px}
+.footer-brand p{margin:0;color:#7d8393;font-size:.82rem}
+.footer-links{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:18px;color:#a4a9b7;font-size:.76rem}
+.footer-copy{grid-column:1/-1;border-top:1px solid var(--line);padding-top:20px;margin-top:6px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;color:#646b7c;font-size:.7rem;font-family:var(--mono)}
+
+.reveal{opacity:0;transform:translateY(38px);transition:opacity 1s var(--ease),transform 1s var(--ease)}
+.reveal.is-visible{opacity:1;transform:none}
+

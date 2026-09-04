@@ -1,0 +1,24 @@
+/* ── Legal / utility pages ── */
+.subpage{min-height:100svh;padding:150px 0 100px;background:radial-gradient(circle at 75% 8%,rgba(120,132,160,.08),transparent 30%),#05060b}
+.subpage-head{max-width:900px;margin-bottom:72px}
+.subpage .eyebrow{font-size:.67rem;letter-spacing:.26em;color:#9298a9;text-transform:uppercase;font-family:var(--mono)}
+.subpage h1{font-size:clamp(3.3rem,8vw,7.5rem);line-height:.9;letter-spacing:-.07em;margin:18px 0 25px;font-weight:430}
+.subpage .intro{font-size:1.08rem;color:#aeb4c3;max-width:680px}
+.doc{max-width:900px}
+.doc section{padding:32px 0;border-top:1px solid var(--line)}
+.doc h2{font-size:1.5rem;margin:0 0 14px;font-weight:520}
+.doc h3{font-size:1.05rem;margin:25px 0 8px}
+.doc p,.doc li{color:#bcc1ce}
+.doc a{text-decoration:underline;text-underline-offset:4px}
+.doc table{width:100%;border-collapse:collapse;margin-top:16px;display:block;overflow:auto}
+.doc th,.doc td{border:1px solid var(--line);padding:13px 14px;text-align:left;min-width:180px;color:#c4c8d2}
+.doc th{color:#fff;background:rgba(255,255,255,.035)}
+.status-badge{display:inline-flex;border:1px solid rgba(180,154,105,.35);color:#dbc49f;background:rgba(180,154,105,.08);border-radius:999px;padding:7px 11px;font-size:.7rem;letter-spacing:.08em;margin-top:12px;font-family:var(--mono)}
+.support-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.support-card{border:1px solid var(--line);padding:25px;border-radius:18px;background:rgba(255,255,255,.025)}
+.support-card h2{font-size:1.24rem}
+.support-card p{margin-bottom:0}
+.cta-box{border:1px solid var(--line);border-radius:22px;padding:30px;margin-top:35px;background:linear-gradient(135deg,rgba(120,132,160,.07),rgba(255,255,255,.02))}
+.cta-button{display:inline-flex;padding:13px 18px;border-radius:99px;background:#fff;color:#07080d;font-weight:650;margin-top:14px}
+
+/* ── Garage-door opening intro (symbol only) ── */

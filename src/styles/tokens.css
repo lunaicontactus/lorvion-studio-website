@@ -1,0 +1,43 @@
+/* ── Design tokens ────────────────────────────────────────────────────────
+   Responsive breakpoints (documented here, used literally in responsive.css
+   because CSS has no custom media queries without a build plugin):
+
+     xs   0      phone portrait
+     sm   480    large phone
+     md   768    tablet portrait  ── the alley/garage layouts switch here
+     lg   1024   tablet landscape / small laptop
+     xl   1280   desktop
+     xxl  1600   large desktop
+
+   Keep JS in sync via src/systems/breakpoints.ts.
+
+   The palette below is the pre-DOKKA one and is still what ships today. The
+   cozy handcrafted palette arrives with the alley in STEP 2; it will be added
+   here as a second block rather than by editing colours in place, so the two
+   can run side by side behind the flag.
+   ──────────────────────────────────────────────────────────────────────── */
+
+:root{
+  --bg:#04050a;
+  --surface:#0a0c14;
+  --text:#f6f7fb;
+  --muted:#a7adbd;
+  --line:rgba(255,255,255,.11);
+  --silver:#dbe0eb;
+  --silver-muted:rgba(220,227,238,.42);
+  --brass:#b49a69;
+  --max:1320px;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --nav-h:78px;
+  --mono:"SFMono-Regular","Cascadia Code","Roboto Mono",Consolas,ui-monospace,monospace;
+}
+
+:root{
+  /* Motion scale. Set to 0 by the reduced-motion block so a single multiplier
+     stands the whole site down instead of each component remembering to. */
+  --motion:1;
+  --dur-micro:160ms;
+  --dur-ui:260ms;
+  --dur-world:520ms;
+  --ease-soft:cubic-bezier(.34,1.32,.48,1);
+}

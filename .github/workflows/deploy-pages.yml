@@ -3,6 +3,8 @@ name: Deploy EUNGARAGE to GitHub Pages
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -15,24 +17,58 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Runs on pull requests too, so a broken build is caught before it can reach
+  # the live domain rather than after.
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npx vite build
+      - name: Check the artifact still contains every frozen URL
+        run: |
+          set -e
+          for f in index.html privacy.html terms.html support.html \
+                   account-deletion.html community-guidelines.html 404.html \
+                   robots.txt sitemap.xml manifest.webmanifest \
+                   apple-touch-icon.png CNAME .nojekyll; do
+            if [ ! -f "dist/$f" ]; then
+              echo "::error::dist/$f is missing — a published URL would 404"
+              exit 1
+            fi
+          done
+          echo "All frozen URLs present."
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist
+          retention-days: 7
+
   deploy:
+    needs: verify
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload static site
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          path: "."
-
-      - name: Deploy
-        id: deployment
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - run: npx vite build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
         uses: actions/deploy-pages@v4

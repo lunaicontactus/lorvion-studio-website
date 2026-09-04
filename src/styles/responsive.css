@@ -1,0 +1,51 @@
+@media(max-width:900px){
+  :root{--nav-h:68px}
+  .container{width:min(calc(100% - 32px),var(--max))}
+  .nav-links{position:fixed;inset:0;background:rgba(4,5,10,.97);display:flex;flex-direction:column;justify-content:center;gap:32px;font-size:1.3rem;opacity:0;visibility:hidden;transition:.35s}
+  .nav-links.open{opacity:1;visibility:visible}
+  .menu-toggle{display:block;z-index:2}
+  .menu-toggle.open span:first-child{transform:translateY(3.5px) rotate(45deg)}
+  .menu-toggle.open span:last-child{transform:translateY(-3.5px) rotate(-45deg)}
+  .hero-lockup{width:min(72vw,520px)}
+  .ghost{width:33vw;opacity:.9}.ghost.one{left:-9%}.ghost.two{right:-10%}.ghost.three{display:none}
+  .manifesto{padding:110px 0}
+  .manifesto-grid,.about-grid{grid-template-columns:1fr;gap:45px}
+  .project{min-height:auto;padding:80px 0}
+  .project:after{background:linear-gradient(180deg,#04050a 0%,rgba(4,5,10,.58) 35%,#04050a 100%)}
+  .project-inner{grid-template-columns:1fr;gap:44px;padding:10px 0}
+  .project-media{order:-1}
+  .poster-frame img{max-height:66svh;width:auto}
+  .project-title{font-size:clamp(3.7rem,18vw,7rem)}
+  .projects-head h2{font-size:17vw}
+  .about{padding:110px 0}
+  .footer-inner{grid-template-columns:1fr}
+  .footer-links{justify-content:flex-start}
+  .support-grid{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .blueprint{padding:8px}
+  .blueprint__inner{width:100%;padding:16px 10px}
+  .blueprint__list{gap:12px}
+  .blueprint__list dt{font-size:.53rem;letter-spacing:.1em}
+  .blueprint__list dd{font-size:clamp(.66rem,2.9vw,.84rem);letter-spacing:-.04em}
+  .blueprint__eyebrow{font-size:.52rem;letter-spacing:.08em;margin-bottom:14px}
+  .hero-lockup{width:min(86vw,390px)}
+  .hero-brand__descriptor{letter-spacing:.14em;font-size:.56rem}
+  .hero-headline{font-size:1.7rem}
+  .manifesto-copy{font-size:14vw}
+  .poster-frame{max-width:94vw}
+  .poster-frame img{width:100%;height:auto;max-height:none}
+  .about-quote{font-size:15vw}
+  .contact h2{font-size:16vw}
+  .subpage{padding-top:118px}
+  .subpage h1{font-size:15vw}
+  .ghost{width:42vw}
+}
+@media(prefers-reduced-motion:reduce){
+  *{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .intro{display:none}
+  .hero-lockup,.hero-brand__descriptor,.hero-headline,.hero-copy{opacity:1;transform:none;animation:none}
+  .poster-shutter{transform:translateY(-100%)}
+  .blueprint-open{opacity:1}
+  .marquee-track{animation:none}
+}
