@@ -3,7 +3,7 @@ import { CHARACTERS, MAX_ACTIVE_CHARACTERS, getCharacter } from '@/data/characte
 import { PROJECTS, VISIBLE_PROJECTS, getProject } from '@/data/projects'
 import { GARAGE_OBJECTS, MAIN_MENU_OBJECTS } from '@/data/garageObjects'
 import { EASTER_EGGS } from '@/data/easterEggs'
-import { ALLEY_LAYERS, ALLEY_CRITICAL } from '@/data/alley'
+import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART } from '@/data/alley'
 
 describe('DOKKA CREW data', () => {
   it('has the five approved characters, uniquely identified', () => {
@@ -92,37 +92,58 @@ describe('easter eggs', () => {
   })
 })
 
-describe('alley layers', () => {
-  it('has unique ids', () => {
-    expect(new Set(ALLEY_LAYERS.map((l) => l.id)).size).toBe(ALLEY_LAYERS.length)
+describe('alley plates', () => {
+  const plates = [ALLEY_LANDSCAPE, ALLEY_PORTRAIT]
+
+  it('keeps every layer inside its plate', () => {
+    for (const p of plates) {
+      for (const l of [p.shutter, p.sign, p.props]) {
+        expect(l.left).toBeGreaterThanOrEqual(0)
+        expect(l.left + l.width).toBeLessThanOrEqual(100)
+      }
+    }
+  })
+
+  it('anchors each layer exactly once', () => {
+    for (const p of plates) {
+      for (const l of [p.shutter, p.sign, p.props]) {
+        expect((l.top === undefined) !== (l.bottom === undefined)).toBe(true)
+      }
+    }
+  })
+
+  it('covers the painted doorway with the shutter', () => {
+    // The doorway read off the artwork. At rest the shutter must overlap it on
+    // every side, top and bottom included, or the opening shows through.
+    const art = ALLEY_ART.shutter
+    const doorway = [
+      { plate: ALLEY_LANDSCAPE, left: 40.1, right: 59.8, top: 20.7, bottom: 69.6 },
+      { plate: ALLEY_PORTRAIT, left: 33, right: 67, top: 36, bottom: 68.5 },
+    ]
+    for (const d of doorway) {
+      const s = d.plate.shutter
+      expect(s.left).toBeLessThanOrEqual(d.left)
+      expect(s.left + s.width).toBeGreaterThanOrEqual(d.right)
+      // Height follows the art's own ratio, expressed against the plate.
+      const plateRatio = d.plate.base.w / d.plate.base.h
+      const heightPct = ((s.width / 100) * (art.h / art.w) * plateRatio) * 100
+      expect(s.top ?? 0).toBeLessThanOrEqual(d.top)
+      expect((s.top ?? 0) + heightPct).toBeGreaterThanOrEqual(d.bottom)
+    }
+  })
+
+  it('lifts the shutter clear of itself', () => {
+    for (const p of plates) expect(p.lift).toBeGreaterThan(1)
+  })
+
+  it('points every file at a webp under the alley folder', () => {
+    const srcs = [...plates.map((p) => p.base.src), ...Object.values(ALLEY_ART).map((a) => a.src)]
+    for (const src of srcs) expect(src).toMatch(/^\/assets\/images\/alley\/[a-z_]+\.webp$/)
   })
 
   it('gives each orientation its own base', () => {
-    const bases = ALLEY_LAYERS.filter((l) => l.id.startsWith('base-'))
-    expect(bases.map((b) => b.only).sort()).toEqual(['landscape', 'portrait'])
-  })
-
-  it('shares every layer above the base between orientations', () => {
-    // Two bases is the price of a real portrait composition; a second set of
-    // props would not be.
-    for (const l of ALLEY_LAYERS.filter((x) => !x.id.startsWith('base-'))) {
-      expect(l.only).toBeUndefined()
-    }
-  })
-
-  it('keeps decorative layers out of the accessibility tree', () => {
-    for (const l of ALLEY_LAYERS) expect(l.alt).toBe('')
-  })
-
-  it('points every layer at a webp under the alley folder', () => {
-    for (const l of ALLEY_LAYERS) {
-      expect(l.src).toMatch(/^\/assets\/images\/alley\/[a-z_]+\.webp$/)
-    }
-  })
-
-  it('names the files the entrance cannot open without', () => {
-    for (const id of ALLEY_CRITICAL) {
-      expect(ALLEY_LAYERS.some((l) => l.id === id)).toBe(true)
-    }
+    expect(ALLEY_LANDSCAPE.base.src).not.toBe(ALLEY_PORTRAIT.base.src)
+    expect(ALLEY_LANDSCAPE.base.w).toBeGreaterThan(ALLEY_LANDSCAPE.base.h)
+    expect(ALLEY_PORTRAIT.base.h).toBeGreaterThan(ALLEY_PORTRAIT.base.w)
   })
 })

@@ -20,7 +20,14 @@
    ──────────────────────────────────────────────────────────────────────── */
 .page-cozy .site-nav{
   color:var(--cozy-ink);
-  background:linear-gradient(180deg,rgba(239,230,217,.92),rgba(239,230,217,0));
+  /* The alley art runs bright and busy right under the bar, so the scrim has
+     to carry the contrast rather than the flat page colour.
+     The scrim stays near-opaque all the way through the text band and only
+     fades below it; a gradient that starts falling at the text measured 4.1:1. */
+  background:linear-gradient(180deg,
+    rgba(243,236,226,.97) 0%,
+    rgba(243,236,226,.94) 64%,
+    rgba(243,236,226,0) 100%);
 }
 .page-cozy .site-nav.scrolled{
   background:rgba(243,236,226,.94);

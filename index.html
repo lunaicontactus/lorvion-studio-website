@@ -57,30 +57,33 @@
     <h1 id="alleyHeading" class="visually-hidden">EUNGARAGE — 골목 안쪽의 작은 게임 작업실</h1>
 
     <div class="alley__stage" aria-hidden="true">
-      <!-- One picture, two compositions. A display:none <img> is still fetched,
-           so the orientation choice has to be made by <source> or a phone pays
-           for the desktop plate as well. -->
-      <picture>
-        <source media="(orientation:portrait)"
-                srcset="/assets/images/alley/alley_base_mobile.webp"
-                width="1170" height="2080">
-        <img class="alley__layer" data-alley-layer="base"
-             src="/assets/images/alley/alley_base_desktop.webp"
-             width="2560" height="1440" alt="" fetchpriority="high" decoding="async">
-      </picture>
+      <!-- The plate is the box the base image really occupies once cover has
+           been applied. The scene sizes it, and every layer above sits at a
+           percentage of it, so the shutter stays in its painted doorway. -->
+      <div class="alley__plate" data-alley-plate>
+        <picture>
+          <source media="(orientation:portrait)"
+                  srcset="/assets/images/alley/alley_base_mobile.webp"
+                  width="1170" height="2080">
+          <img class="alley__base" data-alley-base
+               src="/assets/images/alley/alley_base_desktop.webp"
+               width="2560" height="1440" alt="" fetchpriority="high" decoding="async">
+        </picture>
 
-      <span class="alley__lamp" data-alley-glow></span>
-      <span class="alley__glow"></span>
+        <span class="alley__glow" data-alley-glow-slot></span>
 
-      <img class="alley__shutter" data-alley-layer="shutter"
-           src="/assets/images/alley/alley_shutter.webp"
-           width="1400" height="1600" alt="" decoding="async">
-      <img class="alley__sign" data-alley-layer="sign"
-           src="/assets/images/alley/alley_sign.webp"
-           width="900" height="260" alt="" decoding="async">
-      <img class="alley__props" data-alley-layer="props"
-           src="/assets/images/alley/alley_props.webp"
-           width="2560" height="620" alt="" fetchpriority="low" decoding="async">
+        <img class="alley__cutout alley__shutter" data-alley-layer="shutter"
+             src="/assets/images/alley/alley_shutter.webp"
+             width="1100" height="1211" alt="" decoding="async">
+        <img class="alley__cutout alley__sign" data-alley-layer="sign"
+             src="/assets/images/alley/alley_sign.webp"
+             width="760" height="481" alt="" decoding="async">
+        <img class="alley__cutout alley__props" data-alley-layer="props"
+             src="/assets/images/alley/alley_props.webp"
+             width="2400" height="543" alt="" fetchpriority="low" decoding="async">
+
+        <span class="alley__lamp" data-alley-lamp></span>
+      </div>
     </div>
 
     <button class="alley__enter" type="button" data-alley-enter>
