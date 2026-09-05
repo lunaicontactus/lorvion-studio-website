@@ -31,8 +31,9 @@ export interface AlleyPlate {
   readonly base: { readonly src: string; readonly w: number; readonly h: number }
   readonly shutter: LayerPlacement
   readonly sign: LayerPlacement
-  /** Scenery on the pavement in front of the wall. Decorative in STEP 2;
-   *  STEP 4 turns them into hotspots, which is why they are already separate. */
+  /** Traces of the crew on the pavement — a fire spirit in the pot, a club
+   *  stamp on the parcel, a mended stool, worn slippers. Not clickable yet;
+   *  they are separate so STEP 4 can make them so. */
   readonly props: Readonly<Record<PropName, LayerPlacement>>
   /** Where the ENTER button sits, as a percentage down the plate. */
   readonly enterY: number
@@ -78,10 +79,12 @@ export const ALLEY_ART = {
    *  The housing stays put; only the slats below it roll up into it. */
   shutter: { src: `${DIR}/alley_shutter.webp`, w: 1100, h: 1211, drum: 0.175 },
   sign: { src: `${DIR}/alley_sign.webp`, w: 760, h: 481 },
-  pot: { src: `${DIR}/alley_prop_pot.webp`, w: 425, h: 531 },
-  box: { src: `${DIR}/alley_prop_box.webp`, w: 423, h: 388 },
-  stool: { src: `${DIR}/alley_prop_stool.webp`, w: 456, h: 461 },
-  slippers: { src: `${DIR}/alley_prop_slippers.webp`, w: 578, h: 393 },
+  /** The dokkaebi fire hiding in the leaves, as fractions of the pot cut-out.
+   *  STEP 10 puts a living flame here; until then it is just painted. */
+  pot: { src: `${DIR}/alley_prop_pot.webp`, w: 466, h: 600, fire: { x: 0.665, y: 0.487, w: 0.369, h: 0.218 } },
+  box: { src: `${DIR}/alley_prop_box.webp`, w: 396, h: 372 },
+  stool: { src: `${DIR}/alley_prop_stool.webp`, w: 453, h: 433 },
+  slippers: { src: `${DIR}/alley_prop_slippers.webp`, w: 465, h: 407 },
 } as const
 
 /** Files the entrance cannot open without. */
