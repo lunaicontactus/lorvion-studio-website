@@ -13,7 +13,14 @@
  * The whole sequence is under three seconds and every part of it is optional —
  * reduced motion, a failed image and a returning visitor all still get in.
  */
-import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART, type AlleyPlate } from '@/data/alley'
+import {
+  ALLEY_LANDSCAPE,
+  ALLEY_PORTRAIT,
+  ALLEY_ART,
+  PROP_NAMES,
+  type AlleyPlate,
+  type LayerPlacement,
+} from '@/data/alley'
 import { motion } from '@/systems/motion'
 import { ticker } from '@/systems/tick'
 import { log } from '@/systems/log'
@@ -81,11 +88,8 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
     plateEl.style.height = `${h}px`
     scene.dataset['orientation'] = portrait ? 'portrait' : 'landscape'
 
-    const place = (name: 'shutter' | 'sign' | 'props'): void => {
-      const el = scene.querySelector<HTMLElement>(`[data-alley-layer="${name}"]`)
+    const place = (el: HTMLElement | null, p: LayerPlacement, art: { w: number; h: number }): void => {
       if (!el) return
-      const p = plate[name]
-      const art = ALLEY_ART[name]
       const px = (w * p.width) / 100
       el.style.left = `${p.left}%`
       el.style.width = `${p.width}%`
@@ -98,9 +102,16 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
         el.style.top = 'auto'
       }
     }
-    place('shutter')
-    place('sign')
-    place('props')
+    const shutterEl = scene.querySelector<HTMLElement>('[data-alley-layer="shutter"]')
+    place(shutterEl, plate.shutter, ALLEY_ART.shutter)
+    // The roll housing is the top slice of the same image; the slats live in a
+    // clipped box under it and roll up out of sight.
+    shutterEl?.style.setProperty('--drum', `${ALLEY_ART.shutter.drum * 100}%`)
+    shutterEl?.style.setProperty('--drum-frac', String(ALLEY_ART.shutter.drum))
+    place(scene.querySelector('[data-alley-layer="sign"]'), plate.sign, ALLEY_ART.sign)
+    for (const name of PROP_NAMES) {
+      place(scene.querySelector(`[data-alley-prop="${name}"]`), plate.props[name], ALLEY_ART[name])
+    }
 
     // The glow sits exactly where the shutter is, so light appears in the gap.
     const glow = scene.querySelector<HTMLElement>('[data-alley-glow-slot]')
@@ -117,7 +128,6 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
       const plateTop = (r.height - h) / 2
       enterBtn.style.top = `${plateTop + (h * plate.enterY) / 100}px`
     }
-    scene.style.setProperty('--lift', `-${plate.lift * 100}%`)
   }
 
   layout()
