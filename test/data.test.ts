@@ -3,7 +3,7 @@ import { CHARACTERS, MAX_ACTIVE_CHARACTERS, getCharacter } from '@/data/characte
 import { PROJECTS, VISIBLE_PROJECTS, getProject } from '@/data/projects'
 import { GARAGE_OBJECTS, MAIN_MENU_OBJECTS } from '@/data/garageObjects'
 import { EASTER_EGGS } from '@/data/easterEggs'
-import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART } from '@/data/alley'
+import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART, PROP_NAMES } from '@/data/alley'
 
 describe('DOKKA CREW data', () => {
   it('has the five approved characters, uniquely identified', () => {
@@ -95,9 +95,11 @@ describe('easter eggs', () => {
 describe('alley plates', () => {
   const plates = [ALLEY_LANDSCAPE, ALLEY_PORTRAIT]
 
+  const layersOf = (p: typeof ALLEY_LANDSCAPE) => [p.shutter, p.sign, ...PROP_NAMES.map((n) => p.props[n])]
+
   it('keeps every layer inside its plate', () => {
     for (const p of plates) {
-      for (const l of [p.shutter, p.sign, p.props]) {
+      for (const l of layersOf(p)) {
         expect(l.left).toBeGreaterThanOrEqual(0)
         expect(l.left + l.width).toBeLessThanOrEqual(100)
       }
@@ -106,7 +108,7 @@ describe('alley plates', () => {
 
   it('anchors each layer exactly once', () => {
     for (const p of plates) {
-      for (const l of [p.shutter, p.sign, p.props]) {
+      for (const l of layersOf(p)) {
         expect((l.top === undefined) !== (l.bottom === undefined)).toBe(true)
       }
     }
@@ -132,8 +134,31 @@ describe('alley plates', () => {
     }
   })
 
-  it('lifts the shutter clear of itself', () => {
-    for (const p of plates) expect(p.lift).toBeGreaterThan(1)
+  it('keeps the roll housing a plausible slice of the shutter', () => {
+    expect(ALLEY_ART.shutter.drum).toBeGreaterThan(0.1)
+    expect(ALLEY_ART.shutter.drum).toBeLessThan(0.3)
+  })
+
+  it('never lines the props up in a row', () => {
+    // Four things at the same height with even gaps read as a toolbar, which
+    // invites clicks they cannot yet take.
+    for (const p of plates) {
+      const bottoms = new Set(PROP_NAMES.map((n) => p.props[n].bottom))
+      expect(bottoms.size).toBeGreaterThan(2)
+    }
+  })
+
+  it('keeps the props off the doorway', () => {
+    const doorway = [
+      { plate: ALLEY_LANDSCAPE, left: 40.1, right: 59.8 },
+      { plate: ALLEY_PORTRAIT, left: 33, right: 67 },
+    ]
+    for (const d of doorway) {
+      for (const n of PROP_NAMES) {
+        const l = d.plate.props[n]
+        expect(l.left + l.width <= d.left || l.left >= d.right).toBe(true)
+      }
+    }
   })
 
   it('points every file at a webp under the alley folder', () => {

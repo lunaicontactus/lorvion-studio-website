@@ -72,15 +72,29 @@
 
         <span class="alley__glow" data-alley-glow-slot></span>
 
-        <img class="alley__cutout alley__shutter" data-alley-layer="shutter"
-             src="/assets/images/alley/alley_shutter.webp"
-             width="1100" height="1211" alt="" decoding="async">
+        <!-- A roll shutter: the housing at the top stays, the slats below it
+             roll up into it. Both are slices of the same image. -->
+        <div class="alley__cutout alley__shutter" data-alley-layer="shutter">
+          <div class="alley__slats-clip">
+            <img class="alley__slats" src="/assets/images/alley/alley_shutter.webp"
+                 width="1100" height="1211" alt="" decoding="async">
+          </div>
+          <img class="alley__drum" src="/assets/images/alley/alley_shutter.webp"
+               width="1100" height="1211" alt="" decoding="async">
+        </div>
         <img class="alley__cutout alley__sign" data-alley-layer="sign"
              src="/assets/images/alley/alley_sign.webp"
              width="760" height="481" alt="" decoding="async">
-        <img class="alley__cutout alley__props" data-alley-layer="props"
-             src="/assets/images/alley/alley_props.webp"
-             width="2400" height="543" alt="" fetchpriority="low" decoding="async">
+
+        <!-- Scenery on the pavement. Decorative here; STEP 4 makes them hotspots. -->
+        <img class="alley__cutout alley__prop" data-alley-prop="pot"
+             src="/assets/images/alley/alley_prop_pot.webp" width="425" height="531" alt="" fetchpriority="low" decoding="async">
+        <img class="alley__cutout alley__prop" data-alley-prop="box"
+             src="/assets/images/alley/alley_prop_box.webp" width="423" height="388" alt="" fetchpriority="low" decoding="async">
+        <img class="alley__cutout alley__prop" data-alley-prop="slippers"
+             src="/assets/images/alley/alley_prop_slippers.webp" width="578" height="393" alt="" fetchpriority="low" decoding="async">
+        <img class="alley__cutout alley__prop" data-alley-prop="stool"
+             src="/assets/images/alley/alley_prop_stool.webp" width="456" height="461" alt="" fetchpriority="low" decoding="async">
 
         <span class="alley__lamp" data-alley-lamp></span>
       </div>
