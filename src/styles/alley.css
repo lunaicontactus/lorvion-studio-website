@@ -1,0 +1,163 @@
+/* ── Korean alley entrance ─────────────────────────────────────────────────
+   A small felt lane with one shutter in it. The base plate is cover-fitted by
+   the scene, and the shutter, sign and props are positioned in percentages of
+   that plate — see src/scenes/alley.ts — so the shutter cannot slide off the
+   doorway painted into the base.
+
+   Palette: warm, low-saturation, cream through muted brown. No pure black.
+   ──────────────────────────────────────────────────────────────────────── */
+
+.alley{
+  position:relative;
+  /* 100svh, not 100vh: the mobile URL bar must not add a scrollbar or crop the
+     shutter, which is the bug the old hero shipped with. */
+  min-height:100svh;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  background:#efe6d9;
+  isolation:isolate;
+}
+
+.alley__stage{position:absolute;inset:0;overflow:hidden}
+
+/* Centred and sized by the scene; may overflow the stage, which is the point. */
+.alley__plate{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+.alley__plate picture{position:absolute;inset:0;display:block}
+.alley__base{width:100%;height:100%;display:block;user-select:none}
+
+.alley__cutout{
+  position:absolute;
+  pointer-events:none;
+  user-select:none;
+  /* Width and height come from the scene so the art keeps its own ratio. */
+}
+
+.alley__shutter{
+  z-index:2;
+  transition:transform 1500ms cubic-bezier(.4,0,.2,1);
+  will-change:transform;
+}
+.alley__sign{
+  z-index:4;
+  transform:rotate(var(--sway,0deg));
+  transform-origin:50% 6%;
+}
+.alley__props{z-index:5}
+
+/* Warm light spilling out of the doorway. A gradient, not an image — it saves
+   a file and it can breathe without a sprite sheet. */
+.alley__glow{
+  position:absolute;
+  z-index:1;
+  opacity:0;
+  transition:opacity 800ms ease-out;
+  background:
+    radial-gradient(ellipse 68% 44% at 50% 88%,
+      rgba(255,203,132,.95) 0%,
+      rgba(244,172,96,.55) 40%,
+      rgba(210,138,74,0) 76%);
+}
+
+/* The lane lamp. Breathes very slowly via --breathe from the scene tick. */
+.alley__lamp{
+  position:absolute;
+  left:58%;
+  top:6%;
+  width:34%;
+  height:42%;
+  z-index:3;
+  pointer-events:none;
+  opacity:calc(var(--breathe,1) * .42);
+  background:radial-gradient(ellipse 52% 46% at 42% 30%,
+    rgba(255,222,168,.6) 0%, rgba(255,212,152,0) 70%);
+}
+
+/* ── Entrance ──────────────────────────────────────────────────────────── */
+
+.alley__enter{
+  /* Anchored to the plate by the scene so it always lands on the pavement. */
+  position:absolute;
+  left:50%;
+  transform:translate(-50%,-50%);
+  z-index:6;
+  display:inline-flex;
+  align-items:center;
+  gap:14px;
+  min-height:56px;                 /* comfortably over the 44px touch minimum */
+  padding:16px 34px;
+  border:1px solid rgba(92,78,66,.34);
+  border-radius:999px;
+  background:rgba(250,244,234,.9);
+  color:#5c4e42;
+  font-size:.82rem;
+  font-weight:600;
+  letter-spacing:.24em;
+  cursor:pointer;
+  transition:transform var(--dur-ui) var(--ease-soft),
+             background var(--dur-ui) var(--ease),
+             box-shadow var(--dur-ui) var(--ease),
+             opacity 300ms ease;
+  box-shadow:0 6px 22px rgba(120,96,70,.2);
+}
+.alley__enter:hover{
+  transform:translate(-50%,-50%) scale(1.05);
+  background:#fdf8f0;
+  box-shadow:0 10px 28px rgba(120,96,70,.26);
+}
+.alley__enter:active{transform:translate(-50%,-50%) scale(.99)}
+
+.alley__enter-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:#c97f4a;
+  box-shadow:0 0 0 0 rgba(201,127,74,.5);
+  animation:alleyPulse 2.6s var(--ease) infinite;
+}
+@keyframes alleyPulse{50%{box-shadow:0 0 0 7px rgba(201,127,74,0)}}
+
+/* ── Entrance sequence ─────────────────────────────────────────────────── */
+
+.alley--flicker .alley__lamp{animation:alleyFlicker 320ms steps(2,end) 2}
+@keyframes alleyFlicker{50%{opacity:.14}}
+
+.alley--warm .alley__glow{opacity:1}
+
+/* --lift comes from the scene: far enough to clear the doorway entirely. */
+.alley--lifting .alley__shutter{transform:translateY(var(--lift,-106%))}
+
+.alley--open .alley__enter{opacity:0;pointer-events:none}
+
+/* ── Reduced motion ────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion:reduce){
+  .alley__shutter,
+  .alley__glow,
+  .alley__enter{transition:none}
+  .alley__enter-dot{animation:none}
+  .alley--flicker .alley__lamp{animation:none}
+  /* Same destination, no journey. */
+  .alley[data-phase="entering"] .alley__shutter,
+  .alley[data-phase="open"] .alley__shutter{transform:translateY(var(--lift,-106%))}
+  .alley[data-phase="entering"] .alley__glow,
+  .alley[data-phase="open"] .alley__glow{opacity:1}
+}
+
+/* ── Portrait ──────────────────────────────────────────────────────────── */
+
+@media (orientation:portrait){
+  /* Not a shrunk desktop: the plate itself is a different composition. */
+  .alley__lamp{left:60%;top:26%;width:40%;height:26%}
+}
+
+@media (orientation:landscape) and (max-height:560px){
+  .alley__enter{min-height:48px;padding:12px 26px}
+}
+
+@media (max-width:480px){
+  .alley__enter{font-size:.76rem;letter-spacing:.2em;padding:16px 26px}
+}
