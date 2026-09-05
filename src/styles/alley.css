@@ -1,0 +1,209 @@
+/* ── Korean alley entrance ─────────────────────────────────────────────────
+   A small lane with one shutter in it. The layers are stacked in a single
+   aspect-locked stage so the shutter and the sign cannot drift apart or be
+   cropped away, whatever the window is doing.
+
+   Palette: warm, low-saturation, cream through muted brown. No pure black —
+   the deepest tone is a dark brown so the scene stays soft.
+   ──────────────────────────────────────────────────────────────────────── */
+
+.alley{
+  position:relative;
+  /* 100svh, not 100vh: the mobile URL bar must not add a scrollbar or crop
+     the shutter, which is the bug the old hero shipped with. */
+  min-height:100svh;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  background:#efe6d9;
+  isolation:isolate;
+}
+
+.alley__stage{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+}
+
+.alley__layer{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  /* The shutter recess sits slightly below centre in both crops, so both
+     bases anchor the same way and the layers line up. */
+  object-position:50% 58%;
+  pointer-events:none;
+  user-select:none;
+}
+
+/* The base picks its own composition through <picture>; nothing to switch
+   here. The <picture> wrapper still has to fill the stage. */
+.alley__stage picture{position:absolute;inset:0;display:block}
+
+/* The shutter is the one thing that moves a long way, so it gets its own box
+   rather than being stretched with the background. */
+.alley__shutter{
+  position:absolute;
+  left:50%;
+  top:16%;
+  width:min(32vw,460px);
+  height:auto;
+  aspect-ratio:1400 / 1600;
+  transform:translateX(-50%);
+  object-fit:fill;
+  transition:transform 1400ms cubic-bezier(.4,0,.2,1);
+  will-change:transform;
+  z-index:2;
+}
+
+.alley__sign{
+  position:absolute;
+  left:50%;
+  top:6%;
+  width:min(22vw,320px);
+  height:auto;
+  transform:translateX(-50%) rotate(var(--sway,0deg));
+  transform-origin:50% 8%;
+  z-index:4;
+}
+
+.alley__props{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  width:100%;
+  height:auto;
+  z-index:5;
+  pointer-events:none;
+}
+
+/* Warm light spilling from under the shutter. A gradient, not an image —
+   it saves a file and it can breathe without a sprite sheet. */
+.alley__glow{
+  position:absolute;
+  left:50%;
+  top:16%;
+  width:min(32vw,460px);
+  aspect-ratio:1400 / 1600;
+  transform:translateX(-50%);
+  z-index:1;
+  opacity:0;
+  transition:opacity 700ms ease-out;
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 92%,
+      rgba(255,206,138,.92) 0%,
+      rgba(246,178,104,.55) 38%,
+      rgba(214,142,78,0) 74%);
+}
+
+/* The lane lamp. Breathes very slowly via --breathe from the scene tick. */
+.alley__lamp{
+  position:absolute;
+  left:50%;
+  top:0;
+  width:min(46vw,660px);
+  height:min(40vh,420px);
+  transform:translateX(-50%);
+  z-index:3;
+  pointer-events:none;
+  opacity:calc(var(--breathe,1) * .5);
+  background:radial-gradient(ellipse 60% 70% at 50% 12%,
+    rgba(255,224,176,.5) 0%, rgba(255,214,158,0) 68%);
+}
+
+/* ── Entrance ──────────────────────────────────────────────────────────── */
+
+.alley__enter{
+  position:relative;
+  z-index:6;
+  display:inline-flex;
+  align-items:center;
+  gap:14px;
+  margin-top:34vh;
+  /* Comfortably over the 44px touch minimum on every screen. */
+  min-height:56px;
+  padding:16px 34px;
+  border:1px solid rgba(92,78,66,.34);
+  border-radius:999px;
+  background:rgba(250,244,234,.86);
+  color:#5c4e42;
+  font-size:.82rem;
+  font-weight:600;
+  letter-spacing:.24em;
+  cursor:pointer;
+  transition:transform var(--dur-ui) var(--ease-soft),
+             background var(--dur-ui) var(--ease),
+             box-shadow var(--dur-ui) var(--ease);
+  box-shadow:0 6px 20px rgba(120,96,70,.16);
+}
+.alley__enter:hover{
+  transform:translateY(-2px) scale(1.03);
+  background:#fdf8f0;
+  box-shadow:0 10px 26px rgba(120,96,70,.22);
+}
+.alley__enter:active{transform:translateY(0) scale(.99)}
+.alley__enter[disabled]{opacity:.45;cursor:default;transform:none}
+
+.alley__enter-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:#c97f4a;
+  box-shadow:0 0 0 0 rgba(201,127,74,.5);
+  animation:alleyPulse 2.6s var(--ease) infinite;
+}
+@keyframes alleyPulse{
+  50%{box-shadow:0 0 0 7px rgba(201,127,74,0)}
+}
+
+/* ── Entrance sequence ─────────────────────────────────────────────────── */
+
+.alley--flicker .alley__lamp{animation:alleyFlicker 320ms steps(2,end) 2}
+@keyframes alleyFlicker{50%{opacity:.16}}
+
+.alley--warm .alley__glow{opacity:1}
+
+/* Lift the shutter clear of its own height plus the recess above it. */
+.alley--lifting .alley__shutter{transform:translateX(-50%) translateY(-104%)}
+
+.alley--open .alley__enter{opacity:0;pointer-events:none;transition:opacity 300ms ease}
+
+/* ── Reduced motion ────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion:reduce){
+  .alley__shutter{transition:none}
+  .alley__glow{transition:none}
+  .alley__enter{transition:none}
+  .alley__enter-dot{animation:none}
+  .alley--flicker .alley__lamp{animation:none}
+  /* Same destination, no journey: entering still opens the way in. */
+  .alley[data-phase="entering"] .alley__shutter,
+  .alley[data-phase="open"] .alley__shutter{transform:translateX(-50%) translateY(-104%)}
+  .alley[data-phase="entering"] .alley__glow,
+  .alley[data-phase="open"] .alley__glow{opacity:1}
+}
+
+/* ── Portrait ──────────────────────────────────────────────────────────── */
+
+@media (orientation:portrait){
+  /* Not a shrunk desktop: the shutter takes the middle of the screen and the
+     sign sits right above it, both reachable with a thumb. */
+  .alley__shutter,
+  .alley__glow{width:min(72vw,420px);top:24%}
+  .alley__sign{width:min(56vw,320px);top:12%}
+  .alley__enter{margin-top:44vh}
+  .alley__layer{object-position:50% 62%}
+}
+
+/* Landscape on a short screen: keep the shutter fully inside the viewport. */
+@media (orientation:landscape) and (max-height:560px){
+  .alley__shutter,
+  .alley__glow{width:min(26vw,300px);top:12%}
+  .alley__sign{width:min(18vw,220px);top:3%}
+  .alley__enter{margin-top:26vh;min-height:48px;padding:12px 26px}
+}
+
+@media (max-width:480px){
+  .alley__enter{font-size:.76rem;letter-spacing:.2em;padding:16px 26px}
+}

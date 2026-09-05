@@ -7,10 +7,7 @@
  */
 
 export interface Flags {
-  /** The pre-DOKKA space hero. On until STEP 2's alley replaces it, then this
-   *  flag and src/legacy/ both get deleted. */
-  legacyHero: boolean
-  /** Korean alley entrance (STEP 2). */
+  /** Korean alley entrance. Now the homepage. */
   alley: boolean
   /** DOKKA CREW workshop interior (STEP 3). */
   garage: boolean
@@ -25,8 +22,7 @@ export interface Flags {
 }
 
 const DEFAULTS: Flags = {
-  legacyHero: true,
-  alley: false,
+  alley: true,
   garage: false,
   characters: false,
   dokkaFire: false,
@@ -37,7 +33,7 @@ const DEFAULTS: Flags = {
 const TRUTHY = new Set(['1', 'true', 'on', 'yes'])
 const FALSY = new Set(['0', 'false', 'off', 'no'])
 
-/** Read overrides from a query string, e.g. ?alley=on&legacyHero=off */
+/** Read overrides from a query string, e.g. ?garage=on&debug=on */
 export function resolveFlags(search = '', defaults: Flags = DEFAULTS): Flags {
   const out: Flags = { ...defaults }
   let params: URLSearchParams

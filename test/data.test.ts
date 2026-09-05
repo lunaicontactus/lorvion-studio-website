@@ -3,6 +3,7 @@ import { CHARACTERS, MAX_ACTIVE_CHARACTERS, getCharacter } from '@/data/characte
 import { PROJECTS, VISIBLE_PROJECTS, getProject } from '@/data/projects'
 import { GARAGE_OBJECTS, MAIN_MENU_OBJECTS } from '@/data/garageObjects'
 import { EASTER_EGGS } from '@/data/easterEggs'
+import { ALLEY_LAYERS, ALLEY_CRITICAL } from '@/data/alley'
 
 describe('DOKKA CREW data', () => {
   it('has the five approved characters, uniquely identified', () => {
@@ -87,6 +88,41 @@ describe('easter eggs', () => {
   it('gives every repeatable egg a real cooldown', () => {
     for (const e of EASTER_EGGS) {
       if (!e.onceOnly) expect(e.cooldownMs).toBeGreaterThan(0)
+    }
+  })
+})
+
+describe('alley layers', () => {
+  it('has unique ids', () => {
+    expect(new Set(ALLEY_LAYERS.map((l) => l.id)).size).toBe(ALLEY_LAYERS.length)
+  })
+
+  it('gives each orientation its own base', () => {
+    const bases = ALLEY_LAYERS.filter((l) => l.id.startsWith('base-'))
+    expect(bases.map((b) => b.only).sort()).toEqual(['landscape', 'portrait'])
+  })
+
+  it('shares every layer above the base between orientations', () => {
+    // Two bases is the price of a real portrait composition; a second set of
+    // props would not be.
+    for (const l of ALLEY_LAYERS.filter((x) => !x.id.startsWith('base-'))) {
+      expect(l.only).toBeUndefined()
+    }
+  })
+
+  it('keeps decorative layers out of the accessibility tree', () => {
+    for (const l of ALLEY_LAYERS) expect(l.alt).toBe('')
+  })
+
+  it('points every layer at a webp under the alley folder', () => {
+    for (const l of ALLEY_LAYERS) {
+      expect(l.src).toMatch(/^\/assets\/images\/alley\/[a-z_]+\.webp$/)
+    }
+  })
+
+  it('names the files the entrance cannot open without', () => {
+    for (const id of ALLEY_CRITICAL) {
+      expect(ALLEY_LAYERS.some((l) => l.id === id)).toBe(true)
     }
   })
 })

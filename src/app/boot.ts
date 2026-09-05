@@ -16,6 +16,7 @@ import { mountNav } from '@/ui/nav'
 import { mountReveal } from '@/ui/reveal'
 import { mountSoundToggle } from '@/ui/soundToggle'
 import { mountIntro } from '@/ui/intro'
+import { mountAlley } from '@/scenes/alley'
 
 type Teardown = () => void
 
@@ -80,14 +81,8 @@ export function boot(): Teardown {
     }),
   )
 
-  // The pre-DOKKA space hero. Loaded only while its flag is on so STEP 2 can
-  // retire it by flipping one boolean and deleting one folder.
-  if (flags.legacyHero && document.getElementById('starfield')) {
-    void import('@/legacy/space-hero.js')
-      .then((m) => {
-        teardowns.push(guard('legacy-hero', () => m.mountSpaceHero()))
-      })
-      .catch((err: unknown) => log.error('legacy hero failed to load', err))
+  if (flags.alley && document.querySelector('[data-alley]')) {
+    teardowns.push(guard('alley', () => mountAlley()))
   }
 
   for (const el of document.querySelectorAll<HTMLElement>('[data-year]')) {

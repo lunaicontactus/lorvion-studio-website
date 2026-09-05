@@ -41,3 +41,17 @@
   --dur-world:520ms;
   --ease-soft:cubic-bezier(.34,1.32,.48,1);
 }
+
+/* ── Cozy palette ─────────────────────────────────────────────────────────
+   The alley's world: warm, low-saturation, nothing pure black. The deepest
+   tone is a dark brown so even the text stays soft.
+   ──────────────────────────────────────────────────────────────────────── */
+:root{
+  --cozy-cream:#efe6d9;
+  --cozy-wall:#cec2b2;
+  --cozy-ink:#463a30;        /* darkest tone — replaces black */
+  --cozy-ink-soft:#6b5b4c;
+  --cozy-line:rgba(70,58,48,.18);
+  --cozy-lamp:#e8b877;
+  --cozy-ember:#c97f4a;
+}

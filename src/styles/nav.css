@@ -12,3 +12,39 @@
 .menu-toggle{display:none;background:none;border:0;color:white;padding:10px;cursor:pointer}
 .menu-toggle span{display:block;width:24px;height:1px;background:white;margin:6px 0;transition:.3s}
 
+
+/* ── On the alley ─────────────────────────────────────────────────────────
+   The nav was drawn for a near-black sky; on the alley's cream wall its white
+   text measured 1.14:1 against the background, which is unreadable. Inside a
+   cozy page it takes the dark ink instead.
+   ──────────────────────────────────────────────────────────────────────── */
+.page-cozy .site-nav{
+  color:var(--cozy-ink);
+  background:linear-gradient(180deg,rgba(239,230,217,.92),rgba(239,230,217,0));
+}
+.page-cozy .site-nav.scrolled{
+  background:rgba(243,236,226,.94);
+  border-bottom:1px solid var(--cozy-line);
+  backdrop-filter:blur(8px);
+}
+.page-cozy .nav-links a{color:var(--cozy-ink-soft)}
+.page-cozy .nav-links a:hover,
+.page-cozy .nav-links a:focus-visible{color:var(--cozy-ink)}
+.page-cozy .nav-links a:after{background:var(--cozy-ink)}
+.page-cozy .brand-wordmark{color:var(--cozy-ink)}
+.page-cozy .menu-toggle{color:var(--cozy-ink)}
+.page-cozy .menu-toggle span{background:var(--cozy-ink)}
+.page-cozy :where(a,button,[tabindex]):focus-visible{outline-color:var(--cozy-ember)}
+
+/* The mobile menu drops over the alley, so it needs the warm ground too. */
+@media (max-width:900px){
+  .page-cozy .nav-links{background:rgba(243,236,226,.97);color:var(--cozy-ink)}
+}
+
+/* The wordmark paints itself with a silver gradient clipped to the glyphs, so
+   `color` alone does nothing to it — on the cream wall it measured about 1.1:1.
+   Inside a cozy page the gradient becomes warm ink instead. */
+.page-cozy .brand-wordmark{
+  background-image:linear-gradient(#5a4a3d,#463a30 58%,#3a2f27);
+  -webkit-text-fill-color:transparent;
+}
