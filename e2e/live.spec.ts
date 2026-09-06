@@ -101,9 +101,21 @@ test.describe('mobile', () => {
   await page.waitForTimeout(1200)
   await expect(page.locator('.garage__hint')).toBeVisible()
   await page.screenshot({ path: 'e2e/shots/live-390-01-garage.png' })
+
+  // What a finger sees: the outline while it is down, and only that one.
+  await page.locator('.thing--pc').dispatchEvent('pointerdown')
+  await page.waitForTimeout(120)
+  const litOnTouch = await page.evaluate(() =>
+    [...document.querySelectorAll('.thing')]
+      .filter((t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5)
+      .map((t) => (t as HTMLElement).dataset['object']))
+  expect(litOnTouch).toEqual(['pc'])
+  await page.screenshot({ path: 'e2e/shots/live-390-02-tap-outline.png' })
+  await page.locator('.thing--pc').dispatchEvent('pointerup')
+
   await page.locator('.thing--pc').click()
   await page.waitForTimeout(700)
   await expect(page.locator('[data-panel-root]')).toBeVisible()
-  await page.screenshot({ path: 'e2e/shots/live-390-02-pc.png' })
+  await page.screenshot({ path: 'e2e/shots/live-390-03-pc.png' })
   })
 })

@@ -34,9 +34,9 @@
 
 /* ── Things you can touch ──────────────────────────────────────────────── */
 /* A hit region over something already in the painting. At rest it draws
-   nothing whatsoever. Under the pointer — or under a keyboard focus — a thin
-   white line traces the object itself, and the object lifts by a few percent
-   inside that same shape.
+   nothing whatsoever. Under the pointer — or under a keyboard focus — a heavy
+   white line traces the object itself, sitting just outside the artwork so it
+   reads as a selected game object rather than a focus ring on a box.
 
    Deliberately absent: radial-gradient, border-radius:50%, pulse, floating
    marks, and any rectangle around the hit region. The hit region is looser
@@ -64,17 +64,27 @@
   /* Position and size come from the scene, in world units. */
   pointer-events:none;
   opacity:0;
-  transition:opacity 120ms ease;
+  /* Leaving is quicker than arriving, and neither is a movement. */
+  transition:opacity 80ms ease;
 }
+/* A 5px stroke centred on the path hangs 2.5px outside the viewBox. */
+.thing__outline{overflow:visible}
 
+/* Only to lift the white off a pale wall. If this is visible as a dark
+   border, it is too strong. */
+.thing__edge{
+  fill:none;
+  stroke:rgba(20,15,12,.22);
+  stroke-width:8;
+  stroke-linejoin:round;
+  stroke-linecap:round;
+}
 .thing__stroke{
   fill:none;
-  stroke:rgba(255,255,255,.9);
-  stroke-width:1.6;
+  stroke:rgba(255,255,255,.98);
+  stroke-width:5;
   stroke-linejoin:round;
-  /* Held to a hairline whatever the room is scaled to. */
-  paint-order:stroke;
-  filter:drop-shadow(0 0 3px rgba(255,255,255,.25));
+  stroke-linecap:round;
 }
 
 /* Clipped to the object's own silhouette, so the lift is its shape. */
@@ -88,7 +98,7 @@
 .thing:focus-visible .thing__outline,
 .thing:focus-visible .thing__lift,
 .thing.is-pressed .thing__outline,
-.thing.is-pressed .thing__lift{opacity:1}
+.thing.is-pressed .thing__lift{opacity:1;transition-duration:100ms}
 
 /* Touch has no hover state to leave, so nothing may linger. */
 @media (hover:none){

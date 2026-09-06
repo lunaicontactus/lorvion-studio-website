@@ -50,10 +50,14 @@ export const OUTLINE_PATHS: Readonly<Record<OutlineShape, string>> = {
     'H0.125 Q0.082,1 0.082,0.964 V0.895 Q0.082,0.859 0.125,0.859 Z',
   /** The wooden television: one rounded frame. It stands on a shelf, not legs. */
   tv: roundedRect(0.074, 0.116),
-  /** The fridge door: generous top corners, a tighter foot. */
+  /**
+   * The fridge, read off the painting: a rounded top, the door's straight
+   * sides, and the base below it stepping out a little wider on both sides.
+   * That step is what stops it reading as a rounded rectangle.
+   */
   fridge:
-    'M0.146,0 H0.854 Q1,0 1,0.072 V0.94 Q1,0.985 0.94,0.985 H0.06 ' +
-    'Q0,0.985 0,0.94 V0.072 Q0,0 0.146,0 Z',
+    'M0.125,0 H0.85 Q0.95,0 0.95,0.05 V0.95 H1 V0.975 Q1,1 0.96,1 ' +
+    'H0.04 Q0,1 0,0.975 V0.95 H0.025 V0.05 Q0.025,0 0.125,0 Z',
   /** The secret door: the arch springs a quarter of the way up. */
   arch: 'M0,1 V0.25 Q0,0 0.5,0 Q1,0 1,0.25 V1 Z',
   /** A chest of drawers. */
@@ -68,3 +72,10 @@ export const OUTLINE_PATHS: Readonly<Record<OutlineShape, string>> = {
  * easy to click without its outline swelling to match.
  */
 export const HIT_PADDING = 12
+
+/**
+ * How far the outline is pushed beyond the object it traces, in world pixels.
+ * The line sits just off the artwork rather than along its edge, so it reads as
+ * something drawn around the object instead of painted onto it.
+ */
+export const OUTLINE_OFFSET = 3

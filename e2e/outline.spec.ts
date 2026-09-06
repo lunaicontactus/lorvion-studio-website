@@ -1,0 +1,104 @@
+import { test, expect } from '@playwright/test'
+
+/**
+ * The selection outline, checked in every engine the site claims to support.
+ * Geometry is the thing that breaks across engines: objectBoundingBox clip
+ * units, non-scaling strokes and an overflowing SVG are all places where one
+ * browser quietly disagrees with the others.
+ */
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.clear()
+      localStorage.clear()
+    } catch {
+      /* private mode */
+    }
+  })
+  await page.goto('/', { waitUntil: 'load' })
+})
+
+test('the entrance puts the week outside the door, and none of it is clickable', async ({
+  page,
+}) => {
+  const props = page.locator('[data-alley-prop]')
+  await expect(props).toHaveCount(3)
+  for (const name of ['parcelStack', 'waterPack', 'zeroCola']) {
+    const el = page.locator(`[data-alley-prop="${name}"]`)
+    await expect(el).toBeVisible()
+    // Decoration: not a button, not focusable, and it does not take the click.
+    expect(await el.evaluate((n) => n.tagName)).toBe('IMG')
+    expect(await el.evaluate((n) => n.getAttribute('tabindex'))).toBeNull()
+    expect(await el.evaluate((n) => getComputedStyle(n).cursor)).not.toBe('pointer')
+    expect(
+      await el.evaluate((n) => {
+        const b = n.getBoundingClientRect()
+        const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)
+        return hit === n
+      }),
+    ).toBe(false)
+  }
+  // The door line stays walkable.
+  const door = await page.locator('[data-alley-layer="shutter"]').boundingBox()
+  for (const name of ['parcelStack', 'waterPack', 'zeroCola']) {
+    const b = await page.locator(`[data-alley-prop="${name}"]`).boundingBox()
+    expect(b!.x + b!.width, name).toBeLessThanOrEqual(door!.x + 1)
+  }
+})
+
+test('hover draws one heavy silhouette, sized to the object, and takes it away', async ({
+  page,
+}) => {
+  await page.locator('[data-alley-enter]').click()
+  await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 20000 })
+  await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
+  await page.waitForTimeout(1200)
+
+  const target = page.locator('.thing--pc')
+  await target.hover()
+  await page.waitForTimeout(250)
+
+  const lit = await page.evaluate(() =>
+    [...document.querySelectorAll('.thing')]
+      .filter((t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5)
+      .map((t) => (t as HTMLElement).dataset['object']),
+  )
+  expect(lit).toEqual(['pc'])
+
+  const drawn = await target.evaluate((el) => {
+    const svg = el.querySelector('.thing__outline') as SVGElement
+    const face = getComputedStyle(svg.querySelector('.thing__stroke')!)
+    const edge = getComputedStyle(svg.querySelector('.thing__edge')!)
+    const box = svg.getBoundingClientRect()
+    const hit = el.getBoundingClientRect()
+    const room = document.querySelector('.garage__room') as HTMLElement
+    const scale = room.getBoundingClientRect().width / room.offsetWidth
+    return {
+      face: face.strokeWidth,
+      edge: edge.strokeWidth,
+      shadow: face.filter,
+      // The outline is the object's own box pushed out, not the padded hit box.
+      grownBy: Math.round((hit.width - box.width) / 2 / scale),
+    }
+  })
+
+  // Heavy enough to read as a selected object, not a focus ring.
+  expect(parseFloat(drawn.face)).toBeGreaterThanOrEqual(4.5)
+  expect(parseFloat(drawn.edge)).toBeGreaterThan(parseFloat(drawn.face))
+  // No glow, no halo: the contrast comes from the dark path behind.
+  expect(drawn.shadow === 'none' || drawn.shadow === '').toBe(true)
+  // 12px of hit padding on each side, 3px of outline offset back out.
+  expect(drawn.grownBy).toBeGreaterThanOrEqual(7)
+  expect(drawn.grownBy).toBeLessThanOrEqual(11)
+
+  await page.mouse.move(20, 700)
+  await page.waitForTimeout(300)
+  const after = await page.evaluate(
+    () =>
+      [...document.querySelectorAll('.thing')].filter(
+        (t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5,
+      ).length,
+  )
+  expect(after).toBe(0)
+})

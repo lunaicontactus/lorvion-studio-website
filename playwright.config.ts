@@ -24,5 +24,19 @@ export default defineConfig({
     reuseExistingServer: true,
     timeout: 60_000,
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // The outline is geometry, and geometry is where engines disagree; the
+    // camera tests stay on one engine because they are about input, not paint.
+    {
+      name: 'webkit',
+      testMatch: 'outline.spec.ts',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'firefox',
+      testMatch: 'outline.spec.ts',
+      use: { ...devices['Desktop Firefox'] },
+    },
+  ],
 })

@@ -29,53 +29,32 @@ export interface LayerPlacement {
  * What is outside the shutter.
  *
  * A studio that works late leaves evidence: parcels that arrived and were put
- * down, water for the week, cans for the small hours, flattened card waiting to
- * go out. That is the whole subject — the lane should say someone is in there
- * working, before it says anything else.
+ * down, water for the week, cans for the small hours. That is the whole
+ * subject — the lane should say someone is in there working, before it says
+ * anything else.
  *
  * The fire-spirit pot is gone. It was the brightest, most fantastical thing in
- * the frame and it took the scene; the identity that remains is one small stamp
- * on an ordinary parcel, which is as much as this doorway needs.
+ * the frame and it took the scene; what remains is a delivery-week pile with a
+ * couple of small stickers on it, which is as much identity as a doorway needs.
  *
- * Planned arrangement, left wall inward, door line kept clear:
- *   flattened card leaning on the wall, furthest out
- *   a stack of three to five parcels, tallest of the group
- *   one opened parcel beside it, flaps up, turned a few degrees
- *   the stamped parcel, small, sat on top of nothing in particular
- *   shrink-wrapped water to the right of the door
- *   a can pack next to it, lower and turned the other way
- * No two share a baseline, a size or an angle.
+ * Arrangement, against the left wall with the door line kept clear: the parcel
+ * stack tallest and furthest back, the can boxes lower and turned the other
+ * way in front of it, the water to their right and closer still. No two share
+ * a baseline, a width or an angle.
  *
- * `PROP_ART` is null where the picture does not exist yet. Nothing is stretched
- * or duplicated to stand in for it: the slot is laid out, the scene skips it,
- * and the file is reported as needed.
+ * The packaging is invented. Nothing here carries a real courier's or a real
+ * drinks company's mark.
  */
-export type PropName =
-  | 'box'
-  | 'parcelStack'
-  | 'openParcel'
-  | 'waterPack'
-  | 'zeroCola'
-  | 'flatBoxes'
+export type PropName = 'parcelStack' | 'waterPack' | 'zeroCola'
 
-export const PROP_NAMES: readonly PropName[] = [
-  'box',
-  'parcelStack',
-  'openParcel',
-  'waterPack',
-  'zeroCola',
-  'flatBoxes',
-]
+export const PROP_NAMES: readonly PropName[] = ['parcelStack', 'waterPack', 'zeroCola']
 
 const P = '/assets/images/alley'
 
-export const PROP_ART: Readonly<Record<PropName, string | null>> = {
-  box: `${P}/alley_prop_box.webp`,
-  parcelStack: null, // alley_prop_parcel_stack.webp
-  openParcel: null, // alley_prop_open_parcel.webp
-  waterPack: null, // alley_prop_water_pack.webp
-  zeroCola: null, // alley_prop_zero_cola.webp
-  flatBoxes: null, // alley_prop_flat_boxes.webp
+export const PROP_ART: Readonly<Record<PropName, string>> = {
+  parcelStack: `${P}/alley_prop_parcel_stack.webp`,
+  waterPack: `${P}/alley_prop_water_pack.webp`,
+  zeroCola: `${P}/alley_prop_zero_cola.webp`,
 }
 
 export interface AlleyPlate {
@@ -103,12 +82,9 @@ export const ALLEY_LANDSCAPE: AlleyPlate = {
   // Put down where they were carried in, not arranged: the door line stays
   // clear and nothing shares a baseline.
   props: {
-    flatBoxes: { left: 8.6, bottom: 19, width: 6.2, tilt: 1.5 },
-    parcelStack: { left: 15.4, bottom: 18.5, width: 7.4, tilt: -1 },
-    openParcel: { left: 23.2, bottom: 19.5, width: 5.6, tilt: 3 },
-    box: { left: 29.4, bottom: 20.5, width: 4.4, tilt: -3 },
-    waterPack: { left: 66.5, bottom: 18.5, width: 7.8, tilt: 1 },
-    zeroCola: { left: 75.4, bottom: 19.5, width: 6.4, tilt: -2 },
+    parcelStack: { left: 11.5, bottom: 20, width: 11, tilt: -1.5 },
+    waterPack: { left: 23.9, bottom: 17.4, width: 6.6, tilt: 1.5 },
+    zeroCola: { left: 18.2, bottom: 16.2, width: 7.6, tilt: -3 },
   },
   enterY: 84,
   doorway: { x: 49.95, y: 45.15, w: 19.7, h: 48.9 },
@@ -119,12 +95,9 @@ export const ALLEY_PORTRAIT: AlleyPlate = {
   shutter: { left: 22, top: 34.2, width: 56 },
   sign: { left: 33, top: 20, width: 34 },
   props: {
-    flatBoxes: { left: 16, bottom: 21, width: 14, tilt: 2 },
-    parcelStack: { left: 15, bottom: 11, width: 16, tilt: -1 },
-    openParcel: { left: 2, bottom: 11.5, width: 11, tilt: 3 },
-    box: { left: 3, bottom: 31, width: 9, tilt: -3 },
-    waterPack: { left: 68, bottom: 21, width: 15, tilt: 1 },
-    zeroCola: { left: 84, bottom: 22, width: 12, tilt: -2 },
+    parcelStack: { left: 4, bottom: 20, width: 23, tilt: -1.5 },
+    waterPack: { left: 18, bottom: 12.5, width: 14, tilt: 1.5 },
+    zeroCola: { left: 8, bottom: 15, width: 18, tilt: -3 },
   },
   enterY: 82,
   doorway: { x: 50, y: 52.25, w: 34, h: 32.5 },
@@ -136,10 +109,9 @@ export const ALLEY_ART = {
    *  The housing stays put; only the slats below it roll up into it. */
   shutter: { src: `${DIR}/alley_shutter.webp`, w: 1100, h: 1211, drum: 0.175 },
   sign: { src: `${DIR}/alley_sign.webp`, w: 760, h: 481 },
-  /** The dokkaebi fire hiding in the leaves, as fractions of the pot cut-out.
-   *  STEP 10 puts a living flame here; until then it is just painted. */
-  pot: { src: `${DIR}/alley_prop_pot.webp`, w: 466, h: 600, fire: { x: 0.665, y: 0.487, w: 0.369, h: 0.218 } },
-  box: { src: `${DIR}/alley_prop_box.webp`, w: 396, h: 372 },
+  parcelStack: { src: `${DIR}/alley_prop_parcel_stack.webp`, w: 496, h: 491 },
+  waterPack: { src: `${DIR}/alley_prop_water_pack.webp`, w: 386, h: 483 },
+  zeroCola: { src: `${DIR}/alley_prop_zero_cola.webp`, w: 449, h: 480 },
 } as const
 
 /** Files the entrance cannot open without. */

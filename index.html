@@ -88,11 +88,18 @@
              src="/assets/images/alley/alley_sign.webp"
              width="760" height="481" alt="" decoding="async">
 
-        <!-- What a studio that works late leaves outside: parcels, water,
-             cans. Slots with no artwork yet are simply absent — see PROP_ART
-             in src/data/alley.ts for the files still needed. -->
-        <img class="alley__cutout alley__prop" data-alley-prop="box"
-             src="/assets/images/alley/alley_prop_box.webp" width="396" height="372" alt="" fetchpriority="low" decoding="async">
+        <!-- What a studio that works late leaves outside: the week's parcels,
+             water, and cans. Ordered back to front; placement is in
+             src/data/alley.ts. -->
+        <img class="alley__cutout alley__prop" data-alley-prop="parcelStack"
+             src="/assets/images/alley/alley_prop_parcel_stack.webp"
+             width="496" height="491" alt="" fetchpriority="low" decoding="async">
+        <img class="alley__cutout alley__prop" data-alley-prop="waterPack"
+             src="/assets/images/alley/alley_prop_water_pack.webp"
+             width="386" height="483" alt="" fetchpriority="low" decoding="async">
+        <img class="alley__cutout alley__prop" data-alley-prop="zeroCola"
+             src="/assets/images/alley/alley_prop_zero_cola.webp"
+             width="449" height="480" alt="" fetchpriority="low" decoding="async">
 
         <span class="alley__lamp" data-alley-lamp></span>
       </div>

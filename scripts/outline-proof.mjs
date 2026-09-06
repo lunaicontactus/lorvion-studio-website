@@ -41,6 +41,9 @@ const worlds = [
   { name: 'portrait', tag: 'MOBILE_WORLD', w: 1100, art: '/assets/images/garage/room_portrait.webp' },
 ]
 
+/** Same outward push the scene applies, in world pixels. */
+const OFF = 3
+
 const browser = await chromium.launch()
 mkdirSync(resolve(root, 'e2e/shots'), { recursive: true })
 
@@ -51,14 +54,16 @@ for (const world of worlds) {
     const m = 26
     const tw = (o.w + m * 2) * zoom
     const th = (o.h + m * 2) * zoom
-    return `<figure style="width:${tw}px">
+    return `<figure data-id="${o.id}" style="width:${tw}px">
       <div class="tile" style="width:${tw}px;height:${th}px;
         background-image:url('${world.art}');
         background-position:${-(o.x - m) * zoom}px ${-(o.y - m) * zoom}px;
         background-size:${world.w * zoom}px auto;">
         <svg viewBox="0 0 1 1" preserveAspectRatio="none"
-          style="left:${m * zoom}px;top:${m * zoom}px;width:${o.w * zoom}px;height:${o.h * zoom}px">
-          <path d="${paths[o.shape]}" vector-effect="non-scaling-stroke"/>
+          style="left:${(m - OFF) * zoom}px;top:${(m - OFF) * zoom}px;
+            width:${(o.w + OFF * 2) * zoom}px;height:${(o.h + OFF * 2) * zoom}px">
+          <path class="edge" d="${paths[o.shape]}" vector-effect="non-scaling-stroke"/>
+          <path class="face" d="${paths[o.shape]}" vector-effect="non-scaling-stroke"/>
         </svg>
       </div><figcaption>${o.id} · ${o.shape} · ${o.x},${o.y} ${o.w}x${o.h}</figcaption>
     </figure>`
@@ -72,14 +77,24 @@ for (const world of worlds) {
     .tile{position:relative;image-rendering:auto;background-repeat:no-repeat;
       transform-origin:0 0}
     svg{position:absolute;overflow:visible}
-    path{fill:none;stroke:rgba(255,255,255,.95);stroke-width:1.6;stroke-linejoin:round;
-      filter:drop-shadow(0 0 3px rgba(255,255,255,.3))}
+    /* Mirrors .thing__edge and .thing__stroke in src/styles/garage.css. */
+    path.edge{fill:none;stroke:rgba(20,15,12,.22);stroke-width:8;
+      stroke-linejoin:round;stroke-linecap:round}
+    path.face{fill:none;stroke:rgba(255,255,255,.98);stroke-width:5;
+      stroke-linejoin:round;stroke-linecap:round}
+    svg{overflow:visible}
     figcaption{padding:4px 2px;opacity:.75}
   </style>${tiles.join('')}`)
   await page.waitForLoadState('networkidle')
   const out = resolve(root, `e2e/shots/outline-proof-${world.name}.png`)
   await page.screenshot({ path: out, fullPage: true })
   console.log(out, objs.length, 'objects')
+  // One file per object as well: a sheet is for scanning, a tile is for judging.
+  for (const o of objs) {
+    await page.locator(`figure[data-id="${o.id}"]`).screenshot({
+      path: resolve(root, `e2e/shots/outline-${world.name}-${o.id}.png`),
+    })
+  }
   await page.close()
 }
 await browser.close()
