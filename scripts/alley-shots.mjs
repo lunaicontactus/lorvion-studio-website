@@ -9,6 +9,7 @@ import { chromium } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 
 const origin = process.argv[2] ?? 'http://localhost:4173'
+const tag = origin.includes('localhost') ? '' : 'live-'
 const browser = await chromium.launch()
 mkdirSync('e2e/shots', { recursive: true })
 
@@ -18,8 +19,12 @@ for (const vp of [{ w: 1440, h: 900 }, { w: 1920, h: 1080 }, { w: 390, h: 844 }]
     try { sessionStorage.clear(); localStorage.clear() } catch { /* private mode */ }
   })
   await page.goto(origin, { waitUntil: 'load' })
-  await page.waitForTimeout(2600)
-  await page.screenshot({ path: `e2e/shots/alley-${vp.w}.png` })
+  // Past the intro, then let the entrance settle before looking at it.
+  const skip = page.locator('#introSkip')
+  if (await skip.count()) await skip.click().catch(() => undefined)
+  await page.waitForSelector('[data-alley-prop]', { state: 'visible', timeout: 20000 })
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `e2e/shots/alley-${tag}${vp.w}.png` })
   const props = await page.evaluate(() =>
     [...document.querySelectorAll('[data-alley-prop]')].map((el) => {
       const b = el.getBoundingClientRect()
