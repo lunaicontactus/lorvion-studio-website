@@ -1,65 +1,70 @@
 /**
- * The shape each object really is.
+ * The silhouettes the hover outline is drawn from.
  *
- * A hit region may be a little larger than its object so it is comfortable to
- * click. The outline must not be — it traces the thing in the painting, so the
- * two are kept apart: `rect` in world.ts is the hit region, and the path here
- * is the silhouette drawn inside it.
+ * Every path was measured off the painted room, not invented: a coordinate
+ * grid was rendered over the panorama, the object's edges were read from it,
+ * and the result was drawn back over the artwork to check. Paths are in
+ * objectBoundingBox units (0..1 of the object's own rectangle), so one shape
+ * serves both plates and any zoom.
  *
- * Paths are in a 0..1 box so one string serves both jobs: stroked in an SVG
- * with `vector-effect="non-scaling-stroke"`, and reused as a clip on the very
- * slight brightness lift, which is what keeps the lift the object's shape
- * rather than a rectangle over it.
+ * Keep a shape honest to the thing it traces. A television whose outline
+ * sprouts legs it does not have is worse than no outline at all.
  */
 export type OutlineShape =
   | 'rect'
   | 'poster'
   | 'monitor'
+  | 'monitorPortrait'
   | 'tv'
   | 'fridge'
   | 'arch'
   | 'cabinet'
   | 'shelf'
 
-/** Rounded rectangle, corners as a fraction of the box. */
-function roundedRect(r: number): string {
-  const k = r
-  return [
-    `M${k},0`,
-    `H${1 - k}`,
-    `Q1,0 1,${k}`,
-    `V${1 - k}`,
-    `Q1,1 ${1 - k},1`,
-    `H${k}`,
-    `Q0,1 0,${1 - k}`,
-    `V${k}`,
-    `Q0,0 ${k},0`,
-    'Z',
-  ].join(' ')
+/** A rectangle with corners rounded by `rx`/`ry` in bounding-box units. */
+function roundedRect(rx: number, ry = rx, top = 0, bottom = 1): string {
+  const b = bottom
+  return (
+    `M${rx},${top} H${1 - rx} Q1,${top} 1,${top + ry} V${b - ry} Q1,${b} ${1 - rx},${b} ` +
+    `H${rx} Q0,${b} 0,${b - ry} V${top + ry} Q0,${top} ${rx},${top} Z`
+  )
 }
 
 export const OUTLINE_PATHS: Readonly<Record<OutlineShape, string>> = {
-  rect: roundedRect(0.02),
-  /** A sheet of paper pinned to a board. */
-  poster: roundedRect(0.03),
-  /** Monitor above, keyboard on the desk below it. */
+  /** Plain furniture: a soft-cornered box. */
+  rect: roundedRect(0.02, 0.02),
+  /** Paper pinned flat to the plaster. */
+  poster: roundedRect(0.025, 0.018),
+  /**
+   * The desk PC: the monitor's cream body, and the keyboard in front of it as
+   * a second subpath. Two strokes, one object, no invented stand.
+   */
   monitor:
-    'M0.06,0 H0.94 Q1,0 1,0.06 V0.64 Q1,0.70 0.94,0.70 H0.60 V0.80 H0.86 ' +
-    'Q0.90,0.80 0.90,0.84 V0.96 Q0.90,1 0.86,1 H0.14 Q0.10,1 0.10,0.96 ' +
-    'V0.84 Q0.10,0.80 0.14,0.80 H0.40 V0.70 H0.06 Q0,0.70 0,0.64 V0.06 Q0,0 0.06,0 Z',
-  /** A set with a rounded case and two small feet. */
-  tv:
-    'M0.07,0.03 H0.93 Q1,0.03 1,0.11 V0.80 Q1,0.88 0.93,0.88 H0.80 L0.83,1 ' +
-    'H0.68 L0.65,0.88 H0.35 L0.32,1 H0.17 L0.20,0.88 H0.07 Q0,0.88 0,0.80 ' +
-    'V0.11 Q0,0.03 0.07,0.03 Z',
-  /** Tall body, door seam left implicit — the outline is the body only. */
+    `${roundedRect(0.075, 0.09, 0, 0.795)} ` +
+    'M0.13,0.84 H0.885 Q0.927,0.84 0.927,0.885 V0.955 Q0.927,1 0.885,1 ' +
+    'H0.13 Q0.086,1 0.086,0.955 V0.885 Q0.086,0.84 0.13,0.84 Z',
+  /** The same PC on the portrait plate, where the body sits lower. */
+  monitorPortrait:
+    `${roundedRect(0.075, 0.085, 0, 0.852)} ` +
+    'M0.125,0.859 H0.856 Q0.899,0.859 0.899,0.895 V0.964 Q0.899,1 0.856,1 ' +
+    'H0.125 Q0.082,1 0.082,0.964 V0.895 Q0.082,0.859 0.125,0.859 Z',
+  /** The wooden television: one rounded frame. It stands on a shelf, not legs. */
+  tv: roundedRect(0.074, 0.116),
+  /** The fridge door: generous top corners, a tighter foot. */
   fridge:
-    'M0.08,0 H0.92 Q1,0 1,0.05 V0.96 Q1,1 0.94,1 H0.06 Q0,1 0,0.96 V0.05 Q0,0 0.08,0 Z',
-  /** Arched door: a half-round head on straight jambs. */
-  arch: 'M0,1 V0.38 Q0,0 0.5,0 Q1,0 1,0.38 V1 Z',
-  cabinet: roundedRect(0.025),
-  shelf: roundedRect(0.015),
+    'M0.146,0 H0.854 Q1,0 1,0.072 V0.94 Q1,0.985 0.94,0.985 H0.06 ' +
+    'Q0,0.985 0,0.94 V0.072 Q0,0 0.146,0 Z',
+  /** The secret door: the arch springs a quarter of the way up. */
+  arch: 'M0,1 V0.25 Q0,0 0.5,0 Q1,0 1,0.25 V1 Z',
+  /** A chest of drawers. */
+  cabinet: roundedRect(0.03, 0.026),
+  /** A shelf bay between two uprights. */
+  shelf: roundedRect(0.02, 0.009),
 }
 
-/** How much bigger than the object its hit region is, in world units. */
+/**
+ * How far the hit area is grown beyond the artwork, in world pixels. The hit
+ * rectangle and the outline are deliberately separate: a small object stays
+ * easy to click without its outline swelling to match.
+ */
 export const HIT_PADDING = 12

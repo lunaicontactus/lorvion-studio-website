@@ -17,7 +17,15 @@ export default tseslint.config(
     },
   },
   {
-    files: ['vite.config.ts', 'eslint.config.js', 'test/**/*.ts'],
+    files: [
+      'vite.config.ts',
+      'eslint.config.js',
+      'playwright.config.ts',
+      'playwright.live.config.ts',
+      'test/**/*.ts',
+      'e2e/**/*.ts',
+      'scripts/**/*.mjs',
+    ],
     languageOptions: { globals: { ...globals.node } },
     rules: { 'no-console': 'off' },
   },

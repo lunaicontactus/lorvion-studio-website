@@ -7,6 +7,8 @@ import { defineConfig, devices } from '@playwright/test'
  */
 export default defineConfig({
   testDir: './e2e',
+  // The live-origin audit hits production; it runs from its own config.
+  testIgnore: 'live.spec.ts',
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
