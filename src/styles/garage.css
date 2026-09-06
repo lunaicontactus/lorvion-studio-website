@@ -1,0 +1,394 @@
+/* ── The garage ────────────────────────────────────────────────────────────
+   Every piece of furniture is drawn from the same rectangle the hit area uses
+   (src/data/world.ts), so they cannot come apart. No background photograph:
+   the room is felt, wool and wood built out of gradients, which is what lets it
+   be three times wider than the screen without an enormous image.
+   ──────────────────────────────────────────────────────────────────────── */
+
+.garage{
+  position:fixed;
+  inset:0;
+  overflow:hidden;
+  background:#241a13;
+  touch-action:none;
+  cursor:grab;
+  user-select:none;
+  z-index:1;
+}
+.garage.is-dragging{cursor:grabbing}
+.garage.is-paused{cursor:default}
+
+.garage__stage{position:absolute;inset:0;overflow:hidden}
+
+/* Sized in world units and moved with one transform; panning never reflows. */
+.garage__room{
+  position:absolute;
+  left:0;top:0;
+  transform-origin:0 0;
+  will-change:transform;
+  /* Wall above, floor below, and the boards stop at the skirting — a single
+     gradient stack, each layer given its own band so nothing bleeds across. */
+  background:
+    /* warm pool under the wall lamp */
+    radial-gradient(ellipse 30% 46% at 74% 22%, rgba(255,206,140,.32), rgba(255,206,140,0) 70%) no-repeat 0 0 / 100% 61.4%,
+    /* floorboards, lower band only */
+    repeating-linear-gradient(90deg, rgba(52,34,18,.22) 0 3px, rgba(52,34,18,0) 3px 132px) no-repeat 0 100% / 100% 38.6%,
+    /* floor */
+    linear-gradient(180deg,#8a6842,#7a5a38 42%,#63472c 100%) no-repeat 0 100% / 100% 38.6%,
+    /* skirting board */
+    linear-gradient(180deg,#5b452f,#4c3826) no-repeat 0 61.4% / 100% 1.9%,
+    /* wall */
+    linear-gradient(180deg,#c9b191,#c2a986 62%,#b89d78 100%) no-repeat 0 0 / 100% 61.4%;
+}
+
+/* Felt tooth over everything, so the flat gradients read as fabric. */
+.garage__room::after{
+  content:"";
+  position:absolute;inset:0;
+  pointer-events:none;
+  opacity:.5;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,.16) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 70% 60%, rgba(80,60,40,.14) 0 1px, transparent 1.6px);
+  background-size:7px 7px, 11px 11px;
+}
+
+.garage__crew{position:absolute;inset:0;pointer-events:none}
+
+/* ── Zones ─────────────────────────────────────────────────────────────── */
+
+.zone{position:absolute;pointer-events:none}
+
+.zone--posterWall{
+  /* A pinboard: cork behind the posters. */
+  background:
+    radial-gradient(circle at 30% 20%, rgba(150,110,70,.22) 0 2px, transparent 3px),
+    linear-gradient(180deg,#b08b5e,#9d7a50);
+  background-size:9px 9px, auto;
+  border-radius:8px;
+  box-shadow:inset 0 0 0 6px #8a6b45, 0 12px 26px -10px rgba(38,24,12,.5);
+}
+.zone--centreFloor{
+  /* A worn rug, woven not printed. */
+  background:
+    repeating-linear-gradient(90deg, rgba(188,120,92,.55) 0 22px, rgba(166,102,78,.55) 22px 44px),
+    repeating-linear-gradient(180deg, rgba(255,255,255,.06) 0 3px, transparent 3px 7px);
+  border-radius:26px;
+  box-shadow:inset 0 0 0 12px rgba(150,92,68,.6), 0 8px 20px -8px rgba(38,24,12,.4);
+}
+.zone--restArea{
+  /* Floor cushions. */
+  background:
+    radial-gradient(ellipse 34% 30% at 32% 62%, #a98cb0 0 68%, transparent 70%),
+    radial-gradient(ellipse 30% 26% at 68% 70%, #8fa9b8 0 68%, transparent 70%);
+}
+
+/* ── Things you can touch ──────────────────────────────────────────────── */
+
+.thing{
+  position:absolute;
+  padding:0;
+  border:0;
+  background:none;
+  cursor:pointer;
+  transition:transform 260ms cubic-bezier(.34,1.3,.64,1);
+}
+.thing__face{
+  position:absolute;inset:0;
+  border-radius:8px;
+  /* A contact shadow on the floor, not a card drop shadow. */
+  box-shadow:0 14px 26px -8px rgba(38,24,12,.55), 0 3px 0 rgba(38,24,12,.18);
+}
+/* Stitching: the whole room is sewn. */
+.thing__face::after{
+  content:"";
+  position:absolute;inset:5px;
+  border-radius:5px;
+  border:1.5px dashed rgba(64,44,28,.30);
+  pointer-events:none;
+}
+
+/* The only thing that says "touch me": a small mark that grows on approach. */
+.thing__hint{
+  position:absolute;
+  top:-16px;left:50%;
+  width:16px;height:16px;
+  margin-left:-8px;
+  border-radius:50%;
+  background:radial-gradient(circle at 50% 45%, #ffd9a0, #e8a765);
+  box-shadow:0 0 12px rgba(255,196,120,.7);
+  opacity:0;
+  transform:scale(.4);
+  transition:opacity 200ms ease, transform 260ms cubic-bezier(.34,1.5,.64,1);
+  pointer-events:none;
+}
+.thing:hover .thing__hint,
+.thing:focus-visible .thing__hint{opacity:1;transform:scale(1)}
+.thing:hover,
+.thing:focus-visible{transform:translateY(-3px) scale(1.014)}
+.thing:focus-visible{outline:2px solid #e8b877;outline-offset:6px;border-radius:10px}
+.thing:active{transform:translateY(-1px) scale(.996)}
+
+/* ── The furniture itself ──────────────────────────────────────────────── */
+
+.thing--exit-door .thing__face{
+  background:linear-gradient(180deg,#8c6f4e,#6d5540);
+  border-radius:10px 10px 4px 4px;
+  box-shadow:inset 0 0 0 8px rgba(70,52,36,.45), 0 12px 28px rgba(30,20,12,.4);
+}
+.thing--exit-door .thing__face::before{
+  content:"";position:absolute;right:16%;top:50%;
+  width:14px;height:14px;border-radius:50%;
+  background:#d8c08a;box-shadow:0 0 8px rgba(216,192,138,.6);
+}
+
+[class*="thing--poster-"] .thing__face{
+  background:#f0e6d6;
+  box-shadow:0 8px 18px rgba(40,26,16,.34), inset 0 0 0 6px #e5d8c2;
+  background-size:cover;
+  background-position:center;
+}
+.thing--poster-lunai .thing__face{background-image:url('/assets/images/lunai-keyart.webp')}
+.thing--poster-liminal .thing__face{background-image:url('/assets/images/liminal-keyart.webp')}
+.thing--poster-wormup .thing__face{background-image:url('/assets/images/worm-up-keyart.webp')}
+/* RUBATO has no key art; it stays an empty pinned sheet rather than a fake. */
+.thing--poster-rubato .thing__face{
+  background:repeating-linear-gradient(135deg,#ece1cd 0 12px,#e4d7bf 12px 24px);
+}
+.thing--poster-rubato .thing__face::before{
+  content:"COMING SOON";
+  position:absolute;inset:0;
+  display:grid;place-items:center;
+  font:600 11px/1.4 var(--mono);
+  letter-spacing:.18em;
+  color:rgba(90,70,48,.75);
+}
+
+.thing--cabinet .thing__face{
+  background:linear-gradient(180deg,#8a6742,#6d4f31);
+  border-radius:6px;
+  box-shadow:inset 0 0 0 4px rgba(50,34,20,.4), 0 14px 26px -8px rgba(38,24,12,.55);
+}
+.thing--cabinet .thing__face::before{
+  content:"";position:absolute;inset:8% 10%;
+  border-radius:3px;
+  background:
+    linear-gradient(180deg,#9a7549 0 30%,rgba(45,30,18,.85) 30% 33%,#9a7549 33% 63%,rgba(45,30,18,.85) 63% 66%,#9a7549 66%),
+    none;
+  box-shadow:
+    inset 0 0 0 2px rgba(45,30,18,.3),
+    0 0 0 0 transparent;
+}
+/* Three drawer pulls. */
+.thing--cabinet .thing__face::after{
+  content:"";position:absolute;left:50%;top:0;width:26px;height:100%;
+  margin-left:-13px;border:0;border-radius:0;
+  background:
+    radial-gradient(circle at 50% 19%, #d8c08a 0 5px, transparent 6px),
+    radial-gradient(circle at 50% 49%, #d8c08a 0 5px, transparent 6px),
+    radial-gradient(circle at 50% 80%, #d8c08a 0 5px, transparent 6px);
+}
+
+.thing--shelf .thing__face{
+  background:linear-gradient(180deg,#7d6341,#5f4a30);
+  border-radius:4px;
+  box-shadow:inset 0 0 0 6px rgba(60,44,28,.3), 0 10px 22px rgba(30,20,12,.35);
+}
+.thing--shelf .thing__face::before{
+  content:"";position:absolute;inset:8%;
+  background:
+    linear-gradient(180deg,transparent 0 46%,rgba(58,42,26,.55) 46% 50%,transparent 50%),
+    radial-gradient(circle at 22% 32%, #d98d5a 0 10px, transparent 11px),
+    radial-gradient(circle at 62% 33%, #7fa88a 0 9px, transparent 10px),
+    radial-gradient(circle at 40% 78%, #c8a06a 0 11px, transparent 12px);
+}
+
+.thing--pc .thing__face{
+  background:linear-gradient(180deg,#6f7168,#54564f);
+  border-radius:12px;
+  box-shadow:inset 0 0 0 10px rgba(52,52,46,.5), 0 14px 30px rgba(30,20,12,.42);
+}
+.thing--pc .thing__face::before{
+  content:"";position:absolute;inset:14% 12% 26%;
+  border-radius:6px;
+  background:radial-gradient(ellipse at 50% 40%, #2b4034, #16221c);
+  box-shadow:inset 0 0 22px rgba(120,220,160,.16);
+  animation:pcIdle 5.5s ease-in-out infinite;
+}
+@keyframes pcIdle{50%{box-shadow:inset 0 0 30px rgba(120,220,160,.3)}}
+
+.thing--workbench .thing__face{
+  background:linear-gradient(180deg,#8c6a44,#6b4f32);
+  border-radius:6px;
+  box-shadow:inset 0 0 0 4px rgba(50,34,20,.35), 0 14px 26px -8px rgba(38,24,12,.55);
+}
+.thing--workbench .thing__face::before{
+  content:"";position:absolute;left:8%;right:8%;top:22%;height:26%;
+  border-radius:4px;
+  background:linear-gradient(180deg,#c9a877,#a88a5e);
+  box-shadow:0 4px 10px rgba(40,26,16,.3);
+}
+
+.thing--tv .thing__face{
+  background:linear-gradient(180deg,#63564a,#443b33);
+  border-radius:14px;
+  box-shadow:inset 0 0 0 12px rgba(48,40,34,.55), 0 14px 30px rgba(30,20,12,.42);
+}
+.thing--tv .thing__face::before{
+  content:"";position:absolute;inset:16%;
+  border-radius:8px;
+  background:radial-gradient(ellipse at 50% 45%, #33322c, #1b1a16);
+}
+
+.thing--radio .thing__face{
+  background:linear-gradient(180deg,#b08a5e,#8e6c47);
+  border-radius:10px;
+}
+.thing--radio .thing__face::before{
+  content:"";position:absolute;left:12%;top:26%;width:34%;height:48%;
+  border-radius:4px;
+  background:repeating-linear-gradient(180deg,#6c543a 0 3px,#8a6d4a 3px 6px);
+}
+.thing--radio .thing__face::after{
+  content:"";
+  position:absolute;right:16%;top:36%;
+  width:22%;height:0;padding-bottom:22%;
+  border-radius:50%;
+  background:radial-gradient(circle at 40% 40%,#f0d9a8,#b98f5c);
+  border:none;
+  inset:auto;
+}
+
+.thing--fridge .thing__face{
+  background:linear-gradient(180deg,#e6e1d3,#c6bfad);
+  border-radius:12px;
+  box-shadow:inset 0 0 0 5px rgba(120,110,92,.28), 0 14px 30px rgba(30,20,12,.4);
+}
+.thing--fridge .thing__face::before{
+  content:"";position:absolute;left:8%;right:8%;top:34%;height:5px;
+  background:rgba(120,110,92,.35);
+  box-shadow:0 44px 0 rgba(255,214,120,.5), 0 -110px 0 rgba(180,120,150,.45);
+}
+
+.thing--secret-door .thing__face{
+  background:linear-gradient(180deg,#5f4a35,#4a3928);
+  border-radius:8px 8px 3px 3px;
+  box-shadow:inset 0 0 0 7px rgba(40,30,20,.5), 0 12px 26px rgba(20,14,8,.5);
+}
+.thing--secret-door .thing__face::before{
+  content:"";position:absolute;left:50%;top:46%;
+  width:16px;height:16px;margin-left:-8px;
+  border-radius:50%;
+  background:#3a2c1e;
+  box-shadow:0 0 0 4px rgba(210,170,110,.28);
+}
+.garage[data-secret="unlocked"] .thing--secret-door .thing__face{
+  box-shadow:inset 0 0 0 7px rgba(220,180,110,.55), 0 0 34px rgba(230,190,120,.5), 0 12px 26px rgba(20,14,8,.5);
+}
+.thing--secret-door.is-rattling{animation:doorRattle 420ms ease-in-out}
+@keyframes doorRattle{
+  25%{transform:translateX(-3px)}
+  55%{transform:translateX(3px)}
+  80%{transform:translateX(-1px)}
+}
+
+/* ── Window ────────────────────────────────────────────────────────────── */
+
+.garage__window{
+  position:absolute;
+  border-radius:8px;
+  overflow:hidden;
+  box-shadow:inset 0 0 0 12px #8a6f52, 0 0 40px rgba(120,150,190,.14);
+  background:linear-gradient(180deg,#14203a 0%,#1d2c48 60%,#26364f 100%);
+}
+.garage__window canvas{display:block;width:100%;height:100%}
+.garage__window::after{
+  /* Sash bars, over the sky. */
+  content:"";
+  position:absolute;inset:12px;
+  pointer-events:none;
+  background:
+    linear-gradient(90deg,transparent calc(50% - 3px),#8a6f52 calc(50% - 3px) calc(50% + 3px),transparent calc(50% + 3px)),
+    linear-gradient(180deg,transparent calc(50% - 3px),#8a6f52 calc(50% - 3px) calc(50% + 3px),transparent calc(50% + 3px));
+}
+
+/* ── The crew ──────────────────────────────────────────────────────────── */
+
+.npc{
+  position:absolute;
+  left:0;top:0;
+  padding:0;border:0;background:none;
+  pointer-events:auto;
+  cursor:pointer;
+  will-change:transform;
+}
+.npc{min-width:calc(120px * var(--npc-scale,1))}
+.npc__art{
+  display:block;
+  height:calc(340px * var(--npc-scale,1));
+  width:auto;
+  filter:drop-shadow(0 8px 12px rgba(30,20,12,.34));
+  pointer-events:none;
+}
+.npc:focus-visible{outline:2px solid var(--accent,#e8b877);outline-offset:4px;border-radius:12px}
+
+.npc__bubble{
+  position:absolute;
+  left:50%;top:-6%;
+  transform:translate(-50%,-100%) scale(.4);
+  min-width:34px;
+  padding:6px 10px;
+  border-radius:14px 14px 14px 4px;
+  background:#f6ecd9;
+  color:#5a4634;
+  font:700 17px/1 var(--mono);
+  box-shadow:0 6px 14px rgba(40,26,16,.3);
+  opacity:0;
+  transition:opacity 180ms ease, transform 260ms cubic-bezier(.34,1.5,.64,1);
+  pointer-events:none;
+}
+.npc.is-reacting .npc__bubble{opacity:1;transform:translate(-50%,-100%) scale(1)}
+
+/* ── Fallback navigation ───────────────────────────────────────────────── */
+/* Small, out of the way, and keyboard-first: the room must never be the only
+   route to the games. */
+.garage__jump{
+  position:absolute;
+  left:50%;bottom:14px;
+  transform:translateX(-50%);
+  display:flex;gap:6px;
+  max-width:calc(100vw - 20px);
+  padding:6px;
+  border-radius:999px;
+  background:rgba(246,236,217,.9);
+  box-shadow:0 6px 18px rgba(30,20,12,.34);
+  /* Above every character (capped at 699) and below the panels. */
+  z-index:800;
+}
+.garage__jump button{
+  border:0;
+  padding:8px 14px;
+  min-height:36px;
+  border-radius:999px;
+  background:none;
+  color:#5a4634;
+  font:600 .68rem/1 var(--mono);
+  letter-spacing:.14em;
+  cursor:pointer;
+  transition:background 180ms ease;
+}
+.garage__jump button:hover,
+.garage__jump button:focus-visible{background:rgba(200,170,120,.4)}
+
+@media (max-width:560px){
+  /* Five labels will not fit a phone in one line; wrapping keeps every target
+     reachable instead of pushing the last one off the screen. */
+  .garage__jump{flex-wrap:wrap;justify-content:center;gap:2px;padding:4px;border-radius:20px}
+  .garage__jump button{padding:8px 10px;min-height:34px;font-size:.58rem;letter-spacing:.06em}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .thing,.thing__hint,.npc__bubble{transition:none}
+  .thing--pc .thing__face::before{animation:none}
+  .thing--secret-door.is-rattling{animation:none}
+}
