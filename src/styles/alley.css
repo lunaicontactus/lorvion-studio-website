@@ -26,7 +26,10 @@
   position:absolute;
   left:50%;
   top:50%;
-  transform:translate(-50%,-50%);
+  transform:translate(-50%,-50%) scale(var(--push,1));
+  /* transform-origin is the doorway, set by the scene. */
+  transition:transform 900ms cubic-bezier(.55,0,.2,1);
+  will-change:transform;
 }
 .alley__plate picture{position:absolute;inset:0;display:block}
 .alley__base{width:100%;height:100%;display:block;user-select:none}
@@ -68,21 +71,68 @@
   transform:rotate(var(--sway,0deg));
   transform-origin:50% 6%;
 }
-.alley__prop{z-index:5}
+.alley__prop{
+  z-index:5;
+  transform-origin:50% 100%;
+  transition:transform 380ms cubic-bezier(.34,1.4,.64,1);
+}
+[data-alley-prop="pot"]{transform:rotate(var(--lean,0deg));transition:none}
+[data-alley-prop="box"]{transform-origin:100% 0}
+[data-alley-prop="box"].is-twitch{transform:scale(1.025,.985) rotate(-.8deg)}
+[data-alley-prop="slippers"].is-shift{transform:translate(1.2px,-.6px) rotate(.6deg)}
+[data-alley-prop="stool"].is-wobble{transform:rotate(1.1deg)}
 
-/* Warm light spilling out of the doorway. A gradient, not an image — it saves
-   a file and it can breathe without a sprite sheet. */
+/* Warm light in the doorway. Sized to the doorway by the scene. Comes up as a
+   thin band under the shutter, then swells to fill the opening once the
+   shutter is out of the way. */
 .alley__glow{
   position:absolute;
   z-index:1;
   opacity:0;
-  transition:opacity 800ms ease-out;
+  transform:scaleY(.35);
+  transform-origin:50% 100%;
+  transition:opacity 700ms ease-out,transform 900ms cubic-bezier(.2,.6,.2,1);
   background:
-    radial-gradient(ellipse 68% 44% at 50% 88%,
+    radial-gradient(ellipse 70% 60% at 50% 80%,
       rgba(255,203,132,.95) 0%,
-      rgba(244,172,96,.55) 40%,
-      rgba(210,138,74,0) 76%);
+      rgba(244,172,96,.6) 42%,
+      rgba(210,138,74,0) 78%);
 }
+
+/* A small shadow crossing the lit doorway — someone is home. Felt-toned, not
+   black; it moves once and is gone. */
+.alley__silhouette{
+  position:absolute;
+  z-index:3;
+  overflow:hidden;
+  pointer-events:none;
+  opacity:0;
+}
+.alley__silhouette i{
+  position:absolute;
+  bottom:6%;
+  left:-40%;
+  width:38%;
+  height:46%;
+  border-radius:48% 48% 40% 40% / 60% 60% 36% 36%;
+  background:rgba(74,52,38,.55);
+  filter:blur(1.5px);
+}
+
+/* The fire spirit's glow: breathes with --flame from the scene tick, and
+   every so often ducks out of sight for a moment. */
+.alley__fire{
+  position:absolute;
+  z-index:6;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  border-radius:50%;
+  opacity:var(--flame,.6);
+  background:radial-gradient(circle at 50% 55%,
+    rgba(255,190,110,.75) 0%, rgba(255,150,80,.35) 40%, rgba(255,120,60,0) 72%);
+  transition:opacity 260ms ease;
+}
+.alley__fire.is-hide{opacity:0 !important;transition:opacity 180ms ease}
 
 /* The lane lamp. Breathes very slowly via --breathe from the scene tick. */
 .alley__lamp{
@@ -142,17 +192,61 @@
 
 /* ── Entrance sequence ─────────────────────────────────────────────────── */
 
+/* bump: something knocks the shutter from inside — the slats jump a hair and
+   a thin line of light shows under them for an instant. */
+.alley--bump .alley__slats{animation:alleyBump 320ms cubic-bezier(.3,1.6,.5,1)}
+@keyframes alleyBump{40%{transform:translateY(-1.2%)}}
+.alley--bump .alley__glow{opacity:.55}
+
 .alley--flicker .alley__lamp{animation:alleyFlicker 320ms steps(2,end) 2}
 @keyframes alleyFlicker{50%{opacity:.14}}
 
-.alley--warm .alley__glow{opacity:1}
+/* hesitate: it starts up, catches, and drops back before it really goes. */
+.alley--hesitate .alley__slats{transform:translateY(-4%);transition-duration:260ms}
 
-/* Rolled fully into the housing. The image includes the housing slice, so the
-   visible slats are (1 - drum) of it; travelling exactly that far means the
-   easing settles at the moment the last slat disappears, not 17% later. */
-.alley--lifting .alley__slats{transform:translateY(calc(-100% * (1 - var(--drum-frac))))}
+/* rise: rolled fully into the housing. The image includes the housing slice,
+   so the visible slats are (1 - drum) of it; travelling exactly that far means
+   the easing settles as the last slat disappears. A heavy door: slow to start,
+   then it goes, then it settles. */
+.alley--rise .alley__slats{
+  transform:translateY(calc(-100% * (1 - var(--drum-frac))));
+  transition:transform 1400ms cubic-bezier(.6,.02,.3,1);
+}
 
-.alley--open .alley__enter{opacity:0;pointer-events:none}
+/* light: the band under the door swells to fill the opening. */
+.alley--light .alley__glow{opacity:1;transform:scaleY(1)}
+
+/* silhouette: crosses once, left to right, and is gone. */
+.alley--silhouette .alley__silhouette{opacity:1;transition:opacity 200ms ease}
+.alley--silhouette .alley__silhouette i{animation:alleyCross 900ms cubic-bezier(.4,0,.6,1) forwards}
+@keyframes alleyCross{to{left:104%}}
+
+/* push: the camera goes through the door. The plate scales about the doorway
+   and the vignette closes in around the opening. */
+.alley--push .alley__plate{--push:2.3}
+.alley--push .alley__enter{opacity:0;pointer-events:none}
+.alley--push .alley__inside{opacity:1}
+/* The spill of light has done its job once we are through the door; it gets
+   out of the way so the painted interior — shelves, lamp — is what we land on. */
+.alley--push .alley__glow{opacity:.18;transition:opacity 700ms ease}
+.alley--inside .alley__glow{opacity:0}
+
+.alley__inside{
+  position:absolute;
+  inset:0;
+  z-index:9;
+  opacity:0;
+  pointer-events:none;
+  /* A vignette, not a curtain: the painted interior of the base plate, pushed
+     in about the doorway, stays visible in the middle. STEP 3's garage takes
+     over from exactly this view. */
+  background:
+    radial-gradient(ellipse 58% 52% at 50% 50%,
+      rgba(58,42,30,0) 0%, rgba(58,42,30,.35) 55%, rgba(58,42,30,.92) 100%);
+  transition:opacity 800ms ease-in;
+}
+.alley--inside .alley__inside{opacity:1}
+.alley--inside .alley__enter{display:none}
 
 /* ── Reduced motion ────────────────────────────────────────────────────── */
 
@@ -163,10 +257,15 @@
   .alley__enter-dot{animation:none}
   .alley--flicker .alley__lamp{animation:none}
   /* Same destination, no journey. */
+  .alley__plate,.alley__prop,.alley__fire,.alley__inside{transition:none}
+  .alley__fire,.alley__silhouette i,.alley--bump .alley__slats{animation:none}
+  [data-alley-prop="pot"]{transform:none}
+  /* Same destination, no journey: entering puts us inside at once. */
   .alley[data-phase="entering"] .alley__slats,
-  .alley[data-phase="open"] .alley__slats{transform:translateY(calc(-100% * (1 - var(--drum-frac))))}
+  .alley[data-phase="inside"] .alley__slats{transform:translateY(calc(-100% * (1 - var(--drum-frac))))}
   .alley[data-phase="entering"] .alley__glow,
-  .alley[data-phase="open"] .alley__glow{opacity:1}
+  .alley[data-phase="inside"] .alley__glow{opacity:1;transform:scaleY(1)}
+  .alley[data-phase="inside"] .alley__inside{opacity:1}
 }
 
 /* ── Portrait ──────────────────────────────────────────────────────────── */

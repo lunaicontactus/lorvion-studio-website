@@ -37,6 +37,9 @@ export interface AlleyPlate {
   readonly props: Readonly<Record<PropName, LayerPlacement>>
   /** Where the ENTER button sits, as a percentage down the plate. */
   readonly enterY: number
+  /** Centre of the painted doorway. The camera pushes in towards this point
+   *  and the interior light and silhouette are staged around it. */
+  readonly doorway: { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
 }
 
 const DIR = '/assets/images/alley'
@@ -54,6 +57,7 @@ export const ALLEY_LANDSCAPE: AlleyPlate = {
     stool: { left: 68.4, bottom: 20, width: 4.9 },
   },
   enterY: 84,
+  doorway: { x: 49.95, y: 45.15, w: 19.7, h: 48.9 },
 }
 
 export const ALLEY_PORTRAIT: AlleyPlate = {
@@ -71,6 +75,7 @@ export const ALLEY_PORTRAIT: AlleyPlate = {
     stool: { left: 79.5, bottom: 21, width: 10 },
   },
   enterY: 82,
+  doorway: { x: 50, y: 52.25, w: 34, h: 32.5 },
 }
 
 /** Intrinsic sizes of the shared cut-outs, used to derive each layer's height. */

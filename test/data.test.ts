@@ -172,3 +172,26 @@ describe('alley plates', () => {
     expect(ALLEY_PORTRAIT.base.h).toBeGreaterThan(ALLEY_PORTRAIT.base.w)
   })
 })
+
+describe('alley doorway', () => {
+  it('keeps the doorway box inside the plate and under the shutter', () => {
+    for (const p of [ALLEY_LANDSCAPE, ALLEY_PORTRAIT]) {
+      const d = p.doorway
+      expect(d.x - d.w / 2).toBeGreaterThan(0)
+      expect(d.x + d.w / 2).toBeLessThan(100)
+      expect(d.y - d.h / 2).toBeGreaterThan(0)
+      expect(d.y + d.h / 2).toBeLessThan(100)
+      // The shutter must cover the doorway it is staged in.
+      expect(p.shutter.left).toBeLessThanOrEqual(d.x - d.w / 2)
+      expect(p.shutter.left + p.shutter.width).toBeGreaterThanOrEqual(d.x + d.w / 2)
+    }
+  })
+
+  it('records the fire inside the pot cut-out', () => {
+    const f = ALLEY_ART.pot.fire
+    for (const v of [f.x, f.y, f.w, f.h]) {
+      expect(v).toBeGreaterThan(0)
+      expect(v).toBeLessThan(1)
+    }
+  })
+})
