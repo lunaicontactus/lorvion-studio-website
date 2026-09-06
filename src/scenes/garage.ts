@@ -14,7 +14,7 @@
 import { Camera } from '@/systems/camera'
 import { Crew, type Npc } from '@/scenes/npc'
 import { mountWindowSky } from '@/scenes/window'
-import { worldFor } from '@/data/world'
+import { worldFor, ROOM_ART } from '@/data/world'
 import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
 import { audio } from '@/systems/audio'
@@ -67,6 +67,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     roomEl.textContent = ''
     roomEl.style.width = `${world.width}px`
     roomEl.style.height = `${world.height}px`
+    const plate = world.width > world.height ? ROOM_ART.landscape : ROOM_ART.portrait
+    roomEl.style.backgroundImage = `url('${plate.src}')`
 
     for (const zone of world.zones) {
       const el = document.createElement('div')
@@ -97,6 +99,15 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       const face = document.createElement('span')
       face.className = 'thing__face'
       el.append(face)
+      if (obj.art) {
+        // Not in the painting; this one is placed into the room.
+        const art = document.createElement('img')
+        art.className = 'thing__art'
+        art.src = obj.art
+        art.alt = ''
+        art.decoding = 'async'
+        el.append(art)
+      }
       const hint = document.createElement('span')
       hint.className = 'thing__hint'
       hint.setAttribute('aria-hidden', 'true')

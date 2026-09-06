@@ -127,7 +127,7 @@ export function mountWorld(): () => void {
     btn.addEventListener('click', () => {
       const id = btn.dataset['jump']
       if (!id) return
-      if (id === 'exit-door') {
+      if (id === 'out') {
         leaveGarage()
         return
       }

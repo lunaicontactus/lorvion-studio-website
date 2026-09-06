@@ -230,3 +230,14 @@
   .crt__screen,.tvset__screen{animation:none}
   .panel.is-playing .radioset__wave i{animation:none}
 }
+
+/* The object you touched, at the top of what it opened — so a panel reads as
+   that thing having been opened rather than a page having replaced it. */
+.panel__portrait{
+  display:block;
+  width:min(180px,42%);
+  height:auto;
+  margin:-8px auto 14px;
+  filter:drop-shadow(0 10px 16px rgba(40,26,16,.35));
+}
+@media (max-width:560px){.panel__portrait{width:min(130px,38%)}}
