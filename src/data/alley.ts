@@ -30,16 +30,27 @@ export interface LayerPlacement {
  *
  * A studio that works late leaves evidence: parcels that arrived and were put
  * down, water for the week, cans for the small hours, flattened card waiting to
- * go out. Two felt pieces stay so the lane is still ours — the pot with the
- * fire spirit painted in it and the parcel with the club stamp — and the rest
- * of the toy-set look goes.
+ * go out. That is the whole subject — the lane should say someone is in there
+ * working, before it says anything else.
+ *
+ * The fire-spirit pot is gone. It was the brightest, most fantastical thing in
+ * the frame and it took the scene; the identity that remains is one small stamp
+ * on an ordinary parcel, which is as much as this doorway needs.
+ *
+ * Planned arrangement, left wall inward, door line kept clear:
+ *   flattened card leaning on the wall, furthest out
+ *   a stack of three to five parcels, tallest of the group
+ *   one opened parcel beside it, flaps up, turned a few degrees
+ *   the stamped parcel, small, sat on top of nothing in particular
+ *   shrink-wrapped water to the right of the door
+ *   a can pack next to it, lower and turned the other way
+ * No two share a baseline, a size or an angle.
  *
  * `PROP_ART` is null where the picture does not exist yet. Nothing is stretched
  * or duplicated to stand in for it: the slot is laid out, the scene skips it,
  * and the file is reported as needed.
  */
 export type PropName =
-  | 'pot'
   | 'box'
   | 'parcelStack'
   | 'openParcel'
@@ -48,7 +59,6 @@ export type PropName =
   | 'flatBoxes'
 
 export const PROP_NAMES: readonly PropName[] = [
-  'pot',
   'box',
   'parcelStack',
   'openParcel',
@@ -60,7 +70,6 @@ export const PROP_NAMES: readonly PropName[] = [
 const P = '/assets/images/alley'
 
 export const PROP_ART: Readonly<Record<PropName, string | null>> = {
-  pot: `${P}/alley_prop_pot.webp`,
   box: `${P}/alley_prop_box.webp`,
   parcelStack: null, // alley_prop_parcel_stack.webp
   openParcel: null, // alley_prop_open_parcel.webp
@@ -94,7 +103,6 @@ export const ALLEY_LANDSCAPE: AlleyPlate = {
   // Put down where they were carried in, not arranged: the door line stays
   // clear and nothing shares a baseline.
   props: {
-    pot: { left: 3.5, bottom: 20, width: 4.2, tilt: -2 },
     flatBoxes: { left: 8.6, bottom: 19, width: 6.2, tilt: 1.5 },
     parcelStack: { left: 15.4, bottom: 18.5, width: 7.4, tilt: -1 },
     openParcel: { left: 23.2, bottom: 19.5, width: 5.6, tilt: 3 },
@@ -111,7 +119,6 @@ export const ALLEY_PORTRAIT: AlleyPlate = {
   shutter: { left: 22, top: 34.2, width: 56 },
   sign: { left: 33, top: 20, width: 34 },
   props: {
-    pot: { left: 4, bottom: 22, width: 10, tilt: -2 },
     flatBoxes: { left: 16, bottom: 21, width: 14, tilt: 2 },
     parcelStack: { left: 15, bottom: 11, width: 16, tilt: -1 },
     openParcel: { left: 2, bottom: 11.5, width: 11, tilt: 3 },
