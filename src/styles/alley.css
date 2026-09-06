@@ -79,7 +79,6 @@
   filter:drop-shadow(-4px 8px 7px rgba(30,20,12,.42));
   transition:transform 380ms cubic-bezier(.34,1.4,.64,1);
 }
-[data-alley-prop="pot"]{transform:rotate(calc(var(--tilt,0deg) + var(--lean,0deg)));transition:none}
 [data-alley-prop="box"]{transform-origin:100% 0}
 [data-alley-prop="box"].is-twitch{transform:scale(1.025,.985) rotate(-.8deg)}
 
@@ -207,8 +206,7 @@
   .alley--flicker .alley__lamp{animation:none}
   /* Same destination, no journey. */
   .alley__plate,.alley__prop,.alley__inside{transition:none}
-  [data-alley-prop="pot"]{transform:none}
-  /* Same destination, no journey: entering puts us inside at once. */
+    /* Same destination, no journey: entering puts us inside at once. */
   .alley[data-phase="entering"] .alley__slats,
   .alley[data-phase="inside"] .alley__slats{transform:translateY(calc(-100% * (1 - var(--drum-frac))))}
   .alley[data-phase="entering"] .alley__glow,

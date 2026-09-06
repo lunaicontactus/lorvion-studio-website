@@ -2,8 +2,8 @@
  * The Korean alley — the prologue to the garage, not a landing page.
  *
  * At rest the lane is quietly alive: the sign sways, the lamp breathes, the
- * fire spirit in the pot peeks and hides, and now and then one small thing
- * on the pavement twitches. Never two things at once, never anything big.
+ * and now and then one thing left on the pavement shifts a hair. Never two
+ * at once, never anything big.
  *
  * ENTER is a way in, not a link. Something bumps inside, the lamp flickers,
  * the shutter hesitates and then rolls up, warm light spills out, a small
@@ -209,7 +209,6 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
   if (!motion.reduced) {
     const sign = scene.querySelector<HTMLElement>('[data-alley-layer="sign"]')
     const lamp = scene.querySelector<HTMLElement>('[data-alley-lamp]')
-    const pot = scene.querySelector<HTMLElement>('[data-alley-prop="pot"]')
     const events: { el: HTMLElement | null; cls: string; ms: number }[] = [
       { el: scene.querySelector('[data-alley-prop="box"]'), cls: 'is-twitch', ms: 420 },
       { el: scene.querySelector('[data-alley-prop="slippers"]'), cls: 'is-shift', ms: 520 },
@@ -225,8 +224,6 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
         if (phase !== 'idle') return
         if (sign) sign.style.setProperty('--sway', `${Math.sin(t / 1900) * 1.5}deg`)
         if (lamp) lamp.style.setProperty('--breathe', String(0.82 + Math.sin(t / 2600) * 0.18))
-        // Leaves: the whole pot leans a hair, pivoting at its base.
-        if (pot) pot.style.setProperty('--lean', `${Math.sin(t / 2300) * 0.8}deg`)
         if (t >= nextEvent && t >= busyUntil) {
           // Round-robin rather than random, so nothing repeats twice running.
           const ev = events[eventIdx++ % events.length]
