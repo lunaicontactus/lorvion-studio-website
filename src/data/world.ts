@@ -31,7 +31,6 @@ export const DESKTOP_WORLD: WorldLayout = {
     { id: 'workbench', label: 'Workbench', rect: { x: 2030, y: 270, w: 270, h: 360 } },
     { id: 'restArea', label: 'Rest area', rect: { x: 180, y: 900, w: 900, h: 230 }, blocks: { x: 300, y: 880, w: 620, h: 120 } },
     { id: 'tvArea', label: 'TV', rect: { x: 2660, y: 560, w: 320, h: 340 }, blocks: { x: 2660, y: 760, w: 320, h: 140 } },
-    { id: 'radioArea', label: 'Radio', rect: { x: 1120, y: 900, w: 260, h: 220 }, blocks: { x: 1155, y: 990, w: 190, h: 105 } },
     { id: 'fridgeArea', label: 'Fridge', rect: { x: 2330, y: 300, w: 260, h: 620 }, blocks: { x: 2330, y: 700, w: 260, h: 220 } },
     { id: 'secretDoor', label: 'Secret door', rect: { x: 3170, y: 520, w: 270, h: 400 }, blocks: { x: 3170, y: 520, w: 270, h: 400 } },
   ],
@@ -47,9 +46,6 @@ export const DESKTOP_WORLD: WorldLayout = {
     { id: 'workbench', label: 'About the studio', zone: 'workbench', action: { kind: 'panel', panelId: 'about' }, rect: { x: 2038, y: 275, w: 254, h: 350 }, sfx: 'drawer', inMenu: true },
     { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 2336, y: 303, w: 244, h: 612 }, sfx: 'wrapper' },
     { id: 'tv', label: 'Contact', zone: 'tvArea', action: { kind: 'panel', panelId: 'contact' }, rect: { x: 2673, y: 568, w: 297, h: 199 }, sfx: 'click', inMenu: true },
-    // The panorama has no radio, so this one is placed into the room rather
-    // than being a hit area over paint that is not there.
-    { id: 'radio', label: 'Sound', zone: 'radioArea', action: { kind: 'panel', panelId: 'radio' }, rect: { x: 1155, y: 925, w: 190, h: 167 }, sfx: 'click', art: `${ART}/radio.webp` },
     { id: 'secret-door', label: 'Locked', zone: 'secretDoor', action: { kind: 'panel', panelId: 'secret' }, rect: { x: 3173, y: 525, w: 263, h: 390 }, sfx: 'bell' },
   ],
 }
@@ -70,7 +66,6 @@ export const MOBILE_WORLD: WorldLayout = {
     { id: 'mainDesk', label: 'Main desk', rect: { x: 400, y: 1560, w: 500, h: 130 } },
     { id: 'workbench', label: 'Workbench', rect: { x: 820, y: 1110, w: 160, h: 270 } },
     { id: 'centreFloor', label: 'Centre floor', rect: { x: 150, y: 2460, w: 800, h: 110 } },
-    { id: 'radioArea', label: 'Radio', rect: { x: 480, y: 2440, w: 220, h: 130 }, blocks: { x: 516, y: 2510, w: 130, h: 74 } },
     { id: 'fridgeArea', label: 'Fridge', rect: { x: 260, y: 2100, w: 160, h: 360 } },
     { id: 'tvArea', label: 'TV', rect: { x: 490, y: 2160, w: 190, h: 300 } },
     { id: 'secretDoor', label: 'Secret door', rect: { x: 830, y: 2110, w: 160, h: 340 } },
@@ -86,7 +81,6 @@ export const MOBILE_WORLD: WorldLayout = {
     { id: 'cabinet', label: 'Archive', zone: 'archive', action: { kind: 'panel', panelId: 'archive' }, rect: { x: 350, y: 560, w: 210, h: 150 }, sfx: 'drawer', inMenu: true },
     { id: 'pc', label: 'Games', zone: 'mainDesk', action: { kind: 'panel', panelId: 'pc' }, rect: { x: 450, y: 1264, w: 143, h: 142 }, sfx: 'keyboard', inMenu: true },
     { id: 'workbench', label: 'About the studio', zone: 'workbench', action: { kind: 'panel', panelId: 'about' }, rect: { x: 837, y: 1117, w: 129, h: 258 }, sfx: 'drawer', inMenu: true },
-    { id: 'radio', label: 'Sound', zone: 'radioArea', action: { kind: 'panel', panelId: 'radio' }, rect: { x: 516, y: 2470, w: 130, h: 114 }, sfx: 'click', art: `${ART}/radio.webp` },
     { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 272, y: 2111, w: 135, h: 339 }, sfx: 'wrapper' },
     { id: 'tv', label: 'Contact', zone: 'tvArea', action: { kind: 'panel', panelId: 'contact' }, rect: { x: 495, y: 2169, w: 179, h: 165 }, sfx: 'click', inMenu: true },
     { id: 'secret-door', label: 'Locked', zone: 'secretDoor', action: { kind: 'panel', panelId: 'secret' }, rect: { x: 837, y: 2118, w: 146, h: 323 }, sfx: 'bell' },
@@ -103,7 +97,6 @@ export const ROOM_ART = {
 export const OBJECT_ART: Record<string, string> = {
   pc: `${ART}/pc.webp`,
   workbench: `${ART}/workbench.webp`,
-  radio: `${ART}/radio.webp`,
   cabinet: `${ART}/cabinet.webp`,
   tv: `${ART}/tv.webp`,
   'secret-door': `${ART}/secret_door.webp`,

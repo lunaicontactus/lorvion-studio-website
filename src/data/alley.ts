@@ -21,10 +21,53 @@ export interface LayerPlacement {
   /** Anchor from the top, or from the bottom when `bottom` is given instead. */
   readonly top?: number
   readonly bottom?: number
+  /** A few degrees, so nothing looks lined up by hand. */
+  readonly tilt?: number
 }
 
-export type PropName = 'pot' | 'box' | 'stool' | 'slippers'
-export const PROP_NAMES: readonly PropName[] = ['pot', 'box', 'stool', 'slippers']
+/**
+ * What is outside the shutter.
+ *
+ * A studio that works late leaves evidence: parcels that arrived and were put
+ * down, water for the week, cans for the small hours, flattened card waiting to
+ * go out. Two felt pieces stay so the lane is still ours — the pot with the
+ * fire spirit painted in it and the parcel with the club stamp — and the rest
+ * of the toy-set look goes.
+ *
+ * `PROP_ART` is null where the picture does not exist yet. Nothing is stretched
+ * or duplicated to stand in for it: the slot is laid out, the scene skips it,
+ * and the file is reported as needed.
+ */
+export type PropName =
+  | 'pot'
+  | 'box'
+  | 'parcelStack'
+  | 'openParcel'
+  | 'waterPack'
+  | 'zeroCola'
+  | 'flatBoxes'
+
+export const PROP_NAMES: readonly PropName[] = [
+  'pot',
+  'box',
+  'parcelStack',
+  'openParcel',
+  'waterPack',
+  'zeroCola',
+  'flatBoxes',
+]
+
+const P = '/assets/images/alley'
+
+export const PROP_ART: Readonly<Record<PropName, string | null>> = {
+  pot: `${P}/alley_prop_pot.webp`,
+  box: `${P}/alley_prop_box.webp`,
+  parcelStack: null, // alley_prop_parcel_stack.webp
+  openParcel: null, // alley_prop_open_parcel.webp
+  waterPack: null, // alley_prop_water_pack.webp
+  zeroCola: null, // alley_prop_zero_cola.webp
+  flatBoxes: null, // alley_prop_flat_boxes.webp
+}
 
 export interface AlleyPlate {
   /** Intrinsic size of the base image; the plate keeps this ratio. */
@@ -48,13 +91,16 @@ export const ALLEY_LANDSCAPE: AlleyPlate = {
   base: { src: `${DIR}/alley_base_desktop.webp`, w: 2560, h: 1440 },
   shutter: { left: 36.4, top: 18.5, width: 27.2 },
   sign: { left: 42, top: 7, width: 16 },
-  // Sat on the pavement against the wall, a little larger than the pots painted
-  // on it and never in a row — a row reads as a toolbar.
+  // Put down where they were carried in, not arranged: the door line stays
+  // clear and nothing shares a baseline.
   props: {
-    pot: { left: 21.5, bottom: 22, width: 4.4 },
-    box: { left: 27.2, bottom: 20.5, width: 4.6 },
-    slippers: { left: 61.6, bottom: 21.5, width: 5.6 },
-    stool: { left: 68.4, bottom: 20, width: 4.9 },
+    pot: { left: 3.5, bottom: 20, width: 4.2, tilt: -2 },
+    flatBoxes: { left: 8.6, bottom: 19, width: 6.2, tilt: 1.5 },
+    parcelStack: { left: 15.4, bottom: 18.5, width: 7.4, tilt: -1 },
+    openParcel: { left: 23.2, bottom: 19.5, width: 5.6, tilt: 3 },
+    box: { left: 29.4, bottom: 20.5, width: 4.4, tilt: -3 },
+    waterPack: { left: 66.5, bottom: 18.5, width: 7.8, tilt: 1 },
+    zeroCola: { left: 75.4, bottom: 19.5, width: 6.4, tilt: -2 },
   },
   enterY: 84,
   doorway: { x: 49.95, y: 45.15, w: 19.7, h: 48.9 },
@@ -65,14 +111,13 @@ export const ALLEY_PORTRAIT: AlleyPlate = {
   shutter: { left: 22, top: 34.2, width: 56 },
   sign: { left: 33, top: 20, width: 34 },
   props: {
-    // Left of the doorway (starts at 33%) and inside the plate overhang, so the
-    // pot is not cropped on a 390px phone.
-    pot: { left: 11, bottom: 23, width: 10 },
-    box: { left: 22.5, bottom: 21.5, width: 10 },
-    // Right of the doorway (which ends at 67%) and inside the ~9% the plate
-    // overhangs a 390px phone on each side, so nothing is cropped.
-    slippers: { left: 67.5, bottom: 22.5, width: 11 },
-    stool: { left: 79.5, bottom: 21, width: 10 },
+    pot: { left: 4, bottom: 22, width: 10, tilt: -2 },
+    flatBoxes: { left: 16, bottom: 21, width: 14, tilt: 2 },
+    parcelStack: { left: 15, bottom: 11, width: 16, tilt: -1 },
+    openParcel: { left: 2, bottom: 11.5, width: 11, tilt: 3 },
+    box: { left: 3, bottom: 31, width: 9, tilt: -3 },
+    waterPack: { left: 68, bottom: 21, width: 15, tilt: 1 },
+    zeroCola: { left: 84, bottom: 22, width: 12, tilt: -2 },
   },
   enterY: 82,
   doorway: { x: 50, y: 52.25, w: 34, h: 32.5 },
@@ -88,8 +133,6 @@ export const ALLEY_ART = {
    *  STEP 10 puts a living flame here; until then it is just painted. */
   pot: { src: `${DIR}/alley_prop_pot.webp`, w: 466, h: 600, fire: { x: 0.665, y: 0.487, w: 0.369, h: 0.218 } },
   box: { src: `${DIR}/alley_prop_box.webp`, w: 396, h: 372 },
-  stool: { src: `${DIR}/alley_prop_stool.webp`, w: 453, h: 433 },
-  slippers: { src: `${DIR}/alley_prop_slippers.webp`, w: 465, h: 407 },
 } as const
 
 /** Files the entrance cannot open without. */

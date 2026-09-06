@@ -61,9 +61,6 @@ export function mountWorld(): () => void {
             panels.onSnackTouched(() => undefined)
             break
           }
-          case 'radio':
-            panels.openRadio()
-            break
           case 'archive':
             panels.openArchive()
             break
