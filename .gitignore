@@ -1,6 +1,9 @@
-.DS_Store
-Thumbs.db
 *.log
-node_modules/
-dist/
+.DS_Store
 .vite/
+Thumbs.db
+dist/
+e2e/shots/
+node_modules/
+playwright-report/
+test-results/

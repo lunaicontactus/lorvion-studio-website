@@ -1,8 +1,8 @@
 /* ── The garage ────────────────────────────────────────────────────────────
-   Every piece of furniture is drawn from the same rectangle the hit area uses
-   (src/data/world.ts), so they cannot come apart. No background photograph:
-   the room is felt, wool and wood built out of gradients, which is what lets it
-   be three times wider than the screen without an enormous image.
+   The room is a painted plate larger than the window (src/data/world.ts) and
+   the camera moves inside it. Nothing here draws furniture: the furniture is in
+   the painting. What lives here is the hit region over each object and the
+   outline that traces it while the pointer is on it.
    ──────────────────────────────────────────────────────────────────────── */
 
 .garage{
@@ -40,13 +40,14 @@
 .zone{position:absolute;pointer-events:none}
 
 /* ── Things you can touch ──────────────────────────────────────────────── */
-/* A hit area over something already in the painting. It draws nothing at all:
-   no gradient, no ring, no marker. The room is the picture, and an interface
-   painted on top of it was the whole problem. What tells you a thing is live
-   is the cursor, and — for anyone on a keyboard — the focus outline.
+/* A hit region over something already in the painting. At rest it draws
+   nothing whatsoever. Under the pointer — or under a keyboard focus — a thin
+   white line traces the object itself, and the object lifts by a few percent
+   inside that same shape.
 
-   Deliberately absent: ::before/::after, radial-gradient, border-radius:50%,
-   box-shadow, glow, pulse. Nothing here may draw a circle. */
+   Deliberately absent: radial-gradient, border-radius:50%, pulse, floating
+   marks, and any rectangle around the hit region. The hit region is looser
+   than the object on purpose; only the silhouette may be seen. */
 
 .thing{
   position:absolute;
@@ -57,14 +58,51 @@
   -webkit-appearance:none;
   appearance:none;
   cursor:pointer;
-  /* Invisible, but still a real button for the keyboard and for touch. */
-  opacity:0;
 }
-.thing:focus-visible{
-  opacity:1;
-  outline:2px solid #ffd08a;
-  outline-offset:2px;
-  border-radius:4px;
+/* The browser's own focus ring would be that rectangle; the silhouette is the
+   focus indicator instead. */
+.thing:focus{outline:none}
+.thing:focus-visible{outline:none}
+
+.thing__outline,
+.thing__lift{
+  position:absolute;
+  display:block;
+  /* Position and size come from the scene, in world units. */
+  pointer-events:none;
+  opacity:0;
+  transition:opacity 120ms ease;
+}
+
+.thing__stroke{
+  fill:none;
+  stroke:rgba(255,255,255,.9);
+  stroke-width:1.6;
+  stroke-linejoin:round;
+  /* Held to a hairline whatever the room is scaled to. */
+  paint-order:stroke;
+  filter:drop-shadow(0 0 3px rgba(255,255,255,.25));
+}
+
+/* Clipped to the object's own silhouette, so the lift is its shape. */
+.thing__lift{
+  backdrop-filter:brightness(1.04);
+  -webkit-backdrop-filter:brightness(1.04);
+}
+
+.thing:hover .thing__outline,
+.thing:hover .thing__lift,
+.thing:focus-visible .thing__outline,
+.thing:focus-visible .thing__lift,
+.thing.is-pressed .thing__outline,
+.thing.is-pressed .thing__lift{opacity:1}
+
+/* Touch has no hover state to leave, so nothing may linger. */
+@media (hover:none){
+  .thing:hover .thing__outline,
+  .thing:hover .thing__lift{opacity:0}
+  .thing.is-pressed .thing__outline,
+  .thing.is-pressed .thing__lift{opacity:1}
 }
 
 /* Placed furniture — only for things the painting does not contain. */
@@ -74,9 +112,10 @@
   object-fit:contain;
   pointer-events:none;
 }
-.thing:has(.thing__art){opacity:1}
 
-/* ── Window ────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion:reduce){
+  .thing__outline,.thing__lift{transition:none}
+}
 
 /* ── The crew ──────────────────────────────────────────────────────────── */
 
@@ -118,4 +157,32 @@
 @media (prefers-reduced-motion:reduce){
   .thing{transition:none}
   .thing--secret-door.is-rattling{animation:none}
+}
+
+/* ── First visit, touch only ───────────────────────────────────────────────
+   No cursor on a phone, so the room says once — quietly, low, and small —
+   that it answers. Once a session, then never again. Not a panel, not a
+   marker, nothing to dismiss. */
+.garage__hint{
+  position:absolute;
+  left:50%;
+  bottom:26px;
+  transform:translate(-50%,8px);
+  margin:0;
+  padding:9px 16px;
+  border-radius:999px;
+  background:rgba(38,26,16,.62);
+  color:rgba(255,246,232,.94);
+  font-size:.76rem;
+  letter-spacing:.02em;
+  white-space:nowrap;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity 420ms ease, transform 420ms ease;
+  z-index:800;
+}
+.garage__hint.is-in{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){
+  .garage__hint{transition:opacity 200ms ease}
+  .garage__hint.is-in{transform:translate(-50%,0)}
 }

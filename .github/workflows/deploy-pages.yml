@@ -32,6 +32,18 @@ jobs:
       - run: npm run typecheck
       - run: npm run test
       - run: npx vite build
+      # The camera cannot be checked without a real browser: whether a drag
+      # moves the room, whether it stops at the walls, and whether the outline
+      # appears only under the pointer.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - name: Keep the interaction screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: e2e/shots/
+          if-no-files-found: warn
       - name: Check the artifact still contains every frozen URL
         run: |
           set -e
