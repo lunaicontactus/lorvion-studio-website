@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { CHARACTERS, MAX_ACTIVE_CHARACTERS, getCharacter } from '@/data/characters'
 import { PROJECTS, VISIBLE_PROJECTS, getProject } from '@/data/projects'
-import { GARAGE_OBJECTS, MAIN_MENU_OBJECTS } from '@/data/garageObjects'
 import { EASTER_EGGS } from '@/data/easterEggs'
 import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART, PROP_NAMES } from '@/data/alley'
+import { DESKTOP_WORLD, MOBILE_WORLD } from '@/data/world'
+import { OUTLINE_PATHS } from '@/data/outlines'
 
 describe('DOKKA CREW data', () => {
   it('has the five approved characters, uniquely identified', () => {
@@ -62,21 +63,51 @@ describe('project data', () => {
   })
 })
 
-describe('interactive objects', () => {
-  it('has unique ids', () => {
-    expect(new Set(GARAGE_OBJECTS.map((o) => o.id)).size).toBe(GARAGE_OBJECTS.length)
+describe('world objects', () => {
+  const worlds = [
+    { name: 'landscape', world: DESKTOP_WORLD },
+    { name: 'portrait', world: MOBILE_WORLD },
+  ]
+
+  it('offers the same things in both orientations', () => {
+    const [a, b] = worlds.map((w) => w.world.objects.map((o) => o.id).sort())
+    expect(a).toEqual(b)
+    expect(new Set(a).size).toBe(a?.length)
   })
 
-  it('always offers a plain menu route to the core sections', () => {
-    // Spatial navigation is a bonus, never the only way in.
-    expect(MAIN_MENU_OBJECTS.length).toBeGreaterThanOrEqual(4)
-    for (const o of MAIN_MENU_OBJECTS) expect(o.label).not.toBe('')
-  })
+  for (const { name, world } of worlds) {
+    it(`keeps every ${name} hit area on the plate`, () => {
+      for (const o of world.objects) {
+        expect(o.rect.w, o.id).toBeGreaterThan(40)
+        expect(o.rect.h, o.id).toBeGreaterThan(40)
+        expect(o.rect.x, o.id).toBeGreaterThanOrEqual(0)
+        expect(o.rect.y, o.id).toBeGreaterThanOrEqual(0)
+        expect(o.rect.x + o.rect.w, o.id).toBeLessThanOrEqual(world.width)
+        expect(o.rect.y + o.rect.h, o.id).toBeLessThanOrEqual(world.height)
+      }
+    })
 
-  it('locks the secret door behind all three mini-games', () => {
-    const door = GARAGE_OBJECTS.find((o) => o.id === 'locked-door')
-    expect(door?.action).toEqual({ kind: 'locked', requires: 3 })
-  })
+    it(`gives every ${name} object a silhouette to trace`, () => {
+      for (const o of world.objects) {
+        expect(o.outline, o.id).toBeTruthy()
+        expect(OUTLINE_PATHS[o.outline!], o.id).toMatch(/^M[\d.]/)
+      }
+    })
+
+    it(`does not stack two ${name} hit areas on the same spot`, () => {
+      const objs = world.objects
+      for (let i = 0; i < objs.length; i++) {
+        for (let j = i + 1; j < objs.length; j++) {
+          const a = objs[i]!.rect
+          const b = objs[j]!.rect
+          const overlap =
+            Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) *
+            Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y))
+          expect(overlap, `${objs[i]!.id} over ${objs[j]!.id}`).toBe(0)
+        }
+      }
+    })
+  }
 })
 
 describe('easter eggs', () => {

@@ -13,7 +13,6 @@
 .doc table{width:100%;border-collapse:collapse;margin-top:16px;display:block;overflow:auto}
 .doc th,.doc td{border:1px solid var(--line);padding:13px 14px;text-align:left;min-width:180px;color:#c4c8d2}
 .doc th{color:#fff;background:rgba(255,255,255,.035)}
-.status-badge{display:inline-flex;border:1px solid rgba(180,154,105,.35);color:#dbc49f;background:rgba(180,154,105,.08);border-radius:999px;padding:7px 11px;font-size:.7rem;letter-spacing:.08em;margin-top:12px;font-family:var(--mono)}
 .support-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
 .support-card{border:1px solid var(--line);padding:25px;border-radius:18px;background:rgba(255,255,255,.025)}
 .support-card h2{font-size:1.24rem}

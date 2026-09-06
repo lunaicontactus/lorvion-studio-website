@@ -61,7 +61,12 @@ class AudioManager {
     }
   }
 
-  /** The radio. Fetches the track the first time it is switched on. */
+  /**
+   * Looping room tone. Fetches the track the first time it is switched on.
+   * Nothing turns it on today: the radio was taken out of the garage, and this
+   * stayed because it is the audio system's own capability, not that fixture's
+   * wiring.
+   */
   toggleAmbient(on: boolean, volume = 0.32): void {
     this.ambientOn = on
     if (!on) {

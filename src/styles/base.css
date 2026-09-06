@@ -43,6 +43,3 @@ img[data-asset-failed]{
 }
 
 /* Scene container: the crossfade every world transition rides on. */
-.scene-host{position:relative;transition:opacity var(--dur-world) var(--ease)}
-.scene-host[data-transition="out"]{opacity:0}
-.scene-host[data-transition="in"]{opacity:1}

@@ -77,19 +77,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     const plate = world.width > world.height ? ROOM_ART.landscape : ROOM_ART.portrait
     roomEl.style.backgroundImage = `url('${plate.src}')`
 
-    for (const zone of world.zones) {
-      const el = document.createElement('div')
-      el.className = `zone zone--${zone.id}`
-      el.dataset['zone'] = zone.id
-      Object.assign(el.style, {
-        left: `${zone.rect.x}px`,
-        top: `${zone.rect.y}px`,
-        width: `${zone.rect.w}px`,
-        height: `${zone.rect.h}px`,
-      })
-      roomEl.append(el)
-    }
-
+    // Zones are grouping in the data (src/data/world.ts), not elements: they
+    // carry no pixels and no hit area, so nothing is built for them here.
     for (const obj of world.objects) {
       const el = document.createElement('button')
       el.type = 'button'

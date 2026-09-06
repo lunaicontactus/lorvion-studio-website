@@ -83,9 +83,9 @@ export interface AlleyPlate {
   readonly base: { readonly src: string; readonly w: number; readonly h: number }
   readonly shutter: LayerPlacement
   readonly sign: LayerPlacement
-  /** Traces of the crew on the pavement — a fire spirit in the pot, a club
-   *  stamp on the parcel, a mended stool, worn slippers. Not clickable yet;
-   *  they are separate so STEP 4 can make them so. */
+  /** Traces of a working week on the pavement — parcels waiting, one opened,
+   *  card flattened against the wall, water and cans by the door. Not
+   *  clickable yet; they are separate layers so STEP 4 can make them so. */
   readonly props: Readonly<Record<PropName, LayerPlacement>>
   /** Where the ENTER button sits, as a percentage down the plate. */
   readonly enterY: number

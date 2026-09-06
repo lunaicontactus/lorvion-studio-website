@@ -25,7 +25,10 @@ export interface Zone {
   readonly id: ZoneId
   readonly label: string
   readonly rect: WorldRect
-  /** Solid furniture the crew cannot walk through. Absent means open floor. */
+  /**
+   * Solid furniture, recorded for the movement STEP 3 did not build. Nothing
+   * reads it yet; it is not a hit area and it blocks nothing today.
+   */
   readonly blocks?: WorldRect
 }
 
@@ -40,7 +43,7 @@ export interface WorldObject {
   readonly label: string
   readonly zone: ZoneId
   readonly action: ObjectAction
-  /** Hit area in world space; drawn furniture uses the same box. */
+  /** Hit area in world space. The outline may be tighter than this. */
   readonly rect: WorldRect
   readonly sfx?: string
   /** Shown in the fallback menu so the room is never the only way through. */
@@ -61,10 +64,13 @@ export interface WorldLayout {
   readonly height: number
   /** Where the camera opens, in world space. */
   readonly start: { readonly x: number; readonly y: number }
-  /** Floor band the crew walks on: y from `top` to `bottom`. */
+  /** Floor band, for the same unbuilt movement. Nothing reads it yet. */
   readonly floor: { readonly top: number; readonly bottom: number }
   readonly zones: readonly Zone[]
   readonly objects: readonly WorldObject[]
-  /** The window the night sky is painted into. */
+  /**
+   * The painted window opening. Kept as a landmark for staging; the drawn
+   * sky that used to sit in it was removed, so nothing renders here.
+   */
   readonly window: WorldRect
 }
