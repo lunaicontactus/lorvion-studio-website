@@ -16,7 +16,7 @@ import { mountNav } from '@/ui/nav'
 import { mountReveal } from '@/ui/reveal'
 import { mountSoundToggle } from '@/ui/soundToggle'
 import { mountIntro } from '@/ui/intro'
-import { mountAlley } from '@/scenes/alley'
+import { mountWorld } from '@/app/world'
 
 type Teardown = () => void
 
@@ -82,7 +82,7 @@ export function boot(): Teardown {
   )
 
   if (flags.alley && document.querySelector('[data-alley]')) {
-    teardowns.push(guard('alley', () => mountAlley()))
+    teardowns.push(guard('world', () => mountWorld()))
   }
 
   for (const el of document.querySelectorAll<HTMLElement>('[data-year]')) {

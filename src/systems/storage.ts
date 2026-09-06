@@ -21,6 +21,11 @@ export function createDefaultSave(): SaveData {
     easterEggs: [],
     secretProgress: 0,
     soundEnabled: false,
+    touched: [],
+    fridgeDay: null,
+    fridgeSnack: null,
+    fridgeOpens: 0,
+    collection: [],
   }
 }
 
@@ -53,9 +58,10 @@ export function migrate(raw: unknown): SaveData {
   if (typeof raw !== 'object' || raw === null) return base
   const o = raw as Record<string, unknown>
 
-  // Only version 1 exists so far; anything else restarts from defaults rather
-  // than guessing at a shape we have never written.
-  if (o['v'] !== SAVE_VERSION) return base
+  // A v1 save is upgraded in place; anything we have never written restarts
+  // from defaults rather than guessing at its shape.
+  const version = o['v']
+  if (version !== SAVE_VERSION && version !== 1) return base
 
   const arr = (v: unknown): string[] => (Array.isArray(v) ? v.filter(str) : [])
   const num = (v: unknown, min: number, max: number, fallback: number): number =>
@@ -72,6 +78,13 @@ export function migrate(raw: unknown): SaveData {
     easterEggs: arr(o['easterEggs']),
     secretProgress: num(o['secretProgress'], 0, 3, 0),
     soundEnabled: o['soundEnabled'] === true,
+    // Absent on a v1 save; the defaults are correct for someone who has never
+    // been inside the garage.
+    touched: arr(o['touched']),
+    fridgeDay: str(o['fridgeDay']) ? o['fridgeDay'] : null,
+    fridgeSnack: str(o['fridgeSnack']) ? o['fridgeSnack'] : null,
+    fridgeOpens: num(o['fridgeOpens'], 0, 1e6, 0),
+    collection: arr(o['collection']),
   }
 }
 

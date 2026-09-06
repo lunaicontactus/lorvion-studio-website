@@ -114,6 +114,24 @@
     </button>
   </section>
 
+  <!-- The garage: a room larger than the window. Furniture, hit areas and the
+       crew all live in one world coordinate space (src/data/world.ts); the
+       camera moves inside it. Built by the scene, so this is just the frame. -->
+  <section class="garage" id="garage" data-garage hidden aria-label="EUNGARAGE 작업실">
+    <div class="garage__stage" data-garage-stage>
+      <div class="garage__room" data-garage-room></div>
+      <div class="garage__crew" data-garage-crew></div>
+    </div>
+    <nav class="garage__jump" aria-label="바로 가기">
+      <button type="button" data-jump="pc">GAMES</button>
+      <button type="button" data-jump="workbench">ABOUT</button>
+      <button type="button" data-jump="cabinet">ARCHIVE</button>
+      <button type="button" data-jump="tv">CONTACT</button>
+      <button type="button" data-jump="exit-door">OUT</button>
+    </nav>
+  </section>
+  <div data-panel-root hidden></div>
+
   <div class="marquee">
     <div class="marquee-track">
       <span>EUNGARAGE · EMOTION · CHARACTER · STORY · UNUSUAL WORLDS · </span>
