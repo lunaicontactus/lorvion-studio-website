@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 /**
  * The selection outline, checked in every engine the site claims to support.
@@ -6,6 +7,19 @@ import { test, expect } from '@playwright/test'
  * units, non-scaling strokes and an overflowing SVG are all places where one
  * browser quietly disagrees with the others.
  */
+
+/** The camera eases in on entry; hovering before it stops misses the object. */
+async function settle(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const room = document.querySelector('.garage__room') as HTMLElement | null
+    if (!room) return false
+    const now = room.style.transform
+    const w = window as unknown as { __lastT?: string; __same?: number }
+    w.__same = now === w.__lastT ? (w.__same ?? 0) + 1 : 0
+    w.__lastT = now
+    return (w.__same ?? 0) > 6
+  }, undefined, { timeout: 20000 })
+}
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -53,18 +67,23 @@ test('hover draws one heavy silhouette, sized to the object, and takes it away',
   await page.locator('[data-alley-enter]').click()
   await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 20000 })
   await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
-  await page.waitForTimeout(1200)
+  await settle(page)
 
   const target = page.locator('.thing--pc')
   await target.hover()
-  await page.waitForTimeout(250)
-
-  const lit = await page.evaluate(() =>
-    [...document.querySelectorAll('.thing')]
-      .filter((t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5)
-      .map((t) => (t as HTMLElement).dataset['object']),
-  )
-  expect(lit).toEqual(['pc'])
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() =>
+          [...document.querySelectorAll('.thing')]
+            .filter(
+              (t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5,
+            )
+            .map((t) => (t as HTMLElement).dataset['object']),
+        ),
+      { timeout: 5000 },
+    )
+    .toEqual(['pc'])
 
   const drawn = await target.evaluate((el) => {
     const svg = el.querySelector('.thing__outline') as SVGElement

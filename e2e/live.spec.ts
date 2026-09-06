@@ -70,11 +70,10 @@ for (const vp of [{ w: 1440, h: 900 }, { w: 1920, h: 1080 }]) {
         if (seen.has(id)) continue
         seen.add(id)
         await page.locator(`.thing--${id}`).hover()
-        await page.waitForTimeout(250)
-        const lit = await page.evaluate(() => [...document.querySelectorAll('.thing')]
-          .filter((t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5)
-          .map((t) => (t as HTMLElement).dataset['object']))
-        expect(lit).toEqual([id])
+        await expect.poll(async () => page.evaluate(() =>
+          [...document.querySelectorAll('.thing')]
+            .filter((t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5)
+            .map((t) => (t as HTMLElement).dataset['object'])), { timeout: 5000 }).toEqual([id])
         await page.screenshot({ path: `e2e/shots/live-${vp.w}-hover-${id}.png` })
       }
       if (seen.size === total) break
