@@ -70,7 +70,10 @@
                width="2560" height="1440" alt="" fetchpriority="high" decoding="async">
         </picture>
 
-        <span class="alley__glow" data-alley-glow-slot></span>
+        <!-- Everything staged in the doorway: the light that spills out, the
+             shadow that crosses it, and the wash we push through into. -->
+        <span class="alley__glow" data-alley-doorway></span>
+        <span class="alley__silhouette" data-alley-doorway><i></i></span>
 
         <!-- A roll shutter: the housing at the top stays, the slats below it
              roll up into it. Both are slices of the same image. -->
@@ -96,9 +99,14 @@
         <img class="alley__cutout alley__prop" data-alley-prop="stool"
              src="/assets/images/alley/alley_prop_stool.webp" width="453" height="433" alt="" fetchpriority="low" decoding="async">
 
+        <!-- The fire spirit's glow, sat on the painted flame in the pot. -->
+        <span class="alley__fire" data-alley-fire></span>
+
         <span class="alley__lamp" data-alley-lamp></span>
       </div>
     </div>
+    <!-- Where the camera lands: warm interior. STEP 3's garage takes over here. -->
+    <div class="alley__inside" aria-hidden="true"></div>
 
     <button class="alley__enter" type="button" data-alley-enter>
       <span class="alley__enter-dot" aria-hidden="true"></span>

@@ -1,17 +1,17 @@
 /**
- * The Korean alley entrance.
+ * The Korean alley — the prologue to the garage, not a landing page.
  *
- * A visitor arrives in a lane, not on a landing page: a shutter with a small
- * sign over it, and one way in. Pressing ENTER flickers the lamp, warms the gap
- * under the shutter, and lifts it.
+ * At rest the lane is quietly alive: the sign sways, the lamp breathes, the
+ * fire spirit in the pot peeks and hides, and now and then one small thing
+ * on the pavement twitches. Never two things at once, never anything big.
  *
- * The base plate is cover-fitted, so the shutter would slide off the painted
- * doorway if it were positioned against the viewport. Instead the scene works
- * out the box the base actually occupies and places every layer in percentages
- * of that, which keeps the shutter in its doorway at any window shape.
+ * ENTER is a way in, not a link. Something bumps inside, the lamp flickers,
+ * the shutter hesitates and then rolls up, warm light spills out, a small
+ * shadow crosses the doorway, and the camera pushes through. The scene ends
+ * on a warm interior wash — the surface the garage (STEP 3) takes over from.
  *
- * The whole sequence is under three seconds and every part of it is optional —
- * reduced motion, a failed image and a returning visitor all still get in.
+ * The base plate is cover-fitted, so every layer is placed in percentages of
+ * the box the base actually occupies; see src/data/alley.ts.
  */
 import {
   ALLEY_LANDSCAPE,
@@ -25,16 +25,24 @@ import { motion } from '@/systems/motion'
 import { ticker } from '@/systems/tick'
 import { log } from '@/systems/log'
 
-export type AlleyPhase = 'idle' | 'entering' | 'open'
+export type AlleyPhase = 'idle' | 'entering' | 'inside'
 
 export interface AlleyOptions {
-  /** Called once the shutter is up and the interior is exposed. */
+  /** Called once the camera is through the door and the wash is up. */
   readonly onEntered?: () => void
-  /** Total budget for the entrance, ms. Hard ceiling, never exceeded. */
-  readonly enterMs?: number
 }
 
-const DEFAULT_ENTER_MS = 2600
+/** The entrance beats, ms after the click. Total stays under 3.2s. */
+const BEATS = {
+  bump: 0,
+  flicker: 260,
+  hesitate: 620,
+  rise: 900,
+  light: 1500,
+  silhouette: 1900,
+  push: 2350,
+  inside: 3150,
+} as const
 
 export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {}): () => void {
   const scene = root.querySelector<HTMLElement>('[data-alley]')
@@ -43,7 +51,6 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
   const plateEl = scene.querySelector<HTMLElement>('[data-alley-plate]')
   const baseImg = scene.querySelector<HTMLImageElement>('[data-alley-base]')
   const enterBtn = scene.querySelector<HTMLButtonElement>('[data-alley-enter]')
-  const budget = opts.enterMs ?? DEFAULT_ENTER_MS
 
   const timers = new Set<ReturnType<typeof setTimeout>>()
   const off: (() => void)[] = []
@@ -56,7 +63,6 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
     }, ms)
     timers.add(t)
   }
-
   const setPhase = (next: AlleyPhase): void => {
     phase = next
     scene.dataset['phase'] = next
@@ -64,28 +70,25 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
   setPhase('idle')
 
   // ── Plate ────────────────────────────────────────────────────────────────
-  // Size the plate the way object-fit: cover would, then hand every layer its
-  // box as a percentage of it.
   const layout = (): void => {
     if (!plateEl) return
     const r = scene.getBoundingClientRect()
     if (!r.width || !r.height) return
 
-    // Take the orientation from the plate the browser actually chose, not from
-    // a second measurement of our own. <picture> resolves the source and we
-    // only follow it; two independent answers would eventually disagree and
-    // put the shutter somewhere other than the doorway.
-    const chosen = baseImg?.naturalWidth
+    // Follow the plate the browser chose; a second opinion of our own would
+    // eventually disagree with <picture> and misplace the shutter.
+    const portrait = baseImg?.naturalWidth
       ? baseImg.naturalWidth < baseImg.naturalHeight
       : r.height >= r.width
-    const plate: AlleyPlate = chosen ? ALLEY_PORTRAIT : ALLEY_LANDSCAPE
-    const portrait = chosen
+    const plate: AlleyPlate = portrait ? ALLEY_PORTRAIT : ALLEY_LANDSCAPE
     const ratio = plate.base.w / plate.base.h
     const w = Math.max(r.width, r.height * ratio)
     const h = w / ratio
 
     plateEl.style.width = `${w}px`
     plateEl.style.height = `${h}px`
+    // The camera pushes towards the doorway, so the plate scales about it.
+    plateEl.style.transformOrigin = `${plate.doorway.x}% ${plate.doorway.y}%`
     scene.dataset['orientation'] = portrait ? 'portrait' : 'landscape'
 
     const place = (el: HTMLElement | null, p: LayerPlacement, art: { w: number; h: number }): void => {
@@ -104,8 +107,6 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
     }
     const shutterEl = scene.querySelector<HTMLElement>('[data-alley-layer="shutter"]')
     place(shutterEl, plate.shutter, ALLEY_ART.shutter)
-    // The roll housing is the top slice of the same image; the slats live in a
-    // clipped box under it and roll up out of sight.
     shutterEl?.style.setProperty('--drum', `${ALLEY_ART.shutter.drum * 100}%`)
     shutterEl?.style.setProperty('--drum-frac', String(ALLEY_ART.shutter.drum))
     place(scene.querySelector('[data-alley-layer="sign"]'), plate.sign, ALLEY_ART.sign)
@@ -113,17 +114,32 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
       place(scene.querySelector(`[data-alley-prop="${name}"]`), plate.props[name], ALLEY_ART[name])
     }
 
-    // The glow sits exactly where the shutter is, so light appears in the gap.
-    const glow = scene.querySelector<HTMLElement>('[data-alley-glow-slot]')
-    const s = plate.shutter
-    if (glow) {
-      glow.style.left = `${s.left}%`
-      glow.style.width = `${s.width}%`
-      glow.style.top = `${s.top ?? 0}%`
-      glow.style.height = `${((w * s.width) / 100) * (ALLEY_ART.shutter.h / ALLEY_ART.shutter.w)}px`
+    // Interior light, silhouette and the pushed-through wash all live in the
+    // doorway box.
+    const d = plate.doorway
+    for (const el of scene.querySelectorAll<HTMLElement>('[data-alley-doorway]')) {
+      el.style.left = `${d.x - d.w / 2}%`
+      el.style.top = `${d.y - d.h / 2}%`
+      el.style.width = `${d.w}%`
+      el.style.height = `${d.h}%`
     }
-    // The button belongs on the pavement below the doorway, not floating over
-    // the shutter, so it is anchored to the plate like everything else.
+
+    // The fire spirit's glow sits exactly on the painted flame in the pot.
+    const fire = scene.querySelector<HTMLElement>('[data-alley-fire]')
+    const potEl = scene.querySelector<HTMLElement>('[data-alley-prop="pot"]')
+    if (fire && potEl) {
+      const p = plate.props.pot
+      const a = ALLEY_ART.pot
+      const potW = (w * p.width) / 100
+      const potH = (potW * a.h) / a.w
+      const potTop = p.top !== undefined ? (h * p.top) / 100 : h - (h * (p.bottom ?? 0)) / 100 - potH
+      const potLeft = (w * p.left) / 100
+      fire.style.left = `${potLeft + potW * a.fire.x}px`
+      fire.style.top = `${potTop + potH * a.fire.y}px`
+      fire.style.width = `${potW * a.fire.w * 1.6}px`
+      fire.style.height = `${potH * a.fire.h * 1.6}px`
+    }
+
     if (enterBtn) {
       const plateTop = (r.height - h) / 2
       enterBtn.style.top = `${plateTop + (h * plate.enterY) / 100}px`
@@ -141,8 +157,6 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
     ro.observe(scene)
     off.push(() => ro.disconnect())
   }
-  // Every time the base settles — first decode, or <picture> swapping source
-  // when the orientation changes — the plate has to be worked out again.
   if (baseImg) {
     const onBase = (): void => layout()
     baseImg.addEventListener('load', onBase)
@@ -159,10 +173,10 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
   const finish = (): void => {
     if (finished) return
     finished = true
-    setPhase('open')
-    scene.classList.add('alley--open')
+    setPhase('inside')
+    scene.classList.add('alley--inside')
     opts.onEntered?.()
-    log.debug('alley: entered')
+    log.debug('alley: inside')
   }
 
   const enter = (): void => {
@@ -171,15 +185,25 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
     enterBtn?.setAttribute('disabled', '')
 
     if (motion.reduced) {
-      finish() // no theatre: the shutter is simply already up
+      // No theatre: the shutter is up, the light is on, we are inside.
+      scene.classList.add('alley--rise', 'alley--light')
+      finish()
       return
     }
 
-    scene.classList.add('alley--flicker')
-    later(() => scene.classList.add('alley--warm'), 220)
-    later(() => scene.classList.add('alley--lifting'), 420)
-    // Whatever the transition does, the way in is open by the deadline.
-    later(finish, budget)
+    const beat = (cls: string, at: number): void => later(() => scene.classList.add(cls), at)
+    beat('alley--bump', BEATS.bump)
+    beat('alley--flicker', BEATS.flicker)
+    beat('alley--hesitate', BEATS.hesitate)
+    later(() => {
+      scene.classList.remove('alley--hesitate')
+      scene.classList.add('alley--rise')
+    }, BEATS.rise)
+    beat('alley--light', BEATS.light)
+    beat('alley--silhouette', BEATS.silhouette)
+    beat('alley--push', BEATS.push)
+    // Whatever the transitions do, we are inside by the deadline.
+    later(finish, BEATS.inside)
   }
 
   if (enterBtn) {
@@ -188,26 +212,50 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
     off.push(() => enterBtn.removeEventListener('click', onClick))
   }
 
-  // Idle drift: the sign sways, the lamp breathes. One subscriber for the whole
-  // scene rather than a CSS animation per prop, so it stops with the tab.
+  // ── Ambient life ─────────────────────────────────────────────────────────
+  // Continuous drifts on their own slow periods, plus one small "event" at a
+  // time on the pavement with a cooldown, so the lane never looks busy.
   if (!motion.reduced) {
     const sign = scene.querySelector<HTMLElement>('[data-alley-layer="sign"]')
     const lamp = scene.querySelector<HTMLElement>('[data-alley-lamp]')
-    if (sign || lamp) {
-      let t = 0
-      off.push(
-        ticker.subscribe((info) => {
-          t += info.delta
-          // Barely there: a degree and a half, twelve seconds a cycle.
-          if (sign) sign.style.setProperty('--sway', `${Math.sin(t / 1900) * 1.5}deg`)
-          if (lamp) lamp.style.setProperty('--breathe', String(0.82 + Math.sin(t / 2600) * 0.18))
-        }, 10),
-      )
-    }
+    const fire = scene.querySelector<HTMLElement>('[data-alley-fire]')
+    const pot = scene.querySelector<HTMLElement>('[data-alley-prop="pot"]')
+    const events: { el: HTMLElement | null; cls: string; ms: number }[] = [
+      { el: scene.querySelector('[data-alley-prop="box"]'), cls: 'is-twitch', ms: 420 },
+      { el: scene.querySelector('[data-alley-prop="slippers"]'), cls: 'is-shift', ms: 520 },
+      { el: scene.querySelector('[data-alley-prop="stool"]'), cls: 'is-wobble', ms: 640 },
+      { el: fire, cls: 'is-hide', ms: 1100 },
+    ]
+    let t = 0
+    let nextEvent = 3500 + Math.random() * 2500
+    let busyUntil = 0
+    let eventIdx = 0
+    off.push(
+      ticker.subscribe((info) => {
+        t += info.delta
+        if (phase !== 'idle') return
+        if (sign) sign.style.setProperty('--sway', `${Math.sin(t / 1900) * 1.5}deg`)
+        if (lamp) lamp.style.setProperty('--breathe', String(0.82 + Math.sin(t / 2600) * 0.18))
+        if (fire) fire.style.setProperty('--flame', String(0.55 + Math.sin(t / 700) * 0.2 + Math.sin(t / 233) * 0.06))
+        // Leaves: the whole pot leans a hair, pivoting at its base.
+        if (pot) pot.style.setProperty('--lean', `${Math.sin(t / 2300) * 0.8}deg`)
+        if (t >= nextEvent && t >= busyUntil) {
+          // Round-robin rather than random, so nothing repeats twice running.
+          const ev = events[eventIdx++ % events.length]
+          if (ev?.el) {
+            const el = ev.el
+            el.classList.add(ev.cls)
+            later(() => el.classList.remove(ev.cls), ev.ms)
+            busyUntil = t + ev.ms
+          }
+          nextEvent = t + 4000 + Math.random() * 4000
+        }
+      }, 10),
+    )
   }
 
   return () => {
-    for (const t of timers) clearTimeout(t)
+    for (const tm of timers) clearTimeout(tm)
     timers.clear()
     for (const fn of off) fn()
     off.length = 0
