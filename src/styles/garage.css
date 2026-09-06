@@ -20,7 +20,6 @@
 
 .garage__stage{position:absolute;inset:0;overflow:hidden}
 
-/* Sized in world units and moved with one transform; panning never reflows. */
 /* Sized in world units and moved with one transform; panning never reflows.
    The painted room is the background, set by the scene per orientation. */
 .garage__room{
@@ -32,12 +31,6 @@
   background-size:100% 100%;
   background-color:#2a1d13;
 }
-
-.garage__crew{position:absolute;inset:0;pointer-events:none}
-
-/* ── Zones ─────────────────────────────────────────────────────────────── */
-/* Zones are walking areas and nothing else; the room is painted, not drawn. */
-.zone{position:absolute;pointer-events:none}
 
 /* ── Things you can touch ──────────────────────────────────────────────── */
 /* A hit region over something already in the painting. At rest it draws
@@ -116,43 +109,6 @@
 @media (prefers-reduced-motion:reduce){
   .thing__outline,.thing__lift{transition:none}
 }
-
-/* ── The crew ──────────────────────────────────────────────────────────── */
-
-.npc{
-  position:absolute;
-  left:0;top:0;
-  padding:0;border:0;background:none;
-  pointer-events:auto;
-  cursor:pointer;
-  will-change:transform;
-}
-.npc{min-width:calc(120px * var(--npc-scale,1))}
-.npc__art{
-  display:block;
-  height:calc(340px * var(--npc-scale,1));
-  width:auto;
-  filter:drop-shadow(0 8px 12px rgba(30,20,12,.34));
-  pointer-events:none;
-}
-.npc:focus-visible{outline:2px solid var(--accent,#e8b877);outline-offset:4px;border-radius:12px}
-
-.npc__bubble{
-  position:absolute;
-  left:50%;top:-6%;
-  transform:translate(-50%,-100%) scale(.4);
-  min-width:34px;
-  padding:6px 10px;
-  border-radius:14px 14px 14px 4px;
-  background:#f6ecd9;
-  color:#5a4634;
-  font:700 17px/1 var(--mono);
-  box-shadow:0 6px 14px rgba(40,26,16,.3);
-  opacity:0;
-  transition:opacity 180ms ease, transform 260ms cubic-bezier(.34,1.5,.64,1);
-  pointer-events:none;
-}
-.npc.is-reacting .npc__bubble{opacity:1;transform:translate(-50%,-100%) scale(1)}
 
 @media (prefers-reduced-motion:reduce){
   .thing{transition:none}

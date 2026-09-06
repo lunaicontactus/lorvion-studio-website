@@ -172,26 +172,6 @@
 .fridge__clue span{opacity:.72}
 
 /* ── Radio ─────────────────────────────────────────────────────────────── */
-.radioset{display:grid;justify-items:center;gap:14px}
-.radioset__dial{
-  width:96px;height:96px;border:0;border-radius:50%;cursor:pointer;
-  background:radial-gradient(circle at 40% 36%,#f0d9a8,#b98f5c);
-  box-shadow:0 10px 22px rgba(60,44,26,.3);
-  display:grid;place-items:center;
-  transition:transform 320ms cubic-bezier(.34,1.4,.64,1);
-}
-.radioset__dial.is-on{transform:rotate(38deg)}
-.radioset__light{width:14px;height:14px;border-radius:50%;background:#6c5a44;transform:translateY(-26px)}
-.radioset__dial.is-on .radioset__light{background:#ffd08a;box-shadow:0 0 14px rgba(255,208,138,.9)}
-.radioset__state{margin:0;font:700 .68rem/1 var(--mono);letter-spacing:.2em;color:#8a7156}
-.radioset__wave{display:flex;gap:5px;align-items:flex-end;height:26px;opacity:.25}
-.radioset__wave i{width:5px;height:8px;border-radius:3px;background:#8a6f52}
-.panel.is-playing .radioset__wave{opacity:1}
-.panel.is-playing .radioset__wave i{animation:wave 900ms ease-in-out infinite}
-.panel.is-playing .radioset__wave i:nth-child(2){animation-delay:.12s}
-.panel.is-playing .radioset__wave i:nth-child(3){animation-delay:.24s}
-.panel.is-playing .radioset__wave i:nth-child(4){animation-delay:.36s}
-.panel.is-playing .radioset__wave i:nth-child(5){animation-delay:.48s}
 @keyframes wave{50%{height:24px}}
 
 /* ── Archive / shelf / secret ──────────────────────────────────────────── */
@@ -226,9 +206,7 @@
 }
 
 @media (prefers-reduced-motion:reduce){
-  .panel,.panel-layer__scrim,.snack,.radioset__dial{transition:none}
   .crt__screen,.tvset__screen{animation:none}
-  .panel.is-playing .radioset__wave i{animation:none}
 }
 
 /* The object you touched, at the top of what it opened — so a panel reads as

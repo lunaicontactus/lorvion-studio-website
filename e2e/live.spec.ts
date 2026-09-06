@@ -45,25 +45,43 @@ for (const vp of [{ w: 1440, h: 900 }, { w: 1920, h: 1080 }]) {
     expect(a.panelHidden).toBe(true)
     expect(a.outlines).toBe(a.things)
     await page.screenshot({ path: `e2e/shots/live-${vp.w}-01-garage.png` })
-    // Only what the camera is actually showing: the room is panned by
-    // transform, so Playwright cannot scroll an off-screen object into view.
-    const onScreen: string[] = await page.evaluate(() =>
-      [...document.querySelectorAll('.thing')]
-        .filter((t) => {
-          const b = t.getBoundingClientRect()
-          return b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight
-        })
-        .map((t) => (t as HTMLElement).dataset['object'] ?? ''))
-    expect(onScreen.length).toBeGreaterThan(2)
-    for (const id of onScreen) {
-      await page.locator(`.thing--${id}`).hover()
-      await page.waitForTimeout(250)
-      const lit = await page.evaluate(() => [...document.querySelectorAll('.thing')]
-        .filter((t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5)
-        .map((t) => (t as HTMLElement).dataset['object']))
-      expect(lit).toEqual([id])
-      await page.screenshot({ path: `e2e/shots/live-${vp.w}-hover-${id}.png` })
+    // The room is panned by transform, so Playwright cannot scroll anything
+    // into view: drive the camera across the room and hover whatever the
+    // viewport is actually showing at each stop, until every object is seen.
+    const seen = new Set<string>()
+    const drag = async (dx: number): Promise<void> => {
+      await page.mouse.move(vp.w / 2, vp.h / 2)
+      await page.mouse.down()
+      for (let i = 1; i <= 6; i++) await page.mouse.move(vp.w / 2 + (dx * i) / 6, vp.h / 2)
+      await page.mouse.up()
+      await page.waitForTimeout(500)
     }
+    const total = a.things
+    for (const step of [0, 900, 900, 900, -900, -900, -900, -900, -900]) {
+      if (step !== 0) await drag(step)
+      const onScreen: string[] = await page.evaluate(() =>
+        [...document.querySelectorAll('.thing')]
+          .filter((t) => {
+            const b = t.getBoundingClientRect()
+            return b.left >= 4 && b.right <= innerWidth - 4 && b.top >= 64 && b.bottom <= innerHeight - 4
+          })
+          .map((t) => (t as HTMLElement).dataset['object'] ?? ''))
+      for (const id of onScreen) {
+        if (seen.has(id)) continue
+        seen.add(id)
+        await page.locator(`.thing--${id}`).hover()
+        await page.waitForTimeout(250)
+        const lit = await page.evaluate(() => [...document.querySelectorAll('.thing')]
+          .filter((t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5)
+          .map((t) => (t as HTMLElement).dataset['object']))
+        expect(lit).toEqual([id])
+        await page.screenshot({ path: `e2e/shots/live-${vp.w}-hover-${id}.png` })
+      }
+      if (seen.size === total) break
+    }
+    expect([...seen].sort()).toEqual(
+      ['cabinet','fridge','pc','poster-liminal','poster-lunai','poster-rubato','poster-wormup',
+       'secret-door','shelf','tv','workbench'])
     await page.mouse.move(vp.w / 2, vp.h - 30)
     await page.waitForTimeout(300)
     const after = await page.evaluate(() => [...document.querySelectorAll('.thing')]

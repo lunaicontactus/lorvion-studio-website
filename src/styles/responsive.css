@@ -6,8 +6,6 @@
   .menu-toggle{display:block;z-index:2}
   .menu-toggle.open span:first-child{transform:translateY(3.5px) rotate(45deg)}
   .menu-toggle.open span:last-child{transform:translateY(-3.5px) rotate(-45deg)}
-  .hero-lockup{width:min(72vw,520px)}
-  .ghost{width:33vw;opacity:.9}.ghost.one{left:-9%}.ghost.two{right:-10%}.ghost.three{display:none}
   .manifesto{padding:110px 0}
   .manifesto-grid,.about-grid{grid-template-columns:1fr;gap:45px}
   .project{min-height:auto;padding:80px 0}
@@ -29,9 +27,6 @@
   .blueprint__list dt{font-size:.53rem;letter-spacing:.1em}
   .blueprint__list dd{font-size:clamp(.66rem,2.9vw,.84rem);letter-spacing:-.04em}
   .blueprint__eyebrow{font-size:.52rem;letter-spacing:.08em;margin-bottom:14px}
-  .hero-lockup{width:min(86vw,390px)}
-  .hero-brand__descriptor{letter-spacing:.14em;font-size:.56rem}
-  .hero-headline{font-size:1.7rem}
   .manifesto-copy{font-size:14vw}
   .poster-frame{max-width:94vw}
   .poster-frame img{width:100%;height:auto;max-height:none}
@@ -39,12 +34,10 @@
   .contact h2{font-size:16vw}
   .subpage{padding-top:118px}
   .subpage h1{font-size:15vw}
-  .ghost{width:42vw}
 }
 @media(prefers-reduced-motion:reduce){
   *{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   .intro{display:none}
-  .hero-lockup,.hero-brand__descriptor,.hero-headline,.hero-copy{opacity:1;transform:none;animation:none}
   .poster-shutter{transform:translateY(-100%)}
   .blueprint-open{opacity:1}
   .marquee-track{animation:none}
