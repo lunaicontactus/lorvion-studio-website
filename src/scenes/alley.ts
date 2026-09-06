@@ -210,9 +210,7 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
     const sign = scene.querySelector<HTMLElement>('[data-alley-layer="sign"]')
     const lamp = scene.querySelector<HTMLElement>('[data-alley-lamp]')
     const events: { el: HTMLElement | null; cls: string; ms: number }[] = [
-      { el: scene.querySelector('[data-alley-prop="box"]'), cls: 'is-twitch', ms: 420 },
-      { el: scene.querySelector('[data-alley-prop="slippers"]'), cls: 'is-shift', ms: 520 },
-      { el: scene.querySelector('[data-alley-prop="stool"]'), cls: 'is-wobble', ms: 640 },
+      { el: scene.querySelector('[data-alley-prop="parcelStack"]'), cls: 'is-twitch', ms: 420 },
     ]
     let t = 0
     let nextEvent = 3500 + Math.random() * 2500

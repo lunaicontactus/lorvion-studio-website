@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CHARACTERS, MAX_ACTIVE_CHARACTERS, getCharacter } from '@/data/characters'
 import { PROJECTS, VISIBLE_PROJECTS, getProject } from '@/data/projects'
 import { EASTER_EGGS } from '@/data/easterEggs'
-import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART, PROP_NAMES } from '@/data/alley'
+import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART, PROP_ART, PROP_NAMES } from '@/data/alley'
 import { DESKTOP_WORLD, MOBILE_WORLD } from '@/data/world'
 import { OUTLINE_PATHS } from '@/data/outlines'
 
@@ -218,11 +218,11 @@ describe('alley doorway', () => {
     }
   })
 
-  it('records the fire inside the pot cut-out', () => {
-    const f = ALLEY_ART.pot.fire
-    for (const v of [f.x, f.y, f.w, f.h]) {
-      expect(v).toBeGreaterThan(0)
-      expect(v).toBeLessThan(1)
+  it('has artwork for every prop the plates place', () => {
+    for (const n of PROP_NAMES) {
+      expect(PROP_ART[n], n).toMatch(/^\/assets\/images\/alley\/.+\.webp$/)
+      expect(ALLEY_ART[n].w, n).toBeGreaterThan(0)
+      expect(ALLEY_ART[n].h, n).toBeGreaterThan(0)
     }
   })
 })

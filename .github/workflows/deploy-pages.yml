@@ -35,7 +35,7 @@ jobs:
       # The camera cannot be checked without a real browser: whether a drag
       # moves the room, whether it stops at the walls, and whether the outline
       # appears only under the pointer.
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit firefox
       - run: npm run e2e
       - name: Keep the interaction screenshots
         if: always()

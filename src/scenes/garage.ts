@@ -13,7 +13,7 @@
  */
 import { Camera } from '@/systems/camera'
 import { worldFor, ROOM_ART } from '@/data/world'
-import { OUTLINE_PATHS, HIT_PADDING } from '@/data/outlines'
+import { OUTLINE_PATHS, HIT_PADDING, OUTLINE_OFFSET } from '@/data/outlines'
 import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
 import { audio } from '@/systems/audio'
@@ -36,7 +36,11 @@ export interface GarageOptions {
   readonly onObject?: (object: WorldObject) => void
 }
 
-const KEY_PAN = 620 // world units per second under the keyboard
+/** World units per second under the keyboard. */
+const KEY_PAN = 620
+
+/** How long a tapped object stays outlined, in milliseconds. */
+const MIN_PRESS = 150
 
 export function mountGarage(root: ParentNode = document, opts: GarageOptions = {}): GarageHandle | null {
   const scene = root.querySelector<HTMLElement>('[data-garage]')
@@ -47,8 +51,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   if (!stage || !roomEl) return null
 
   // The crew are off. Not hidden — never constructed: no spawn, no wander, no
-  // timers, no listeners, and none of their collision boxes in the room.
-  // src/scenes/npc.ts stays for when they come back.
+  // timers, no listeners, and none of their collision boxes in the room. The
+  // renderer that drew them was deleted; git history is where it lives now.
 
   const off: (() => void)[] = []
   const timers = new Set<ReturnType<typeof setTimeout>>()
@@ -105,15 +109,20 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         svg.setAttribute('viewBox', '0 0 1 1')
         svg.setAttribute('preserveAspectRatio', 'none')
         svg.setAttribute('aria-hidden', 'true')
+        // The dark path is drawn first and slightly wider: on a cream fridge
+        // against a cream wall, pure white alone dissolves. It is only there to
+        // separate the white line from the wall and must not read as a border.
         svg.innerHTML =
           `<clipPath id="clip-${obj.id}" clipPathUnits="objectBoundingBox"><path d="${d}"/></clipPath>` +
+          `<path class="thing__edge" d="${d}" vector-effect="non-scaling-stroke"/>` +
           `<path class="thing__stroke" d="${d}" vector-effect="non-scaling-stroke"/>`
         // An SVG is a replaced element: with height:auto it takes its own
         // aspect ratio and ignores the bottom inset, so both are set here.
-        svg.style.left = `${pad}px`
-        svg.style.top = `${pad}px`
-        svg.style.width = `${obj.rect.w}px`
-        svg.style.height = `${obj.rect.h}px`
+        // The box is grown by OUTLINE_OFFSET so the line clears the artwork.
+        svg.style.left = `${pad - OUTLINE_OFFSET}px`
+        svg.style.top = `${pad - OUTLINE_OFFSET}px`
+        svg.style.width = `${obj.rect.w + OUTLINE_OFFSET * 2}px`
+        svg.style.height = `${obj.rect.h + OUTLINE_OFFSET * 2}px`
         el.append(svg)
 
         const lift = document.createElement('span')
@@ -141,17 +150,24 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         if (obj.sfx) audio.play(obj.sfx)
         opts.onObject?.(obj)
       })
-      // Touch has no hover: show the outline while the finger is down, and take
-      // it away the moment it lifts.
-      const press =
-        (on: boolean) =>
-        (): void => {
-          el.classList.toggle('is-pressed', on)
-        }
-      el.addEventListener('pointerdown', press(true))
-      el.addEventListener('pointerup', press(false))
-      el.addEventListener('pointercancel', press(false))
-      el.addEventListener('pointerleave', press(false))
+      // Touch has no hover, so the outline is shown while the finger is down.
+      // A tap can be shorter than a frame or two, so the outline is held for a
+      // moment: long enough to see what was chosen, short enough not to delay
+      // the panel behind it.
+      let pressedAt = 0
+      el.addEventListener('pointerdown', () => {
+        pressedAt = performance.now()
+        el.classList.add('is-pressed')
+      })
+      const release = (): void => {
+        if (!el.classList.contains('is-pressed')) return
+        const left = MIN_PRESS - (performance.now() - pressedAt)
+        if (left <= 0) el.classList.remove('is-pressed')
+        else later(() => el.classList.remove('is-pressed'), left)
+      }
+      el.addEventListener('pointerup', release)
+      el.addEventListener('pointercancel', release)
+      el.addEventListener('pointerleave', release)
       roomEl.append(el)
     }
 

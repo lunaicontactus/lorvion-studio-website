@@ -37,16 +37,16 @@ export const DESKTOP_WORLD: WorldLayout = {
   objects: [
     // Read off the panorama with a rectangle overlay, then checked against it.
     { id: 'shelf', label: 'Collection', zone: 'shelf', action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 244, y: 205, w: 171, h: 412 }, outline: 'shelf', sfx: 'drawer' },
-    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', action: { kind: 'project', projectId: 'lunai' }, rect: { x: 455, y: 335, w: 168, h: 282 }, outline: 'poster' },
+    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', action: { kind: 'project', projectId: 'lunai' }, rect: { x: 455, y: 335, w: 168, h: 288 }, outline: 'poster' },
     { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', action: { kind: 'project', projectId: 'liminal' }, rect: { x: 651, y: 335, w: 168, h: 280 }, outline: 'poster' },
     { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', action: { kind: 'project', projectId: 'wormup' }, rect: { x: 848, y: 320, w: 191, h: 302 }, outline: 'poster' },
     { id: 'poster-rubato', label: 'RUBATO', zone: 'posterWall', action: { kind: 'project', projectId: 'rubato' }, rect: { x: 1068, y: 328, w: 197, h: 300 }, outline: 'poster' },
-    { id: 'cabinet', label: 'Archive', zone: 'archive', action: { kind: 'panel', panelId: 'archive' }, rect: { x: 850, y: 761, w: 143, h: 140 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
+    { id: 'cabinet', label: 'Archive', zone: 'archive', action: { kind: 'panel', panelId: 'archive' }, rect: { x: 850, y: 761, w: 143, h: 130 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
     { id: 'pc', label: 'Games', zone: 'mainDesk', action: { kind: 'panel', panelId: 'pc' }, rect: { x: 1462, y: 563, w: 233, h: 200 }, outline: 'monitor', sfx: 'keyboard', inMenu: true },
     { id: 'workbench', label: 'About the studio', zone: 'workbench', action: { kind: 'panel', panelId: 'about' }, rect: { x: 2048, y: 256, w: 274, h: 344 }, outline: 'rect', sfx: 'drawer', inMenu: true },
-    { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 2346, y: 560, w: 211, h: 395 }, outline: 'fridge', sfx: 'wrapper' },
-    { id: 'tv', label: 'Contact', zone: 'tvArea', action: { kind: 'panel', panelId: 'contact' }, rect: { x: 2674, y: 583, w: 304, h: 196 }, outline: 'tv', sfx: 'click', inMenu: true },
-    { id: 'secret-door', label: 'Locked', zone: 'secretDoor', action: { kind: 'panel', panelId: 'secret' }, rect: { x: 3212, y: 603, w: 204, h: 372 }, outline: 'arch', sfx: 'bell' },
+    { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 2362, y: 573, w: 200, h: 397 }, outline: 'fridge', sfx: 'wrapper' },
+    { id: 'tv', label: 'Contact', zone: 'tvArea', action: { kind: 'panel', panelId: 'contact' }, rect: { x: 2680, y: 585, w: 305, h: 203 }, outline: 'tv', sfx: 'click', inMenu: true },
+    { id: 'secret-door', label: 'Locked', zone: 'secretDoor', action: { kind: 'panel', panelId: 'secret' }, rect: { x: 3212, y: 603, w: 210, h: 372 }, outline: 'arch', sfx: 'bell' },
   ],
 }
 
@@ -81,8 +81,8 @@ export const MOBILE_WORLD: WorldLayout = {
     { id: 'cabinet', label: 'Archive', zone: 'archive', action: { kind: 'panel', panelId: 'archive' }, rect: { x: 424, y: 522, w: 142, h: 82 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
     { id: 'pc', label: 'Games', zone: 'mainDesk', action: { kind: 'panel', panelId: 'pc' }, rect: { x: 439, y: 1251, w: 158, h: 135 }, outline: 'monitorPortrait', sfx: 'keyboard', inMenu: true },
     { id: 'workbench', label: 'About the studio', zone: 'workbench', action: { kind: 'panel', panelId: 'about' }, rect: { x: 831, y: 1152, w: 169, h: 147 }, outline: 'rect', sfx: 'drawer', inMenu: true },
-    { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 276, y: 2121, w: 158, h: 285 }, outline: 'fridge', sfx: 'wrapper' },
-    { id: 'tv', label: 'Contact', zone: 'tvArea', action: { kind: 'panel', panelId: 'contact' }, rect: { x: 506, y: 2138, w: 196, h: 169 }, outline: 'tv', sfx: 'click', inMenu: true },
+    { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 276, y: 2121, w: 158, h: 306 }, outline: 'fridge', sfx: 'wrapper' },
+    { id: 'tv', label: 'Contact', zone: 'tvArea', action: { kind: 'panel', panelId: 'contact' }, rect: { x: 508, y: 2138, w: 190, h: 147 }, outline: 'tv', sfx: 'click', inMenu: true },
     { id: 'secret-door', label: 'Locked', zone: 'secretDoor', action: { kind: 'panel', panelId: 'secret' }, rect: { x: 862, y: 2149, w: 129, h: 270 }, outline: 'arch', sfx: 'bell' },
   ],
 }

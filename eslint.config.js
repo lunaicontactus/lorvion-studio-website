@@ -26,7 +26,8 @@ export default tseslint.config(
       'e2e/**/*.ts',
       'scripts/**/*.mjs',
     ],
-    languageOptions: { globals: { ...globals.node } },
+    // These run in Node but pass callbacks into a page, so both sets apply.
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
     rules: { 'no-console': 'off' },
   },
 )
