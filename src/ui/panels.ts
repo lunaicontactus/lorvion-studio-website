@@ -10,6 +10,7 @@
 import { PROJECTS } from '@/data/projects'
 import { SITE_CONFIG, contactRows } from '@/data/site'
 import { CHARACTERS } from '@/data/characters'
+import { OBJECT_ART } from '@/data/world'
 import { save } from '@/systems/storage'
 import { audio } from '@/systems/audio'
 import { sound as soundPref } from '@/systems/sound'
@@ -118,6 +119,12 @@ export class Panels {
     }
   }
 
+  /** The object you just touched, shown at the top of what it opened. */
+  #portrait(id: string): string {
+    const src = OBJECT_ART[id]
+    return src ? `<img class="panel__portrait" src="${src}" alt="" decoding="async">` : ''
+  }
+
   #show(kind: string, title: string, html: string): void {
     this.#lastFocus = document.activeElement as HTMLElement | null
     this.#shell.dataset['kind'] = kind
@@ -179,7 +186,7 @@ export class Panels {
     this.#show(
       'pc',
       'EUNGARAGE',
-      `<div class="crt">
+      `${this.#portrait('pc')}<div class="crt">
          <div class="crt__screen">
            <p class="crt__boot">EUNGARAGE // GAME HUB</p>
            <div class="hub">${list}</div>
@@ -229,7 +236,7 @@ export class Panels {
     this.#show(
       'about',
       SITE_CONFIG.companyName,
-      `<dl class="about">
+      `${this.#portrait('workbench')}<dl class="about">
          <div><dt>WHAT WE MAKE</dt><dd>Games</dd></div>
          <div><dt>HOW WE WORK</dt><dd>A small studio, by hand</dd></div>
          <div><dt>FROM</dt><dd>${SITE_CONFIG.location}</dd></div>
@@ -254,7 +261,7 @@ export class Panels {
           )
           .join('')
       : '<p class="tvrow__none">NO SIGNAL</p>'
-    this.#show('contact', 'CONTACT', `<div class="tvset"><div class="tvset__screen">${body}</div></div>`)
+    this.#show('contact', 'CONTACT', `${this.#portrait('tv')}<div class="tvset"><div class="tvset__screen">${body}</div></div>`)
     for (const btn of this.#body.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
       btn.addEventListener('click', async () => {
         const value = btn.dataset['copy'] ?? ''
@@ -295,7 +302,7 @@ export class Panels {
     this.#show(
       'fridge',
       "TODAY'S SNACK",
-      `<div class="fridge">
+      `${this.#portrait('fridge')}<div class="fridge">
          <div class="fridge__shelf">
            <button class="snack" type="button" data-snack style="--tint:${snack.tint}">
              <span class="snack__label">${snack.label}</span>
@@ -327,7 +334,7 @@ export class Panels {
     this.#show(
       'radio',
       'GARAGE SOUND',
-      `<div class="radioset">
+      `${this.#portrait('radio')}<div class="radioset">
          <button class="radioset__dial ${on ? 'is-on' : ''}" type="button" data-radio-toggle aria-pressed="${on}">
            <span class="radioset__light"></span>
          </button>
@@ -373,7 +380,7 @@ export class Panels {
          </section>`,
       )
       .join('')
-    this.#show('archive', 'ARCHIVE', `<div class="archive">${html}<p class="archive__empty">DEVLOG — 아직 비어 있음</p></div>`)
+    this.#show('archive', 'ARCHIVE', `${this.#portrait('cabinet')}<div class="archive">${html}<p class="archive__empty">DEVLOG — 아직 비어 있음</p></div>`)
   }
 
   // ── The shelf ──────────────────────────────────────────────────────────
@@ -391,7 +398,7 @@ export class Panels {
     const items = found
       .map((f) => `<li class="collect ${f.got ? 'is-found' : ''}"><span class="collect__dot"></span><span>${f.got ? f.label : '???'}</span></li>`)
       .join('')
-    this.#show('shelf', 'FOUND', `<ul class="collection">${items}</ul>`)
+    this.#show('shelf', 'FOUND', `${this.#portrait('shelf')}<ul class="collection">${items}</ul>`)
   }
 
   // ── The secret door ────────────────────────────────────────────────────

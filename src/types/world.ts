@@ -46,6 +46,8 @@ export interface WorldObject {
   readonly inMenu?: boolean
   /** Locked things say so instead of opening. */
   readonly locked?: boolean
+  /** Drawn into the room. Only for things the painting does not already show. */
+  readonly art?: string
 }
 
 export interface WorldLayout {
