@@ -235,9 +235,12 @@
    that thing having been opened rather than a page having replaced it. */
 .panel__portrait{
   display:block;
-  width:min(180px,42%);
-  height:auto;
-  margin:-8px auto 14px;
-  filter:drop-shadow(0 10px 16px rgba(40,26,16,.35));
+  /* Capped by height, not width: the fridge is 560x870 and by width it would
+     take a third of the panel. */
+  height:110px;
+  width:auto;
+  max-width:60%;
+  margin:-4px auto 12px;
+  filter:drop-shadow(0 8px 12px rgba(40,26,16,.32));
 }
-@media (max-width:560px){.panel__portrait{width:min(130px,38%)}}
+@media (max-width:560px){.panel__portrait{height:84px}}

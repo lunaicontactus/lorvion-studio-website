@@ -16,7 +16,6 @@ export type ZoneId =
   | 'workbench'
   | 'restArea'
   | 'tvArea'
-  | 'radioArea'
   | 'fridgeArea'
   | 'secretDoor'
 

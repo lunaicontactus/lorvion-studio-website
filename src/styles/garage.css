@@ -40,90 +40,43 @@
 .zone{position:absolute;pointer-events:none}
 
 /* ── Things you can touch ──────────────────────────────────────────────── */
-/* A hit area over something already in the picture. Invisible at rest — the
-   room must not look like a form — and it answers when you come near. */
+/* A hit area over something already in the painting. It draws nothing at all:
+   no gradient, no ring, no marker. The room is the picture, and an interface
+   painted on top of it was the whole problem. What tells you a thing is live
+   is the cursor, and — for anyone on a keyboard — the focus outline.
+
+   Deliberately absent: ::before/::after, radial-gradient, border-radius:50%,
+   box-shadow, glow, pulse. Nothing here may draw a circle. */
 
 .thing{
   position:absolute;
   padding:0;
+  margin:0;
   border:0;
   background:none;
+  -webkit-appearance:none;
+  appearance:none;
   cursor:pointer;
-  border-radius:10px;
-  transition:transform 260ms cubic-bezier(.34,1.3,.64,1), box-shadow 240ms ease;
-}
-.thing__face{
-  position:absolute;inset:-6px;
-  border-radius:12px;
+  /* Invisible, but still a real button for the keyboard and for touch. */
   opacity:0;
-  transition:opacity 240ms ease;
-  background:radial-gradient(ellipse at 50% 50%, rgba(255,214,150,.34), rgba(255,214,150,0) 72%);
-  box-shadow:inset 0 0 0 2px rgba(255,214,150,.5);
 }
-.thing:hover .thing__face,
-.thing:focus-visible .thing__face{opacity:1}
+.thing:focus-visible{
+  opacity:1;
+  outline:2px solid #ffd08a;
+  outline-offset:2px;
+  border-radius:4px;
+}
 
-/* The one mark that says "touch me": small, warm, only on approach. */
+/* Placed furniture — only for things the painting does not contain. */
 .thing__art{
   position:absolute;inset:0;
   width:100%;height:100%;
   object-fit:contain;
   pointer-events:none;
-  filter:drop-shadow(0 10px 14px rgba(30,20,10,.45));
 }
-
-.thing__hint{
-  position:absolute;
-  top:-14px;left:50%;
-  width:14px;height:14px;
-  margin-left:-7px;
-  border-radius:50%;
-  background:radial-gradient(circle at 50% 45%, #ffe6b8, #e8a765);
-  box-shadow:0 0 14px rgba(255,196,120,.85);
-  opacity:0;
-  transform:scale(.4);
-  transition:opacity 200ms ease, transform 260ms cubic-bezier(.34,1.5,.64,1);
-  pointer-events:none;
-}
-.thing:hover .thing__hint,
-.thing:focus-visible .thing__art{
-  position:absolute;inset:0;
-  width:100%;height:100%;
-  object-fit:contain;
-  pointer-events:none;
-  filter:drop-shadow(0 10px 14px rgba(30,20,10,.45));
-}
-
-.thing__hint{opacity:1;transform:scale(1)}
-.thing:hover,
-.thing:focus-visible{transform:translateY(-2px) scale(1.012)}
-.thing:focus-visible{outline:2px solid #ffd08a;outline-offset:4px}
-.thing:active{transform:translateY(0) scale(.995)}
-
-/* Locked until it is not. */
-.garage[data-secret="unlocked"] .thing--secret-door .thing__face{
-  opacity:1;
-  background:radial-gradient(ellipse at 50% 50%, rgba(255,206,120,.4), rgba(255,206,120,0) 72%);
-  box-shadow:inset 0 0 0 2px rgba(255,206,120,.7), 0 0 34px rgba(230,190,120,.45);
-}
-.thing--secret-door.is-rattling{animation:doorRattle 420ms ease-in-out}
-@keyframes doorRattle{
-  25%{transform:translateX(-3px)}
-  55%{transform:translateX(3px)}
-  80%{transform:translateX(-1px)}
-}
+.thing:has(.thing__art){opacity:1}
 
 /* ── Window ────────────────────────────────────────────────────────────── */
-
-.garage__window{
-  position:absolute;
-  overflow:hidden;
-  pointer-events:none;
-  /* The window is painted into the room; this only adds the sky that moves. */
-  mix-blend-mode:screen;
-  opacity:.85;
-}
-.garage__window canvas{display:block;width:100%;height:100%}
 
 /* ── The crew ──────────────────────────────────────────────────────────── */
 
@@ -162,45 +115,7 @@
 }
 .npc.is-reacting .npc__bubble{opacity:1;transform:translate(-50%,-100%) scale(1)}
 
-/* ── Fallback navigation ───────────────────────────────────────────────── */
-/* Small, out of the way, and keyboard-first: the room must never be the only
-   route to the games. */
-.garage__jump{
-  position:absolute;
-  left:50%;bottom:14px;
-  transform:translateX(-50%);
-  display:flex;gap:6px;
-  max-width:calc(100vw - 20px);
-  padding:6px;
-  border-radius:999px;
-  background:rgba(246,236,217,.9);
-  box-shadow:0 6px 18px rgba(30,20,12,.34);
-  /* Above every character (capped at 699) and below the panels. */
-  z-index:800;
-}
-.garage__jump button{
-  border:0;
-  padding:8px 14px;
-  min-height:36px;
-  border-radius:999px;
-  background:none;
-  color:#5a4634;
-  font:600 .68rem/1 var(--mono);
-  letter-spacing:.14em;
-  cursor:pointer;
-  transition:background 180ms ease;
-}
-.garage__jump button:hover,
-.garage__jump button:focus-visible{background:rgba(200,170,120,.4)}
-
-@media (max-width:560px){
-  /* Five labels will not fit a phone in one line; wrapping keeps every target
-     reachable instead of pushing the last one off the screen. */
-  .garage__jump{flex-wrap:wrap;justify-content:center;gap:2px;padding:4px;border-radius:20px}
-  .garage__jump button{padding:8px 10px;min-height:34px;font-size:.58rem;letter-spacing:.06em}
-}
-
 @media (prefers-reduced-motion:reduce){
-  .thing,.thing__hint,.npc__bubble{transition:none}
+  .thing{transition:none}
   .thing--secret-door.is-rattling{animation:none}
 }

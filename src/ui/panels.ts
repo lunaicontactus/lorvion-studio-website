@@ -13,7 +13,6 @@ import { CHARACTERS } from '@/data/characters'
 import { OBJECT_ART } from '@/data/world'
 import { save } from '@/systems/storage'
 import { audio } from '@/systems/audio'
-import { sound as soundPref } from '@/systems/sound'
 import type { ProjectConfig } from '@/types/project'
 
 export interface PanelHost {
@@ -325,38 +324,6 @@ export class Panels {
       audio.play('surprise', 0.35)
       fn()
     })
-  }
-
-  // ── The radio ──────────────────────────────────────────────────────────
-  openRadio(): void {
-    this.#touch('radio')
-    const on = soundPref.enabled
-    this.#show(
-      'radio',
-      'GARAGE SOUND',
-      `${this.#portrait('radio')}<div class="radioset">
-         <button class="radioset__dial ${on ? 'is-on' : ''}" type="button" data-radio-toggle aria-pressed="${on}">
-           <span class="radioset__light"></span>
-         </button>
-         <p class="radioset__state" data-radio-state>${on ? 'ON' : 'OFF'}</p>
-         <div class="radioset__wave" data-radio-wave aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-       </div>`,
-    )
-    const dial = this.#body.querySelector<HTMLButtonElement>('[data-radio-toggle]')!
-    const state = this.#body.querySelector<HTMLElement>('[data-radio-state]')!
-    dial.addEventListener('click', () => {
-      const next = !soundPref.enabled
-      void soundPref.setEnabled(next)
-      audio.unlock()
-      audio.syncPreference()
-      audio.toggleAmbient(next)
-      dial.classList.toggle('is-on', next)
-      dial.setAttribute('aria-pressed', String(next))
-      state.textContent = next ? 'ON' : 'OFF'
-      this.#shell.classList.toggle('is-playing', next)
-      if (next) audio.play('click', 0.3)
-    })
-    this.#shell.classList.toggle('is-playing', audio.ambientPlaying)
   }
 
   // ── The cabinet ────────────────────────────────────────────────────────

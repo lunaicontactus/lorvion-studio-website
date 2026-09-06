@@ -110,8 +110,15 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
     shutterEl?.style.setProperty('--drum', `${ALLEY_ART.shutter.drum * 100}%`)
     shutterEl?.style.setProperty('--drum-frac', String(ALLEY_ART.shutter.drum))
     place(scene.querySelector('[data-alley-layer="sign"]'), plate.sign, ALLEY_ART.sign)
+    // Props whose art does not exist yet have a slot but no element; they are
+    // skipped rather than stood in for.
     for (const name of PROP_NAMES) {
-      place(scene.querySelector(`[data-alley-prop="${name}"]`), plate.props[name], ALLEY_ART[name])
+      const el = scene.querySelector<HTMLElement>(`[data-alley-prop="${name}"]`)
+      if (!(el instanceof HTMLImageElement)) continue
+      const art = { w: el.naturalWidth || 1, h: el.naturalHeight || 1 }
+      place(el, plate.props[name], art)
+      const tilt = plate.props[name].tilt ?? 0
+      el.style.setProperty('--tilt', `${tilt}deg`)
     }
 
     // Interior light, silhouette and the pushed-through wash all live in the
@@ -122,22 +129,6 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
       el.style.top = `${d.y - d.h / 2}%`
       el.style.width = `${d.w}%`
       el.style.height = `${d.h}%`
-    }
-
-    // The fire spirit's glow sits exactly on the painted flame in the pot.
-    const fire = scene.querySelector<HTMLElement>('[data-alley-fire]')
-    const potEl = scene.querySelector<HTMLElement>('[data-alley-prop="pot"]')
-    if (fire && potEl) {
-      const p = plate.props.pot
-      const a = ALLEY_ART.pot
-      const potW = (w * p.width) / 100
-      const potH = (potW * a.h) / a.w
-      const potTop = p.top !== undefined ? (h * p.top) / 100 : h - (h * (p.bottom ?? 0)) / 100 - potH
-      const potLeft = (w * p.left) / 100
-      fire.style.left = `${potLeft + potW * a.fire.x}px`
-      fire.style.top = `${potTop + potH * a.fire.y}px`
-      fire.style.width = `${potW * a.fire.w * 1.6}px`
-      fire.style.height = `${potH * a.fire.h * 1.6}px`
     }
 
     if (enterBtn) {
@@ -218,13 +209,11 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
   if (!motion.reduced) {
     const sign = scene.querySelector<HTMLElement>('[data-alley-layer="sign"]')
     const lamp = scene.querySelector<HTMLElement>('[data-alley-lamp]')
-    const fire = scene.querySelector<HTMLElement>('[data-alley-fire]')
     const pot = scene.querySelector<HTMLElement>('[data-alley-prop="pot"]')
     const events: { el: HTMLElement | null; cls: string; ms: number }[] = [
       { el: scene.querySelector('[data-alley-prop="box"]'), cls: 'is-twitch', ms: 420 },
       { el: scene.querySelector('[data-alley-prop="slippers"]'), cls: 'is-shift', ms: 520 },
       { el: scene.querySelector('[data-alley-prop="stool"]'), cls: 'is-wobble', ms: 640 },
-      { el: fire, cls: 'is-hide', ms: 1100 },
     ]
     let t = 0
     let nextEvent = 3500 + Math.random() * 2500
@@ -236,7 +225,6 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
         if (phase !== 'idle') return
         if (sign) sign.style.setProperty('--sway', `${Math.sin(t / 1900) * 1.5}deg`)
         if (lamp) lamp.style.setProperty('--breathe', String(0.82 + Math.sin(t / 2600) * 0.18))
-        if (fire) fire.style.setProperty('--flame', String(0.55 + Math.sin(t / 700) * 0.2 + Math.sin(t / 233) * 0.06))
         // Leaves: the whole pot leans a hair, pivoting at its base.
         if (pot) pot.style.setProperty('--lean', `${Math.sin(t / 2300) * 0.8}deg`)
         if (t >= nextEvent && t >= busyUntil) {

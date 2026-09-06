@@ -32,8 +32,10 @@ export class Camera {
     this.bounds = bounds
     this.targetX = this.clampX(this.targetX)
     this.targetY = this.clampY(this.targetY)
-    this.x = this.clampX(this.x)
-    this.y = this.clampY(this.y)
+    // Arrive rather than ease: a window change should not leave the view
+    // drifting toward somewhere the visitor asked for before the resize.
+    this.x = this.targetX
+    this.y = this.targetY
   }
 
   /** Jump with no easing — opening position, or a fast-travel arrival. */

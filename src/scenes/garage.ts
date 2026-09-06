@@ -12,8 +12,7 @@
  * the desk and in front of the rug.
  */
 import { Camera } from '@/systems/camera'
-import { Crew, type Npc } from '@/scenes/npc'
-import { mountWindowSky } from '@/scenes/window'
+import type { Npc } from '@/scenes/npc'
 import { worldFor, ROOM_ART } from '@/data/world'
 import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
@@ -46,8 +45,11 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
 
   const stage = scene.querySelector<HTMLElement>('[data-garage-stage]')
   const roomEl = scene.querySelector<HTMLElement>('[data-garage-room]')
-  const crewLayer = scene.querySelector<HTMLElement>('[data-garage-crew]')
-  if (!stage || !roomEl || !crewLayer) return null
+  if (!stage || !roomEl) return null
+
+  // The crew are off. Not hidden — never constructed: no spawn, no wander, no
+  // timers, no listeners, and none of their collision boxes in the room.
+  // src/scenes/npc.ts stays for when they come back.
 
   const off: (() => void)[] = []
   const camera = new Camera(motion.reduced ? 1 : 0.16)
@@ -55,10 +57,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   let scale = 1
   let built = false
   let paused = false
-  let offSky: (() => void) | null = null
   const keys = new Set<string>()
 
-  const crew = new Crew(crewLayer, (npc) => opts.onNpc?.(npc))
 
   // ── Room construction ────────────────────────────────────────────────────
   // One pass builds every zone and object as an element sized in world units;
@@ -119,23 +119,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       })
       roomEl.append(el)
     }
-    // The window belongs to the room: built here so a rebuild cannot orphan it.
-    offSky?.()
-    offSky = null
-    const win = document.createElement('div')
-    win.className = 'garage__window'
-    Object.assign(win.style, {
-      left: `${world.window.x}px`,
-      top: `${world.window.y}px`,
-      width: `${world.window.w}px`,
-      height: `${world.window.h}px`,
-    })
-    const canvas = document.createElement('canvas')
-    win.append(canvas)
-    roomEl.append(win)
-    offSky = mountWindowSky(canvas)
-
-    crew.build(world)
+    // The painted window already has its own night sky and moon; a canvas over
+    // it only added drifting light where the artwork wanted none.
     built = true
   }
 
@@ -180,7 +165,6 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     const x = -camera.viewX * scale
     const y = -camera.viewY * scale
     roomEl.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`
-    crew.render(camera.viewX, camera.viewY, scale)
   }
 
   // ── Movement ─────────────────────────────────────────────────────────────
@@ -284,9 +268,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         if (keys.has('arrowdown') || keys.has('s')) dy += step
         if (dx || dy) camera.moveBy(dx, dy)
       }
-      const cameraMoved = camera.update(info.delta)
-      if (!motion.reduced) crew.update(info.delta, info.now)
-      if (cameraMoved || !motion.reduced) draw()
+      if (camera.update(info.delta)) draw()
     }, 20),
   )
 
@@ -319,8 +301,6 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       return world
     },
     destroy(): void {
-      offSky?.()
-      offSky = null
       for (const fn of off) fn()
       off.length = 0
     },
