@@ -12,7 +12,6 @@ import { mountGarage, type GarageHandle } from '@/scenes/garage'
 import { Panels, secretMet } from '@/ui/panels'
 import { PROJECTS } from '@/data/projects'
 import { audio } from '@/systems/audio'
-import { save } from '@/systems/storage'
 import { log } from '@/systems/log'
 import type { WorldObject } from '@/types/world'
 
@@ -93,13 +92,6 @@ export function mountWorld(): () => void {
       garage = mountGarage(document, {
         onObject: openFor,
         onExit: () => leaveGarage(),
-        onNpc: (npc) => {
-          if (!save.data.discoveredCharacters.includes(npc.config.id)) {
-            save.update((d) => {
-              d.discoveredCharacters.push(npc.config.id)
-            })
-          }
-        },
       })
     }
     refreshSecret()
@@ -119,20 +111,6 @@ export function mountWorld(): () => void {
       onEntered: () => enterGarage(),
     }),
   )
-
-  for (const btn of garageEl.querySelectorAll<HTMLButtonElement>('[data-jump]')) {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset['jump']
-      if (!id) return
-      if (id === 'out') {
-        leaveGarage()
-        return
-      }
-      garage?.focusObject(id)
-      const obj = garage?.world.objects.find((o) => o.id === id)
-      if (obj) openFor(obj)
-    })
-  }
 
   return () => {
     garage?.destroy()

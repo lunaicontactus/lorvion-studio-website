@@ -6,14 +6,14 @@
  * positioned from the same coordinates, so a hit area can never drift off the
  * thing it belongs to, whatever the window does.
  *
- * The furniture is drawn from those rectangles in CSS rather than painted into
- * a background image, which is what lets the room be bigger than the screen
- * without a single enormous asset, and what keeps the crew able to walk behind
- * the desk and in front of the rug.
+ * The room itself is one painted plate per orientation (src/data/world.ts).
+ * The objects below are hit regions over furniture that is already in that
+ * painting — they draw no furniture of their own, and the only thing they show
+ * is an outline tracing the object under the pointer.
  */
 import { Camera } from '@/systems/camera'
-import type { Npc } from '@/scenes/npc'
 import { worldFor, ROOM_ART } from '@/data/world'
+import { OUTLINE_PATHS, HIT_PADDING } from '@/data/outlines'
 import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
 import { audio } from '@/systems/audio'
@@ -34,7 +34,6 @@ export interface GarageOptions {
   readonly onExit?: () => void
   /** A thing was touched; the host decides what panel that means. */
   readonly onObject?: (object: WorldObject) => void
-  readonly onNpc?: (npc: Npc) => void
 }
 
 const KEY_PAN = 620 // world units per second under the keyboard
@@ -52,6 +51,14 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   // src/scenes/npc.ts stays for when they come back.
 
   const off: (() => void)[] = []
+  const timers = new Set<ReturnType<typeof setTimeout>>()
+  const later = (fn: () => void, ms: number): void => {
+    const t = setTimeout(() => {
+      timers.delete(t)
+      fn()
+    }, ms)
+    timers.add(t)
+  }
   const camera = new Camera(motion.reduced ? 1 : 0.16)
   let world: WorldLayout = worldFor(false)
   let scale = 1
@@ -89,16 +96,47 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       el.className = `thing thing--${obj.id}`
       el.dataset['object'] = obj.id
       el.setAttribute('aria-label', obj.label)
+      // The hit region is looser than the object so it is comfortable to click;
+      // the outline inside it is not, so it can trace the real thing.
+      const pad = obj.art ? 0 : HIT_PADDING
       Object.assign(el.style, {
-        left: `${obj.rect.x}px`,
-        top: `${obj.rect.y}px`,
-        width: `${obj.rect.w}px`,
-        height: `${obj.rect.h}px`,
+        left: `${obj.rect.x - pad}px`,
+        top: `${obj.rect.y - pad}px`,
+        width: `${obj.rect.w + pad * 2}px`,
+        height: `${obj.rect.h + pad * 2}px`,
         zIndex: String(Math.min(699, 100 + Math.round((obj.rect.y + obj.rect.h) / 8))),
       })
-      const face = document.createElement('span')
-      face.className = 'thing__face'
-      el.append(face)
+
+      if (obj.outline) {
+        const d = OUTLINE_PATHS[obj.outline]
+        // One path, two jobs: stroked as the outline, and the clip that keeps
+        // the brightness lift the object's shape instead of a rectangle.
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        svg.setAttribute('class', 'thing__outline')
+        svg.setAttribute('viewBox', '0 0 1 1')
+        svg.setAttribute('preserveAspectRatio', 'none')
+        svg.setAttribute('aria-hidden', 'true')
+        svg.innerHTML =
+          `<clipPath id="clip-${obj.id}" clipPathUnits="objectBoundingBox"><path d="${d}"/></clipPath>` +
+          `<path class="thing__stroke" d="${d}" vector-effect="non-scaling-stroke"/>`
+        // An SVG is a replaced element: with height:auto it takes its own
+        // aspect ratio and ignores the bottom inset, so both are set here.
+        svg.style.left = `${pad}px`
+        svg.style.top = `${pad}px`
+        svg.style.width = `${obj.rect.w}px`
+        svg.style.height = `${obj.rect.h}px`
+        el.append(svg)
+
+        const lift = document.createElement('span')
+        lift.className = 'thing__lift'
+        lift.style.left = `${pad}px`
+        lift.style.top = `${pad}px`
+        lift.style.width = `${obj.rect.w}px`
+        lift.style.height = `${obj.rect.h}px`
+        lift.style.clipPath = `url(#clip-${obj.id})`
+        el.append(lift)
+      }
+
       if (obj.art) {
         // Not in the painting; this one is placed into the room.
         const art = document.createElement('img')
@@ -108,17 +146,26 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         art.decoding = 'async'
         el.append(art)
       }
-      const hint = document.createElement('span')
-      hint.className = 'thing__hint'
-      hint.setAttribute('aria-hidden', 'true')
-      el.append(hint)
+
       el.addEventListener('click', (e) => {
         e.stopPropagation()
         if (obj.sfx) audio.play(obj.sfx)
         opts.onObject?.(obj)
       })
+      // Touch has no hover: show the outline while the finger is down, and take
+      // it away the moment it lifts.
+      const press =
+        (on: boolean) =>
+        (): void => {
+          el.classList.toggle('is-pressed', on)
+        }
+      el.addEventListener('pointerdown', press(true))
+      el.addEventListener('pointerup', press(false))
+      el.addEventListener('pointercancel', press(false))
+      el.addEventListener('pointerleave', press(false))
       roomEl.append(el)
     }
+
     // The painted window already has its own night sky and moon; a canvas over
     // it only added drifting light where the artwork wanted none.
     built = true
@@ -284,6 +331,32 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     off.push(() => ro.disconnect())
   }
 
+  // Touch has no cursor to change, so the first visit of a session says once,
+  // quietly, that the room answers. Never twice, and never on a pointer that
+  // can hover.
+  const HINT_KEY = 'eungarage:garageHinted'
+  const coarse = matchMedia('(pointer: coarse)').matches
+  let hinted = true
+  try {
+    hinted = sessionStorage.getItem(HINT_KEY) === 'true'
+  } catch {
+    hinted = true // storage refused: say nothing rather than say it every time
+  }
+  if (coarse && !hinted) {
+    try {
+      sessionStorage.setItem(HINT_KEY, 'true')
+    } catch {
+      /* nothing to do */
+    }
+    const hint = document.createElement('p')
+    hint.className = 'garage__hint'
+    hint.textContent = '물건을 눌러 둘러보세요'
+    scene.append(hint)
+    requestAnimationFrame(() => hint.classList.add('is-in'))
+    later(() => hint.classList.remove('is-in'), 2600)
+    later(() => hint.remove(), 3200)
+  }
+
   log.debug('garage: mounted')
 
   return {
@@ -301,6 +374,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       return world
     },
     destroy(): void {
+      for (const t of timers) clearTimeout(t)
+      timers.clear()
       for (const fn of off) fn()
       off.length = 0
     },

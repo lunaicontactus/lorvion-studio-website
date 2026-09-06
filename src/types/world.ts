@@ -1,3 +1,5 @@
+import type { OutlineShape } from '@/data/outlines'
+
 /** A rectangle in world space. Origin is the world's top-left corner. */
 export interface WorldRect {
   readonly x: number
@@ -47,6 +49,11 @@ export interface WorldObject {
   readonly locked?: boolean
   /** Drawn into the room. Only for things the painting does not already show. */
   readonly art?: string
+  /**
+   * Silhouette traced while the pointer is on it. `rect` is the hit region and
+   * may be looser; this is the shape of the object inside it.
+   */
+  readonly outline?: OutlineShape
 }
 
 export interface WorldLayout {

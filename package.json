@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "EUNGARAGE — DOKKA CREW workshop site",
+  "description": "EUNGARAGE \u2014 DOKKA CREW workshop site",
   "scripts": {
     "dev": "vite",
     "build": "npm run typecheck && vite build",
@@ -11,10 +11,12 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "verify": "npm run lint && npm run typecheck && npm run test && vite build"
+    "verify": "npm run lint && npm run typecheck && npm run test && vite build",
+    "e2e": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^26.4.1",
     "eslint": "^9.15.0",
     "globals": "^15.12.0",
