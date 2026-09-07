@@ -140,7 +140,6 @@
 .about div{display:grid;grid-template-columns:132px 1fr;gap:10px;align-items:baseline}
 .about dt{font:600 .6rem/1.4 var(--mono);letter-spacing:.16em;color:#8a7156}
 .about dd{margin:0;color:#5a4634}
-.about__crew-label{margin:20px 0 8px;font:600 .6rem/1 var(--mono);letter-spacing:.16em;color:#8a7156}
 .about__crew{margin:0;padding:0;list-style:none;display:grid;gap:7px}
 .about__crew li{display:grid;grid-template-columns:80px 1fr;gap:10px;font-size:.82rem;color:#5a4634}
 .about__crew b{font:700 .7rem/1.5 var(--mono);letter-spacing:.1em}

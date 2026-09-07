@@ -17,6 +17,7 @@ import { mountReveal } from '@/ui/reveal'
 import { mountSoundToggle } from '@/ui/soundToggle'
 import { mountIntro } from '@/ui/intro'
 import { mountWorld } from '@/app/world'
+import { mountFallback } from '@/ui/fallback'
 
 type Teardown = () => void
 
@@ -61,6 +62,7 @@ export function boot(): Teardown {
       registerVisit()
     }),
     guard('nav', () => mountNav()),
+    guard('fallback', () => mountFallback()),
     guard('reveal', () => mountReveal()),
     guard('sound-toggle', () => mountSoundToggle()),
     guard('intro', () => mountIntro()),

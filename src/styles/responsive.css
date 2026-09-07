@@ -6,31 +6,12 @@
   .menu-toggle{display:block;z-index:2}
   .menu-toggle.open span:first-child{transform:translateY(3.5px) rotate(45deg)}
   .menu-toggle.open span:last-child{transform:translateY(-3.5px) rotate(-45deg)}
-  .manifesto{padding:110px 0}
-  .manifesto-grid,.about-grid{grid-template-columns:1fr;gap:45px}
-  .project{min-height:auto;padding:80px 0}
-  .project:after{background:linear-gradient(180deg,#04050a 0%,rgba(4,5,10,.58) 35%,#04050a 100%)}
-  .project-inner{grid-template-columns:1fr;gap:44px;padding:10px 0}
-  .project-media{order:-1}
-  .poster-frame img{max-height:66svh;width:auto}
-  .project-title{font-size:clamp(3.7rem,18vw,7rem)}
-  .projects-head h2{font-size:17vw}
   .about{padding:110px 0}
   .footer-inner{grid-template-columns:1fr}
   .footer-links{justify-content:flex-start}
   .support-grid{grid-template-columns:1fr}
 }
 @media(max-width:560px){
-  .blueprint{padding:8px}
-  .blueprint__inner{width:100%;padding:16px 10px}
-  .blueprint__list{gap:12px}
-  .blueprint__list dt{font-size:.53rem;letter-spacing:.1em}
-  .blueprint__list dd{font-size:clamp(.66rem,2.9vw,.84rem);letter-spacing:-.04em}
-  .blueprint__eyebrow{font-size:.52rem;letter-spacing:.08em;margin-bottom:14px}
-  .manifesto-copy{font-size:14vw}
-  .poster-frame{max-width:94vw}
-  .poster-frame img{width:100%;height:auto;max-height:none}
-  .about-quote{font-size:15vw}
   .contact h2{font-size:16vw}
   .subpage{padding-top:118px}
   .subpage h1{font-size:15vw}
@@ -38,7 +19,4 @@
 @media(prefers-reduced-motion:reduce){
   *{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   .intro{display:none}
-  .poster-shutter{transform:translateY(-100%)}
-  .blueprint-open{opacity:1}
-  .marquee-track{animation:none}
 }

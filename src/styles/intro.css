@@ -1,5 +1,8 @@
-.intro{position:fixed;inset:0;z-index:9999;overflow:hidden;background:#04050a}
-.intro--done{opacity:0;visibility:hidden;pointer-events:none}
+/* The opening curtain, scoped to the element that is the curtain.
+   As a bare class this covered every page that writes <p class="intro">, which
+   is every legal page: a fixed, full-screen, opaque black box over the text. */
+#intro{position:fixed;inset:0;z-index:9999;overflow:hidden;background:#04050a}
+#intro.intro--done{opacity:0;visibility:hidden;pointer-events:none}
 .intro__curtain{
   position:absolute;inset:0;will-change:transform;transform:translateY(0);
   background-color:#0a0e1c;

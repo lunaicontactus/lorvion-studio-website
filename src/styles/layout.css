@@ -10,7 +10,6 @@
 .brand-wordmark{font-weight:600}
 .brand-word{font-size:1.02rem;letter-spacing:.12em}
 .footer-word{font-size:1.2rem}
-.contact-wordmark{font-size:inherit;letter-spacing:-.04em}
 
 /* ── Nav ── */
 .site-footer{border-top:1px solid var(--line);padding:36px 0 42px;background:#04050a}

@@ -32,16 +32,22 @@ export interface AlleyOptions {
   readonly onEntered?: () => void
 }
 
-/** The entrance beats, ms after the click. Total stays under 3.2s. */
+/**
+ * The entrance beats, in milliseconds after the click: the lock knocks, the
+ * lamp catches, the shutter hesitates and then goes up, the light comes on
+ * inside, and the camera moves through the door.
+ *
+ * The whole thing is 2.3 seconds. It was 3.15, which is fine the first time
+ * and tiresome the fifth: this is a door, not a title sequence.
+ */
 const BEATS = {
   bump: 0,
-  flicker: 260,
-  hesitate: 620,
-  rise: 900,
-  light: 1500,
-  silhouette: 1900,
-  push: 2350,
-  inside: 3150,
+  flicker: 180,
+  hesitate: 420,
+  rise: 640,
+  light: 1150,
+  push: 1550,
+  inside: 2300,
 } as const
 
 export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {}): () => void {
@@ -121,8 +127,7 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
       el.style.setProperty('--tilt', `${tilt}deg`)
     }
 
-    // Interior light, silhouette and the pushed-through wash all live in the
-    // doorway box.
+    // The interior light and the pushed-through wash live in the doorway box.
     const d = plate.doorway
     for (const el of scene.querySelectorAll<HTMLElement>('[data-alley-doorway]')) {
       el.style.left = `${d.x - d.w / 2}%`
@@ -191,7 +196,6 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
       scene.classList.add('alley--rise')
     }, BEATS.rise)
     beat('alley--light', BEATS.light)
-    beat('alley--silhouette', BEATS.silhouette)
     beat('alley--push', BEATS.push)
     // Whatever the transitions do, we are inside by the deadline.
     later(finish, BEATS.inside)

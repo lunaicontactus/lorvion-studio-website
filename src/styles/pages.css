@@ -21,3 +21,39 @@
 .cta-button{display:inline-flex;padding:13px 18px;border-radius:99px;background:#fff;color:#07080d;font-weight:650;margin-top:14px}
 
 /* ── Garage-door opening intro (symbol only) ── */
+
+/* ── Fallback pages: the same content the room opens, as plain pages ────── */
+.fb-games{display:grid;gap:26px;max-width:900px}
+.fb-game{
+  display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start;
+  border:1px solid var(--line);border-radius:18px;padding:20px;
+  background:rgba(255,255,255,.025);
+}
+.fb-game__art{
+  aspect-ratio:16/10;border-radius:12px;background-size:cover;background-position:center;
+  background-color:rgba(255,255,255,.05);
+}
+.fb-game__art[data-empty]{
+  background-image:repeating-linear-gradient(135deg,
+    rgba(255,255,255,.06) 0 10px,transparent 10px 20px);
+}
+.fb-game__name{font-size:1.5rem;margin:0 0 8px;font-weight:520}
+.fb-game__tag{margin:0;color:#bcc1ce}
+.fb-game__tag--ko{opacity:.72;font-size:.92rem;margin-top:2px}
+.fb-facts{margin:16px 0 0;display:grid;gap:6px}
+.fb-facts div{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:baseline}
+.fb-facts dt{font:600 .6rem/1.4 var(--mono);letter-spacing:.16em;color:#9298a9}
+.fb-facts dd{margin:0;color:#c4c8d2;font-size:.92rem}
+.fb-links{margin:16px 0 0;display:flex;flex-wrap:wrap;gap:14px}
+.fb-links a,.fb-mail{text-decoration:underline;text-underline-offset:4px;color:#dfe3ec}
+.fb-block{padding:32px 0;border-top:1px solid var(--line)}
+.fb-block h2{font:600 .68rem/1 var(--mono);letter-spacing:.2em;color:#9298a9;margin:0 0 16px}
+.fb-list,.fb-crew{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:9px}
+.fb-list li,.fb-crew li{color:#c4c8d2}
+.fb-list span{font:600 .6rem/1 var(--mono);letter-spacing:.12em;color:#9298a9;margin-left:10px}
+.fb-crew li{display:grid;grid-template-columns:90px 1fr;gap:12px}
+.fb-crew b{font:600 .72rem/1.5 var(--mono);letter-spacing:.1em;color:#fff}
+@media (max-width:720px){
+  .fb-game{grid-template-columns:1fr}
+  .fb-crew li{grid-template-columns:1fr;gap:2px}
+}
