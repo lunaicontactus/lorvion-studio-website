@@ -50,11 +50,28 @@ test('the entrance puts the week outside the door, and none of it is clickable',
   await expect(props).toHaveCount(7)
   // An image that has not decoded yet measures nothing, and the geometry
   // checks below would then pass or fail on the weather.
+  // The scene re-lays the plate whenever an image lands or the window moves,
+  // so wait for the pictures to decode and then for the geometry to hold
+  // still. Measuring in between is how this test used to fail once in a while
+  // on WebKit and never on its own.
   await page.waitForFunction(
     () =>
       [...document.querySelectorAll('img.alley__prop')].every(
         (i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0,
       ),
+    undefined,
+    { timeout: 20000 },
+  )
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('[data-alley-prop="parcelStack"]')
+      if (!el) return false
+      const now = JSON.stringify(el.getBoundingClientRect())
+      const w = window as unknown as { __box?: string; __steady?: number }
+      w.__steady = now === w.__box ? (w.__steady ?? 0) + 1 : 0
+      w.__box = now
+      return (w.__steady ?? 0) > 4
+    },
     undefined,
     { timeout: 20000 },
   )

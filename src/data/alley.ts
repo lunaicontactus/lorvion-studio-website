@@ -46,10 +46,10 @@ export interface LayerPlacement {
  * stack takes when somebody is unloading it rather than stacking it.
  *
  * Right is smaller on purpose — the two sides must not balance — and holds
- * what has not been carried in yet: the bags where they were set down, the
- * water in front of them, the eggs half behind the water rather than laid out
- * to be looked at. It stops well below the postbox so the wall keeps its
- * empty space.
+ * what has not been carried in yet: the water where it was put down, the bags
+ * behind and beside it, the eggs propped against the bags. They touch rather
+ * than pile up, so each one can still be read. It stops well below the postbox
+ * so the wall keeps its empty space.
  *
  * Nothing reaches the door line and the walk to the shutter is left open
  * between the two. The packaging is invented; nothing carries a real
@@ -116,14 +116,14 @@ export const ALLEY_LANDSCAPE: AlleyPlate = {
   // clear and nothing shares a baseline.
   props: {
     // Left: the delivery corner. Tall at the wall, stepping down and out.
-    parcelStack: { left: 11.8, bottom: 24.8, width: 10.8, tilt: -2 },
-    zeroCola: { left: 20.4, bottom: 22.4, width: 6.6, tilt: -6 },
-    packetRamen: { left: 14.6, bottom: 19.9, width: 4.8, tilt: 11 },
-    cupRamen: { left: 25.6, bottom: 20.4, width: 5.2, tilt: -4 },
+    parcelStack: { left: 14.8, bottom: 24.8, width: 10.8, tilt: -2 },
+    zeroCola: { left: 23.4, bottom: 22.4, width: 6.6, tilt: -6 },
+    packetRamen: { left: 17.6, bottom: 19.9, width: 4.8, tilt: 11 },
+    cupRamen: { left: 28.6, bottom: 20.4, width: 5.2, tilt: -4 },
     // Right: what came in and has not been carried inside yet. Fewer things.
-    bag: { left: 68, bottom: 23.8, width: 6.8, tilt: -5 },
-    eggs: { left: 69.4, bottom: 22.4, width: 5.4, tilt: 7 },
-    waterPack: { left: 65.6, bottom: 21.2, width: 6.2, tilt: 3 },
+    bag: { left: 70.2, bottom: 23.8, width: 6.8, tilt: -5 },
+    eggs: { left: 74.8, bottom: 21.6, width: 5.4, tilt: 7 },
+    waterPack: { left: 64.4, bottom: 21.2, width: 6.2, tilt: 3 },
   },
   enterY: 84,
   doorway: { x: 49.95, y: 45.15, w: 19.7, h: 48.9 },
@@ -138,9 +138,9 @@ export const ALLEY_PORTRAIT: AlleyPlate = {
     zeroCola: { left: 13, bottom: 22.4, width: 13, tilt: -6 },
     packetRamen: { left: 9, bottom: 19.8, width: 9.5, tilt: 9 },
     cupRamen: { left: 21.8, bottom: 20.4, width: 10, tilt: -4 },
-    bag: { left: 70, bottom: 24.4, width: 13.5, tilt: -5 },
-    eggs: { left: 77, bottom: 22, width: 11.5, tilt: 7 },
-    waterPack: { left: 67.5, bottom: 20.6, width: 12, tilt: 3 },
+    bag: { left: 71.5, bottom: 24.4, width: 13.5, tilt: -5 },
+    eggs: { left: 77.5, bottom: 21.8, width: 11, tilt: 7 },
+    waterPack: { left: 67, bottom: 20.6, width: 12, tilt: 3 },
   },
   enterY: 82,
   doorway: { x: 50, y: 52.25, w: 34, h: 32.5 },
