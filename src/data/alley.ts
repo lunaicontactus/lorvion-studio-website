@@ -99,7 +99,7 @@ export const ALLEY_PORTRAIT: AlleyPlate = {
   props: {
     parcelStack: { left: 2.5, bottom: 25, width: 20, tilt: -1.5 },
     zeroCola: { left: 11.5, bottom: 22, width: 13, tilt: -3 },
-    waterPack: { left: 72, bottom: 22, width: 12, tilt: 1.5 },
+    waterPack: { left: 72, bottom: 20.5, width: 12, tilt: 1.5 },
   },
   enterY: 82,
   doorway: { x: 50, y: 52.25, w: 34, h: 32.5 },
