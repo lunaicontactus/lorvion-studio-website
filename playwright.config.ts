@@ -15,7 +15,8 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:4173',
+    // Point the same suite at a deployed origin with E2E_ORIGIN.
+    baseURL: process.env['E2E_ORIGIN'] ?? 'http://localhost:4173',
     trace: 'off',
   },
   webServer: {
