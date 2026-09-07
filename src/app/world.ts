@@ -49,19 +49,17 @@ export function mountWorld(): () => void {
           case 'pc':
             panels.openPc()
             break
-          case 'about':
-            panels.openAbout()
+          case 'building':
+            panels.openBuilding()
             break
           case 'contact':
             panels.openContact()
             break
-          case 'fridge': {
+          case 'fridge':
             panels.openFridge()
-            panels.onSnackTouched(() => undefined)
             break
-          }
-          case 'archive':
-            panels.openArchive()
+          case 'studio':
+            panels.openStudio()
             break
           case 'shelf':
             panels.openShelf()
