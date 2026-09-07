@@ -48,6 +48,16 @@ test('the entrance puts the week outside the door, and none of it is clickable',
 }) => {
   const props = page.locator('[data-alley-prop]')
   await expect(props).toHaveCount(7)
+  // An image that has not decoded yet measures nothing, and the geometry
+  // checks below would then pass or fail on the weather.
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('img.alley__prop')].every(
+        (i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0,
+      ),
+    undefined,
+    { timeout: 20000 },
+  )
   for (const name of PROPS) {
     const el = page.locator(`[data-alley-prop="${name}"]`)
     await expect(el).toBeVisible()
