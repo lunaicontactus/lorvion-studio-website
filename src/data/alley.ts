@@ -37,13 +37,12 @@ export interface LayerPlacement {
  * the frame and it took the scene; what remains is a delivery-week pile with a
  * couple of small stickers on it, which is as much identity as a doorway needs.
  *
- * Arrangement: one drop of deliveries leaning on the wall left of the shutter,
- * not three objects spaced out on the pavement. The parcels are the mass and
- * sit back against the wall; the cans lean on them, a little forward and
- * smaller; the water is at the front, nearest the viewer. Each step out from
- * the wall comes down and forward, which is what makes it read as put down
- * rather than arranged. Nothing reaches the door line, and the walk to the
- * shutter is left open.
+ * Arrangement: two places along the wall, not one heap. Left of the shutter
+ * the parcels lean back against the wall with the cans against them, a little
+ * forward and smaller. Right of the shutter, under the postbox, the water sits
+ * on its own — heavy, so it went down where it was carried in rather than
+ * being taken round to the pile. Nothing reaches the door line, and the walk
+ * to the shutter is left open between the two.
  *
  * The packaging is invented. Nothing here carries a real courier's or a real
  * drinks company's mark.
@@ -85,9 +84,9 @@ export const ALLEY_LANDSCAPE: AlleyPlate = {
   // Put down where they were carried in, not arranged: the door line stays
   // clear and nothing shares a baseline.
   props: {
-    parcelStack: { left: 12.5, bottom: 24.5, width: 10.4, tilt: -1.5 },
-    zeroCola: { left: 20.2, bottom: 22, width: 6.4, tilt: -3 },
-    waterPack: { left: 25.8, bottom: 20.8, width: 6.2, tilt: 1.5 },
+    parcelStack: { left: 13.5, bottom: 24.5, width: 10.4, tilt: -1.5 },
+    zeroCola: { left: 21.4, bottom: 22, width: 6.4, tilt: -3 },
+    waterPack: { left: 68.5, bottom: 22.5, width: 6.2, tilt: 1.5 },
   },
   enterY: 84,
   doorway: { x: 49.95, y: 45.15, w: 19.7, h: 48.9 },
@@ -100,7 +99,7 @@ export const ALLEY_PORTRAIT: AlleyPlate = {
   props: {
     parcelStack: { left: 2.5, bottom: 25, width: 20, tilt: -1.5 },
     zeroCola: { left: 11.5, bottom: 22, width: 13, tilt: -3 },
-    waterPack: { left: 19.5, bottom: 20, width: 12, tilt: 1.5 },
+    waterPack: { left: 72, bottom: 22, width: 12, tilt: 1.5 },
   },
   enterY: 82,
   doorway: { x: 50, y: 52.25, w: 34, h: 32.5 },

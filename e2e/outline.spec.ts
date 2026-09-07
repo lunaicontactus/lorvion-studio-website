@@ -53,11 +53,12 @@ test('the entrance puts the week outside the door, and none of it is clickable',
       }),
     ).toBe(false)
   }
-  // The door line stays walkable.
+  // The door line stays walkable: every prop is wholly to one side of it.
   const door = await page.locator('[data-alley-layer="shutter"]').boundingBox()
   for (const name of ['parcelStack', 'waterPack', 'zeroCola']) {
     const b = await page.locator(`[data-alley-prop="${name}"]`).boundingBox()
-    expect(b!.x + b!.width, name).toBeLessThanOrEqual(door!.x + 1)
+    const clear = b!.x + b!.width <= door!.x + 1 || b!.x >= door!.x + door!.width - 1
+    expect(clear, `${name} must not stand in the doorway`).toBe(true)
   }
 })
 
