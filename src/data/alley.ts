@@ -116,10 +116,12 @@ export const ALLEY_LANDSCAPE: AlleyPlate = {
   // clear and nothing shares a baseline.
   props: {
     // Left: the delivery corner. Tall at the wall, stepping down and out.
-    parcelStack: { left: 16, bottom: 24.8, width: 10.8, tilt: -2 },
-    zeroCola: { left: 24.6, bottom: 22.4, width: 6.6, tilt: -6 },
-    packetRamen: { left: 18.8, bottom: 19.9, width: 4.8, tilt: 11 },
-    cupRamen: { left: 29.8, bottom: 20.4, width: 5.2, tilt: -4 },
+    // The pile ends at 36%: the shutter's own frame begins at 36.4, and
+    // nothing may stand on the door.
+    parcelStack: { left: 18.2, bottom: 24.8, width: 10.8, tilt: -2 },
+    zeroCola: { left: 26.4, bottom: 22.4, width: 6.6, tilt: -6 },
+    packetRamen: { left: 21, bottom: 19.9, width: 4.8, tilt: 11 },
+    cupRamen: { left: 30.8, bottom: 20.4, width: 5.2, tilt: -4 },
     // Right: what came in and has not been carried inside yet. Fewer things.
     bag: { left: 70.2, bottom: 23.8, width: 6.8, tilt: -5 },
     eggs: { left: 74.8, bottom: 21.6, width: 5.4, tilt: 7 },
