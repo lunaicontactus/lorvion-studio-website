@@ -37,12 +37,13 @@ export interface LayerPlacement {
  * the frame and it took the scene; what remains is a delivery-week pile with a
  * couple of small stickers on it, which is as much identity as a doorway needs.
  *
- * Arrangement: a strip along the left wall rather than one heap. The parcels
- * are pushed back against the wall, the can boxes sit apart from them and
- * lower, and the water is further right again and closer to the viewer, so the
- * eye reads left to right and then finds the door. Gaps between them are as
- * deliberate as the overlaps; no two share a baseline, a width or an angle,
- * and none of it reaches the door line.
+ * Arrangement: one drop of deliveries leaning on the wall left of the shutter,
+ * not three objects spaced out on the pavement. The parcels are the mass and
+ * sit back against the wall; the cans lean on them, a little forward and
+ * smaller; the water is at the front, nearest the viewer. Each step out from
+ * the wall comes down and forward, which is what makes it read as put down
+ * rather than arranged. Nothing reaches the door line, and the walk to the
+ * shutter is left open.
  *
  * The packaging is invented. Nothing here carries a real courier's or a real
  * drinks company's mark.
@@ -84,9 +85,9 @@ export const ALLEY_LANDSCAPE: AlleyPlate = {
   // Put down where they were carried in, not arranged: the door line stays
   // clear and nothing shares a baseline.
   props: {
-    parcelStack: { left: 8.4, bottom: 21.5, width: 11.2, tilt: -1.5 },
-    zeroCola: { left: 17.6, bottom: 16.6, width: 7.2, tilt: -3 },
-    waterPack: { left: 28.8, bottom: 18.6, width: 6.8, tilt: 1.5 },
+    parcelStack: { left: 12.5, bottom: 24.5, width: 10.4, tilt: -1.5 },
+    zeroCola: { left: 20.2, bottom: 22, width: 6.4, tilt: -3 },
+    waterPack: { left: 25.8, bottom: 20.8, width: 6.2, tilt: 1.5 },
   },
   enterY: 84,
   doorway: { x: 49.95, y: 45.15, w: 19.7, h: 48.9 },
@@ -97,9 +98,9 @@ export const ALLEY_PORTRAIT: AlleyPlate = {
   shutter: { left: 22, top: 34.2, width: 56 },
   sign: { left: 33, top: 20, width: 34 },
   props: {
-    parcelStack: { left: 0, bottom: 22, width: 21, tilt: -1.5 },
-    zeroCola: { left: 6.5, bottom: 16.5, width: 15, tilt: -3 },
-    waterPack: { left: 21.5, bottom: 11.5, width: 11.5, tilt: 1.5 },
+    parcelStack: { left: 2.5, bottom: 25, width: 20, tilt: -1.5 },
+    zeroCola: { left: 11.5, bottom: 22, width: 13, tilt: -3 },
+    waterPack: { left: 19.5, bottom: 20, width: 12, tilt: 1.5 },
   },
   enterY: 82,
   doorway: { x: 50, y: 52.25, w: 34, h: 32.5 },
