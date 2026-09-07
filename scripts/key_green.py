@@ -2,14 +2,17 @@
 
 The order matters. Keying on green *dominance* (g minus the stronger of r and
 b) survives shadows and dark edges that a plain colour distance throws away.
-Despill then removes the green the screen threw onto the object. Finally the
-resize is done on premultiplied pixels: a transparent pixel still carries its
-old RGB, and LANCZOS will happily drag that green back into the silhouette if
-you resize straight RGBA.
+Only green that reaches the border is background, though — a green bag in the
+middle of the frame is the subject — so the key is confined to the region
+connected to the edge of the picture. Despill then removes the green the
+screen threw onto the object. Finally the resize is done on premultiplied
+pixels: a transparent pixel still carries its old RGB, and LANCZOS will
+happily drag that green back into the silhouette if you resize straight RGBA.
 
     python3 scripts/key_green.py <in.png> <out.webp> [max_edge]
 """
 import sys
+import cv2
 import numpy as np
 from PIL import Image
 
@@ -23,6 +26,16 @@ def key(path: str, out: str, max_edge: int = MAX_EDGE) -> None:
     dominance = g - np.maximum(r, b)
 
     alpha = np.clip((HIGH - dominance) / (HIGH - LOW), 0, 1)
+
+    # Only the green that touches the edge of the frame is the screen. Anything
+    # green enclosed by the subject stays fully opaque.
+    screenish = (dominance > LOW).astype(np.uint8)
+    screenish = cv2.morphologyEx(screenish, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+    count, labels = cv2.connectedComponents(screenish, 4)
+    border = set(labels[0, :]) | set(labels[-1, :]) | set(labels[:, 0]) | set(labels[:, -1])
+    border.discard(0)
+    background = np.isin(labels, list(border))
+    alpha = np.where(background, alpha, 1.0)
 
     # Despill: hold green down to what the red/blue around it can justify.
     ceiling = np.maximum(r, b) + 0.12 * np.abs(r - b)

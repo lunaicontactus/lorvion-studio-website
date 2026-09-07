@@ -37,26 +37,51 @@ export interface LayerPlacement {
  * the frame and it took the scene; what remains is a delivery-week pile with a
  * couple of small stickers on it, which is as much identity as a doorway needs.
  *
- * Arrangement: two places along the wall, not one heap. Left of the shutter
- * the parcels lean back against the wall with the cans against them, a little
- * forward and smaller. Right of the shutter, under the postbox, the water sits
- * on its own — heavy, so it went down where it was carried in rather than
- * being taken round to the pile. Nothing reaches the door line, and the walk
- * to the shutter is left open between the two.
+ * Arrangement: two places along the wall, not one heap.
+ *
+ * Left of the shutter is what was delivered — parcels leaning back on the
+ * wall, the cans against them, a packet of ramen dropped in front. Right of
+ * the shutter, under the postbox, is what somebody carried home: the bags
+ * still stacked where they were set down, eggs beside them, water and cup
+ * ramen in front. Each step out from the wall comes down and forward.
+ *
+ * Nothing reaches the door line and the walk to the shutter is left open
+ * between the two. The packaging is invented; nothing carries a real
+ * courier's or a real brand's mark.
  *
  * The packaging is invented. Nothing here carries a real courier's or a real
  * drinks company's mark.
  */
-export type PropName = 'parcelStack' | 'waterPack' | 'zeroCola'
+export type PropName =
+  | 'parcelStack'
+  | 'zeroCola'
+  | 'packetRamen'
+  | 'bag'
+  | 'eggs'
+  | 'waterPack'
+  | 'cupRamen'
 
-export const PROP_NAMES: readonly PropName[] = ['parcelStack', 'waterPack', 'zeroCola']
+/** Back to front, which is also the order they are painted in. */
+export const PROP_NAMES: readonly PropName[] = [
+  'parcelStack',
+  'zeroCola',
+  'packetRamen',
+  'bag',
+  'eggs',
+  'waterPack',
+  'cupRamen',
+]
 
 const P = '/assets/images/alley'
 
 export const PROP_ART: Readonly<Record<PropName, string>> = {
   parcelStack: `${P}/alley_prop_parcel_stack.webp`,
-  waterPack: `${P}/alley_prop_water_pack.webp`,
   zeroCola: `${P}/alley_prop_zero_cola.webp`,
+  packetRamen: `${P}/alley_prop_packet_ramen.webp`,
+  bag: `${P}/alley_prop_bag.webp`,
+  eggs: `${P}/alley_prop_eggs.webp`,
+  waterPack: `${P}/alley_prop_water_pack.webp`,
+  cupRamen: `${P}/alley_prop_cup_ramen.webp`,
 }
 
 export interface AlleyPlate {
@@ -86,7 +111,11 @@ export const ALLEY_LANDSCAPE: AlleyPlate = {
   props: {
     parcelStack: { left: 13.5, bottom: 24.5, width: 10.4, tilt: -1.5 },
     zeroCola: { left: 21.4, bottom: 22, width: 6.4, tilt: -3 },
-    waterPack: { left: 68.5, bottom: 22.5, width: 6.2, tilt: 1.5 },
+    packetRamen: { left: 26.9, bottom: 20.5, width: 4.6, tilt: 2.5 },
+    bag: { left: 68.6, bottom: 23.5, width: 6.8, tilt: -2 },
+    eggs: { left: 74.6, bottom: 22.2, width: 5.6, tilt: 1 },
+    waterPack: { left: 64.3, bottom: 20.8, width: 6.2, tilt: 1.5 },
+    cupRamen: { left: 70.9, bottom: 20.4, width: 5, tilt: -2.5 },
   },
   enterY: 84,
   doorway: { x: 49.95, y: 45.15, w: 19.7, h: 48.9 },
@@ -99,7 +128,11 @@ export const ALLEY_PORTRAIT: AlleyPlate = {
   props: {
     parcelStack: { left: 2.5, bottom: 25, width: 20, tilt: -1.5 },
     zeroCola: { left: 11.5, bottom: 22, width: 13, tilt: -3 },
-    waterPack: { left: 72, bottom: 20.5, width: 12, tilt: 1.5 },
+    packetRamen: { left: 20, bottom: 19.5, width: 9, tilt: 2.5 },
+    bag: { left: 67.5, bottom: 24, width: 13, tilt: -2 },
+    eggs: { left: 76.5, bottom: 22.5, width: 12, tilt: 1 },
+    waterPack: { left: 69, bottom: 20.5, width: 12, tilt: 1.5 },
+    cupRamen: { left: 79.5, bottom: 19, width: 10, tilt: -2.5 },
   },
   enterY: 82,
   doorway: { x: 50, y: 52.25, w: 34, h: 32.5 },
@@ -112,8 +145,12 @@ export const ALLEY_ART = {
   shutter: { src: `${DIR}/alley_shutter.webp`, w: 1100, h: 1211, drum: 0.175 },
   sign: { src: `${DIR}/alley_sign.webp`, w: 760, h: 481 },
   parcelStack: { src: `${DIR}/alley_prop_parcel_stack.webp`, w: 496, h: 491 },
-  waterPack: { src: `${DIR}/alley_prop_water_pack.webp`, w: 386, h: 483 },
   zeroCola: { src: `${DIR}/alley_prop_zero_cola.webp`, w: 449, h: 480 },
+  packetRamen: { src: `${DIR}/alley_prop_packet_ramen.webp`, w: 335, h: 432 },
+  bag: { src: `${DIR}/alley_prop_bag.webp`, w: 352, h: 449 },
+  eggs: { src: `${DIR}/alley_prop_eggs.webp`, w: 448, h: 287 },
+  waterPack: { src: `${DIR}/alley_prop_water_pack.webp`, w: 386, h: 483 },
+  cupRamen: { src: `${DIR}/alley_prop_cup_ramen.webp`, w: 408, h: 442 },
 } as const
 
 /** Files the entrance cannot open without. */

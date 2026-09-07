@@ -21,6 +21,16 @@ async function settle(page: Page): Promise<void> {
   }, undefined, { timeout: 20000 })
 }
 
+const PROPS = [
+  'parcelStack',
+  'zeroCola',
+  'packetRamen',
+  'bag',
+  'eggs',
+  'waterPack',
+  'cupRamen',
+]
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     try {
@@ -37,8 +47,8 @@ test('the entrance puts the week outside the door, and none of it is clickable',
   page,
 }) => {
   const props = page.locator('[data-alley-prop]')
-  await expect(props).toHaveCount(3)
-  for (const name of ['parcelStack', 'waterPack', 'zeroCola']) {
+  await expect(props).toHaveCount(7)
+  for (const name of PROPS) {
     const el = page.locator(`[data-alley-prop="${name}"]`)
     await expect(el).toBeVisible()
     // Decoration: not a button, not focusable, and it does not take the click.
@@ -55,7 +65,7 @@ test('the entrance puts the week outside the door, and none of it is clickable',
   }
   // The door line stays walkable: every prop is wholly to one side of it.
   const door = await page.locator('[data-alley-layer="shutter"]').boundingBox()
-  for (const name of ['parcelStack', 'waterPack', 'zeroCola']) {
+  for (const name of PROPS) {
     const b = await page.locator(`[data-alley-prop="${name}"]`).boundingBox()
     const clear = b!.x + b!.width <= door!.x + 1 || b!.x >= door!.x + door!.width - 1
     expect(clear, `${name} must not stand in the doorway`).toBe(true)
