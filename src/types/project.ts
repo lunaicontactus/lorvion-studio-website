@@ -11,6 +11,8 @@ export interface ProjectConfig {
   /** One line. Long copy is deliberately not modelled here. */
   readonly tagline: string
   readonly taglineKo: string
+  /** What kind of thing it is, in two or three words. */
+  readonly genre: string
   readonly platforms: readonly string[]
   readonly status: ProjectStatus
   /** Null while the art does not exist yet — the slot renders as COMING SOON

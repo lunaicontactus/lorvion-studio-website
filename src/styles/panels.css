@@ -91,7 +91,12 @@
 .hub__meta{display:grid;gap:3px;min-width:0}
 .hub__name{font:700 .82rem/1 var(--mono);letter-spacing:.1em}
 .hub__tag{font-size:.72rem;opacity:.72;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hub__facts{font:600 .56rem/1 var(--mono);letter-spacing:.1em;opacity:.55}
+.hub__right{display:grid;gap:5px;justify-items:end;text-align:right}
 .hub__status{font:600 .58rem/1 var(--mono);letter-spacing:.12em;opacity:.66;white-space:nowrap}
+.hub__more{font:600 .54rem/1 var(--mono);letter-spacing:.1em;opacity:0;white-space:nowrap;transition:opacity 140ms ease}
+.hub__row:hover .hub__more,.hub__row:focus-visible .hub__more{opacity:.8}
+@media (hover:none){.hub__more{opacity:.6}}
 
 /* ── Project ───────────────────────────────────────────────────────────── */
 .proj__art{
@@ -101,11 +106,15 @@
   box-shadow:inset 0 0 0 5px rgba(120,96,66,.24);
   display:grid;place-items:center;
 }
-.proj__art[data-empty]{background:repeating-linear-gradient(135deg,#e8dcc5 0 12px,#e0d2b8 12px 24px)}
+/* No art yet: a short marked-out frame, not a full-size blank. */
+.proj__art[data-empty]{aspect-ratio:auto;min-height:120px;background:repeating-linear-gradient(135deg,#e8dcc5 0 12px,#e0d2b8 12px 24px)}
 .proj__soon{font:700 .68rem/1 var(--mono);letter-spacing:.2em;color:rgba(90,70,48,.7)}
 .proj__tag{margin:14px 0 0;font-size:.92rem;color:#5a4634}
 .proj__tag--ko{margin-top:4px;opacity:.72;font-size:.84rem}
-.proj__meta{margin:10px 0 0;font:600 .62rem/1 var(--mono);letter-spacing:.14em;color:var(--accent,#8a6f52)}
+.proj__facts{margin:14px 0 0;display:grid;gap:7px}
+.proj__facts div{display:grid;grid-template-columns:92px 1fr;gap:10px;align-items:baseline}
+.proj__facts dt{font:600 .58rem/1.4 var(--mono);letter-spacing:.16em;color:#8a7156}
+.proj__facts dd{margin:0;font:600 .66rem/1.4 var(--mono);letter-spacing:.1em;color:var(--accent,#8a6f52)}
 .proj__links{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
 .proj__link{
   padding:9px 15px;min-height:38px;display:inline-flex;align-items:center;gap:6px;
@@ -152,42 +161,34 @@
 .tvrow__none{margin:0;text-align:center;font:600 .7rem/1 var(--mono);letter-spacing:.2em;opacity:.55}
 
 /* ── Fridge ────────────────────────────────────────────────────────────── */
-.fridge{text-align:center}
-.fridge__shelf{
-  border-radius:12px;padding:22px;
-  background:linear-gradient(180deg,#eef0e8,#dfe2d6);
-  box-shadow:inset 0 0 0 5px rgba(140,140,120,.22);
-}
-.snack{
-  width:96px;height:96px;border:0;border-radius:22px;cursor:pointer;
-  background:var(--tint,#e8c9a0);
-  box-shadow:0 8px 18px rgba(60,50,30,.24);
-  transition:transform 240ms cubic-bezier(.34,1.5,.64,1);
-}
-.snack:hover,.snack:focus-visible{transform:translateY(-4px) scale(1.06)}
-.snack__label{font-size:1.5rem;color:#4a3a28}
-.fridge__en{margin:12px 0 0;font:600 .62rem/1 var(--mono);letter-spacing:.16em;color:#8a7156}
-.fridge__hint{margin:14px 0 0;letter-spacing:.5em;color:#b09a78}
-.fridge__clue{margin:14px 0 0;font-size:.86rem;color:#7a5f3c}
-.fridge__clue span{opacity:.72}
+.fridge{text-align:center;padding:8px 4px}
+.fridge__line{margin:0;font-size:1.02rem;color:#5a4634}
+.fridge__clue{margin:14px 0 0;font-size:.84rem;color:#7a5f3c;opacity:.85}
 
-/* ── Radio ─────────────────────────────────────────────────────────────── */
-@keyframes wave{50%{height:24px}}
+/* ── Studio file / currently building / shelf / secret ─────────────────── */
+.file{display:grid;gap:18px}
+.file__lede{margin:0;font-size:.94rem;color:#5a4634}
+.file__lede--ko{margin-top:-10px;opacity:.75;font-size:.86rem}
+.file__block{border-radius:10px;padding:14px 16px;background:rgba(170,140,100,.16);box-shadow:inset 0 0 0 2px rgba(140,110,72,.2)}
+.file__label{margin:0 0 8px;font:600 .58rem/1 var(--mono);letter-spacing:.18em;color:#8a7156}
+.file__list{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:.86rem;color:#5a4634}
+.file__list span{font:600 .58rem/1 var(--mono);letter-spacing:.1em;color:#8a7156;margin-left:8px}
+.file__list--links a{color:#5a4634;text-decoration:none}
+.file__list--links a:hover{text-decoration:underline}
 
-/* ── Archive / shelf / secret ──────────────────────────────────────────── */
-.archive{display:grid;gap:18px}
-.drawer{border-radius:10px;padding:14px 16px;background:rgba(170,140,100,.16);box-shadow:inset 0 0 0 2px rgba(140,110,72,.2)}
-.drawer__label{margin:0 0 8px;font:600 .58rem/1 var(--mono);letter-spacing:.18em;color:#8a7156}
-.drawer__items{margin:0;padding:0;list-style:none;display:grid;gap:6px}
-.drawer__items a{color:#5a4634;text-decoration:none;font-size:.86rem}
-.drawer__items a:hover{text-decoration:underline}
-.archive__empty{margin:0;font:600 .6rem/1 var(--mono);letter-spacing:.14em;color:#a9906d}
+.build{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.build__row{
+  display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:baseline;
+  padding:12px 14px;border-radius:10px;background:rgba(170,140,100,.16);
+}
+.build__name{font:700 .78rem/1 var(--mono);letter-spacing:.12em;color:#5a4634}
+.build__genre{grid-column:1;font-size:.78rem;opacity:.7;color:#5a4634}
+.build__status{grid-column:2;grid-row:1/3;align-self:center;font:600 .58rem/1 var(--mono);letter-spacing:.14em;color:#8a6f52;white-space:nowrap}
+.build__status[data-status="comingSoon"]{opacity:.6}
 
 .collection{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
-.collect{display:flex;align-items:center;gap:8px;padding:10px;border-radius:9px;background:rgba(170,140,100,.14);font:600 .62rem/1 var(--mono);letter-spacing:.1em;color:#a9906d}
-.collect__dot{width:10px;height:10px;border-radius:50%;background:rgba(140,110,72,.3)}
+.collect{display:flex;align-items:center;justify-content:center;padding:10px;border-radius:9px;background:rgba(170,140,100,.14);font:600 .62rem/1 var(--mono);letter-spacing:.1em;color:#a9906d}
 .collect.is-found{color:#5a4634;background:rgba(200,160,100,.3)}
-.collect.is-found .collect__dot{background:#c8894f;box-shadow:0 0 8px rgba(200,137,79,.7)}
 
 .secret{text-align:center}
 .secret__lock,.secret__talisman{margin:0;font-size:2.4rem}

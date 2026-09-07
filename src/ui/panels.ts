@@ -13,7 +13,7 @@ import { CHARACTERS } from '@/data/characters'
 import { OBJECT_ART } from '@/data/world'
 import { save } from '@/systems/storage'
 import { audio } from '@/systems/audio'
-import type { ProjectConfig } from '@/types/project'
+import type { ProjectConfig, ProjectStatus } from '@/types/project'
 
 export interface PanelHost {
   /** Called when a panel opens or closes, so the room can stop moving. */
@@ -22,19 +22,32 @@ export interface PanelHost {
   readonly onProgress?: () => void
 }
 
-const SNACKS = [
-  { id: 'tteok', label: '떡', en: 'Rice cake', tint: '#f2e2d8' },
-  { id: 'gyul', label: '귤', en: 'Tangerine', tint: '#f0a45c' },
-  { id: 'gwaja', label: '과자', en: 'Biscuit', tint: '#dcb178' },
-  { id: 'ppang', label: '빵', en: 'Bread', tint: '#d9a36a' },
-  { id: 'eumryo', label: '음료', en: 'Drink', tint: '#8fb6c8' },
+/** The only place a status is turned into words. */
+const STATUS_LABEL: Record<ProjectStatus, string> = {
+  released: 'RELEASED',
+  inDevelopment: 'IN DEVELOPMENT',
+  prototype: 'PROTOTYPE',
+  comingSoon: 'COMING SOON',
+}
+
+/**
+ * What is in the fridge. Not a menu and not a puzzle: a line of studio life,
+ * the same one all day, because a fridge does not restock itself every time
+ * you look at it.
+ */
+const FRIDGE_LINES = [
+  '또 제로콜라뿐이다.',
+  '누가 마지막 생수를 마셨다.',
+  '야근용 간식이 줄었다.',
+  '이 피자는 언제부터 여기 있었지?',
+  '얼음틀이 비어 있다.',
 ] as const
 
-/** Same snack all day: the date is the seed, not chance. */
-function snackForToday(): (typeof SNACKS)[number] {
+/** The date is the seed, not chance. */
+function lineForToday(): string {
   const d = new Date()
   const key = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()
-  return SNACKS[key % SNACKS.length]!
+  return FRIDGE_LINES[key % FRIDGE_LINES.length]!
 }
 
 export function todayKey(): string {
@@ -44,15 +57,24 @@ export function todayKey(): string {
 /** Opening the fridge four times earns the clue. Not a dice roll. */
 export const FRIDGE_CLUE_AT = 4
 
+/**
+ * What the door is waiting for. Kept as data so the room behind it can be
+ * built later without unpicking the lock: look at the PC, read all four
+ * games, and find what is behind the bottles.
+ */
 export const SECRET_REQUIREMENTS = {
-  touched: ['pc', 'tv', 'fridge'],
-  projects: 2,
+  touched: ['pc'],
+  projects: 4,
+  collected: ['fridge-clue'],
 } as const
 
 export function secretMet(): boolean {
   const d = save.data
-  const touchedAll = SECRET_REQUIREMENTS.touched.every((id) => d.touched.includes(id))
-  return touchedAll && d.visitedProjects.length >= SECRET_REQUIREMENTS.projects && d.collection.includes('fridge-clue')
+  return (
+    SECRET_REQUIREMENTS.touched.every((id) => d.touched.includes(id)) &&
+    d.visitedProjects.length >= SECRET_REQUIREMENTS.projects &&
+    SECRET_REQUIREMENTS.collected.every((id) => d.collection.includes(id))
+  )
 }
 
 export class Panels {
@@ -178,8 +200,12 @@ export class Panels {
         <span class="hub__meta">
           <span class="hub__name">${p.title}</span>
           <span class="hub__tag">${p.tagline}</span>
+          <span class="hub__facts">${p.genre} · ${p.platforms.join(' · ')}</span>
         </span>
-        <span class="hub__status" data-status="${p.status}">${p.status === 'comingSoon' ? 'COMING SOON' : p.platforms.join(' · ')}</span>
+        <span class="hub__right">
+          <span class="hub__status" data-status="${p.status}">${STATUS_LABEL[p.status]}</span>
+          <span class="hub__more">자세히 보기 <span aria-hidden="true">›</span></span>
+        </span>
       </button>`,
     ).join('')
     this.#show(
@@ -203,6 +229,7 @@ export class Panels {
   }
 
   // ── A poster, or a game chosen in the hub ──────────────────────────────
+  // Both routes land here, so a poster and the PC can never disagree.
   openProject(project: ProjectConfig): void {
     if (!save.data.visitedProjects.includes(project.id)) {
       save.update((d) => {
@@ -218,30 +245,36 @@ export class Panels {
       project.title,
       `<div class="proj" style="--accent:${project.accent}">
          <div class="proj__art"${project.keyArt ? ` style="background-image:url('${project.keyArt}')"` : ' data-empty'}>
-           ${project.keyArt ? '' : '<span class="proj__soon">COMING SOON</span>'}
+           ${project.keyArt ? '' : `<span class="proj__soon">${STATUS_LABEL[project.status]}</span>`}
          </div>
          <p class="proj__tag">${project.tagline}</p>
          <p class="proj__tag proj__tag--ko">${project.taglineKo}</p>
-         <p class="proj__meta">${project.platforms.join(' · ')}${project.status === 'comingSoon' ? ' · COMING SOON' : ''}</p>
+         <dl class="proj__facts">
+           <div><dt>GENRE</dt><dd>${project.genre}</dd></div>
+           <div><dt>STATUS</dt><dd>${STATUS_LABEL[project.status]}</dd></div>
+           <div><dt>PLATFORM</dt><dd>${project.platforms.join(' · ')}</dd></div>
+         </dl>
          ${links ? `<div class="proj__links">${links}</div>` : ''}
        </div>`,
     )
   }
 
-  // ── The workbench: who we are, briefly ─────────────────────────────────
-  openAbout(): void {
+  // ── The workbench: what is on it right now ─────────────────────────────
+  // Status comes from the project data. No dates, no percentages: there are
+  // none to state, and inventing them would be the easiest lie on the site.
+  openBuilding(): void {
     this.#touch('workbench')
-    const crew = CHARACTERS.map((c) => `<li><b>${c.name}</b><span>${c.trait}</span></li>`).join('')
+    const rows = PROJECTS.map(
+      (p) => `<li class="build__row">
+         <span class="build__name">${p.title}</span>
+         <span class="build__genre">${p.genre}</span>
+         <span class="build__status" data-status="${p.status}">${STATUS_LABEL[p.status]}</span>
+       </li>`,
+    ).join('')
     this.#show(
-      'about',
-      SITE_CONFIG.companyName,
-      `${this.#portrait('workbench')}<dl class="about">
-         <div><dt>WHAT WE MAKE</dt><dd>Games</dd></div>
-         <div><dt>HOW WE WORK</dt><dd>A small studio, by hand</dd></div>
-         <div><dt>FROM</dt><dd>${SITE_CONFIG.location}</dd></div>
-       </dl>
-       <p class="about__crew-label">DOKKA CREW</p>
-       <ul class="about__crew">${crew}</ul>`,
+      'building',
+      'CURRENTLY BUILDING',
+      `${this.#portrait('workbench')}<ul class="build">${rows}</ul>`,
     )
   }
 
@@ -280,19 +313,18 @@ export class Panels {
     }
   }
 
-  // ── The fridge ─────────────────────────────────────────────────────────
-  openFridge(): { snack: string; reacted: boolean; clue: boolean } {
+  // ── The fridge: studio life, not an information panel ──────────────────
+  openFridge(): { line: string; clue: boolean } {
     this.#touch('fridge')
-    const snack = snackForToday()
+    const line = lineForToday()
     const today = todayKey()
-    let opens = save.data.fridgeOpens
     if (save.data.fridgeDay !== today) {
       save.update((d) => {
         d.fridgeDay = today
-        d.fridgeSnack = snack.id
+        d.fridgeSnack = line
       })
     }
-    opens += 1
+    const opens = save.data.fridgeOpens + 1
     save.update((d) => {
       d.fridgeOpens = opens
     })
@@ -300,70 +332,69 @@ export class Panels {
     if (earned) this.#collect('fridge-clue')
     this.#show(
       'fridge',
-      "TODAY'S SNACK",
+      'FRIDGE',
       `${this.#portrait('fridge')}<div class="fridge">
-         <div class="fridge__shelf">
-           <button class="snack" type="button" data-snack style="--tint:${snack.tint}">
-             <span class="snack__label">${snack.label}</span>
-           </button>
-         </div>
-         <p class="fridge__en">${snack.en}</p>
+         <p class="fridge__line">${line}</p>
          ${
            earned
-             ? '<p class="fridge__clue">🗝 <span>something was behind the jars</span></p>'
-             : `<p class="fridge__hint">${'●'.repeat(Math.min(opens, FRIDGE_CLUE_AT))}${'○'.repeat(Math.max(0, FRIDGE_CLUE_AT - opens))}</p>`
+             ? '<p class="fridge__clue">병 뒤에 뭔가 있었다.</p>'
+             : ''
          }
        </div>`,
     )
     audio.play('wrapper', 0.4)
-    return { snack: snack.id, reacted: false, clue: earned }
+    return { line, clue: earned }
   }
 
-  onSnackTouched(fn: () => void): void {
-    this.#body.querySelector('[data-snack]')?.addEventListener('click', () => {
-      audio.play('surprise', 0.35)
-      fn()
-    })
-  }
-
-  // ── The cabinet ────────────────────────────────────────────────────────
-  openArchive(): void {
+  // ── The cabinet: the studio's own file ─────────────────────────────────
+  openStudio(): void {
     this.#touch('cabinet')
-    // Only drawers with something real behind them.
-    const drawers = [
-      { id: 'legal', label: 'DOCUMENTS', items: [
-        { label: 'Privacy', href: './privacy.html' },
-        { label: 'Terms', href: './terms.html' },
-        { label: 'Community', href: './community-guidelines.html' },
-        { label: 'Account deletion', href: './account-deletion.html' },
-      ] },
-      { id: 'support', label: 'SUPPORT', items: [{ label: 'Support', href: './support.html' }] },
+    const crew = CHARACTERS.map((c) => `<li><b>${c.name}</b><span>${c.trait}</span></li>`).join('')
+    const making = PROJECTS.map((p) => `<li>${p.title} <span>${p.genre}</span></li>`).join('')
+    const documents = [
+      { label: 'Privacy', href: './privacy.html' },
+      { label: 'Terms', href: './terms.html' },
+      { label: 'Community', href: './community-guidelines.html' },
+      { label: 'Account deletion', href: './account-deletion.html' },
+      { label: 'Support', href: './support.html' },
     ]
-    const html = drawers
-      .map(
-        (d) => `<section class="drawer">
-           <h3 class="drawer__label">${d.label}</h3>
-           <ul class="drawer__items">${d.items.map((i) => `<li><a href="${i.href}">${i.label} <span aria-hidden="true">↗</span></a></li>`).join('')}</ul>
-         </section>`,
-      )
+      .map((i) => `<li><a href="${i.href}">${i.label} <span aria-hidden="true">↗</span></a></li>`)
       .join('')
-    this.#show('archive', 'ARCHIVE', `${this.#portrait('cabinet')}<div class="archive">${html}<p class="archive__empty">DEVLOG — 아직 비어 있음</p></div>`)
+    this.#show(
+      'studio',
+      SITE_CONFIG.companyName,
+      `${this.#portrait('cabinet')}<div class="file">
+         <p class="file__lede">An independent game studio in ${SITE_CONFIG.location}.</p>
+         <p class="file__lede file__lede--ko">감정과 캐릭터, 그리고 그들이 사는 세계를 중심으로 만듭니다.</p>
+         <section class="file__block">
+           <h3 class="file__label">MAKING</h3>
+           <ul class="file__list">${making}</ul>
+         </section>
+         <section class="file__block">
+           <h3 class="file__label">DOKKA CREW</h3>
+           <ul class="about__crew">${crew}</ul>
+         </section>
+         <section class="file__block">
+           <h3 class="file__label">DOCUMENTS</h3>
+           <ul class="file__list file__list--links">${documents}</ul>
+         </section>
+       </div>`,
+    )
   }
 
-  // ── The shelf ──────────────────────────────────────────────────────────
+  // ── The shelf: what has been found, and nothing else ───────────────────
   openShelf(): void {
     this.#touch('shelf')
     const d = save.data
     const found = [
-      { id: 'pc', label: 'PC', got: d.touched.includes('pc') },
-      { id: 'tv', label: 'TV', got: d.touched.includes('tv') },
-      { id: 'fridge', label: 'FRIDGE', got: d.touched.includes('fridge') },
-      { id: 'radio', label: 'RADIO', got: d.touched.includes('radio') },
-      { id: 'fridge-clue', label: 'KEY', got: d.collection.includes('fridge-clue') },
-      ...PROJECTS.map((p) => ({ id: p.id, label: p.title, got: d.visitedProjects.includes(p.id) })),
+      { label: 'PC', got: d.touched.includes('pc') },
+      { label: 'TV', got: d.touched.includes('tv') },
+      { label: 'FRIDGE', got: d.touched.includes('fridge') },
+      { label: 'KEY', got: d.collection.includes('fridge-clue') },
+      ...PROJECTS.map((p) => ({ label: p.title, got: d.visitedProjects.includes(p.id) })),
     ]
     const items = found
-      .map((f) => `<li class="collect ${f.got ? 'is-found' : ''}"><span class="collect__dot"></span><span>${f.got ? f.label : '???'}</span></li>`)
+      .map((f) => `<li class="collect ${f.got ? 'is-found' : ''}"><span>${f.got ? f.label : '???'}</span></li>`)
       .join('')
     this.#show('shelf', 'FOUND', `${this.#portrait('shelf')}<ul class="collection">${items}</ul>`)
   }
@@ -375,9 +406,11 @@ export class Panels {
       const d = save.data
       const steps = [
         { label: 'PC', got: d.touched.includes('pc') },
-        { label: 'TV', got: d.touched.includes('tv') },
+        {
+          label: `GAMES ${Math.min(d.visitedProjects.length, SECRET_REQUIREMENTS.projects)}/${SECRET_REQUIREMENTS.projects}`,
+          got: d.visitedProjects.length >= SECRET_REQUIREMENTS.projects,
+        },
         { label: 'FRIDGE', got: d.collection.includes('fridge-clue') },
-        { label: `GAMES ${d.visitedProjects.length}/${SECRET_REQUIREMENTS.projects}`, got: d.visitedProjects.length >= SECRET_REQUIREMENTS.projects },
       ]
       this.#show(
         'secret secret--locked',

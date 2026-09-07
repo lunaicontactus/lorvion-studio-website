@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CHARACTERS, MAX_ACTIVE_CHARACTERS, getCharacter } from '@/data/characters'
 import { PROJECTS, VISIBLE_PROJECTS, getProject } from '@/data/projects'
+import { SECRET_REQUIREMENTS, secretMet } from '@/ui/panels'
 import { EASTER_EGGS } from '@/data/easterEggs'
 import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART, PROP_ART, PROP_NAMES } from '@/data/alley'
 import { DESKTOP_WORLD, MOBILE_WORLD } from '@/data/world'
@@ -60,6 +61,23 @@ describe('project data', () => {
     for (const p of VISIBLE_PROJECTS) {
       expect(p.keyArt).toMatch(/^\/assets\/images\/.+\.(webp|png|jpg)$/)
     }
+  })
+})
+
+describe('what the room can tell you', () => {
+  it('describes every project without inventing a date or a figure', () => {
+    for (const p of PROJECTS) {
+      expect(p.genre.length, p.id).toBeGreaterThan(2)
+      expect(p.platforms.length, p.id).toBeGreaterThan(0)
+      expect(`${p.tagline} ${p.taglineKo} ${p.genre}`).not.toMatch(/\d{4}-\d{2}|%/)
+    }
+  })
+
+  it('asks the secret door for things a visitor can actually do', () => {
+    const ids = PROJECTS.map((p) => p.id)
+    expect(SECRET_REQUIREMENTS.projects).toBeLessThanOrEqual(ids.length)
+    expect(SECRET_REQUIREMENTS.touched.every((id) => ['pc', 'tv', 'fridge', 'cabinet', 'workbench', 'shelf'].includes(id))).toBe(true)
+    expect(secretMet()).toBe(false)
   })
 })
 
