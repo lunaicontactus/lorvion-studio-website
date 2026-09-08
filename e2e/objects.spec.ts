@@ -113,12 +113,6 @@ for (const vp of [
       await expect(page.locator(panel)).toBeHidden()
     })
 
-    test('a thing with nothing behind it does not open an empty panel', async ({ page }) => {
-      await enter(page)
-      await touch(page, 'fridge')
-      await page.waitForTimeout(500)
-      await expect(page.locator(panel)).toBeHidden()
-    })
   })
 }
 
@@ -218,7 +212,8 @@ test('every thing is big enough to hit, at every size', async ({ browser }) => {
       }),
     )
     for (const box of boxes) {
-      expect(Math.min(box.w, box.h), `${box.id} at ${size.width}`).toBeGreaterThanOrEqual(40)
+      // 44 CSS px is the smallest thing a finger can be asked to hit.
+      expect(Math.min(box.w, box.h), `${box.id} at ${size.width}`).toBeGreaterThanOrEqual(44)
     }
     // No two hit areas may reach into each other, whatever the scale.
     for (let i = 0; i < boxes.length; i++) {

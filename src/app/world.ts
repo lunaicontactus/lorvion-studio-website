@@ -12,7 +12,7 @@
  */
 import { mountAlley } from '@/scenes/alley'
 import { mountGarage, type GarageHandle } from '@/scenes/garage'
-import { Panels, secretMet } from '@/ui/panels'
+import { Panels } from '@/ui/panels'
 import { Interaction } from '@/systems/interaction'
 import { PROJECTS } from '@/data/projects'
 import { worldFor } from '@/data/world'
@@ -37,17 +37,11 @@ export function mountWorld(): () => void {
   const off: (() => void)[] = []
   let garage: GarageHandle | null = null
   let inside = false
-  /** Set while we are the ones changing history, so popstate can tell. */
-  let ownHistory = false
 
   const panels = new Panels(panelRoot, {
-    onProgress: () => refreshSecret(),
     onClose: () => interaction.dismiss(),
+    onGoTo: (id) => goTo(id),
   })
-
-  const refreshSecret = (): void => {
-    garageEl.dataset['secret'] = secretMet() ? 'unlocked' : 'locked'
-  }
 
   const objectById = (id: string): WorldObject | undefined =>
     [...worldFor(false).objects, ...worldFor(true).objects].find((o) => o.id === id)
@@ -61,7 +55,7 @@ export function mountWorld(): () => void {
     }
     if (action.kind === 'project') {
       const project = PROJECTS.find((p) => p.id === action.projectId)
-      if (project) panels.openProject(project)
+      if (project) panels.openPoster(project)
       return
     }
     switch (action.panelId) {
@@ -77,8 +71,8 @@ export function mountWorld(): () => void {
       case 'fridge':
         panels.openFridge()
         break
-      case 'studio':
-        panels.openStudio()
+      case 'cabinet':
+        panels.openCabinet()
         break
       case 'shelf':
         panels.openShelf()
@@ -89,7 +83,6 @@ export function mountWorld(): () => void {
       default:
         log.debug('world: no interface for', action.panelId)
     }
-    refreshSecret()
   }
 
   const interaction = new Interaction({
@@ -114,24 +107,24 @@ export function mountWorld(): () => void {
   // An open thing is a history entry, so Back closes it instead of leaving the
   // site. Nothing else about the page is routed: this is one document.
   const pushOpen = (id: string): void => {
-    ownHistory = true
+    // pushState fires no popstate, so there is nothing to guard against here.
     history.pushState({ garageObject: id }, '', `#${id}`)
-    ownHistory = false
   }
+  /**
+   * Closing from inside the page consumes its own history entry rather than
+   * calling `history.back()`. Back is asynchronous: with two objects opened
+   * and closed quickly, its event could arrive after the next entry had been
+   * pushed, and the room would re-open the thing you had just shut.
+   */
   const popOpen = (): void => {
-    if (history.state?.garageObject) {
-      ownHistory = true
-      history.back()
-      ownHistory = false
-    }
+    if (history.state?.garageObject) history.replaceState({}, '', location.pathname)
   }
   const onPopState = (): void => {
-    if (ownHistory) return
+    // A real Back press. Anything open closes; nothing leaves the page.
     if (interaction.state === 'OBJECT_OPEN') {
       interaction.dismiss()
       return
     }
-    // Arrived on a #thing link, or went forward again.
     const id = String(history.state?.garageObject ?? location.hash.replace('#', ''))
     if (id) goTo(id, { fromHistory: true })
   }
@@ -166,7 +159,6 @@ export function mountWorld(): () => void {
       })
     }
     inside = true
-    refreshSecret()
     log.debug('world: inside the garage')
     if (opts.then) setTimeout(opts.then, 60)
   }
@@ -183,7 +175,9 @@ export function mountWorld(): () => void {
   // ── Escape, and the nav ──────────────────────────────────────────────────
   const onKey = (e: KeyboardEvent): void => {
     if (e.key !== 'Escape') return
-    if (interaction.state !== 'OBJECT_OPEN') return
+    // Also while the camera is still on its way: a visitor who presses Escape
+    // during the move means it, and should not have a panel open on them.
+    if (interaction.state !== 'OBJECT_OPEN' && interaction.state !== 'OBJECT_FOCUSING') return
     e.preventDefault()
     popOpen()
     interaction.dismiss()

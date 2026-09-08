@@ -11,12 +11,17 @@ import { PROJECTS } from '@/data/projects'
 import { SITE_CONFIG, contactRows } from '@/data/site'
 import { CHARACTERS } from '@/data/characters'
 import { OBJECT_ART } from '@/data/world'
+import { DOCUMENTS } from '@/data/documents'
+import { FRIDGE_ITEMS } from '@/data/fridge'
+import { SHELF_ITEMS, shelfCrew } from '@/data/shelf'
 import { save } from '@/systems/storage'
 import { audio } from '@/systems/audio'
 import { motion } from '@/systems/motion'
 import type { ProjectConfig, ProjectStatus } from '@/types/project'
 
 export interface PanelHost {
+  /** Send the visitor to another thing in the room, e.g. shelf → PC. */
+  readonly onGoTo?: (objectId: string) => void
   /** Called when a panel opens or closes, so the room can stop moving. */
   readonly onOpenChange?: (open: boolean) => void
   /** The visitor closed this themselves: the ✕, the backdrop, Escape. */
@@ -33,51 +38,24 @@ const STATUS_LABEL: Record<ProjectStatus, string> = {
   comingSoon: 'COMING SOON',
 }
 
-/**
- * What is in the fridge. Not a menu and not a puzzle: a line of studio life,
- * the same one all day, because a fridge does not restock itself every time
- * you look at it.
- */
-const FRIDGE_LINES = [
-  '또 제로콜라뿐이다.',
-  '누가 마지막 생수를 마셨다.',
-  '야근용 간식이 줄었다.',
-  '이 피자는 언제부터 여기 있었지?',
-  '얼음틀이 비어 있다.',
-] as const
-
-/** The date is the seed, not chance. */
-function lineForToday(): string {
-  const d = new Date()
-  const key = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()
-  return FRIDGE_LINES[key % FRIDGE_LINES.length]!
-}
-
 export function todayKey(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-/** Opening the fridge four times earns the clue. Not a dice roll. */
-export const FRIDGE_CLUE_AT = 4
+/** Remembered for this visit only: the door has already been tried. */
+const SECRET_SEEN = 'eungarage:secretTried'
+
+const ART = '/assets/images/garage'
 
 /**
- * What the door is waiting for. Kept as data so the room behind it can be
- * built later without unpicking the lock: look at the PC, read all four
- * games, and find what is behind the bottles.
+ * The poster cut-outs we actually have. WORM UP! has none, so its frame shows
+ * the paper and the name rather than somebody else's picture.
  */
-export const SECRET_REQUIREMENTS = {
-  touched: ['pc'],
-  projects: 4,
-  collected: ['fridge-clue'],
-} as const
-
-export function secretMet(): boolean {
-  const d = save.data
-  return (
-    SECRET_REQUIREMENTS.touched.every((id) => d.touched.includes(id)) &&
-    d.visitedProjects.length >= SECRET_REQUIREMENTS.projects &&
-    SECRET_REQUIREMENTS.collected.every((id) => d.collection.includes(id))
-  )
+const POSTER_ART: Readonly<Record<string, string | undefined>> = {
+  lunai: `${ART}/poster_lunai.webp`,
+  liminal: `${ART}/poster_liminal_a.webp`,
+  rubato: `${ART}/poster_rubato.webp`,
+  // wormup: poster_wormup.webp — not drawn yet.
 }
 
 export class Panels {
@@ -148,6 +126,14 @@ export class Panels {
     }
   }
 
+  /** Set when another object asked for a game: the PC opens on it directly. */
+  #queued: string | null = null
+
+  /** Ask the next PC opening to land on this game. */
+  queueProject(id: string): void {
+    this.#queued = id
+  }
+
   /** The object you just touched, shown at the top of what it opened. */
   #portrait(id: string): string {
     const src = OBJECT_ART[id]
@@ -205,16 +191,7 @@ export class Panels {
     this.#host.onProgress?.()
   }
 
-  #collect(id: string): void {
-    if (save.data.collection.includes(id)) return
-    save.update((d) => {
-      d.collection.push(id)
-    })
-    audio.play('discovery', 0.4)
-    this.#host.onProgress?.()
-  }
-
-  // ── The PC: a monitor that boots, not a dialog with a list in it ───────
+    // ── The PC: a monitor that boots, not a dialog with a list in it ───────
   openPc(): void {
     this.#touch('pc')
     this.#show(
@@ -234,7 +211,11 @@ export class Panels {
     if (!view) return
     const showList = (): void => {
       this.#body.querySelector('[data-crt-boot]')?.classList.add('is-done')
-      this.#pcList(view)
+      const wanted = this.#queued
+      this.#queued = null
+      const project = wanted ? PROJECTS.find((p) => p.id === wanted) : undefined
+      if (project) this.#pcDetail(view, project)
+      else this.#pcList(view)
     }
     if (motion.reduced) showList()
     else this.#later(showList, 520)
@@ -450,125 +431,179 @@ export class Panels {
     on()
   }
 
-  // ── The fridge: studio life, not an information panel ──────────────────
-  openFridge(): { line: string; clue: boolean } {
+  // ── The fridge: the week's shopping, and nothing to collect ───────────
+  openFridge(): void {
     this.#touch('fridge')
-    const line = lineForToday()
-    const today = todayKey()
-    if (save.data.fridgeDay !== today) {
-      save.update((d) => {
-        d.fridgeDay = today
-        d.fridgeSnack = line
-      })
-    }
-    const opens = save.data.fridgeOpens + 1
-    save.update((d) => {
-      d.fridgeOpens = opens
-    })
-    const earned = opens >= FRIDGE_CLUE_AT
-    if (earned) this.#collect('fridge-clue')
+    const shelves = FRIDGE_ITEMS.map(
+      (i) => `<li>
+         <button class="chill" type="button" data-item="${i.id}">
+           <span class="chill__art"${i.art ? ` style="background-image:url('${i.art}')"` : ' data-empty'}></span>
+           <span class="chill__label">${i.label}</span>
+         </button>
+       </li>`,
+    ).join('')
     this.#show(
       'fridge',
       'FRIDGE',
-      `${this.#portrait('fridge')}<div class="fridge">
-         <p class="fridge__line">${line}</p>
-         ${
-           earned
-             ? '<p class="fridge__clue">병 뒤에 뭔가 있었다.</p>'
-             : ''
-         }
+      `${this.#portrait('fridge')}<div class="fridge" data-fridge>
+         <ul class="fridge__shelves">${shelves}</ul>
+         <p class="fridge__say" data-fridge-say aria-live="polite"></p>
        </div>`,
     )
     audio.play('wrapper', 0.4)
-    return { line, clue: earned }
+    const say = this.#body.querySelector<HTMLElement>('[data-fridge-say]')
+    for (const btn of this.#body.querySelectorAll<HTMLElement>('[data-item]')) {
+      btn.addEventListener('click', () => {
+        const item = FRIDGE_ITEMS.find((i) => i.id === btn.dataset['item'])
+        if (!item || !say) return
+        say.textContent = item.note
+        say.classList.remove('is-said')
+        void say.offsetWidth
+        say.classList.add('is-said')
+        audio.play('click', 0.22)
+      })
+    }
   }
 
-  // ── The cabinet: the studio's own file ─────────────────────────────────
-  openStudio(): void {
+  // ── The cabinet: the paperwork, in the open ────────────────────────────
+  // A second way to pages that are also in the top navigation. Legal and
+  // support information is never a puzzle and never behind a discovery.
+  openCabinet(): void {
     this.#touch('cabinet')
-    const crew = CHARACTERS.map((c) => `<li><b>${c.name}</b><span>${c.trait}</span></li>`).join('')
-    const making = PROJECTS.map((p) => `<li>${p.title} <span>${p.genre}</span></li>`).join('')
-    const documents = [
-      { label: 'Privacy', href: './privacy.html' },
-      { label: 'Terms', href: './terms.html' },
-      { label: 'Community', href: './community-guidelines.html' },
-      { label: 'Account deletion', href: './account-deletion.html' },
-      { label: 'Support', href: './support.html' },
-    ]
-      .map((i) => `<li><a href="${i.href}">${i.label} <span aria-hidden="true">↗</span></a></li>`)
-      .join('')
+    const files = DOCUMENTS.map(
+      (d) => `<li class="file"><a class="file__tab" href="${d.href}">
+         <span class="file__name">${d.label}</span>
+         <span class="file__go" aria-hidden="true">↗</span>
+       </a></li>`,
+    ).join('')
     this.#show(
-      'studio',
-      SITE_CONFIG.companyName,
-      `${this.#portrait('cabinet')}<div class="file">
-         <p class="file__lede">An independent game studio in ${SITE_CONFIG.location}.</p>
-         <p class="file__lede file__lede--ko">감정과 캐릭터, 그리고 그들이 사는 세계를 중심으로 만듭니다.</p>
-         <section class="file__block">
-           <h3 class="file__label">MAKING</h3>
-           <ul class="file__list">${making}</ul>
-         </section>
-         <section class="file__block">
-           <h3 class="file__label">DOKKA CREW</h3>
-           <ul class="about__crew">${crew}</ul>
-         </section>
-         <section class="file__block">
-           <h3 class="file__label">DOCUMENTS</h3>
-           <ul class="file__list file__list--links">${documents}</ul>
-         </section>
+      'cabinet',
+      'FILES',
+      `${this.#portrait('cabinet')}<div class="drawer" data-drawer>
+         <ul class="drawer__files">${files}</ul>
        </div>`,
     )
+    audio.play('drawer', 0.35)
+    const drawer = this.#body.querySelector<HTMLElement>('[data-drawer]')
+    if (!drawer) return
+    if (motion.reduced) drawer.classList.add('is-open')
+    else requestAnimationFrame(() => drawer.classList.add('is-open'))
   }
 
-  // ── The shelf: what has been found, and nothing else ───────────────────
+  // ── The shelf: the small things left over from making the games ───────
+  // Not a second games menu: one object per project, a line each, and a way
+  // through to the PC's page for that game rather than repeating it here.
   openShelf(): void {
     this.#touch('shelf')
-    const d = save.data
-    const found = [
-      { label: 'PC', got: d.touched.includes('pc') },
-      { label: 'TV', got: d.touched.includes('tv') },
-      { label: 'FRIDGE', got: d.touched.includes('fridge') },
-      { label: 'KEY', got: d.collection.includes('fridge-clue') },
-      ...PROJECTS.map((p) => ({ label: p.title, got: d.visitedProjects.includes(p.id) })),
-    ]
-    const items = found
-      .map((f) => `<li class="collect ${f.got ? 'is-found' : ''}"><span>${f.got ? f.label : '???'}</span></li>`)
-      .join('')
-    this.#show('shelf', 'FOUND', `${this.#portrait('shelf')}<ul class="collection">${items}</ul>`)
-  }
-
-  // ── The secret door ────────────────────────────────────────────────────
-  openSecret(): boolean {
-    const met = secretMet()
-    if (!met) {
-      const d = save.data
-      const steps = [
-        { label: 'PC', got: d.touched.includes('pc') },
-        {
-          label: `GAMES ${Math.min(d.visitedProjects.length, SECRET_REQUIREMENTS.projects)}/${SECRET_REQUIREMENTS.projects}`,
-          got: d.visitedProjects.length >= SECRET_REQUIREMENTS.projects,
-        },
-        { label: 'FRIDGE', got: d.collection.includes('fridge-clue') },
-      ]
-      this.#show(
-        'secret secret--locked',
-        'LOCKED',
-        `<div class="secret">
-           <p class="secret__lock">🔒</p>
-           <ul class="secret__steps">${steps.map((s) => `<li class="${s.got ? 'is-done' : ''}">${s.label}</li>`).join('')}</ul>
-         </div>`,
+    // No picture of the object yet: the tile is its label plate, which is what
+    // half a workshop shelf is anyway. Nothing is stood in for.
+    const items = SHELF_ITEMS.map((i) => {
+      const accent = PROJECTS.find((p) => p.id === i.projectId)?.accent ?? '#8a6f52'
+      return `<li>
+         <button class="relic" type="button" data-relic="${i.id}" style="--accent:${accent}">
+           ${i.art ? `<span class="relic__art" style="background-image:url('${i.art}')"></span>` : ''}
+           <span class="relic__rule" aria-hidden="true"></span>
+           <span class="relic__label">${i.label}</span>
+         </button>
+       </li>`
+    }).join('')
+    const crew = shelfCrew()
+      .map(
+        (c) => `<li class="figure">
+           <img class="figure__art" src="${c.art.front}" alt="" loading="lazy" decoding="async">
+           <span class="figure__name">${c.name}</span>
+         </li>`,
       )
-      return false
-    }
-    this.#touch('secret-door')
-    audio.play('bell', 0.5)
+      .join('')
     this.#show(
-      'secret secret--open',
-      'OPEN',
-      `<div class="secret secret--unlocked">
-         <p class="secret__talisman">🔔</p>
-         <p class="secret__note">문이 열렸습니다.<br><span>The room behind it is still being built.</span></p>
+      'shelf',
+      'ON THE SHELF',
+      `${this.#portrait('shelf')}<div class="shelf">
+         <ul class="shelf__row">${items}</ul>
+         <div class="shelf__card" data-relic-card hidden></div>
+         <p class="shelf__label">DOKKA CREW</p>
+         <ul class="shelf__figures">${crew}</ul>
        </div>`,
     )
-    return true
+    audio.play('drawer', 0.3)
+    const card = this.#body.querySelector<HTMLElement>('[data-relic-card]')
+    for (const btn of this.#body.querySelectorAll<HTMLElement>('[data-relic]')) {
+      btn.addEventListener('click', () => {
+        const item = SHELF_ITEMS.find((i) => i.id === btn.dataset['relic'])
+        if (!item || !card) return
+        for (const other of this.#body.querySelectorAll('[data-relic]')) {
+          other.classList.toggle('is-picked', other === btn)
+        }
+        const project = item.projectId
+          ? PROJECTS.find((p) => p.id === item.projectId)
+          : undefined
+        card.hidden = false
+        card.innerHTML = `
+          <p class="shelf__note">${item.note}</p>
+          ${
+            project
+              ? `<button class="shelf__go" type="button" data-shelf-go="${project.id}">
+                   VIEW ${project.title} <span aria-hidden="true">›</span>
+                 </button>`
+              : ''
+          }`
+        card.querySelector('[data-shelf-go]')?.addEventListener('click', () => {
+          // Straight to that game on the PC: one piece of information, one place.
+          this.queueProject(String(project?.id))
+          this.#host.onGoTo?.('pc')
+        })
+      })
+    }
+  }
+
+  // ── The secret door: nothing is behind it, and it says so ─────────────
+  // No invented project, no date, no teaser art. What it has is a handle that
+  // moves, a gap of dark, and one sentence. The room remembers, for this visit
+  // only, that you have already tried it.
+  openSecret(): void {
+    const seen = sessionStorage.getItem(SECRET_SEEN) === '1'
+    try {
+      sessionStorage.setItem(SECRET_SEEN, '1')
+    } catch {
+      /* private mode: the door simply forgets */
+    }
+    this.#touch('secret-door')
+    audio.play('bell', 0.35)
+    this.#show(
+      'secret',
+      '',
+      `<div class="dark" data-dark>
+         <p class="dark__line">${seen ? '아직도 아무것도 없다.' : '아직 아무것도 없다.'}</p>
+         <p class="dark__sub">Nothing is behind it yet.</p>
+       </div>`,
+    )
+    const dark = this.#body.querySelector<HTMLElement>('[data-dark]')
+    if (!dark) return
+    if (motion.reduced) dark.classList.add('is-ajar')
+    else requestAnimationFrame(() => dark.classList.add('is-ajar'))
+  }
+
+  // ── A poster on the wall ───────────────────────────────────────────────
+  // A poster, kept a poster: the paper, its name, and a way to the game.
+  // Nothing about the project is repeated here; the PC holds that.
+  openPoster(project: ProjectConfig): void {
+    this.#touch(`poster-${project.id}`)
+    const art = POSTER_ART[project.id]
+    this.#show(
+      `poster poster--${project.id}`,
+      project.title,
+      `<div class="wall" style="--accent:${project.accent}">
+         <div class="wall__paper"${art ? ` style="background-image:url('${art}')"` : ' data-empty'}>
+           ${art ? '' : `<span class="wall__name">${project.title}</span>`}
+         </div>
+         <button class="wall__go" type="button" data-poster-go>
+           VIEW ${project.title} <span aria-hidden="true">›</span>
+         </button>
+       </div>`,
+    )
+    this.#body.querySelector('[data-poster-go]')?.addEventListener('click', () => {
+      this.queueProject(project.id)
+      this.#host.onGoTo?.('pc')
+    })
   }
 }

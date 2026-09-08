@@ -172,11 +172,6 @@
 .tvrow__copy.is-copied{background:rgba(160,220,170,.4);color:#eafbe9}
 .tvrow__none{margin:0;text-align:center;font:600 .7rem/1 var(--mono);letter-spacing:.2em;opacity:.55}
 
-/* ── Fridge ────────────────────────────────────────────────────────────── */
-.fridge{text-align:center;padding:8px 4px}
-.fridge__line{margin:0;font-size:1.02rem;color:#5a4634}
-.fridge__clue{margin:14px 0 0;font-size:.84rem;color:#7a5f3c;opacity:.85}
-
 /* ── Studio file / currently building / shelf / secret ─────────────────── */
 .file{display:grid;gap:18px}
 .file__lede{margin:0;font-size:.94rem;color:#5a4634}
@@ -198,18 +193,6 @@
 .build__status{grid-column:2;grid-row:1/3;align-self:center;font:600 .58rem/1 var(--mono);letter-spacing:.14em;color:#8a6f52;white-space:nowrap}
 .build__status[data-status="comingSoon"]{opacity:.6}
 
-.collection{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
-.collect{display:flex;align-items:center;justify-content:center;padding:10px;border-radius:9px;background:rgba(170,140,100,.14);font:600 .62rem/1 var(--mono);letter-spacing:.1em;color:#a9906d}
-.collect.is-found{color:#5a4634;background:rgba(200,160,100,.3)}
-
-.secret{text-align:center}
-.secret__lock,.secret__talisman{margin:0;font-size:2.4rem}
-.secret__steps{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:7px;justify-items:center}
-.secret__steps li{font:600 .64rem/1 var(--mono);letter-spacing:.14em;color:#b09a78}
-.secret__steps li.is-done{color:#5a4634}
-.secret__steps li.is-done::before{content:"✓ ";color:#c8894f}
-.secret__note{margin:14px 0 0;color:#5a4634;font-size:.9rem}
-.secret__note span{opacity:.7;font-size:.8rem}
 
 @media (max-width:560px){
   .panel__inner{padding:20px 16px 24px}
@@ -320,4 +303,136 @@
 @media (prefers-reduced-motion:reduce){
   .crt__boot span{animation:none}
   .tvset__static{transition:none}
+}
+
+/* ── The fridge ────────────────────────────────────────────────────────── */
+.fridge{
+  border-radius:12px;padding:16px;
+  background:linear-gradient(180deg,#eef0e8,#dfe2d6);
+  box-shadow:inset 0 0 0 5px rgba(140,140,120,.22);
+}
+.fridge__shelves{
+  margin:0;padding:0;list-style:none;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px;
+}
+.chill{
+  width:100%;min-height:112px;border:0;border-radius:9px;cursor:pointer;
+  display:grid;gap:6px;justify-items:center;align-content:center;padding:10px 6px;
+  background:rgba(255,255,255,.5);
+  box-shadow:inset 0 0 0 1px rgba(120,120,100,.18);
+  transition:transform 160ms ease, background 160ms ease;
+}
+.chill:hover,.chill:focus-visible{background:rgba(255,255,255,.86);transform:translateY(-2px)}
+.chill.is-picked{background:rgba(255,255,255,.95)}
+.chill__art{
+  width:100%;height:62px;background-size:contain;background-position:center bottom;
+  background-repeat:no-repeat;
+}
+.chill__art[data-empty]{
+  background-image:repeating-linear-gradient(135deg,
+    rgba(120,120,100,.12) 0 7px,transparent 7px 14px);
+  border-radius:6px;
+}
+.chill__label{font:600 .6rem/1 var(--mono);letter-spacing:.1em;color:#5a4634}
+.fridge__say{
+  margin:14px 0 0;min-height:1.4em;text-align:center;
+  font-size:.92rem;color:#5a4634;opacity:0;
+}
+.fridge__say.is-said{animation:said 2600ms ease forwards}
+@keyframes said{6%{opacity:1}70%{opacity:1}100%{opacity:0}}
+
+/* ── The cabinet ───────────────────────────────────────────────────────── */
+.drawer{
+  border-radius:10px;padding:14px;
+  background:rgba(170,140,100,.16);
+  box-shadow:inset 0 0 0 2px rgba(140,110,72,.2);
+}
+.drawer__files{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.file{
+  opacity:0;transform:translateY(8px);
+  transition:opacity 240ms ease, transform 320ms cubic-bezier(.2,.9,.3,1);
+}
+.drawer.is-open .file{opacity:1;transform:none}
+.drawer.is-open .file:nth-child(2){transition-delay:40ms}
+.drawer.is-open .file:nth-child(3){transition-delay:80ms}
+.drawer.is-open .file:nth-child(4){transition-delay:120ms}
+.drawer.is-open .file:nth-child(5){transition-delay:160ms}
+.file__tab{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 16px;min-height:48px;border-radius:8px 8px 3px 3px;
+  background:linear-gradient(180deg,#f3e4c8,#e9d6b4);
+  box-shadow:0 2px 0 rgba(140,110,72,.35);
+  color:#5a4634;font:600 .62rem/1 var(--mono);letter-spacing:.14em;
+}
+.file__tab:hover,.file__tab:focus-visible{background:linear-gradient(180deg,#f8ecd6,#efdfc2)}
+.file__go{opacity:.6}
+
+/* ── The shelf ─────────────────────────────────────────────────────────── */
+.shelf__row{
+  margin:0;padding:0;list-style:none;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;
+}
+.relic{
+  width:100%;min-height:96px;border:0;border-radius:9px;cursor:pointer;
+  display:grid;gap:8px;justify-items:center;align-content:center;padding:12px 8px;
+  background:rgba(170,140,100,.14);color:#5a4634;
+  transition:background 160ms ease, transform 160ms ease;
+}
+.relic:hover,.relic:focus-visible{background:rgba(200,160,100,.26);transform:translateY(-2px)}
+.relic.is-picked{background:rgba(200,160,100,.34)}
+.relic__art{width:46px;height:46px;background-size:contain;background-repeat:no-repeat;background-position:center}
+.relic__rule{width:22px;height:2px;border-radius:2px;background:var(--accent,#8a6f52);opacity:.8}
+.relic__label{font-size:.76rem;text-align:center;line-height:1.35}
+.shelf__card{
+  margin-top:14px;padding:14px 16px;border-radius:9px;
+  background:rgba(255,252,244,.9);box-shadow:inset 0 0 0 1px rgba(140,110,72,.25);
+}
+.shelf__note{margin:0;color:#5a4634;font-size:.92rem}
+.shelf__go{
+  margin-top:10px;border:0;border-radius:999px;padding:9px 14px;min-height:38px;cursor:pointer;
+  background:rgba(200,160,100,.4);color:#4a3828;
+  font:600 .58rem/1 var(--mono);letter-spacing:.14em;
+}
+.shelf__go:hover,.shelf__go:focus-visible{background:rgba(200,160,100,.62)}
+.shelf__label{margin:22px 0 10px;font:600 .58rem/1 var(--mono);letter-spacing:.18em;color:#8a7156}
+.shelf__figures{
+  margin:0;padding:0;list-style:none;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:10px;
+}
+.figure{display:grid;justify-items:center;gap:5px}
+.figure__art{width:100%;max-width:66px;height:auto;display:block}
+.figure__name{font:600 .54rem/1 var(--mono);letter-spacing:.1em;color:#8a7156}
+
+/* ── The secret door ───────────────────────────────────────────────────── */
+.dark{
+  border-radius:10px;padding:44px 20px;text-align:center;
+  background:#1b1512;color:#cbbda9;
+  box-shadow:inset 0 0 0 2px rgba(120,96,66,.35);
+  opacity:0;transition:opacity 320ms ease;
+}
+.dark.is-ajar{opacity:1}
+.dark__line{margin:0;font-size:1.02rem;letter-spacing:.02em}
+.dark__sub{margin:8px 0 0;font:600 .56rem/1 var(--mono);letter-spacing:.16em;opacity:.5}
+
+/* ── A poster ──────────────────────────────────────────────────────────── */
+.wall{display:grid;justify-items:center;gap:14px}
+.wall__paper{
+  width:min(100%,320px);aspect-ratio:2/3;border-radius:4px;
+  background-size:cover;background-position:center;background-color:#e8dcc5;
+  box-shadow:0 10px 24px rgba(60,44,28,.28), inset 0 0 0 1px rgba(120,96,66,.3);
+  display:grid;place-items:center;
+}
+.wall__paper[data-empty]{
+  background-image:repeating-linear-gradient(135deg,#e8dcc5 0 12px,#e0d2b8 12px 24px);
+}
+.wall__name{font:700 1rem/1 var(--mono);letter-spacing:.16em;color:var(--accent,#8a6f52)}
+.wall__go{
+  border:0;border-radius:999px;padding:10px 16px;min-height:40px;cursor:pointer;
+  background:rgba(200,160,100,.4);color:#4a3828;
+  font:600 .58rem/1 var(--mono);letter-spacing:.14em;
+}
+.wall__go:hover,.wall__go:focus-visible{background:rgba(200,160,100,.62)}
+
+@media (prefers-reduced-motion:reduce){
+  .chill,.relic,.file,.dark,.fridge__say{transition:none;animation:none;opacity:1}
 }

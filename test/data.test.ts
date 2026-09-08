@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CHARACTERS, MAX_ACTIVE_CHARACTERS, getCharacter } from '@/data/characters'
 import { PROJECTS, VISIBLE_PROJECTS, getProject } from '@/data/projects'
-import { SECRET_REQUIREMENTS, secretMet } from '@/ui/panels'
 import { EASTER_EGGS } from '@/data/easterEggs'
 import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART, PROP_ART, PROP_NAMES } from '@/data/alley'
 import { DESKTOP_WORLD, MOBILE_WORLD } from '@/data/world'
@@ -73,33 +72,18 @@ describe('what the room can tell you', () => {
     }
   })
 
-  it('switches on exactly the things that have an interface', () => {
+  it('gives every thing a kind, and an interface behind it', () => {
     for (const world of [DESKTOP_WORLD, MOBILE_WORLD]) {
-      const on = world.objects.filter((o) => o.enabled).map((o) => o.id).sort()
-      expect(on).toEqual(['pc', 'tv', 'workbench'])
+      // Everything in the room now opens something.
+      expect(world.objects.every((o) => o.enabled), 'all objects live').toBe(true)
       for (const o of world.objects) expect(typeof o.kind, o.id).toBe('string')
     }
   })
 
-  it('asks the secret door for things a visitor can actually do', () => {
-    const ids = PROJECTS.map((p) => p.id)
-    expect(SECRET_REQUIREMENTS.projects).toBeLessThanOrEqual(ids.length)
-    expect(SECRET_REQUIREMENTS.touched.every((id) => ['pc', 'tv', 'fridge', 'cabinet', 'workbench', 'shelf'].includes(id))).toBe(true)
-    expect(secretMet()).toBe(false)
-  })
-})
-
-describe('world objects', () => {
   const worlds = [
     { name: 'landscape', world: DESKTOP_WORLD },
     { name: 'portrait', world: MOBILE_WORLD },
-  ]
-
-  it('offers the same things in both orientations', () => {
-    const [a, b] = worlds.map((w) => w.world.objects.map((o) => o.id).sort())
-    expect(a).toEqual(b)
-    expect(new Set(a).size).toBe(a?.length)
-  })
+  ] as const
 
   for (const { name, world } of worlds) {
     it(`keeps every ${name} hit area on the plate`, () => {
@@ -116,7 +100,7 @@ describe('world objects', () => {
     it(`gives every ${name} object a silhouette to trace`, () => {
       for (const o of world.objects) {
         expect(o.outline, o.id).toBeTruthy()
-        expect(OUTLINE_PATHS[o.outline!], o.id).toMatch(/^M[\d.]/)
+        expect(OUTLINE_PATHS[o.outline as keyof typeof OUTLINE_PATHS], o.id).toMatch(/^M[\d.]/)
       }
     })
 

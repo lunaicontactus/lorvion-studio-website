@@ -196,10 +196,10 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
    * taps is worse than a small one.
    */
   const hitPadding = (obj: WorldObject): number => {
-    let pad = HIT_PADDING
     const shortest = Math.min(obj.rect.w, obj.rect.h)
-    const needed = (MIN_TOUCH / Math.max(scale, 0.01) - shortest) / 2
-    if (needed > pad) pad = Math.min(needed, MAX_HIT_PADDING)
+    // Ceil, not round: half a pixel short of a fingertip is still short.
+    const needed = Math.ceil((MIN_TOUCH / Math.max(scale, 0.01) - shortest) / 2)
+    let want = Math.min(Math.max(HIT_PADDING, needed), MAX_HIT_PADDING)
     for (const other of world.objects) {
       if (other === obj) continue
       const gapX =
@@ -209,10 +209,10 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         Math.max(obj.rect.y, other.rect.y) -
         Math.min(obj.rect.y + obj.rect.h, other.rect.y + other.rect.h)
       // Only a neighbour that overlaps on the other axis can actually collide.
-      if (gapX < 0 && gapY >= 0) pad = Math.min(pad, gapY / 2)
-      if (gapY < 0 && gapX >= 0) pad = Math.min(pad, gapX / 2)
+      if (gapX < 0 && gapY >= 0) want = Math.min(want, Math.floor(gapY / 2))
+      if (gapY < 0 && gapX >= 0) want = Math.min(want, Math.floor(gapX / 2))
     }
-    return Math.max(0, Math.round(pad))
+    return Math.max(0, want)
   }
 
   // ── Layout ───────────────────────────────────────────────────────────────

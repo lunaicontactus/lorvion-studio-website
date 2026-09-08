@@ -32,8 +32,15 @@ export interface InteractionHost {
 
 /** How long the camera is given to arrive before the interface opens. */
 export const FOCUS_MS = 320
-/** How long the interface is given to leave before the camera goes back. */
-export const CLOSE_MS = 200
+/**
+ * How long the interface is given to leave before the camera goes back.
+ *
+ * Longer than the panel's own 320ms exit on purpose: the room must not accept
+ * the next thing until the last one is actually gone from the page. Anything
+ * shorter and "the panel is hidden" stops meaning "the room is ready", which
+ * is exactly the gap a fast visitor falls into.
+ */
+export const CLOSE_MS = 340
 
 export class Interaction {
   #state: GarageState = 'GARAGE_IDLE'
@@ -82,7 +89,7 @@ export class Interaction {
    */
   request(id: string, options: { readonly enabled?: boolean; readonly instant?: boolean } = {}): boolean {
     if (this.locked) {
-      log.debug('interaction: busy, ignoring', id)
+      log.debug('interaction: busy in', this.#state, 'ignoring', id)
       return false
     }
     if (options.enabled === false) {
@@ -121,6 +128,14 @@ export class Interaction {
 
   /** Escape, the close button, or the browser's back button. */
   dismiss(options: { readonly instant?: boolean } = {}): boolean {
+    if (this.#state === 'OBJECT_FOCUSING') {
+      // Changed their mind while the camera was still travelling. The pending
+      // open checks the active id and drops itself.
+      this.#set('GARAGE_IDLE', null)
+      this.#host.restore()
+      this.#host.setPaused(false)
+      return true
+    }
     if (this.#state !== 'OBJECT_OPEN') return false
     this.#set('OBJECT_CLOSING', this.#active)
     this.#host.close()
