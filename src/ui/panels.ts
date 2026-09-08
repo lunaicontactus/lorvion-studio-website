@@ -13,11 +13,14 @@ import { CHARACTERS } from '@/data/characters'
 import { OBJECT_ART } from '@/data/world'
 import { save } from '@/systems/storage'
 import { audio } from '@/systems/audio'
+import { motion } from '@/systems/motion'
 import type { ProjectConfig, ProjectStatus } from '@/types/project'
 
 export interface PanelHost {
   /** Called when a panel opens or closes, so the room can stop moving. */
   readonly onOpenChange?: (open: boolean) => void
+  /** The visitor closed this themselves: the ✕, the backdrop, Escape. */
+  readonly onClose?: () => void
   /** Something worth remembering happened. */
   readonly onProgress?: () => void
 }
@@ -85,6 +88,8 @@ export class Panels {
   #open = false
   #lastFocus: HTMLElement | null = null
   #host: PanelHost
+  /** Anything scheduled by the panel on screen, dropped when it leaves. */
+  #timers = new Set<ReturnType<typeof setTimeout>>()
 
   constructor(root: HTMLElement, host: PanelHost = {}) {
     this.#root = root
@@ -93,7 +98,8 @@ export class Panels {
     root.hidden = true
     root.innerHTML = `
       <div class="panel-layer__scrim" data-panel-scrim></div>
-      <div class="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" data-panel>
+      <div class="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle"
+           tabindex="-1" data-panel>
         <div class="panel__inner">
           <h2 class="panel__title" id="panelTitle" data-panel-title></h2>
           <div class="panel__body" data-panel-body></div>
@@ -104,15 +110,17 @@ export class Panels {
     this.#body = root.querySelector('[data-panel-body]')!
     this.#title = root.querySelector('[data-panel-title]')!
 
-    root.querySelector('[data-panel-close]')!.addEventListener('click', () => this.close())
-    root.querySelector('[data-panel-scrim]')!.addEventListener('click', () => this.close())
+    root.querySelector('[data-panel-close]')!.addEventListener('click', () => {
+      this.#host.onClose?.()
+      this.close()
+    })
+    root.querySelector('[data-panel-scrim]')!.addEventListener('click', () => {
+      this.#host.onClose?.()
+      this.close()
+    })
     document.addEventListener('keydown', (e) => {
       if (!this.#open) return
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        this.close()
-        return
-      }
+      if (e.key === 'Escape') return // the world closes and unwinds history
       if (e.key === 'Tab') this.#trap(e)
     })
   }
@@ -146,7 +154,21 @@ export class Panels {
     return src ? `<img class="panel__portrait" src="${src}" alt="" decoding="async">` : ''
   }
 
+  #later(fn: () => void, ms: number): void {
+    const t = setTimeout(() => {
+      this.#timers.delete(t)
+      fn()
+    }, ms)
+    this.#timers.add(t)
+  }
+
+  #clearTimers(): void {
+    for (const t of this.#timers) clearTimeout(t)
+    this.#timers.clear()
+  }
+
   #show(kind: string, title: string, html: string): void {
+    this.#clearTimers()
     this.#lastFocus = document.activeElement as HTMLElement | null
     this.#shell.dataset['kind'] = kind
     this.#title.textContent = title
@@ -156,12 +178,14 @@ export class Panels {
     this.#root.classList.add('is-open')
     this.#open = true
     this.#host.onOpenChange?.(true)
-    const focusable = this.#shell.querySelector<HTMLElement>('button, a[href]')
-    focusable?.focus()
+    // Focus the dialog itself, not its first link: focusing a control near the
+    // bottom scrolls the panel past its own title before anyone has read it.
+    this.#shell.focus()
   }
 
   close(): void {
     if (!this.#open) return
+    this.#clearTimers()
     this.#open = false
     this.#root.classList.remove('is-open')
     const done = (): void => {
@@ -190,10 +214,35 @@ export class Panels {
     this.#host.onProgress?.()
   }
 
-  // ── The PC: every game we have ─────────────────────────────────────────
+  // ── The PC: a monitor that boots, not a dialog with a list in it ───────
   openPc(): void {
     this.#touch('pc')
-    const list = PROJECTS.map(
+    this.#show(
+      'pc',
+      'EUNGARAGE SOFTWARE',
+      `${this.#portrait('pc')}<div class="crt" data-crt>
+         <div class="crt__screen">
+           <p class="crt__boot" data-crt-boot>EUNGARAGE SOFTWARE<span aria-hidden="true">_</span></p>
+           <div data-crt-view></div>
+         </div>
+       </div>`,
+    )
+    audio.play('keyboard', 0.35)
+    // A short boot, because this is a monitor waking up, not an operating
+    // system starting. Anything longer is a wait, not an effect.
+    const view = this.#body.querySelector<HTMLElement>('[data-crt-view]')
+    if (!view) return
+    const showList = (): void => {
+      this.#body.querySelector('[data-crt-boot]')?.classList.add('is-done')
+      this.#pcList(view)
+    }
+    if (motion.reduced) showList()
+    else this.#later(showList, 520)
+  }
+
+  /** The catalogue, straight from PROJECTS. */
+  #pcList(view: HTMLElement): void {
+    view.innerHTML = `<div class="hub">${PROJECTS.map(
       (p) => `
       <button class="hub__row" type="button" data-game="${p.id}">
         <span class="hub__thumb"${p.keyArt ? ` style="background-image:url('${p.keyArt}')"` : ' data-empty'}></span>
@@ -204,28 +253,47 @@ export class Panels {
         </span>
         <span class="hub__right">
           <span class="hub__status" data-status="${p.status}">${STATUS_LABEL[p.status]}</span>
-          <span class="hub__more">자세히 보기 <span aria-hidden="true">›</span></span>
+          <span class="hub__more">OPEN <span aria-hidden="true">›</span></span>
         </span>
       </button>`,
-    ).join('')
-    this.#show(
-      'pc',
-      'EUNGARAGE',
-      `${this.#portrait('pc')}<div class="crt">
-         <div class="crt__screen">
-           <p class="crt__boot">EUNGARAGE // GAME HUB</p>
-           <div class="hub">${list}</div>
-         </div>
-       </div>`,
-    )
-    audio.play('keyboard', 0.35)
-    for (const btn of this.#body.querySelectorAll<HTMLElement>('[data-game]')) {
+    ).join('')}</div>`
+    for (const btn of view.querySelectorAll<HTMLElement>('[data-game]')) {
       btn.addEventListener('click', () => {
-        const id = btn.dataset['game']
-        const project = PROJECTS.find((p) => p.id === id)
-        if (project) this.openProject(project)
+        const project = PROJECTS.find((p) => p.id === btn.dataset['game'])
+        if (project) this.#pcDetail(view, project)
       })
     }
+  }
+
+  /** One game, still inside the monitor. Leaving the room is a deliberate act. */
+  #pcDetail(view: HTMLElement, project: ProjectConfig): void {
+    if (!save.data.visitedProjects.includes(project.id)) {
+      save.update((d) => {
+        d.visitedProjects.push(project.id)
+      })
+      this.#host.onProgress?.()
+    }
+    view.innerHTML = `
+      <div class="crtgame">
+        <button class="crtgame__back" type="button" data-crt-back>
+          <span aria-hidden="true">←</span> BACK
+        </button>
+        <h3 class="crtgame__name">${project.title}</h3>
+        <div class="crtgame__art"${project.keyArt ? ` style="background-image:url('${project.keyArt}')"` : ' data-empty'}></div>
+        <p class="crtgame__tag">${project.tagline}</p>
+        <p class="crtgame__tag crtgame__tag--ko">${project.taglineKo}</p>
+        <dl class="crtgame__facts">
+          <div><dt>GENRE</dt><dd>${project.genre}</dd></div>
+          <div><dt>STATUS</dt><dd>${STATUS_LABEL[project.status]}</dd></div>
+          <div><dt>PLATFORM</dt><dd>${project.platforms.join(' · ')}</dd></div>
+        </dl>
+        <a class="crtgame__full" href="./games.html#${project.id}">VIEW FULL PAGE <span aria-hidden="true">↗</span></a>
+      </div>`
+    view.querySelector('[data-crt-back]')?.addEventListener('click', () => {
+      audio.play('click', 0.3)
+      this.#pcList(view)
+    })
+    view.querySelector<HTMLElement>('[data-crt-back]')?.focus()
   }
 
   // ── A poster, or a game chosen in the hub ──────────────────────────────
@@ -259,58 +327,127 @@ export class Panels {
     )
   }
 
-  // ── The workbench: what is on it right now ─────────────────────────────
-  // Status comes from the project data. No dates, no percentages: there are
-  // none to state, and inventing them would be the easiest lie on the site.
-  openBuilding(): void {
+  // ── The workbench: the studio, as the notes lying on the desk ──────────
+  // Paper, not a dialog: what the studio is, what is on the bench, who is in
+  // the room. Everything comes from the registries; no copy is written here.
+  openStudioDesk(): void {
     this.#touch('workbench')
     const rows = PROJECTS.map(
-      (p) => `<li class="build__row">
-         <span class="build__name">${p.title}</span>
-         <span class="build__genre">${p.genre}</span>
-         <span class="build__status" data-status="${p.status}">${STATUS_LABEL[p.status]}</span>
+      (p) => `<li class="note__row">
+         <span class="note__name">${p.title}</span>
+         <span class="note__genre">${p.genre}</span>
+         <span class="note__status" data-status="${p.status}">${STATUS_LABEL[p.status]}</span>
        </li>`,
     ).join('')
+    const crew = CHARACTERS.map(
+      (c) => `<li><b>${c.name}</b><span>${c.trait}</span></li>`,
+    ).join('')
+    const mail = contactRows().find((r) => r.key === 'email')
     this.#show(
-      'building',
-      'CURRENTLY BUILDING',
-      `${this.#portrait('workbench')}<ul class="build">${rows}</ul>`,
+      'desk',
+      SITE_CONFIG.companyName,
+      `${this.#portrait('workbench')}<div class="note">
+         <p class="note__lede">Small games.<br>Strange worlds.<br>Made in our garage.</p>
+         <p class="note__sub">An independent game studio in ${SITE_CONFIG.location}.
+            감정과 캐릭터, 그리고 그들이 사는 세계를 중심으로 만듭니다.</p>
+         <section class="note__block">
+           <h3 class="note__label">ON THE BENCH</h3>
+           <ul class="note__list">${rows}</ul>
+         </section>
+         <section class="note__block">
+           <h3 class="note__label">DOKKA CREW</h3>
+           <ul class="about__crew">${crew}</ul>
+         </section>
+         <p class="note__foot">
+           ${mail ? `<a href="${mail.href}">${mail.value}</a> · ` : ''}
+           <a href="./studio.html">FULL PAGE <span aria-hidden="true">↗</span></a>
+         </p>
+       </div>`,
     )
+    audio.play('drawer', 0.3)
   }
 
-  // ── The TV: how to reach us ────────────────────────────────────────────
+  // ── The TV: a set that warms up, and can be switched off again ─────────
   openContact(): void {
     this.#touch('tv')
+    this.#show(
+      'contact',
+      'CONTACT',
+      `${this.#portrait('tv')}<div class="tvset" data-tv>
+         <div class="tvset__screen" data-tv-screen>
+           <p class="tvset__static" data-tv-static aria-hidden="true"></p>
+           <div data-tv-view></div>
+         </div>
+         <button class="tvset__power" type="button" data-tv-power aria-pressed="true">
+           <span class="tvset__dot" aria-hidden="true"></span>POWER
+         </button>
+       </div>`,
+    )
+    const view = this.#body.querySelector<HTMLElement>('[data-tv-view]')
+    const set = this.#body.querySelector<HTMLElement>('[data-tv]')
+    const power = this.#body.querySelector<HTMLButtonElement>('[data-tv-power]')
+    if (!view || !set || !power) return
+
     const rows = contactRows()
-    const body = rows.length
-      ? rows
-          .map(
-            (r) => `<div class="tvrow">
-               <span class="tvrow__label">${r.label}</span>
-               <a class="tvrow__value" href="${r.href}">${r.value}</a>
-               <button class="tvrow__copy" type="button" data-copy="${r.value}" aria-label="${r.label} 복사">COPY</button>
-             </div>`,
-          )
-          .join('')
-      : '<p class="tvrow__none">NO SIGNAL</p>'
-    this.#show('contact', 'CONTACT', `${this.#portrait('tv')}<div class="tvset"><div class="tvset__screen">${body}</div></div>`)
-    for (const btn of this.#body.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
-      btn.addEventListener('click', async () => {
-        const value = btn.dataset['copy'] ?? ''
-        try {
-          await navigator.clipboard.writeText(value)
-          btn.textContent = 'COPIED'
-          btn.classList.add('is-copied')
-          audio.play('click', 0.35)
-          setTimeout(() => {
-            btn.textContent = 'COPY'
-            btn.classList.remove('is-copied')
-          }, 1600)
-        } catch {
-          btn.textContent = 'SELECT'
-        }
-      })
+    const contact = (): string =>
+      rows.length
+        ? `<p class="tvrow__brand">EUNGARAGE</p>${rows
+            .map(
+              (r) => `<div class="tvrow">
+                 <span class="tvrow__label">${r.label}</span>
+                 <a class="tvrow__value" href="${r.href}">${r.value}</a>
+                 <button class="tvrow__copy" type="button" data-copy="${r.value}" aria-label="${r.label} 복사">COPY</button>
+               </div>`,
+            )
+            .join('')}`
+        : '<p class="tvrow__none">NO SIGNAL</p>'
+
+    const wireCopy = (): void => {
+      for (const btn of view.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
+        btn.addEventListener('click', async () => {
+          const value = btn.dataset['copy'] ?? ''
+          try {
+            await navigator.clipboard.writeText(value)
+            btn.textContent = 'COPIED'
+            btn.classList.add('is-copied')
+            audio.play('click', 0.35)
+            this.#later(() => {
+              btn.textContent = 'COPY'
+              btn.classList.remove('is-copied')
+            }, 1600)
+          } catch {
+            btn.textContent = 'SELECT'
+          }
+        })
+      }
     }
+
+    const on = (): void => {
+      set.classList.remove('is-off')
+      set.classList.add('is-warming')
+      power.setAttribute('aria-pressed', 'true')
+      view.innerHTML = ''
+      const settle = (): void => {
+        set.classList.remove('is-warming')
+        view.innerHTML = contact()
+        wireCopy()
+      }
+      if (motion.reduced) settle()
+      else this.#later(settle, 240)
+    }
+    const offScreen = (): void => {
+      this.#clearTimers()
+      set.classList.remove('is-warming')
+      set.classList.add('is-off')
+      power.setAttribute('aria-pressed', 'false')
+      view.innerHTML = ''
+    }
+    power.addEventListener('click', () => {
+      audio.play('click', 0.3)
+      if (set.classList.contains('is-off')) on()
+      else offScreen()
+    })
+    on()
   }
 
   // ── The fridge: studio life, not an information panel ──────────────────

@@ -25,6 +25,8 @@ export interface GarageHandle {
   setPaused(v: boolean): void
   /** Fast travel: put an object in the middle of the view. */
   focusObject(id: string): void
+  /** Put the camera back where the visitor had left it. */
+  restoreCamera(): void
   readonly world: WorldLayout
   destroy(): void
 }
@@ -41,6 +43,12 @@ const KEY_PAN = 620
 
 /** How long a tapped object stays outlined, in milliseconds. */
 const MIN_PRESS = 150
+
+/** The smallest a thing may be on screen before its hit area is grown, in CSS px. */
+const MIN_TOUCH = 44
+
+/** However small a thing is, its hit area stops growing here, in world units. */
+const MAX_HIT_PADDING = 90
 
 export function mountGarage(root: ParentNode = document, opts: GarageOptions = {}): GarageHandle | null {
   const scene = root.querySelector<HTMLElement>('[data-garage]')
@@ -64,6 +72,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     timers.add(t)
   }
   const camera = new Camera(motion.reduced ? 1 : 0.16)
+  /** Where the visitor was looking before an object took the camera. */
+  let parked: { x: number; y: number } | null = null
   let world: WorldLayout = worldFor(false)
   let scale = 1
   let built = false
@@ -91,7 +101,10 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       el.setAttribute('aria-label', obj.label)
       // The hit region is looser than the object so it is comfortable to click;
       // the outline inside it is not, so it can trace the real thing.
-      const pad = obj.art ? 0 : HIT_PADDING
+      // The world is scaled to fit, so a hit area measured in world pixels can
+      // land well under a fingertip on a phone. Grow it until it is at least
+      // MIN_TOUCH on screen, and never let two things reach into each other.
+      const pad = obj.art ? 0 : hitPadding(obj)
       Object.assign(el.style, {
         left: `${obj.rect.x - pad}px`,
         top: `${obj.rect.y - pad}px`,
@@ -174,6 +187,32 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     // The painted window already has its own night sky and moon; a canvas over
     // it only added drifting light where the artwork wanted none.
     built = true
+  }
+
+  /**
+   * Padding around a thing's artwork, in world units. Starts at HIT_PADDING and
+   * grows if the object would otherwise be smaller than a fingertip, but never
+   * so far that it reaches a neighbour: a target that steals its neighbour's
+   * taps is worse than a small one.
+   */
+  const hitPadding = (obj: WorldObject): number => {
+    let pad = HIT_PADDING
+    const shortest = Math.min(obj.rect.w, obj.rect.h)
+    const needed = (MIN_TOUCH / Math.max(scale, 0.01) - shortest) / 2
+    if (needed > pad) pad = Math.min(needed, MAX_HIT_PADDING)
+    for (const other of world.objects) {
+      if (other === obj) continue
+      const gapX =
+        Math.max(obj.rect.x, other.rect.x) -
+        Math.min(obj.rect.x + obj.rect.w, other.rect.x + other.rect.w)
+      const gapY =
+        Math.max(obj.rect.y, other.rect.y) -
+        Math.min(obj.rect.y + obj.rect.h, other.rect.y + other.rect.h)
+      // Only a neighbour that overlaps on the other axis can actually collide.
+      if (gapX < 0 && gapY >= 0) pad = Math.min(pad, gapY / 2)
+      if (gapY < 0 && gapX >= 0) pad = Math.min(pad, gapX / 2)
+    }
+    return Math.max(0, Math.round(pad))
   }
 
   // ── Layout ───────────────────────────────────────────────────────────────
@@ -309,8 +348,9 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   // ── Frame ────────────────────────────────────────────────────────────────
   off.push(
     ticker.subscribe((info) => {
-      if (paused) return
-      if (keys.size) {
+      // Paused stops the visitor driving; it must not stop the camera, or a
+      // focus requested as a panel opens would never actually travel.
+      if (!paused && keys.size) {
         const step = (KEY_PAN * info.delta) / 1000
         let dx = 0
         let dy = 0
@@ -373,7 +413,14 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     focusObject(id: string): void {
       const obj = world.objects.find((o) => o.id === id)
       if (!obj) return
+      // Remember where the visitor was looking before we moved them.
+      if (parked === null) parked = { x: camera.x, y: camera.y }
       camera.moveTo(obj.rect.x + obj.rect.w / 2, obj.rect.y + obj.rect.h / 2)
+    },
+    restoreCamera(): void {
+      if (!parked) return
+      camera.moveTo(parked.x, parked.y)
+      parked = null
     },
     get world(): WorldLayout {
       return world

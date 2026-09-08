@@ -10,6 +10,10 @@
  * painted into the room, so the objects here are hit areas over them. The
  * keyed cut-outs of the same furniture are used inside the panels, where they
  * read as the object you just touched.
+ *
+ * `enabled` is the whole switch for a thing: false means it is in the room and
+ * says so when touched, but has nothing behind it yet. Turning one on is a
+ * one-word change here plus the interaction it names.
  */
 import type { WorldLayout } from '@/types/world'
 
@@ -36,17 +40,17 @@ export const DESKTOP_WORLD: WorldLayout = {
   ],
   objects: [
     // Read off the panorama with a rectangle overlay, then checked against it.
-    { id: 'shelf', label: 'Collection', zone: 'shelf', action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 244, y: 205, w: 171, h: 412 }, outline: 'shelf', sfx: 'drawer' },
-    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', action: { kind: 'project', projectId: 'lunai' }, rect: { x: 455, y: 335, w: 168, h: 288 }, outline: 'poster' },
-    { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', action: { kind: 'project', projectId: 'liminal' }, rect: { x: 651, y: 335, w: 168, h: 280 }, outline: 'poster' },
-    { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', action: { kind: 'project', projectId: 'wormup' }, rect: { x: 848, y: 320, w: 191, h: 302 }, outline: 'poster' },
-    { id: 'poster-rubato', label: 'RUBATO', zone: 'posterWall', action: { kind: 'project', projectId: 'rubato' }, rect: { x: 1068, y: 328, w: 197, h: 300 }, outline: 'poster' },
-    { id: 'cabinet', label: 'Studio file', zone: 'archive', action: { kind: 'panel', panelId: 'studio' }, rect: { x: 850, y: 761, w: 143, h: 130 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
-    { id: 'pc', label: 'Games', zone: 'mainDesk', action: { kind: 'panel', panelId: 'pc' }, rect: { x: 1462, y: 563, w: 233, h: 200 }, outline: 'monitor', sfx: 'keyboard', inMenu: true },
-    { id: 'workbench', label: 'Currently building', zone: 'workbench', action: { kind: 'panel', panelId: 'building' }, rect: { x: 2048, y: 256, w: 274, h: 344 }, outline: 'rect', sfx: 'drawer', inMenu: true },
-    { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 2362, y: 573, w: 200, h: 397 }, outline: 'fridge', sfx: 'wrapper' },
-    { id: 'tv', label: 'Contact', zone: 'tvArea', action: { kind: 'panel', panelId: 'contact' }, rect: { x: 2680, y: 585, w: 305, h: 203 }, outline: 'tv', sfx: 'click', inMenu: true },
-    { id: 'secret-door', label: 'Locked', zone: 'secretDoor', action: { kind: 'panel', panelId: 'secret' }, rect: { x: 3212, y: 603, w: 210, h: 372 }, outline: 'arch', sfx: 'bell' },
+    { id: 'shelf', label: 'Collection', zone: 'shelf', kind: 'storage', enabled: false, action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 244, y: 205, w: 171, h: 412 }, outline: 'shelf', sfx: 'drawer' },
+    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', kind: 'paper', enabled: false, action: { kind: 'project', projectId: 'lunai' }, rect: { x: 455, y: 335, w: 168, h: 288 }, outline: 'poster' },
+    { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: false, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 651, y: 335, w: 168, h: 280 }, outline: 'poster' },
+    { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: false, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 848, y: 320, w: 191, h: 302 }, outline: 'poster' },
+    { id: 'poster-rubato', label: 'RUBATO', zone: 'posterWall', kind: 'paper', enabled: false, action: { kind: 'project', projectId: 'rubato' }, rect: { x: 1068, y: 328, w: 197, h: 300 }, outline: 'poster' },
+    { id: 'cabinet', label: 'Studio file', zone: 'archive', kind: 'storage', enabled: false, action: { kind: 'panel', panelId: 'studio' }, rect: { x: 850, y: 761, w: 143, h: 130 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
+    { id: 'pc', label: 'Games', zone: 'mainDesk', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'pc' }, rect: { x: 1462, y: 563, w: 233, h: 200 }, outline: 'monitor', sfx: 'keyboard', inMenu: true },
+    { id: 'workbench', label: 'Currently building', zone: 'workbench', kind: 'desk', enabled: true, action: { kind: 'panel', panelId: 'building' }, rect: { x: 2048, y: 256, w: 274, h: 344 }, outline: 'rect', sfx: 'drawer', inMenu: true },
+    { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', kind: 'appliance', enabled: false, action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 2362, y: 573, w: 200, h: 397 }, outline: 'fridge', sfx: 'wrapper' },
+    { id: 'tv', label: 'Contact', zone: 'tvArea', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'contact' }, rect: { x: 2680, y: 585, w: 305, h: 203 }, outline: 'tv', sfx: 'click', inMenu: true },
+    { id: 'secret-door', label: 'Locked', zone: 'secretDoor', kind: 'door', enabled: false, action: { kind: 'panel', panelId: 'secret' }, rect: { x: 3212, y: 603, w: 210, h: 372 }, outline: 'arch', sfx: 'bell' },
   ],
 }
 
@@ -73,17 +77,17 @@ export const MOBILE_WORLD: WorldLayout = {
     { id: 'entry', label: 'Wall', rect: { x: 0, y: 1700, w: 1100, h: 740 }, blocks: { x: 0, y: 1700, w: 1100, h: 740 } },
   ],
   objects: [
-    { id: 'shelf', label: 'Collection', zone: 'shelf', action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 172, y: 345, w: 128, h: 105 }, outline: 'shelf', sfx: 'drawer' },
-    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', action: { kind: 'project', projectId: 'lunai' }, rect: { x: 324, y: 238, w: 111, h: 202 }, outline: 'poster' },
-    { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', action: { kind: 'project', projectId: 'liminal' }, rect: { x: 459, y: 238, w: 118, h: 202 }, outline: 'poster' },
-    { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', action: { kind: 'project', projectId: 'wormup' }, rect: { x: 610, y: 232, w: 155, h: 213 }, outline: 'poster' },
-    { id: 'poster-rubato', label: 'RUBATO', zone: 'posterWall', action: { kind: 'project', projectId: 'rubato' }, rect: { x: 789, y: 238, w: 126, h: 202 }, outline: 'poster' },
-    { id: 'cabinet', label: 'Studio file', zone: 'archive', action: { kind: 'panel', panelId: 'studio' }, rect: { x: 424, y: 522, w: 142, h: 82 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
-    { id: 'pc', label: 'Games', zone: 'mainDesk', action: { kind: 'panel', panelId: 'pc' }, rect: { x: 439, y: 1251, w: 158, h: 135 }, outline: 'monitorPortrait', sfx: 'keyboard', inMenu: true },
-    { id: 'workbench', label: 'Currently building', zone: 'workbench', action: { kind: 'panel', panelId: 'building' }, rect: { x: 831, y: 1152, w: 169, h: 147 }, outline: 'rect', sfx: 'drawer', inMenu: true },
-    { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 276, y: 2121, w: 158, h: 306 }, outline: 'fridge', sfx: 'wrapper' },
-    { id: 'tv', label: 'Contact', zone: 'tvArea', action: { kind: 'panel', panelId: 'contact' }, rect: { x: 508, y: 2138, w: 190, h: 147 }, outline: 'tv', sfx: 'click', inMenu: true },
-    { id: 'secret-door', label: 'Locked', zone: 'secretDoor', action: { kind: 'panel', panelId: 'secret' }, rect: { x: 862, y: 2149, w: 129, h: 270 }, outline: 'arch', sfx: 'bell' },
+    { id: 'shelf', label: 'Collection', zone: 'shelf', kind: 'storage', enabled: false, action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 172, y: 345, w: 128, h: 105 }, outline: 'shelf', sfx: 'drawer' },
+    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', kind: 'paper', enabled: false, action: { kind: 'project', projectId: 'lunai' }, rect: { x: 324, y: 238, w: 111, h: 202 }, outline: 'poster' },
+    { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: false, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 459, y: 238, w: 118, h: 202 }, outline: 'poster' },
+    { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: false, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 610, y: 232, w: 155, h: 213 }, outline: 'poster' },
+    { id: 'poster-rubato', label: 'RUBATO', zone: 'posterWall', kind: 'paper', enabled: false, action: { kind: 'project', projectId: 'rubato' }, rect: { x: 789, y: 238, w: 126, h: 202 }, outline: 'poster' },
+    { id: 'cabinet', label: 'Studio file', zone: 'archive', kind: 'storage', enabled: false, action: { kind: 'panel', panelId: 'studio' }, rect: { x: 424, y: 522, w: 142, h: 82 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
+    { id: 'pc', label: 'Games', zone: 'mainDesk', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'pc' }, rect: { x: 439, y: 1251, w: 158, h: 135 }, outline: 'monitorPortrait', sfx: 'keyboard', inMenu: true },
+    { id: 'workbench', label: 'Currently building', zone: 'workbench', kind: 'desk', enabled: true, action: { kind: 'panel', panelId: 'building' }, rect: { x: 831, y: 1152, w: 169, h: 147 }, outline: 'rect', sfx: 'drawer', inMenu: true },
+    { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', kind: 'appliance', enabled: false, action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 276, y: 2121, w: 158, h: 306 }, outline: 'fridge', sfx: 'wrapper' },
+    { id: 'tv', label: 'Contact', zone: 'tvArea', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'contact' }, rect: { x: 508, y: 2138, w: 190, h: 147 }, outline: 'tv', sfx: 'click', inMenu: true },
+    { id: 'secret-door', label: 'Locked', zone: 'secretDoor', kind: 'door', enabled: false, action: { kind: 'panel', panelId: 'secret' }, rect: { x: 862, y: 2149, w: 129, h: 270 }, outline: 'arch', sfx: 'bell' },
   ],
 }
 

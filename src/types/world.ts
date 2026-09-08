@@ -32,6 +32,12 @@ export interface Zone {
   readonly blocks?: WorldRect
 }
 
+/**
+ * What kind of thing it is. The interaction a thing runs is chosen from this,
+ * not from its id, so a second television would need no new code.
+ */
+export type ObjectKind = 'screen' | 'desk' | 'paper' | 'door' | 'storage' | 'appliance'
+
 /** What touching a thing does. */
 export type ObjectAction =
   | { kind: 'panel'; panelId: string }
@@ -42,6 +48,12 @@ export interface WorldObject {
   readonly id: string
   readonly label: string
   readonly zone: ZoneId
+  readonly kind: ObjectKind
+  /**
+   * False while the thing is in the room but has nothing behind it yet. It
+   * still draws and still says so when touched; it does not pretend to open.
+   */
+  readonly enabled: boolean
   readonly action: ObjectAction
   /** Hit area in world space. The outline may be tighter than this. */
   readonly rect: WorldRect

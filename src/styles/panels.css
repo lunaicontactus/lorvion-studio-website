@@ -51,6 +51,7 @@
 }
 .panel__close:hover{background:rgba(180,150,110,.5)}
 .panel :focus-visible{outline:2px solid #c8894f;outline-offset:3px}
+.panel:focus{outline:none}
 
 /* ── PC: a CRT, not a dashboard ────────────────────────────────────────── */
 .crt{border-radius:12px;background:#3a3a33;padding:14px;box-shadow:inset 0 0 0 8px #2c2c26}
@@ -234,3 +235,89 @@
   filter:drop-shadow(0 8px 12px rgba(40,26,16,.32));
 }
 @media (max-width:560px){.panel__portrait{height:84px}}
+
+/* ── The monitor ───────────────────────────────────────────────────────── */
+.crt__boot{transition:opacity 200ms ease}
+.crt__boot.is-done{opacity:.45}
+.crt__boot span{animation:caret 900ms steps(1) infinite}
+@keyframes caret{50%{opacity:0}}
+
+.crtgame{display:grid;gap:10px}
+.crtgame__back{
+  justify-self:start;border:0;border-radius:6px;padding:6px 10px;cursor:pointer;
+  background:rgba(168,230,184,.14);color:inherit;
+  font:600 .58rem/1 var(--mono);letter-spacing:.14em;
+}
+.crtgame__back:hover,.crtgame__back:focus-visible{background:rgba(168,230,184,.26)}
+.crtgame__name{margin:2px 0 0;font:700 1rem/1 var(--mono);letter-spacing:.14em}
+.crtgame__art{
+  aspect-ratio:16/9;border-radius:8px;background-size:cover;background-position:center;
+  background-color:rgba(168,230,184,.1);
+}
+.crtgame__art[data-empty]{
+  background-image:repeating-linear-gradient(135deg,
+    rgba(168,230,184,.16) 0 8px,transparent 8px 16px);
+}
+.crtgame__tag{margin:0;font-size:.82rem}
+.crtgame__tag--ko{opacity:.7;font-size:.76rem}
+.crtgame__facts{margin:6px 0 0;display:grid;gap:5px}
+.crtgame__facts div{display:grid;grid-template-columns:88px 1fr;gap:10px;align-items:baseline}
+.crtgame__facts dt{font:600 .54rem/1.4 var(--mono);letter-spacing:.14em;opacity:.6}
+.crtgame__facts dd{margin:0;font:600 .62rem/1.4 var(--mono);letter-spacing:.1em}
+.crtgame__full{
+  justify-self:start;margin-top:6px;
+  font:600 .58rem/1 var(--mono);letter-spacing:.14em;
+  border-bottom:1px solid currentColor;padding-bottom:3px;
+}
+
+/* ── The bench notes ───────────────────────────────────────────────────── */
+.note{
+  border-radius:8px;padding:22px 24px;
+  background:
+    linear-gradient(180deg,rgba(255,252,244,.96),rgba(248,240,226,.96));
+  box-shadow:0 10px 22px rgba(60,44,28,.18), inset 0 0 0 1px rgba(140,110,72,.18);
+  /* Ruled paper, faint enough to read over. */
+  background-image:repeating-linear-gradient(180deg,
+    transparent 0 27px,rgba(140,110,72,.14) 27px 28px);
+  color:#5a4634;
+}
+.note__lede{margin:0;font-size:1.24rem;line-height:1.5;color:#4a3828}
+.note__sub{margin:14px 0 0;font-size:.88rem;opacity:.8}
+.note__block{margin-top:22px;padding-top:16px;border-top:1px dashed rgba(120,96,66,.4)}
+.note__label{margin:0 0 10px;font:600 .58rem/1 var(--mono);letter-spacing:.18em;color:#8a7156}
+.note__list{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.note__row{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:baseline}
+.note__name{font:700 .78rem/1 var(--mono);letter-spacing:.12em}
+.note__genre{grid-column:1;font-size:.8rem;opacity:.72}
+.note__status{grid-column:2;grid-row:1/3;align-self:center;font:600 .56rem/1 var(--mono);letter-spacing:.14em;color:#8a6f52;white-space:nowrap}
+.note__status[data-status="comingSoon"]{opacity:.6}
+.note__foot{margin:22px 0 0;font:600 .6rem/1.6 var(--mono);letter-spacing:.12em}
+.note__foot a{border-bottom:1px solid rgba(120,96,66,.5);padding-bottom:2px}
+
+/* ── The television ────────────────────────────────────────────────────── */
+.tvset{position:relative}
+.tvset__screen{position:relative;overflow:hidden}
+.tvrow__brand{margin:0 0 10px;font:700 .62rem/1 var(--mono);letter-spacing:.22em;opacity:.75}
+.tvset__static{
+  position:absolute;inset:0;margin:0;opacity:0;pointer-events:none;
+  background-image:repeating-linear-gradient(0deg,
+    rgba(255,255,255,.16) 0 1px,rgba(0,0,0,.16) 1px 2px);
+  transition:opacity 120ms ease;
+}
+.tvset.is-warming .tvset__static{opacity:1}
+.tvset.is-off .tvset__screen{filter:brightness(.25) saturate(.4)}
+.tvset__power{
+  display:inline-flex;align-items:center;gap:7px;
+  margin:12px 0 0;
+  border:0;border-radius:999px;padding:7px 12px;min-height:34px;cursor:pointer;
+  background:rgba(207,224,238,.14);color:#cfe0ee;
+  font:600 .54rem/1 var(--mono);letter-spacing:.14em;
+}
+.tvset__power:hover{background:rgba(207,224,238,.24)}
+.tvset__dot{width:7px;height:7px;border-radius:999px;background:#8ce29a;box-shadow:0 0 6px rgba(140,226,154,.8)}
+.tvset__power[aria-pressed="false"] .tvset__dot{background:#6b6f74;box-shadow:none}
+
+@media (prefers-reduced-motion:reduce){
+  .crt__boot span{animation:none}
+  .tvset__static{transition:none}
+}

@@ -73,6 +73,14 @@ describe('what the room can tell you', () => {
     }
   })
 
+  it('switches on exactly the things that have an interface', () => {
+    for (const world of [DESKTOP_WORLD, MOBILE_WORLD]) {
+      const on = world.objects.filter((o) => o.enabled).map((o) => o.id).sort()
+      expect(on).toEqual(['pc', 'tv', 'workbench'])
+      for (const o of world.objects) expect(typeof o.kind, o.id).toBe('string')
+    }
+  })
+
   it('asks the secret door for things a visitor can actually do', () => {
     const ids = PROJECTS.map((p) => p.id)
     expect(SECRET_REQUIREMENTS.projects).toBeLessThanOrEqual(ids.length)

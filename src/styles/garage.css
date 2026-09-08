@@ -120,9 +120,18 @@
   .thing__outline,.thing__lift{transition:none}
 }
 
+/* Touched, but there is nothing behind it yet: the thing shifts a couple of
+   pixels and settles, the way a locked handle does. No message, no marker. */
+.thing.is-rattling{animation:nudge 460ms ease}
+@keyframes nudge{
+  20%{transform:translateX(-2px)}
+  45%{transform:translateX(2px)}
+  70%{transform:translateX(-1px)}
+}
+
 @media (prefers-reduced-motion:reduce){
   .thing{transition:none}
-  .thing--secret-door.is-rattling{animation:none}
+  .thing.is-rattling{animation:none}
 }
 
 /* ── First visit, touch only ───────────────────────────────────────────────
