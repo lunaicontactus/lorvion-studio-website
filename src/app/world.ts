@@ -86,8 +86,17 @@ export function mountWorld(): () => void {
   }
 
   const interaction = new Interaction({
-    focus: (id) => garage?.focusObject(id),
-    restore: () => garage?.restoreCamera(),
+    focus: (id) => {
+      garage?.focusObject(id)
+      // The visitor comes first: whoever is standing at that thing moves off,
+      // and nobody starts a new errand while it is open.
+      garage?.npc?.yieldTo(id)
+      garage?.npc?.setCalm(true)
+    },
+    restore: () => {
+      garage?.restoreCamera()
+      garage?.npc?.setCalm(false)
+    },
     open: (id) => {
       const obj = objectById(id)
       if (obj) interfaceFor(obj)

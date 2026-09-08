@@ -108,6 +108,36 @@
   .thing.is-pressed .thing__lift{opacity:1}
 }
 
+/* ── Whoever is in the room ────────────────────────────────────────────── */
+/* Positioned by the feet, in world units, inside the room — so the camera
+   carries it and no code has to think about the viewport. It never takes a
+   click: the things on the wall behind it must stay reachable. */
+.npc{
+  position:absolute;
+  left:0;top:0;
+  pointer-events:none;
+  will-change:transform;
+}
+.npc__art{
+  display:block;
+  width:auto;
+  /* Height is set in world units by the scene; the transform hangs the sprite
+     above its standing point, so the element's position is the feet. */
+  transform-origin:50% 100%;
+  filter:drop-shadow(0 3px 5px rgba(30,20,12,.34));
+}
+
+/* Development only, behind ?npc=debug. Never on for a visitor. */
+.npc__debug{
+  position:absolute;left:0;top:8px;margin:0;
+  font:600 11px/1 var(--mono);color:#fff;white-space:nowrap;
+  text-shadow:0 1px 2px #000;
+}
+.npc__waypoint{
+  position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;
+  background:rgba(255,90,90,.9);pointer-events:none;z-index:700;
+}
+
 /* Placed furniture — only for things the painting does not contain. */
 .thing__art{
   position:absolute;inset:0;

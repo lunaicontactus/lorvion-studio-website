@@ -18,9 +18,13 @@ import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
 import { audio } from '@/systems/audio'
 import { log } from '@/systems/log'
+import { mountNpc, npcAllowed, seededRandom, type NpcHandle } from '@/scenes/npc'
+import { CHARACTERS } from '@/data/characters'
 import type { WorldLayout, WorldObject } from '@/types/world'
 
 export interface GarageHandle {
+  /** The one dokkaebi in the room, if this visit has one. */
+  readonly npc: NpcHandle | null
   /** Stop reacting while a panel is open, so the room does not slide behind it. */
   setPaused(v: boolean): void
   /** Fast travel: put an object in the middle of the view. */
@@ -72,6 +76,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     timers.add(t)
   }
   const camera = new Camera(motion.reduced ? 1 : 0.16)
+  let npc: NpcHandle | null = null
   /** Where the visitor was looking before an object took the camera. */
   let parked: { x: number; y: number } | null = null
   let world: WorldLayout = worldFor(false)
@@ -186,6 +191,25 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
 
     // The painted window already has its own night sky and moon; a canvas over
     // it only added drifting light where the artwork wanted none.
+    // One dokkaebi, built with the room so it lives in world space and the
+    // camera carries it. Rebuilt with the room, so turning the phone cannot
+    // leave a second one behind.
+    npc?.destroy()
+    npc = null
+    if (npcAllowed()) {
+      const who = CHARACTERS.find((c) => c.id === 'poko') ?? CHARACTERS[0]
+      if (who) {
+        // ?npc=debug draws the waypoints; ?npcseed=N pins the route so a test
+        // can assert on it. Neither does anything unless it is asked for.
+        const params = new URLSearchParams(location.search)
+        const seed = Number(params.get('npcseed'))
+        npc = mountNpc(roomEl, who, world.height > world.width, {
+          debug: params.get('npc') === 'debug',
+          ...(Number.isFinite(seed) && seed > 0 ? { random: seededRandom(seed) } : {}),
+        })
+      }
+    }
+
     built = true
   }
 
@@ -425,7 +449,12 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     get world(): WorldLayout {
       return world
     },
+    get npc(): NpcHandle | null {
+      return npc
+    },
     destroy(): void {
+      npc?.destroy()
+      npc = null
       for (const t of timers) clearTimeout(t)
       timers.clear()
       for (const fn of off) fn()
