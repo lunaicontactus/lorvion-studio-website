@@ -29,14 +29,16 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     // The outline is geometry, and geometry is where engines disagree; the
     // camera tests stay on one engine because they are about input, not paint.
+    // What the first frame shows is the other cross-engine question — the
+    // entrance plate is preloaded per orientation, and engines pick differently.
     {
       name: 'webkit',
-      testMatch: 'outline.spec.ts',
+      testMatch: /(outline|first-paint)\.spec\.ts/,
       use: { ...devices['Desktop Safari'] },
     },
     {
       name: 'firefox',
-      testMatch: 'outline.spec.ts',
+      testMatch: /(outline|first-paint)\.spec\.ts/,
       use: { ...devices['Desktop Firefox'] },
     },
   ],

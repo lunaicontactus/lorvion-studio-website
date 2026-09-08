@@ -8,6 +8,14 @@
 <link rel="icon" href="/assets/images/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
+
+<!-- The entrance is the first thing on screen, so its plate is fetched before
+     the module that arranges it. One per orientation, matching the <picture>
+     below exactly; the browser downloads only the one it will use. -->
+<link rel="preload" as="image" href="/assets/images/alley/alley_base_desktop.webp"
+      type="image/webp" media="(orientation:landscape)" fetchpriority="high">
+<link rel="preload" as="image" href="/assets/images/alley/alley_base_mobile.webp"
+      type="image/webp" media="(orientation:portrait)" fetchpriority="high">
 <script type="module" src="/src/main.ts"></script>
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://eungarage.com/assets/images/og-image.jpg">
@@ -22,18 +30,6 @@
 <meta property="og:description" content="Emotion. Character. Worlds beyond the ordinary.">
 </head>
 <body class="loading page-cozy page-garage">
-
-<!-- Opening curtain. STEP 2 replaces the artwork with the alley shutter. -->
-<div id="intro" class="intro">
-  <div class="intro__curtain" aria-hidden="true">
-    <div class="intro__branding">
-      <img class="intro__art" src="/assets/images/brand/eungarage_planet_garage_symbol_v03.png"
-           alt="" width="467" height="344" fetchpriority="high" decoding="async">
-    </div>
-    <span class="intro__light" aria-hidden="true"></span>
-  </div>
-  <button id="introSkip" class="intro__skip" type="button" aria-label="오프닝 건너뛰기">SKIP</button>
-</div>
 
 <div class="noise"></div>
 <nav class="site-nav">

@@ -15,7 +15,6 @@ import { motion } from '@/systems/motion'
 import { mountNav } from '@/ui/nav'
 import { mountReveal } from '@/ui/reveal'
 import { mountSoundToggle } from '@/ui/soundToggle'
-import { mountIntro } from '@/ui/intro'
 import { mountWorld } from '@/app/world'
 import { mountFallback } from '@/ui/fallback'
 
@@ -65,7 +64,6 @@ export function boot(): Teardown {
     guard('fallback', () => mountFallback()),
     guard('reveal', () => mountReveal()),
     guard('sound-toggle', () => mountSoundToggle()),
-    guard('intro', () => mountIntro()),
   )
 
   const offPhase = clock.subscribe((p) => {

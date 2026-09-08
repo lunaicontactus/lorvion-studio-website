@@ -33,10 +33,9 @@ img{display:block;max-width:100%}
   border-radius:4px;
 }
 
-/* Body scroll locks. Two separate reasons, two separate classes, so one
-   unlocking cannot silently undo the other. */
-body.is-nav-open,
-body.is-intro-locked{overflow:hidden}
+/* The nav menu is the only thing that locks the body; the entrance page is
+   already unscrollable through body.page-garage. */
+body.is-nav-open{overflow:hidden}
 
 /* An image that failed to load gets a soft placeholder instead of a torn icon
    or a hole that still swallows clicks. */

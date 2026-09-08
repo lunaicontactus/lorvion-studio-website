@@ -20,8 +20,6 @@
 .cta-box{border:1px solid var(--line);border-radius:22px;padding:30px;margin-top:35px;background:linear-gradient(135deg,rgba(120,132,160,.07),rgba(255,255,255,.02))}
 .cta-button{display:inline-flex;padding:13px 18px;border-radius:99px;background:#fff;color:#07080d;font-weight:650;margin-top:14px}
 
-/* ── Garage-door opening intro (symbol only) ── */
-
 /* ── Fallback pages: the same content the room opens, as plain pages ────── */
 .fb-games{display:grid;gap:26px;max-width:900px}
 .fb-game{

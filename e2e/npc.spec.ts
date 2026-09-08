@@ -23,8 +23,6 @@ async function enter(page: Page, query = ''): Promise<void> {
     }
   })
   await page.goto(`/${query}`, { waitUntil: 'load' })
-  const skip = page.locator('#introSkip')
-  if (await skip.count()) await skip.click().catch(() => undefined)
   await page.locator('[data-alley-enter]').click()
   await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
   await page.waitForTimeout(900)
@@ -163,8 +161,6 @@ test.describe('desktop', () => {
     await page.goto('/games.html', { waitUntil: 'load' })
     await page.goBack()
     await page.waitForTimeout(500)
-    const skip = page.locator('#introSkip')
-    if (await skip.count()) await skip.click().catch(() => undefined)
     await page.locator('[data-alley-enter]').click()
     await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
     await page.waitForTimeout(900)

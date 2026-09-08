@@ -38,8 +38,6 @@ async function enter(page: Page): Promise<void> {
     }
   })
   await page.goto('/', { waitUntil: 'load' })
-  const skip = page.locator('#introSkip')
-  if (await skip.count()) await skip.click().catch(() => undefined)
   await page.locator('[data-alley-enter]').click()
   await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
   await page.waitForTimeout(900)

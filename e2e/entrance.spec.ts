@@ -27,10 +27,6 @@ for (const vp of [
         }
       })
       await page.goto('/', { waitUntil: 'load' })
-      // Past the opening curtain first: what is being timed below is the door,
-      // not the title card in front of it.
-      const skip = page.locator('#introSkip')
-      if (await skip.count()) await skip.click().catch(() => undefined)
       await page.waitForSelector('[data-alley-prop]', { state: 'visible' })
       await page.waitForTimeout(800)
 
@@ -100,7 +96,8 @@ test('the pages that hold the same content still work on their own', async ({ pa
   await page.goto('/games.html', { waitUntil: 'load' })
   await expect(page.locator('.fb-game')).toHaveCount(4)
   await expect(page.locator('body')).toContainText('LUNAI')
-  // The opening curtain must not cover a page that merely writes class="intro".
+  // `.intro` on these pages is a lead paragraph. It must stay one — a bare
+  // `.intro` rule once turned it into a full-screen box.
   expect(
     await page.evaluate(() => getComputedStyle(document.querySelector('main p.intro')!).position),
   ).toBe('static')
