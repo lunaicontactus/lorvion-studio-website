@@ -35,12 +35,12 @@ export const FOCUS_MS = 320
 /**
  * How long the interface is given to leave before the camera goes back.
  *
- * Longer than the panel's own 320ms exit on purpose: the room must not accept
- * the next thing until the last one is actually gone from the page. Anything
- * shorter and "the panel is hidden" stops meaning "the room is ready", which
- * is exactly the gap a fast visitor falls into.
+ * Shorter than the panel's own 320ms exit on purpose, so the room is taking
+ * instructions again by the time the last panel has finished disappearing.
+ * The other way round leaves a window where the panel looks gone and the room
+ * still refuses to open the next thing.
  */
-export const CLOSE_MS = 340
+export const CLOSE_MS = 200
 
 export class Interaction {
   #state: GarageState = 'GARAGE_IDLE'
