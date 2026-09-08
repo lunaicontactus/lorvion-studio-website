@@ -157,3 +157,50 @@ test('a deep link still lands on the entrance and opens its thing after ENTER', 
   await expect(page.locator('[data-crt]')).toBeVisible({ timeout: 8000 })
   await expect(page.locator('.hub__row')).toHaveCount(4, { timeout: 8000 })
 })
+
+test('the door is never shown open before the shutter arrives', async ({ page }) => {
+  // The base plate has the doorway painted open; the shutter is a separate
+  // image on top of it. Held back, the entrance used to paint the open
+  // doorway first and drop the shutter in afterwards — a door that shuts
+  // itself while you look at it.
+  await page.route('**/alley_shutter.webp', async (route) => {
+    await new Promise((r) => setTimeout(r, 900))
+    await route.continue()
+  })
+  await page.goto('/', { waitUntil: 'commit' })
+
+  const readings: string[] = []
+  for (let i = 0; i < 14; i++) {
+    await page.waitForTimeout(90)
+    const r = await page.evaluate(() => {
+      const plate = document.querySelector('[data-alley-plate]')
+      const shutter = document.querySelector<HTMLImageElement>('[data-alley-shutter-img]')
+      if (!plate || !shutter) return 'not built'
+      return `${Number(getComputedStyle(plate).opacity) > 0.02 ? 'shown' : 'held'}:${
+        shutter.complete ? 'shutter' : 'no-shutter'
+      }`
+    })
+    readings.push(r)
+  }
+  // Never shown while the shutter is still missing.
+  expect(readings.filter((r) => r === 'shown:no-shutter')).toEqual([])
+  // And it does appear.
+  await expect(page.locator('[data-alley]')).toHaveClass(/alley--dressed/, { timeout: 4000 })
+  await expect(page.locator('[data-alley-base]')).toBeVisible()
+})
+
+test('a shutter that never arrives does not leave the entrance blank', async ({ page }) => {
+  await page.route('**/alley_shutter.webp', (route) => route.abort())
+  await page.goto('/', { waitUntil: 'load' })
+  await expect(page.locator('[data-alley]')).toHaveClass(/alley--dressed/, { timeout: 4000 })
+  await expect
+    .poll(
+      async () =>
+        await page
+          .locator('[data-alley-plate]')
+          .evaluate((el) => Number(getComputedStyle(el).opacity)),
+      { timeout: 3000 },
+    )
+    .toBe(1)
+  await expect(page.locator('[data-alley-enter]')).toBeVisible()
+})

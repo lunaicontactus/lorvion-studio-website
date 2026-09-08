@@ -153,16 +153,35 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
     ro.observe(scene)
     off.push(() => ro.disconnect())
   }
-  if (baseImg) {
-    const onBase = (): void => layout()
-    baseImg.addEventListener('load', onBase)
-    baseImg.addEventListener('error', onBase)
-    off.push(() => {
-      baseImg.removeEventListener('load', onBase)
-      baseImg.removeEventListener('error', onBase)
-    })
-    if (baseImg.complete) layout()
+  // ── Dressing ─────────────────────────────────────────────────────────────
+  // The lane appears when its two big images are here, together. The base
+  // paints an open doorway that the shutter covers, so showing the base alone
+  // is a door that opens and then shuts itself. A failed or slow image must
+  // never leave the entrance blank, so the deadline shows whatever arrived.
+  const DRESS_DEADLINE_MS = 1600
+  const shutterImg = scene.querySelector<HTMLImageElement>('[data-alley-shutter-img]')
+  const plateArt = [baseImg, shutterImg].filter((i): i is HTMLImageElement => !!i)
+  let dressed = false
+  const dress = (): void => {
+    if (dressed) return
+    dressed = true
+    layout()
+    scene.classList.add('alley--dressed')
   }
+  const dressWhenReady = (): void => {
+    layout()
+    if (plateArt.every((img) => img.complete)) dress()
+  }
+  for (const img of plateArt) {
+    img.addEventListener('load', dressWhenReady)
+    img.addEventListener('error', dressWhenReady)
+    off.push(() => {
+      img.removeEventListener('load', dressWhenReady)
+      img.removeEventListener('error', dressWhenReady)
+    })
+  }
+  dressWhenReady()
+  later(dress, DRESS_DEADLINE_MS)
 
   // ── Entrance ─────────────────────────────────────────────────────────────
   let finished = false

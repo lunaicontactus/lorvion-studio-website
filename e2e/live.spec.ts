@@ -39,7 +39,10 @@ for (const vp of [{ w: 1440, h: 900 }, { w: 1920, h: 1080 }]) {
     await page.waitForTimeout(1500)
     const a = await audit(page)
     console.log(vp.w, JSON.stringify(a))
-    for (const k of ['jumpAttr','jumpBar','npc','hint','face','silhouette'] as const) expect(a[k]).toBe(0)
+    for (const k of ['jumpAttr','jumpBar','hint','face','silhouette'] as const) expect(a[k]).toBe(0)
+    // One dokkaebi works here, and only one. This read `toBe(0)` from
+    // before there was anybody in the room.
+    expect(a.npc).toBe(1)
     expect(a.circles).toEqual([])
     expect(a.jumpWordsInGarage).toEqual([])
     expect(a.panelHidden).toBe(true)

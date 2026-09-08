@@ -16,6 +16,8 @@
       type="image/webp" media="(orientation:landscape)" fetchpriority="high">
 <link rel="preload" as="image" href="/assets/images/alley/alley_base_mobile.webp"
       type="image/webp" media="(orientation:portrait)" fetchpriority="high">
+<link rel="preload" as="image" href="/assets/images/alley/alley_shutter.webp"
+      type="image/webp" fetchpriority="high">
 <script type="module" src="/src/main.ts"></script>
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://eungarage.com/assets/images/og-image.jpg">
@@ -74,11 +76,12 @@
              roll up into it. Both are slices of the same image. -->
         <div class="alley__cutout alley__shutter" data-alley-layer="shutter">
           <div class="alley__slats-clip">
-            <img class="alley__slats" src="/assets/images/alley/alley_shutter.webp"
-                 width="1100" height="1211" alt="" decoding="async">
+            <img class="alley__slats" data-alley-shutter-img
+                 src="/assets/images/alley/alley_shutter.webp"
+                 width="1100" height="1211" alt="" fetchpriority="high" decoding="async">
           </div>
           <img class="alley__drum" src="/assets/images/alley/alley_shutter.webp"
-               width="1100" height="1211" alt="" decoding="async">
+               width="1100" height="1211" alt="" fetchpriority="high" decoding="async">
         </div>
         <img class="alley__cutout alley__sign" data-alley-layer="sign"
              src="/assets/images/alley/alley_sign.webp"
