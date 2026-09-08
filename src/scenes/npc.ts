@@ -125,7 +125,9 @@ export function mountNpc(
   let held: NpcState | null = null
   let wait = 0
   let target: Waypoint | null = null
-  let lastObject: string | null = null
+  /** The last two things used. Remembering one is not enough: it lets the
+   *  figure bounce between two neighbours, which reads as a machine. */
+  let recent: string[] = []
   /** The thing the visitor has open, which is not ours to stand at. */
   let avoid: string | null = null
   /** True while the visitor has something open: no new errands. */
@@ -153,9 +155,15 @@ export function mountNpc(
     // where every trip has a purpose reads as a machine, not a person.
     const wantObject = rng() < 0.72 && objects.length > 0
     const pool = wantObject ? objects : floors
-    const fresh = pool.filter((p) => p.id !== target?.id && p.objectId !== lastObject)
+    // Never the thing just used; the one before that is merely unlikely.
+    // Barring both would leave a single legal choice and turn three objects
+    // into a fixed circuit, which is the pattern this is trying to avoid.
+    const fresh = pool.filter((p) => p.id !== target?.id && p.objectId !== recent[0])
     const from = fresh.length > 0 ? fresh : pool
-    const weights = from.map((p) => 1 / (1 + Math.hypot(p.x - x, p.y - y) / 420))
+    const weights = from.map((p) => {
+      const near = 1 / (1 + Math.hypot(p.x - x, p.y - y) / 420)
+      return p.objectId !== undefined && p.objectId === recent[1] ? near * 0.35 : near
+    })
     const total = weights.reduce((a, w) => a + w, 0)
     let pick = rng() * total
     for (let i = 0; i < from.length; i++) {
@@ -204,7 +212,7 @@ export function mountNpc(
           y = target.y
           place()
           if (target.objectId) {
-            lastObject = target.objectId
+            recent = [target.objectId, ...recent].slice(0, 2)
             show(target.facing === 'back' ? 'back' : 'front')
             go('INTERACT', between(INTERACT_MS))
           } else {
