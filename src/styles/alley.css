@@ -40,6 +40,9 @@
   opacity:0;
 }
 .alley--dressed .alley__plate{opacity:1}
+/* The way in appears with the lane, not before it: a button floating on
+   the bare ground while the art loads is a half-built page. */
+.alley:not(.alley--dressed) .alley__enter{opacity:0;pointer-events:none}
 .alley__plate picture{position:absolute;inset:0;display:block}
 .alley__base{width:100%;height:100%;display:block;user-select:none}
 
