@@ -204,3 +204,18 @@ test('a shutter that never arrives does not leave the entrance blank', async ({ 
     .toBe(1)
   await expect(page.locator('[data-alley-enter]')).toBeVisible()
 })
+
+test('the room is already here when the shutter goes up', async ({ page }) => {
+  // The painted room is the biggest file on the site. Fetched only at ENTER,
+  // it left a brown space with one dokkaebi in it for about a second.
+  const asked: number[] = []
+  const t0 = Date.now()
+  page.on('request', (r) => {
+    if (/room_(landscape|portrait)\.webp/.test(r.url())) asked.push(Date.now() - t0)
+  })
+  await page.goto('/', { waitUntil: 'load' })
+  await expect(page.locator('[data-alley]')).toHaveClass(/alley--dressed/)
+  // Asked for while the visitor is still outside, and only once.
+  await expect.poll(() => asked.length, { timeout: 5000 }).toBe(1)
+  await expect(page.locator('[data-garage]')).toBeHidden()
+})

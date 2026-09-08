@@ -15,7 +15,7 @@ import { mountGarage, type GarageHandle } from '@/scenes/garage'
 import { Panels } from '@/ui/panels'
 import { Interaction } from '@/systems/interaction'
 import { PROJECTS } from '@/data/projects'
-import { worldFor } from '@/data/world'
+import { ROOM_ART, worldFor } from '@/data/world'
 import { audio } from '@/systems/audio'
 import { motion } from '@/systems/motion'
 import { log } from '@/systems/log'
@@ -207,6 +207,22 @@ export function mountWorld(): () => void {
     link.addEventListener('click', onClick)
     off.push(() => link.removeEventListener('click', onClick))
   }
+
+  // ── The room, fetched before it is asked for ─────────────────────────────
+  // The painted room is the biggest file on the site, and it used to start
+  // downloading only once the shutter was already up: for about a second
+  // after ENTER the room was a brown space with one dokkaebi standing in it.
+  // It is fetched quietly while the visitor is still outside, once the
+  // entrance has had the network to itself.
+  const warmRoom = (): void => {
+    const portrait = matchMedia('(orientation:portrait)').matches
+    const img = new Image()
+    img.decoding = 'async'
+    img.setAttribute('fetchpriority', 'low')
+    img.src = portrait ? ROOM_ART.portrait.src : ROOM_ART.landscape.src
+  }
+  const warmTimer = setTimeout(warmRoom, 900)
+  off.push(() => clearTimeout(warmTimer))
 
   off.push(
     mountAlley(document, {
