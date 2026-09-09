@@ -44,6 +44,15 @@ async function view(page: Page): Promise<string> {
   })
 }
 
+/** `action:direction` from the frame on screen, e.g. "walk:left". */
+async function pose(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const img = document.querySelector('[data-npc] img') as HTMLImageElement
+    const m = /\/dokkaebi\/\w+\/(\w+)\/(\w+)\//.exec(img.src)
+    return m ? `${m[1]}:${m[2]}` : 'still'
+  })
+}
+
 test.describe('desktop', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
 
@@ -62,21 +71,55 @@ test.describe('desktop', () => {
     const seen: string[] = []
     let travelled = 0
     let previous = await feet(page)
-    for (let i = 0; i < 26; i++) {
+    for (let i = 0; i < 40; i++) {
       await page.waitForTimeout(1200)
       const now = await feet(page)
       travelled += Math.hypot(now.x - previous.x, now.y - previous.y)
       previous = now
-      seen.push(await view(page))
+      seen.push(await pose(page))
     }
-    // It went somewhere.
+    // It went somewhere. The pace is set by the walk cycle — 100 world units
+    // a second — so this is about a third of the room's width.
     expect(travelled).toBeGreaterThan(400)
-    // Facing away at something it is using, and towards us when it is not.
-    expect(seen.some((s) => s.includes('side'))).toBe(true)
-    expect(seen.some((s) => s.includes('back'))).toBe(true)
+    // Walking towards something, and facing it once there.
+    expect(seen.some((s) => s.startsWith('walk:'))).toBe(true)
+    expect(seen.some((s) => s === 'idle:back')).toBe(true)
     // And most of the time it is doing nothing at all.
-    const still = seen.filter((s) => !s.includes('side')).length
+    const still = seen.filter((s) => s.startsWith('idle:')).length
     expect(still / seen.length).toBeGreaterThan(0.4)
+  })
+
+  test('the frames it plays are real files, and the walk actually cycles', async ({ page }) => {
+    await enter(page)
+    const frames = await page.evaluate(async () => {
+      const img = document.querySelector('[data-npc] img') as HTMLImageElement
+      const seen = new Set<string>()
+      const t0 = Date.now()
+      while (Date.now() - t0 < 6000) {
+        seen.add(img.getAttribute('src') ?? '')
+        await new Promise((r) => setTimeout(r, 60))
+      }
+      return [...seen]
+    })
+    // A breath is four frames; standing on one of them is a still image.
+    expect(frames.length).toBeGreaterThan(1)
+    for (const f of frames) {
+      const res = await page.request.get(f)
+      expect(res.status(), f).toBe(200)
+    }
+  })
+
+  test('touching it stops it and turns it to face the visitor', async ({ page }) => {
+    await enter(page)
+    const hit = page.locator('.npc__hit')
+    await expect(hit).toHaveCount(1)
+    // Big enough to hit on a phone, and the same floor the room's things use.
+    const box = await hit.boundingBox()
+    expect(box!.width).toBeGreaterThanOrEqual(44)
+    expect(box!.height).toBeGreaterThanOrEqual(44)
+    await hit.click({ force: true })
+    await page.waitForTimeout(300)
+    expect(await pose(page)).toBe('idle:front')
   })
 
   test('it stands at the things it uses, not on them', async ({ page }) => {
@@ -207,14 +250,31 @@ test.describe('phone', () => {
   })
 })
 
-test('a visitor who does not want motion is not given a walking figure', async ({ browser }) => {
+test('a visitor who does not want motion gets somebody standing still', async ({ browser }) => {
+  // An empty room is not the same courtesy as a quiet one: the dokkaebi is
+  // there, and simply does not pace or breathe.
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     reducedMotion: 'reduce',
   })
   const page = await context.newPage()
   await enter(page)
-  await expect(page.locator(NPC)).toHaveCount(0)
+  await expect(page.locator(NPC)).toHaveCount(1)
+  const settled = await page.evaluate(async () => {
+    const el = document.querySelector('[data-npc]') as HTMLElement
+    const img = el.querySelector('img') as HTMLImageElement
+    const frames = new Set<string>()
+    const places = new Set<string>()
+    const t0 = Date.now()
+    while (Date.now() - t0 < 4000) {
+      frames.add(img.getAttribute('src') ?? '')
+      places.add(el.style.transform)
+      await new Promise((r) => setTimeout(r, 100))
+    }
+    return { frames: frames.size, places: places.size }
+  })
+  expect(settled.frames).toBe(1)
+  expect(settled.places).toBe(1)
   // And the room is otherwise complete.
   await expect(page.locator('.thing')).toHaveCount(11)
   await context.close()

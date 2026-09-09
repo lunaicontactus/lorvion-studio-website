@@ -19,3 +19,4 @@ test-results/
 # the parameters in source/GENERATION_LOG.md instead of committing these.
 assets/models/dokkaebi/source/*.glb
 assets/models/dokkaebi/source/*_base_color.png
+scripts/_*.mjs

@@ -29,8 +29,15 @@ export interface NavGraph {
   readonly points: readonly Waypoint[]
   /** How tall a dokkaebi stands here, in world units. */
   readonly height: number
-  /** World units per second. Same in both, so the pace reads the same on
-   *  a phone and on a desk. */
+  /**
+   * World units per second. Same in both, so the pace reads the same on a
+   * phone and on a desk.
+   *
+   * Set from the walk cycle, not from taste: the rendered stride covers 89
+   * world units per cycle, and eight frames at nine a second make that cycle
+   * 0.889s long. 100 units a second is what makes the feet agree with the
+   * floor. Changing one of these three numbers means re-deriving the others.
+   */
   readonly speed: number
 }
 
@@ -41,7 +48,7 @@ export interface NavGraph {
 const LANDSCAPE: NavGraph = {
   floor: { top: 990, bottom: 1070 },
   height: 210,
-  speed: 150,
+  speed: 100,
   points: [
     { id: 'left-floor', x: 1268, y: 1030 },
     { id: 'pc-front', x: 1578, y: 1012, objectId: 'pc', facing: 'back' },
@@ -60,7 +67,7 @@ const LANDSCAPE: NavGraph = {
 const PORTRAIT: NavGraph = {
   floor: { top: 1580, bottom: 1660 },
   height: 165,
-  speed: 150,
+  speed: 100,
   points: [
     { id: 'left-floor', x: 250, y: 1630 },
     { id: 'pc-front', x: 518, y: 1612, objectId: 'pc', facing: 'back' },

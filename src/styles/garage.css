@@ -191,3 +191,25 @@
   .garage__hint{transition:opacity 200ms ease}
   .garage__hint.is-in{transform:translate(-50%,0)}
 }
+
+/* The only part of a dokkaebi that takes a pointer. The frame is wide enough
+   to hold a turning character, and a click in those empty corners belongs to
+   whatever is painted behind. Anchored to the feet like the sprite itself. */
+.npc__hit{
+  position:absolute;
+  left:0;bottom:0;
+  transform:translate(-50%,0);
+  padding:0;border:0;background:none;
+  pointer-events:auto;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.npc__hit:focus-visible{
+  outline:2px solid var(--silver);
+  outline-offset:2px;
+  border-radius:8px;
+}
+/* Standing still is the whole animation when motion is reduced. */
+@media (prefers-reduced-motion:reduce){
+  .npc__art{transition:none}
+}

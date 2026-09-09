@@ -17,9 +17,11 @@ import { OUTLINE_PATHS, HIT_PADDING, OUTLINE_OFFSET } from '@/data/outlines'
 import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
 import { audio } from '@/systems/audio'
+import { save } from '@/systems/storage'
 import { log } from '@/systems/log'
 import { mountNpc, npcAllowed, seededRandom, type NpcHandle } from '@/scenes/npc'
 import { CHARACTERS } from '@/data/characters'
+import { spritesFor } from '@/data/sprites'
 import type { WorldLayout, WorldObject } from '@/types/world'
 
 export interface GarageHandle {
@@ -197,7 +199,13 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     npc?.destroy()
     npc = null
     if (npcAllowed()) {
-      const who = CHARACTERS.find((c) => c.id === 'poko') ?? CHARACTERS[0]
+      // Whoever has rendered frames walks; the rest are still turnarounds and
+      // would stand about instead. As their frames land they become eligible
+      // here without this line changing.
+      const who =
+        CHARACTERS.find((c) => spritesFor(c.id)) ??
+        CHARACTERS.find((c) => c.id === 'poko') ??
+        CHARACTERS[0]
       if (who) {
         // ?npc=debug draws the waypoints; ?npcseed=N pins the route so a test
         // can assert on it. Neither does anything unless it is asked for.
@@ -205,6 +213,16 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         const seed = Number(params.get('npcseed'))
         npc = mountNpc(roomEl, who, world.height > world.width, {
           debug: params.get('npc') === 'debug',
+          scale,
+          // Touching one stops it and makes it look up; the room's part is to
+          // acknowledge that quietly. No bubble, no name tag, no panel — the
+          // dokkaebi are not another menu.
+          onTouch: (c) => {
+            audio.play('click', 0.22)
+            save.update((d) => {
+              if (!d.discoveredCharacters.includes(c.id)) d.discoveredCharacters.push(c.id)
+            })
+          },
           ...(Number.isFinite(seed) && seed > 0 ? { random: seededRandom(seed) } : {}),
         })
       }

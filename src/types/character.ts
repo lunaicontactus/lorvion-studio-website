@@ -67,3 +67,22 @@ export interface CharacterConfig {
   /** Accent used for the DEX card and focus ring. */
   readonly accent: string
 }
+
+/** Which way a sprite faces. Four, because that is what the render gives. */
+export type SpriteDirection = 'front' | 'back' | 'left' | 'right'
+
+/** What it is doing. Only what real frames exist for. */
+export type SpriteAction = 'idle' | 'walk'
+
+export interface SpriteAnimation {
+  /** Absolute URLs, in play order. Ping-pong is expressed by repeating
+   *  frames here rather than by a mode flag nobody can see in the data. */
+  readonly frames: readonly string[]
+  readonly fps: number
+  readonly loop: boolean
+}
+
+/** Every sequence one character has. */
+export type SpriteSet = Readonly<
+  Record<SpriteAction, Readonly<Record<SpriteDirection, SpriteAnimation>>>
+>

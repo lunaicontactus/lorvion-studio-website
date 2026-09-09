@@ -15,8 +15,11 @@ MOMO still reads paler than the hand-drawn crew beside her. That is not the
 light: her own artwork is paler. Matching them would mean repainting the
 character, which is a different decision from lighting her.
 
-Frames keep the master's fixed floor row after resizing, so the whole set
-still shares one anchor once it is on the page.
+Frames keep the master's fixed floor row after resizing, and every frame is
+cropped to ONE horizontal window shared by the whole character rather than to
+its own bounding box. Per-frame cropping moves the body axis by up to 10px
+between frames of a walk, and a sprite anchored at 50% of its own width then
+twitches sideways on every step.
 
     python3 scripts/export_sprites.py [--height 420]
 """
@@ -34,14 +37,23 @@ FLOOR_ROW = 604          # every master puts the feet here
 HEIGHT = 420             # 2x the 210px the room draws
 
 
-def grade(img, height):
+def window(paths):
+    """The horizontal span every frame of this character is cropped to: the
+    union of them all, centred on the axis they were rendered about."""
+    lo, hi = None, None
+    for p in paths:
+        b = Image.open(p).split()[3].getbbox()
+        lo = b[0] if lo is None else min(lo, b[0])
+        hi = b[2] if hi is None else max(hi, b[2])
+    centre = Image.open(paths[0]).width / 2
+    half = int(max(centre - lo, hi - centre)) + 2
+    return int(centre - half), int(centre + half)
+
+
+def grade(img, height, x0, x1):
     a = np.asarray(img).astype(np.float32)
     a[..., :3] = np.clip(a[..., :3] * ROOM_LIGHT, 0, 255)
-    out = Image.fromarray(a.astype(np.uint8))
-    # Crop to the floor row so the anchor survives the resize, and trim the
-    # empty sides that only exist to hold a turning character.
-    box = out.split()[3].getbbox()
-    out = out.crop((box[0], 0, box[2], FLOOR_ROW))
+    out = Image.fromarray(a.astype(np.uint8)).crop((x0, 0, x1, FLOOR_ROW))
     s = height / FLOOR_ROW
     return out.resize((max(1, round(out.width * s)), round(out.height * s)), Image.LANCZOS)
 
@@ -50,12 +62,15 @@ def main():
     height = HEIGHT
     if '--height' in sys.argv:
         height = int(sys.argv[sys.argv.index('--height') + 1])
+    srcs = sorted(SRC.rglob('*.png'))
+    x0, x1 = window(srcs)
+    print(f'shared window x {x0}-{x1} ({x1 - x0}px of a {Image.open(srcs[0]).width}px frame)')
     n = total = 0
-    for src in sorted(SRC.rglob('*.png')):
+    for src in srcs:
         rel = src.relative_to(SRC)
         dst = (DST / rel).with_suffix('.webp')
         dst.parent.mkdir(parents=True, exist_ok=True)
-        grade(Image.open(src), height).save(dst, 'WEBP', quality=90, method=6)
+        grade(Image.open(src), height, x0, x1).save(dst, 'WEBP', quality=90, method=6)
         total += dst.stat().st_size
         n += 1
     print(f'{n} frames -> {DST}   {total / 1024:.0f}KB total, {total / 1024 / n:.0f}KB each')

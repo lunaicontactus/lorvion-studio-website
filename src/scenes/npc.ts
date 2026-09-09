@@ -11,17 +11,19 @@
  * - waypoints in world units, so the camera and the window are irrelevant;
  * - an injectable random source, so a test can make it walk a fixed route.
  *
- * The art is three still views per character — front, side, back — and there
- * is no walk cycle. So the walk is a side view that travels, and using
- * something against the wall is the back view. Nothing is bounced or
- * stretched to fake frames it does not have: a still figure that stands
- * correctly beats a smeared one that hops.
+ * Art comes in two grades and the room takes whichever a character has. A
+ * character with rendered frames (src/data/sprites.ts) walks and breathes; one
+ * with only the three-view turnaround gets the old behaviour — a travelling
+ * side view, and the back view for using something against the wall. Nothing
+ * is bounced or stretched to fake frames it does not have.
  */
 import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
 import { log } from '@/systems/log'
 import { navFor, objectPoints, type NavGraph, type Waypoint } from '@/data/navigation'
-import type { CharacterConfig } from '@/types/character'
+import { FIGURE_RATIO, HIT_BOX, allFrames, idleFrames, spritesFor } from '@/data/sprites'
+import { SpriteAnimator, preloadFrames } from '@/systems/spriteAnimator'
+import type { CharacterConfig, SpriteDirection } from '@/types/character'
 
 export type NpcState =
   | 'SPAWN'
@@ -36,6 +38,15 @@ export interface NpcOptions {
   readonly random?: () => number
   /** Debug overlay. Off unless asked for. */
   readonly debug?: boolean
+  /** Someone touched the dokkaebi. It has already stopped and looked up. */
+  readonly onTouch?: (character: CharacterConfig) => void
+  /**
+   * CSS pixels per world unit. The room is scaled by the camera, so a hit box
+   * sized in world units shrinks with it: at 360px wide a dokkaebi is 58 CSS
+   * px tall and its body would be a 25px target. Given the scale, the box can
+   * be grown to the 44px the rest of the room already guarantees.
+   */
+  readonly scale?: number
 }
 
 export interface NpcHandle {
@@ -62,6 +73,10 @@ const IDLE_MS = { min: 3000, max: 10000 }
 const INTERACT_MS = { min: 2000, max: 7000 }
 /** Under a fingertip of travel is not worth a walk. */
 const ARRIVED = 4
+/** The same floor every other hit area in this room stands on. */
+const MIN_TOUCH = 44
+/** Rendered frames are 284x420. */
+const FRAME_ASPECT = 284 / 420
 
 export function mountNpc(
   room: HTMLElement,
@@ -80,8 +95,23 @@ export function mountNpc(
   art.className = 'npc__art'
   art.alt = ''
   art.decoding = 'async'
-  art.src = character.art.front
   el.append(art)
+
+  const sprites = spritesFor(character.id)
+  const animator = sprites ? new SpriteAnimator(art) : null
+  if (!sprites) art.src = character.art.front
+
+  // The sprite is mostly empty: the frame is wide enough to hold a turning
+  // character, and clicks in those corners belong to the wall behind. So the
+  // only thing that takes a pointer is a box over the body.
+  let hit: HTMLButtonElement | null = null
+  if (sprites && opts.onTouch) {
+    hit = document.createElement('button')
+    hit.className = 'npc__hit'
+    hit.type = 'button'
+    hit.setAttribute('aria-label', character.name)
+    el.append(hit)
+  }
   room.append(el)
 
   let debugEl: HTMLElement | null = null
@@ -104,20 +134,59 @@ export function mountNpc(
   let y = 0
   let facingRight = true
   let view: 'front' | 'side' | 'back' = 'front'
+  /** Which rendered direction is showing. Kept when walking stops, so a
+   *  dokkaebi that halts mid-stride does not spin round to face the camera. */
+  let direction: SpriteDirection = 'front'
+
+  // Rendered frames run from the floor row up and carry headroom above the
+  // hair, so the frame is taller than the dokkaebi by a known ratio.
+  const frameHeight = sprites ? graph.height / FIGURE_RATIO : graph.height
 
   const place = (): void => {
     // Positioned by the feet: the sprite hangs above its own standing point.
     el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`
     el.style.zIndex = String(Math.min(699, 100 + Math.round(y / 8)))
-    art.style.height = `${graph.height}px`
-    const flip = view === 'side' && !facingRight ? ' scaleX(-1)' : ''
+    art.style.height = `${frameHeight}px`
+    // Real left and right frames exist, so nothing is mirrored at runtime.
+    const flip = !sprites && view === 'side' && !facingRight ? ' scaleX(-1)' : ''
     art.style.transform = `translate(-50%, -100%)${flip}`
+    if (hit) {
+      // The frame is taller than it is wide; HIT_BOX is a fraction of each.
+      const frameWidth = frameHeight * FRAME_ASPECT
+      const min = MIN_TOUCH / Math.max(opts.scale ?? 1, 0.01)
+      hit.style.width = `${Math.max(frameWidth * HIT_BOX.width, min)}px`
+      hit.style.height = `${Math.max(frameHeight * HIT_BOX.height, min)}px`
+    }
   }
 
+  /** The turnaround fallback, for a character with no rendered frames. */
   const show = (next: 'front' | 'side' | 'back'): void => {
-    if (view === next) return
+    if (sprites || view === next) return
     view = next
     art.src = character.art[next]
+  }
+
+  /** One place decides what is on screen: an action and a direction. */
+  const pose = (action: 'idle' | 'walk', next: SpriteDirection = direction): void => {
+    direction = next
+    if (!sprites || !animator) {
+      show(action === 'walk' ? 'side' : next === 'back' ? 'back' : 'front')
+      return
+    }
+    animator.play(`${action}:${next}`, sprites[action][next])
+  }
+
+  /**
+   * Which way a move is facing. Decided from the whole trip rather than the
+   * last frame's delta, and only allowed to change once the trip is longer
+   * than the threshold — a vector a few units long flips direction on noise,
+   * and a dokkaebi that shivers between left and right reads as broken.
+   */
+  const TURN_THRESHOLD = 12
+  const faceFor = (dx: number, dy: number): SpriteDirection => {
+    if (Math.abs(dx) < TURN_THRESHOLD && Math.abs(dy) < TURN_THRESHOLD) return direction
+    if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'right' : 'left'
+    return dy >= 0 ? 'front' : 'back'
   }
 
   // ── The machine ──────────────────────────────────────────────────────────
@@ -185,7 +254,9 @@ export function mountNpc(
         return
 
       case 'IDLE':
-        show('front')
+        // Whatever it was facing when it stopped. Turning to the camera on
+        // arrival is the tell that nobody is home behind the sprite.
+        pose('idle')
         if (calm) {
           wait = 500
           return
@@ -213,7 +284,8 @@ export function mountNpc(
           place()
           if (target.objectId) {
             recent = [target.objectId, ...recent].slice(0, 2)
-            show(target.facing === 'back' ? 'back' : 'front')
+            // Everything worth using is against the back wall.
+            pose('idle', target.facing === 'back' ? 'back' : 'front')
             go('INTERACT', between(INTERACT_MS))
           } else {
             go('IDLE', between(IDLE_MS))
@@ -225,14 +297,15 @@ export function mountNpc(
         x += dx * ratio
         y += dy * ratio
         facingRight = dx >= 0
-        show('side')
+        pose('walk', faceFor(dx, dy))
         place()
         return
       }
 
       case 'INTERACT':
         // Standing at the thing, facing it. There is no work animation to
-        // play, so it simply stays there, which is what a person mostly does.
+        // play, so it breathes there, which is what a person mostly does.
+        pose('idle')
         if (wait <= 0) go('IDLE', between(IDLE_MS))
         return
     }
@@ -242,15 +315,54 @@ export function mountNpc(
   const start = graph.points.find((p) => p.id === 'left-floor') ?? graph.points[0]!
   x = start.x
   y = start.y
-  show('front')
+  pose('idle', 'front')
   place()
   go('SPAWN', 800 + rng() * 1200)
+
+  // Standing still is what a visitor sees first, so those frames are fetched
+  // now and the walk follows once the room has finished arriving. Loading all
+  // 48 up front delays the room; loading a walk frame when it is already due
+  // on screen leaves a hole where the dokkaebi was.
+  const warm: ReturnType<typeof setTimeout>[] = []
+  if (sprites) {
+    // Standing is what a visitor sees first.
+    preloadFrames(idleFrames(sprites))
+    // Then the two directions this room actually walks in: the floor is a
+    // strip, so front and back walking barely happens.
+    warm.push(setTimeout(() => {
+      preloadFrames([...sprites.walk.left.frames, ...sprites.walk.right.frames])
+    }, 2000))
+    // The rest last, long after the room has settled.
+    warm.push(setTimeout(() => preloadFrames(allFrames(sprites)), 9000))
+  }
+
+  // Reduced motion still gets somebody in the room — standing, not pacing.
+  const still = motion.reduced
 
   const off = ticker.subscribe((info) => {
     // The ticker is already gated on visibility, so a hidden tab costs
     // nothing and time does not pile up into a teleport on return.
-    step(Math.min(info.delta, 64))
+    const dt = Math.min(info.delta, 64)
+    if (still) return
+    step(dt)
+    animator?.step(dt)
   }, 30)
+
+  let resume: ReturnType<typeof setTimeout> | null = null
+  const onHit = (e: Event): void => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (resume) clearTimeout(resume)
+    // Stop where it is, look up, and let the room decide what that means.
+    target = null
+    pose('idle', 'front')
+    go('IDLE', 2200)
+    opts.onTouch?.(character)
+    resume = setTimeout(() => {
+      resume = null
+    }, 2200)
+  }
+  hit?.addEventListener('click', onHit)
 
   log.debug('npc: mounted', character.id, portrait ? 'portrait' : 'landscape')
 
@@ -289,15 +401,22 @@ export function mountNpc(
     },
     destroy(): void {
       off()
+      for (const t of warm) clearTimeout(t)
+      if (resume) clearTimeout(resume)
+      hit?.removeEventListener('click', onHit)
       el.remove()
       for (const dot of room.querySelectorAll('.npc__waypoint')) dot.remove()
     },
   }
 }
 
-/** Reduced motion still gets a room with somebody in it, standing still. */
+/**
+ * Whether to put anybody in the room. Reduced motion no longer means an empty
+ * room: the dokkaebi is mounted and simply does not move, which is the
+ * difference between a quiet room and an abandoned one.
+ */
 export function npcAllowed(): boolean {
-  return !motion.reduced
+  return true
 }
 
 /**
