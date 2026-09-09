@@ -111,7 +111,7 @@ class Rig:
         v = np.clip((uv[:, 1] * (h - 1)).astype(np.int32), 0, h - 1)
         return self.atlas[v, u]
 
-    def frame(self, azimuth=0.0, lift=0.0, swell=1.0):
+    def frame(self, azimuth=0.0, lift=0.0, swell=1.0, verts=None, plant=True):
         """One frame. `lift` and `swell` are the only per-frame freedoms an
         unrigged mesh has: a rise off the floor, and a breath.
 
@@ -121,13 +121,22 @@ class Rig:
         an inside are scan-converted. Splatting everything leaves holes in the
         body; scan-converting everything spends a minute per frame.
         """
+        self.plant = plant
         ss, W, H = self.ss, self.w * self.ss, self.h * self.ss
         a = np.radians(azimuth)
         ca, sa = np.cos(a), np.sin(a)
-        p = self.V - self.axis
+        V = self.V if verts is None else verts
+        if verts is not None and self.plant:
+            # Lowest point onto the floor, horizontal centre back to the axis:
+            # the animation's own travel belongs to the room, not the sprite.
+            V = V.copy()
+            V[:, 1] += self.floor - float(V[:, 1].min())
+            V[:, 0] -= float(V[:, 0].mean()) - self.axis[0]
+            V[:, 2] -= float(V[:, 2].mean()) - self.axis[2]
+        p = V - self.axis
         x = p[:, 0] * ca + p[:, 2] * sa
         z = -p[:, 0] * sa + p[:, 2] * ca
-        y = (self.V[:, 1] - self.floor) * swell + lift
+        y = (V[:, 1] - self.floor) * swell + lift
 
         nx = self.Nrm[:, 0] * ca + self.Nrm[:, 2] * sa
         nz = -self.Nrm[:, 0] * sa + self.Nrm[:, 2] * ca
@@ -154,7 +163,7 @@ class Rig:
         y1 = np.maximum(np.maximum(ay, by), cy)
         onscreen = (x1 >= 0) & (x0 < W) & (y1 >= 0) & (y0 < H)
         live = facing & onscreen
-        small = live & ((x1 - x0) <= 1.6) & ((y1 - y0) <= 1.6)
+        small = live & ((x1 - x0) <= 3.0) & ((y1 - y0) <= 3.0)
         big = live & ~small
 
         zb = np.full((H, W), np.inf, np.float32)
@@ -166,18 +175,17 @@ class Rig:
             px = ((ax[st] + bx[st] + cx[st]) / 3).astype(np.int32)
             py = ((ay[st] + by[st] + cy[st]) / 3).astype(np.int32)
             pz = -(z[I[st, 0]] + z[I[st, 1]] + z[I[st, 2]]) / 3
-            for dx in (0, 1):
-                for dy in (0, 1):
-                    qx, qy = px + dx, py + dy
-                    ok = (qx >= 0) & (qx < W) & (qy >= 0) & (qy < H)
-                    np.minimum.at(zb, (qy[ok], qx[ok]), pz[ok])
-            for dx in (0, 1):
-                for dy in (0, 1):
-                    qx, qy = px + dx, py + dy
-                    ok = (qx >= 0) & (qx < W) & (qy >= 0) & (qy < H)
-                    hit = ok.copy()
-                    hit[ok] = np.isclose(zb[qy[ok], qx[ok]], pz[ok])
-                    idx[qy[hit], qx[hit]] = st[hit]
+            offs = [(dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)]
+            for dx, dy in offs:
+                qx, qy = px + dx, py + dy
+                ok = (qx >= 0) & (qx < W) & (qy >= 0) & (qy < H)
+                np.minimum.at(zb, (qy[ok], qx[ok]), pz[ok])
+            for dx, dy in offs:
+                qx, qy = px + dx, py + dy
+                ok = (qx >= 0) & (qx < W) & (qy >= 0) & (qy < H)
+                hit = ok.copy()
+                hit[ok] = np.isclose(zb[qy[ok], qx[ok]], pz[ok])
+                idx[qy[hit], qx[hit]] = st[hit]
 
         # Anything with an inside gets filled properly.
         for t in np.nonzero(big)[0]:

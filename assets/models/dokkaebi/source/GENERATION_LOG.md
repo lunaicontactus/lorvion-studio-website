@@ -82,3 +82,31 @@ hair cannot be decimated to 30k and stay recognisable.
 glTF UV origin is top-left: texture row = `v * height`, NOT `(1 - v) * height`.
 Flipping it makes every model look like a flat pink blob with a broken face,
 which cost a full round of wrong conclusions here.
+
+
+## MOMO — rig (option D, approved)
+
+    date        2026-09-09
+    task_id     01a0864c-2fc8-74b2-8c4b-8a5360c7a0a2
+    tool        meshy_rig
+    status      SUCCEEDED
+    credits     5
+
+    input_task_id  01a08615-...  (the 28k remesh)
+
+Rigging refuses a mesh over 300,000 faces and the master is 1,399,230, so the
+28k remesh was used as the input — for its skeleton only, never its pixels.
+Result: 24 joints, JOINTS_0/WEIGHTS_0 skinning, and free walking (1.07s) and
+running (0.67s) clips.
+
+`scripts/pose.py` moves that skeleton onto the master: both meshes are
+normalised by their own bounding box (the remesh is 4% shorter and sits on a
+different origin), every master vertex takes the joint indices and weights of
+the nearest rigged vertex, and the animation is sampled by walking the node
+hierarchy. So the animation plays on the mesh with the good face.
+
+The rigged model's own clip is a static T-pose, so the standing pose is taken
+from the walk cycle instead — the phase where the feet are closest together,
+t = 0.844s. Arms hang, feet under the body.
+
+Running total: 40 credits (30 generate + 5 remesh + 5 rig).
