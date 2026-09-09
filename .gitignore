@@ -14,3 +14,8 @@ test-results/
 .env
 .env.local
 .mcp.json
+
+# Raw Meshy output: tens of MB each. Regenerate from source/input/ and
+# the parameters in source/GENERATION_LOG.md instead of committing these.
+assets/models/dokkaebi/source/*.glb
+assets/models/dokkaebi/source/*_base_color.png
