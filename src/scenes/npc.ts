@@ -317,7 +317,13 @@ export function mountNpc(
         // Standing at the thing, facing it. There is no work animation to
         // play, so it breathes there, which is what a person mostly does.
         pose('idle')
-        if (wait <= 0) go('IDLE', between(IDLE_MS))
+        if (wait <= 0) {
+          // Done with it: turn back to the room. Holding the wall-facing pose
+          // through the idle afterwards left it nose-to-wall 56% of a
+          // twenty-minute watch, which reads as a fault rather than a mood.
+          if (direction === 'back') pose('idle', 'front')
+          go('IDLE', between(IDLE_MS))
+        }
         return
     }
   }
