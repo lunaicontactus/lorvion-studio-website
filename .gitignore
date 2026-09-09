@@ -7,3 +7,10 @@ e2e/shots/
 node_modules/
 playwright-report/
 test-results/
+
+# Local secrets — never commit. The Meshy MCP server reads .env and .env.local
+# from its working directory, and add-mcp's project-scope install writes the
+# API key straight into .mcp.json. The key belongs in ~/.claude.json only.
+.env
+.env.local
+.mcp.json
