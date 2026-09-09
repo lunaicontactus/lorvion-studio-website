@@ -213,3 +213,78 @@
 @media (prefers-reduced-motion:reduce){
   .npc__art{transition:none}
 }
+
+/* Foreground pieces: the room plate redrawn over the crew, in the shape of the
+   things that stand on the floor. Above every dokkaebi (y-sort tops out at
+   699) and below the panels. Takes no pointer — the hit areas underneath are
+   still the ones a visitor reaches. */
+.garage__front{
+  position:absolute;
+  z-index:700;
+  pointer-events:none;
+  background-repeat:no-repeat;
+}
+
+/* ── The room's light ───────────────────────────────────────────────────── */
+/* One soft wash per source, over the painting and under everything that
+   moves. Screen blend so a wash lifts what is already painted rather than
+   laying a coloured film over it. No blur filters: a 600px radial gradient is
+   already soft, and costs nothing to keep on. */
+.garage__light{
+  position:absolute;
+  z-index:60;
+  pointer-events:none;
+  border-radius:50%;
+  mix-blend-mode:screen;
+  transition:opacity 900ms ease;
+}
+.garage__light[data-light="tv"],
+.garage__light[data-light="secret"]{opacity:0}
+.garage__light.is-lit{opacity:1}
+/* The monitor breathes, very slightly, and only when asked. */
+.garage__light[data-light="pc"]{transition:opacity 2200ms ease}
+.garage__light[data-light="pc"].is-lit{opacity:1.6}
+
+/* ── Outside the window ─────────────────────────────────────────────────── */
+.garage__sky{position:absolute;z-index:55;pointer-events:none;overflow:hidden}
+.garage__star{
+  position:absolute;border-radius:50%;
+  background:#fdf6e3;
+  opacity:.42;
+  transition:opacity 2600ms ease;
+}
+.garage__star.is-bright{opacity:.92}
+.garage__shooting{
+  position:absolute;top:12%;left:-14%;
+  width:74px;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(255,250,235,.95));
+  opacity:0;
+  transform:rotate(14deg);
+}
+.garage__shooting.is-falling{
+  animation:garage-shoot 1500ms cubic-bezier(.3,0,.7,1) 1;
+}
+@keyframes garage-shoot{
+  0%{opacity:0;transform:translate(0,0) rotate(14deg)}
+  12%{opacity:1}
+  85%{opacity:1}
+  100%{opacity:0;transform:translate(340px,84px) rotate(14deg)}
+}
+
+/* ── Under the feet ─────────────────────────────────────────────────────── */
+/* A 3D render dropped onto a painted floor floats unless something joins it
+   to the boards. Anchored to the standing point, not the sprite box, so it
+   does not bob with the walk. */
+.npc__shadow{
+  position:absolute;
+  left:0;top:0;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:radial-gradient(closest-side,rgba(38,24,14,.42),rgba(38,24,14,0));
+  pointer-events:none;
+}
+
+@media (prefers-reduced-motion:reduce){
+  .garage__light,.garage__star{transition:none}
+  .garage__shooting{display:none}
+}

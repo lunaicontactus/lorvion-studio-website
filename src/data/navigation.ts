@@ -44,6 +44,13 @@ export interface NavGraph {
 /**
  * Read off the painted floor: the boards start where the furniture bases end
  * and stop at the raised beam across the front.
+ *
+ * Two depths, not one. The front lane is the boards; the back lane runs along
+ * the bases of the things standing on the floor, so a walk between the two
+ * back points passes behind the plant pot (see src/data/occlusion.ts) and the
+ * room hides the dokkaebi's legs the way a room should. The back lane stops
+ * short of the desk: under it there is only 230 units of headroom and a
+ * dokkaebi standing there is a hat behind a beam.
  */
 const LANDSCAPE: NavGraph = {
   floor: { top: 990, bottom: 1070 },
@@ -56,6 +63,8 @@ const LANDSCAPE: NavGraph = {
     { id: 'workbench-front', x: 2185, y: 1006, objectId: 'workbench', facing: 'back' },
     { id: 'fridge-front', x: 2470, y: 1020, objectId: 'fridge', facing: 'back' },
     { id: 'right-floor', x: 2760, y: 1036 },
+    { id: 'behind-left', x: 2150, y: 966 },
+    { id: 'behind-right', x: 2440, y: 966 },
   ],
 }
 
@@ -66,7 +75,16 @@ const LANDSCAPE: NavGraph = {
  */
 const PORTRAIT: NavGraph = {
   floor: { top: 1580, bottom: 1660 },
-  height: 165,
+  /**
+   * Deliberately out of scale with the room, by a fifth.
+   *
+   * Tied strictly to the portrait plate a dokkaebi is 58 CSS px tall at 360px
+   * wide, and at that size it is scenery rather than somebody. Compared on a
+   * phone at 1.00 / 1.15 / 1.20 / 1.25: 1.20 reads clearly at 70px and still
+   * belongs to the furniture, where 1.25 starts to loom. Checked at 360, 390
+   * and 430 — it overlaps no hit area at any of them.
+   */
+  height: 198,
   speed: 100,
   points: [
     { id: 'left-floor', x: 250, y: 1630 },

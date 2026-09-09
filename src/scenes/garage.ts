@@ -13,6 +13,9 @@
  */
 import { Camera } from '@/systems/camera'
 import { worldFor, ROOM_ART } from '@/data/world'
+import { depthOf, occludersFor } from '@/data/occlusion'
+import { LIGHTS, SKY, STARS } from '@/data/ambience'
+import { ATTENTION, Ambient } from '@/systems/ambient'
 import { OUTLINE_PATHS, HIT_PADDING, OUTLINE_OFFSET } from '@/data/outlines'
 import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
@@ -83,6 +86,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   let parked: { x: number; y: number } | null = null
   let world: WorldLayout = worldFor(false)
   let scale = 1
+  let lights = new Map<string, HTMLElement>()
+  let ambient: Ambient | null = null
   let built = false
   let paused = false
   const keys = new Set<string>()
@@ -97,6 +102,64 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     roomEl.style.height = `${world.height}px`
     const plate = world.width > world.height ? ROOM_ART.landscape : ROOM_ART.portrait
     roomEl.style.backgroundImage = `url('${plate.src}')`
+
+    // The foreground: the same plate, redrawn over the top in the shape of the
+    // things that stand on the floor, so somebody walking behind one of them
+    // goes behind it. No second image — this is the painting, twice.
+    for (const o of occludersFor(world.height > world.width)) {
+      const front = document.createElement('div')
+      front.className = 'garage__front'
+      front.dataset['front'] = o.id
+      front.style.left = `${o.x}px`
+      front.style.top = `${o.y}px`
+      front.style.width = `${o.w}px`
+      front.style.height = `${o.h}px`
+      front.style.backgroundImage = `url('${plate.src}')`
+      front.style.backgroundSize = `${world.width}px ${world.height}px`
+      front.style.backgroundPosition = `${-o.x}px ${-o.y}px`
+      // Its own base line, through the same formula the crew use.
+      front.style.zIndex = String(depthOf(o.behindAbove))
+      roomEl.append(front)
+    }
+
+    // ── Light, and what moves in it ──────────────────────────────────────
+    const lit = new Map<string, HTMLElement>()
+    if (world.width > world.height) {
+      for (const l of LIGHTS) {
+        const g = document.createElement('div')
+        g.className = 'garage__light'
+        g.dataset['light'] = l.id
+        g.style.left = `${l.x - l.r}px`
+        g.style.top = `${l.y - l.r}px`
+        g.style.width = `${l.r * 2}px`
+        g.style.height = `${l.r * 2}px`
+        g.style.background = `radial-gradient(closest-side, ${l.colour}, transparent)`
+        roomEl.append(g)
+        lit.set(l.id, g)
+      }
+      const sky = document.createElement('div')
+      sky.className = 'garage__sky'
+      sky.style.left = `${SKY.x}px`
+      sky.style.top = `${SKY.y}px`
+      sky.style.width = `${SKY.w}px`
+      sky.style.height = `${SKY.h}px`
+      for (const st of STARS) {
+        const dot = document.createElement('span')
+        dot.className = 'garage__star'
+        dot.style.left = `${st.x * SKY.w}px`
+        dot.style.top = `${st.y * SKY.h}px`
+        dot.style.width = `${st.s}px`
+        dot.style.height = `${st.s}px`
+        sky.append(dot)
+      }
+      const shooting = document.createElement('span')
+      shooting.className = 'garage__shooting'
+      sky.append(shooting)
+      roomEl.append(sky)
+      lit.set('sky', sky)
+      lit.set('shooting', shooting)
+    }
+    lights = lit
 
     // Zones are grouping in the data (src/data/world.ts), not elements: they
     // carry no pixels and no hit area, so nothing is built for them here.
@@ -198,6 +261,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     // leave a second one behind.
     npc?.destroy()
     npc = null
+    ambient?.destroy()
+    ambient = null
     if (npcAllowed()) {
       // Whoever has rendered frames walks; the rest are still turnarounds and
       // would stand about instead. As their frames land they become eligible
@@ -211,6 +276,47 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         // can assert on it. Neither does anything unless it is asked for.
         const params = new URLSearchParams(location.search)
         const seed = Number(params.get('npcseed'))
+        // The room's own small movements. Started after the crew, because the
+        // priority floor is set from what they are doing.
+        ambient = new Ambient()
+        const stars = [...(lights.get('sky')?.querySelectorAll('.garage__star') ?? [])]
+        const shooting = lights.get('shooting')
+        const toggle = (id: string) => (on: boolean) =>
+          lights.get(id)?.classList.toggle('is-lit', on)
+        if (lights.size) {
+          ambient.add({
+            id: 'pcGlow', every: { min: 5000, max: 13000 }, duration: 2600,
+            priority: ATTENTION.object, run: toggle('pc'),
+          })
+          ambient.add({
+            id: 'tvStatic', every: { min: 18000, max: 46000 }, duration: 1400,
+            priority: ATTENTION.object, restless: true, run: toggle('tv'),
+          })
+          ambient.add({
+            id: 'secretGlow', every: { min: 70000, max: 190000 }, duration: 2200,
+            priority: ATTENTION.object, restless: true, run: toggle('secret'),
+          })
+          // Whichever star was lit has to be the one put out again, or they
+          // accumulate and the window ends up fully lit.
+          let twinkling: Element | undefined
+          ambient.add({
+            id: 'starTwinkle', every: { min: 6000, max: 15000 }, duration: 3000,
+            priority: ATTENTION.background,
+            run: (on) => {
+              if (on) twinkling = stars[Math.floor(Math.random() * stars.length)]
+              twinkling?.classList.toggle('is-bright', on)
+              if (!on) twinkling = undefined
+            },
+          })
+          ambient.add({
+            // Rare on purpose. Two a minute is a screensaver, and one in the
+            // first few seconds is an opening title.
+            id: 'shootingStar', every: { min: 60000, max: 180000 }, duration: 1500,
+            priority: ATTENTION.background, restless: true, notBefore: 45000,
+            run: (on) => shooting?.classList.toggle('is-falling', on),
+          })
+          ambient.start()
+        }
         npc = mountNpc(roomEl, who, world.height > world.width, {
           debug: params.get('npc') === 'debug',
           scale,
@@ -392,6 +498,10 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     ticker.subscribe((info) => {
       // Paused stops the visitor driving; it must not stop the camera, or a
       // focus requested as a panel opens would never actually travel.
+      //
+      // Ambience gives way to whoever is walking: two things worth watching
+      // at once is one thing too many.
+      ambient?.setAttention(paused ? ATTENTION.interaction : npc?.walking ? ATTENTION.crew : 0)
       if (!paused && keys.size) {
         const step = (KEY_PAN * info.delta) / 1000
         let dx = 0
@@ -472,6 +582,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     },
     destroy(): void {
       npc?.destroy()
+      ambient?.destroy()
       npc = null
       for (const t of timers) clearTimeout(t)
       timers.clear()

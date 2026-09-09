@@ -21,6 +21,7 @@ import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
 import { log } from '@/systems/log'
 import { navFor, objectPoints, type NavGraph, type Waypoint } from '@/data/navigation'
+import { depthOf } from '@/data/occlusion'
 import { FIGURE_RATIO, HIT_BOX, allFrames, idleFrames, spritesFor } from '@/data/sprites'
 import { SpriteAnimator, preloadFrames } from '@/systems/spriteAnimator'
 import type { CharacterConfig, SpriteDirection } from '@/types/character'
@@ -61,6 +62,8 @@ export interface NpcHandle {
   /** The visitor opened this thing: get out of its way. */
   yieldTo(objectId: string): void
   readonly state: NpcState
+  /** On the move. The room drops its ambience while this is true. */
+  readonly walking: boolean
   readonly target: string | null
   /** World position of the feet. */
   readonly at: { x: number; y: number }
@@ -96,6 +99,12 @@ export function mountNpc(
   art.alt = ''
   art.decoding = 'async'
   el.append(art)
+
+  // Joins the render to the painted boards. Sits under the art, at the
+  // standing point, so it does not rise and fall with the walk.
+  const shadow = document.createElement('span')
+  shadow.className = 'npc__shadow'
+  el.prepend(shadow)
 
   const sprites = spritesFor(character.id)
   const animator = sprites ? new SpriteAnimator(art) : null
@@ -145,11 +154,13 @@ export function mountNpc(
   const place = (): void => {
     // Positioned by the feet: the sprite hangs above its own standing point.
     el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`
-    el.style.zIndex = String(Math.min(699, 100 + Math.round(y / 8)))
+    el.style.zIndex = String(depthOf(y))
     art.style.height = `${frameHeight}px`
     // Real left and right frames exist, so nothing is mirrored at runtime.
     const flip = !sprites && view === 'side' && !facingRight ? ' scaleX(-1)' : ''
     art.style.transform = `translate(-50%, -100%)${flip}`
+    shadow.style.width = `${frameHeight * 0.44}px`
+    shadow.style.height = `${frameHeight * 0.13}px`
     if (hit) {
       // The frame is taller than it is wide; HIT_BOX is a fraction of each.
       const frameWidth = frameHeight * FRAME_ASPECT
@@ -392,6 +403,9 @@ export function mountNpc(
     },
     get state(): NpcState {
       return state
+    },
+    get walking(): boolean {
+      return state === 'WALK'
     },
     get target(): string | null {
       return target?.id ?? null
