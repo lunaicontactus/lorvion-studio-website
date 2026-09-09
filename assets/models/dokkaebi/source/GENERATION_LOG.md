@@ -42,3 +42,43 @@ that meshoptimizer will not collapse across.
 The raw output is not committed — 75 MB does not belong in a repository that
 deploys from it. What is committed is everything needed to make it again: the
 master art, the three cut views, and the parameters above.
+
+
+## MOMO — remesh to 30k (option A)
+
+    date        2026-09-09
+    task_id     01a08615-3c11-7079-bacc-e67ea37e9e72
+    tool        meshy_remesh
+    status      SUCCEEDED
+    credits     5
+
+    input_task_id     01a085eb-84af-7601-9018-3653a3affbb2
+    target_polycount  30000
+    topology          triangle
+    origin_at         bottom
+    target_formats    ["glb"]
+
+Result: 28,330 triangles / 62,381 vertices, 2.07 MB, origin on the floor
+(y min = 0), height 1.82 units. Polycount hit the target exactly.
+
+Two things it does not give you:
+
+**No base colour.** The remesh output carries geometry, new UVs and a baked
+2048 normal map — and no material and no base colour texture. The original
+atlas cannot be reused because the remesh re-unwraps: sampling the old texture
+through the new UVs lands everywhere at once. Colouring it needs
+`meshy_retexture` (10 credits) or a hand bake.
+
+**The face does not survive.** At 28k the eyes flatten into hollow dents, the
+nose and mouth go, and the fur becomes jagged spikes. The raw model has a
+correct face — brows, glossy eyes, nose, smile, blush — so this is decimation
+damage, not a generation fault. See the renders in this session.
+
+Almost the whole polygon budget is fur. A character whose silhouette is 60%
+hair cannot be decimated to 30k and stay recognisable.
+
+## Note for whoever renders these
+
+glTF UV origin is top-left: texture row = `v * height`, NOT `(1 - v) * height`.
+Flipping it makes every model look like a flat pink blob with a broken face,
+which cost a full round of wrong conclusions here.
