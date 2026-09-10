@@ -119,8 +119,20 @@
   will-change:transform;
 }
 .npc__art{
+  /* Out of flow, so .npc stays a point at the feet rather than a box the
+     height of the sprite. Everything else here is anchored to that point —
+     the shadow, the hit area, the bubble — and while the art was in flow they
+     were all anchored to the bottom of a box that hung *below* the feet. The
+     hit area in particular ended up entirely under the character, on the
+     floor it is standing on, which is why touching one did nothing. */
+  position:absolute;
+  left:0;top:0;
   display:block;
   width:auto;
+  /* The site-wide `img{max-width:100%}` resolves against the containing
+     block, and this one's is a zero-width point at the feet. Without this the
+     sprite computes to nothing at all and the room empties. */
+  max-width:none;
   /* Height is set in world units by the scene; the transform hangs the sprite
      above its standing point, so the element's position is the feet. */
   transform-origin:50% 100%;
@@ -194,7 +206,8 @@
 
 /* The only part of a dokkaebi that takes a pointer. The frame is wide enough
    to hold a turning character, and a click in those empty corners belongs to
-   whatever is painted behind. Anchored to the feet like the sprite itself. */
+   whatever is painted behind. Anchored to the feet — which is the element's
+   own origin, now that the art is out of flow — and reaching up over the body. */
 .npc__hit{
   position:absolute;
   left:0;bottom:0;
@@ -209,18 +222,19 @@
   outline-offset:2px;
   border-radius:8px;
 }
-/* What one of them is saying. Sized in world units like everything else in
-   the room, so it scales with the camera instead of growing into a banner on
-   a phone. Never takes a pointer: a bubble that can be clicked is a button,
-   and these are not offering anything. */
+/* What one of them is saying.
+   A sibling of the dokkaebi rather than a child of it, because .npc takes its
+   z-index from how far up the floor it is standing — that is how the room
+   sorts them front to back — and a child cannot climb out of its parent's
+   stacking context. A bubble that goes behind the dokkaebi standing in front
+   is a bubble nobody can read. */
 .npc__bubble{
   position:absolute;
-  left:0;
-  /* `bottom` is set in world units by the scene: the element's own origin is
-     the feet, so the bubble has to be lifted by the character's own height. */
-  bottom:0;
+  left:0;top:0;
   margin:0;
-  transform:translate(-50%,0);
+  transform:translate(-50%,-100%);
+  /* Above every dokkaebi (100-699) and below anything the site puts on top. */
+  z-index:720;
   /* Everything in the room is sized in world units and scaled by the camera.
      Text is the exception: a bubble that scaled with the room would be 26px
      on a desk and 8px on a phone, and Korean at 8px is a smudge. Dividing by
@@ -236,11 +250,15 @@
   text-align:center;
   box-shadow:0 calc(2px / var(--scale,1)) calc(7px / var(--scale,1)) rgba(38,24,14,.22);
   pointer-events:none;
+  /* The scene writes `transform` on this element every time the dokkaebi
+     moves, so the entrance animates `scale` — a property of its own, applied
+     before `transform` — rather than fighting it for the same one. */
+  transform-origin:50% 100%;
   animation:npc-say .22s ease-out;
 }
 @keyframes npc-say{
-  from{opacity:0;transform:translate(-50%,8%) scale(.9)}
-  to{opacity:1;transform:translate(-50%,0) scale(1)}
+  from{opacity:0;scale:.9}
+  to{opacity:1;scale:1}
 }
 
 /* Standing still is the whole animation when motion is reduced. */

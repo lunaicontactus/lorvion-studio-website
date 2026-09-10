@@ -168,11 +168,12 @@ export function mountNpc(
   shadow.className = 'npc__shadow'
   el.prepend(shadow)
 
-  // What it is saying, if anything. Empty and hidden nearly all the time.
+  // What it is saying, if anything. Empty and hidden nearly all the time, and
+  // a sibling rather than a child: the dokkaebi's own z-index is its place in
+  // the room's front-to-back order, and a bubble has to clear all of them.
   const bubble = document.createElement('p')
   bubble.className = 'npc__bubble'
   bubble.hidden = true
-  el.append(bubble)
 
   const sprites = spritesFor(id)
   const metrics = metricsFor(id)
@@ -196,7 +197,7 @@ export function mountNpc(
     hit.setAttribute('aria-label', character.name)
     el.append(hit)
   }
-  room.append(el)
+  room.append(el, bubble)
 
   let debugEl: HTMLElement | null = null
   if (opts.debug) {
@@ -248,9 +249,14 @@ export function mountNpc(
     // from it would give whoever has the most hair the biggest feet.
     shadow.style.width = `${graph.height * 0.42}px`
     shadow.style.height = `${graph.height * 0.125}px`
-    // The element's origin is the feet, so a bubble over the head is lifted
-    // by the character's own height and a little clearance for the horns.
-    bubble.style.bottom = `${frameHeight + 10}px`
+    // Over the head: the dokkaebi's own height above its feet, plus a little
+    // clearance for the horns. Only while there is something to read — the
+    // rest of the time this is five transforms a frame writing nothing.
+    if (!bubble.hidden) {
+      bubble.style.transform =
+        `translate3d(${Math.round(x)}px, ${Math.round(y - frameHeight - 10)}px, 0)`
+          + ' translate(-50%, -100%)'
+    }
     if (hit) {
       // The frame is taller than it is wide; the box is a fraction of the
       // body inside it, which is not the same fraction of the frame for two
@@ -308,6 +314,7 @@ export function mountNpc(
     crowd.startSpeaking(id)
     bubble.textContent = line
     bubble.hidden = false
+    place()
     if (bubbleTimer) clearTimeout(bubbleTimer)
     bubbleTimer = setTimeout(() => {
       bubble.hidden = true
@@ -888,6 +895,7 @@ export function mountNpc(
       if (bubbleTimer) clearTimeout(bubbleTimer)
       hit?.removeEventListener('click', onHit)
       el.remove()
+      bubble.remove()
       for (const dot of room.querySelectorAll('.npc__waypoint')) dot.remove()
     },
   }

@@ -177,7 +177,16 @@ test.describe('desktop', () => {
     const box = await hit.boundingBox()
     expect(box!.width).toBeGreaterThanOrEqual(44)
     expect(box!.height).toBeGreaterThanOrEqual(44)
-    await hit.click({ force: true })
+    // Over the dokkaebi, which sounds too obvious to test until it is not.
+    // The hit area was anchored to the bottom of a box that hung below the
+    // feet, so for a while it sat entirely on the floor underneath the
+    // character and a visitor clicking one hit nothing at all. Every test
+    // here passed, because they all clicked with { force: true }.
+    const art = (await page.locator(`${MOMO} img`).boundingBox())!
+    expect(box!.y).toBeGreaterThan(art.y)
+    expect(box!.y + box!.height).toBeLessThanOrEqual(art.y + art.height + 2)
+    // So: a real click, at the middle of the sprite, with nothing forced.
+    await page.mouse.click(art.x + art.width / 2, art.y + art.height * 0.55)
     await page.waitForTimeout(400)
     // It stops what it was doing and turns to whoever touched it. Whether it
     // waves, looks up, or was already facing you is a coin weighted by the
