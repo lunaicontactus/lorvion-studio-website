@@ -324,28 +324,42 @@ class Posed(Rigged):
         return np.stack([world(j) @ self.ibm[k] for k, j in enumerate(self.joints)])
 
 
-def weight_check(rigged, ratio=6.0, share=0.05):
+# Joints at the ends of the skeleton, which own a hand or a foot and nothing
+# else. On these characters the fur is 90%+ of the vertices and it all belongs
+# to the head, so a healthy rig gives every one of these almost nothing:
+# MOMO's largest is RightForeArm at 0.5%.
+TIPS = ('Hand', 'ForeArm', 'Foot', 'ToeBase')
+
+
+def weight_check(rigged, ratio=6.0, share=0.05, tip_share=0.05):
     """Complain about a rig whose skin weights are obviously wrong.
+
+    Meshy's auto-rigger gets these characters wrong about half the time, and
+    always the same way: it hands a wrist a slab of the head. The head then
+    swings from the shoulder on every step. Re-rigging the identical input
+    fixes it, so it is a lottery rather than a property of the model — but it
+    has to be caught before a render, not after half an hour of one.
 
     Distance cannot decide this. These characters are chubby and their bones
     are tiny: MOMO's Head bone is 4% of her height and correctly owns hair
-    vertices half a height away, further than any of NUNU's bad weights. Nor
-    can connectivity — the bad region came back as one solid blob.
+    vertices half a height away, further than any of the bad weights reached.
+    Nor can connectivity — the bad region came back as one solid blob.
 
-    What does decide it is symmetry. The dokkaebi are bilaterally symmetric
-    and the skeleton is symmetrically named, so LeftHand and RightHand should
-    own comparable amounts of geometry. NUNU's first rig gave RightHand 11,091
-    vertices and LeftHand none: a hand had been handed the right side of the
-    head, and it dragged the hair sideways on every step.
+    Two rules, because the first failure was asymmetric and the second was not:
 
-    The 5% share threshold has room either side of it: MOMO's worst pair is
-    LeftShoulder 36 against RightShoulder 1,332, which is 2% of her carrier
-    and renders perfectly — a shoulder sits near the body's axis and barely
-    moves, so owning the wrong side of one costs nothing visible. NUNU's bad
-    hand was 16%.
+    Symmetry. The dokkaebi are bilaterally symmetric and the skeleton is
+    symmetrically named, so LeftHand and RightHand should own comparable
+    amounts. NUNU's first rig gave RightHand 11,091 vertices and LeftHand
+    none. The 5% share threshold has room either side of it: MOMO's worst pair
+    is LeftShoulder 36 against RightShoulder 1,332, which is 2% of her carrier
+    and renders perfectly, because a shoulder sits near the body's axis and
+    barely moves. NUNU's bad hand was 16%.
 
-    Cheap, and worth running before a render rather than after: a bad transfer
-    costs half an hour of rendering to discover by eye.
+    Size. RUKI's first rig gave BOTH hands a quarter of the mesh each, which
+    is symmetric and just as wrong — the head was left owning 42% where a good
+    rig gives it 93%. So the tips of the skeleton are also checked against
+    their own share, at 5%: ten times the largest a healthy rig has produced,
+    and four times smaller than the smallest failure.
     """
     names = [n.get('name') for n in rigged.nodes]
     dom = rigged.J[np.arange(len(rigged.J)), rigged.W.argmax(1)]
@@ -354,7 +368,11 @@ def weight_check(rigged, ratio=6.0, share=0.05):
     n = len(rigged.V)
     bad = []
     for name, c in sorted(owned.items()):
-        if not name or not name.startswith('Left'):
+        if not name:
+            continue
+        if any(name.endswith(t) for t in TIPS) and c / n >= tip_share:
+            bad.append(f'{name} owns {c:,} vertices ({c / n:.0%} of the mesh)')
+        if not name.startswith('Left'):
             continue
         twin = 'Right' + name[4:]
         if twin not in owned:

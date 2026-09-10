@@ -77,6 +77,12 @@ export interface NpcOptions {
   readonly crowd?: Crowd
   /** Where in an animation cycle this one starts, 0 to 1. */
   readonly phase?: number
+  /**
+   * Which of the crew this is, counting from zero. Only used to stagger the
+   * loading: five characters asking for their standing frames on the same
+   * frame is one request storm where five small ones would do.
+   */
+  readonly order?: number
 }
 
 export interface NpcHandle {
@@ -672,15 +678,19 @@ export function mountNpc(
   // on screen leaves a hole where the dokkaebi was.
   const warm: ReturnType<typeof setTimeout>[] = []
   if (sprites) {
+    // Queued behind whoever is ahead in the crew, so five characters do not
+    // ask for everything at once and leave the room waiting on its own
+    // background. The order is arbitrary; the spacing is the point.
+    const slot = opts.order ?? 0
     // Standing is what a visitor sees first.
-    preloadFrames(idleFrames(sprites))
+    warm.push(setTimeout(() => preloadFrames(idleFrames(sprites)), slot * 140))
     // Then the two directions this room actually walks in: the floor is a
     // strip, so front and back walking barely happens.
     warm.push(setTimeout(() => {
       preloadFrames([...sprites.walk.left.frames, ...sprites.walk.right.frames])
-    }, 2000))
+    }, 2000 + slot * 500))
     // The rest last, long after the room has settled.
-    warm.push(setTimeout(() => preloadFrames(allFrames(sprites)), 9000))
+    warm.push(setTimeout(() => preloadFrames(allFrames(sprites)), 9000 + slot * 1800))
   }
 
   // Reduced motion still gets somebody in the room — standing, not pacing.

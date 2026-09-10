@@ -165,6 +165,24 @@ export class Crowd {
     return this.walking.size
   }
 
+  /**
+   * How much is going on, as an attention floor for the room's own ambience.
+   *
+   * With one dokkaebi this was simply "is it walking". With five, somebody is
+   * nearly always walking, and treating that as a reason to hold the room
+   * still would mean the lamp never flickers and no star ever twinkles again.
+   *
+   * So the bar is what is worth watching rather than what is moving: a
+   * conversation or a bubble beats ambience outright, two of them in transit
+   * is enough to hold off the background but not the object glows, and one
+   * dokkaebi crossing the floor is just Tuesday.
+   */
+  attention(levels: { crew: number; object: number }): number {
+    if (this.speaking.size > 0) return levels.crew
+    if (this.walking.size >= 2) return levels.object
+    return 0
+  }
+
   // ── Spacing ──────────────────────────────────────────────────────────────
   /**
    * Which way to lean to stop standing in somebody. A push, not a wall: a

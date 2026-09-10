@@ -43,7 +43,7 @@ MOMO_CYCLE = 89.0
 def step_length(char):
     """One step, in world units: the planted foot's travel relative to the hips."""
     st = CREW[char]
-    r = Posed(SRC / f'{char}_anim_walk.glb')
+    r = Posed(SRC / f'{st.rig}_anim_walk.glb')
     rig_h = float(r.V[:, 1].max() - r.V[:, 1].min())
     W = [r._world_matrices(r.duration * i / SAMPLES) for i in range(SAMPLES)]
     hips = r.by_name['Hips']

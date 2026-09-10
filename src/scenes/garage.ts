@@ -335,6 +335,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
             crowd: crowd!,
             // Spread round the cycle so five of them do not breathe in unison.
             phase: i / Math.max(here.length, 1),
+            order: i,
             // Touching one stops it and makes it look up; the room's part is
             // to acknowledge that quietly. No bubble, no name tag, no panel —
             // the dokkaebi are not another menu.
@@ -549,9 +550,9 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       // Ambience gives way to the crew: with five of them there is nearly
       // always somebody moving, so the floor is set by how much is going on
       // rather than by any one of them.
-      const walkers = crowd?.walkers ?? 0
-      ambient?.setAttention(
-        paused ? ATTENTION.interaction : walkers > 0 ? ATTENTION.crew : 0)
+      ambient?.setAttention(paused
+        ? ATTENTION.interaction
+        : crowd?.attention({ crew: ATTENTION.crew, object: ATTENTION.object }) ?? 0)
       crowd?.step(Math.min(info.delta, 64))
       cull()
       if (!paused && keys.size) {

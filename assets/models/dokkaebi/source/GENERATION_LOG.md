@@ -168,6 +168,59 @@ Frames: 93, all 342x420, foot gap 2px on every one.
     date        2026-09-10
     generate    01a08ba6-88f5-74b4-b419-b55a1394ab88   30 credits
     remesh      01a08bab-a375-7305-a18a-a99520e7b5ac    5 credits
+    rig (1st)   01a08bae-4e6b-762b-9e1f-5c2c0ff85e74    5 credits   REJECTED
+    rig (2nd)   01a08bb0-6548-77c3-99c1-b2d28267e65b    5 credits   REJECTED
+    rig (3rd)   01a08bb2-d780-76e4-aa34-4926391b9a3d    5 credits   REJECTED
+                                                       50 credits
+
+Result: 1,882,154 triangles. Likeness good — sage fur, red horns, the green
+leopard briefs, all four angles.
+
+**All three rigs were broken, and that is what stopped the retries.**
+
+    1st   LeftHand 15,948 vertices, RightHand 0
+    2nd   LeftHand 17,411 (28% of the mesh), RightHand 14,159 (22%)
+    3rd   LeftHand 13,637 (22%), RightHand 0
+
+The second one is why `weight_check` has two rules rather than one. It is
+symmetric — both hands wrong by roughly the same amount — so the symmetry
+rule that caught NUNU passed it happily. What gives it away is size: a healthy
+rig leaves the head owning 93% of these characters, because they are mostly
+fur and the fur is on the head. RUKI's second rig left the head 42%.
+
+Three failures on one carrier is not the lottery, it is the carrier. RUKI's
+hair is spikier than the others' and hangs down near the hands, and the
+rigger keeps deciding that is what a hand is. A fourth attempt would have
+been the retry loop this project does not do.
+
+## The crew skeleton
+
+RUKI, YOMI and POKO are driven by MOMO's skeleton. Tested before adopting:
+RUKI's master rendered under MOMO's rig and under its own third rig, side by
+side, at three phases of the walk — MOMO's is clean and RUKI's own drags the
+hair off the shoulder.
+
+This works because the five are one character design in five colourways at
+one set of proportions, and `Skinner` normalises both meshes by their own
+bounding box before matching, so it does not even require them to be the same
+size. Every rig Meshy returns carries the same library walk, so nothing about
+the movement is given up by sharing one.
+
+Consequence: YOMI and POKO were generated and nothing else. No remesh, no rig
+— thirty credits saved, and two more chances to draw a bad rig not taken.
+
+    yomi    generate  01a08bb6-baa6-7430-bb92-dabd0a74d85e   30 credits
+    poko    generate  01a08bbc-462b-72ed-b64e-3182ac38110b   30 credits
+
+## Credits
+
+    MOMO    40    (earlier session)
+    NUNU    45
+    RUKI    50
+    YOMI    30
+    POKO    30
+    ----------
+    total  195    of which 20 went on rigs that were thrown away
 
 RUKI, YOMI and POKO's turnaround sheets carry FRONT / SIDE / BACK captions
 under the figures. `scripts/cut_views.py` trims them at the blank band between

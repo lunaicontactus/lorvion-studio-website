@@ -62,7 +62,7 @@ def main(char):
     OUT = Path('assets/sprites') / char
     mesh = load_glb(SRC / f'{char}_meshy_raw.glb')
     rig = Rig(mesh, Image.open(SRC / f'{char}_meshy_raw_base_color.png'), height=HEIGHT)
-    walk = Rigged(SRC / f'{char}_anim_walk.glb')
+    walk = Rigged(SRC / f'{st.rig}_anim_walk.glb')
     sk = Skinner(mesh['V'].astype(np.float64), walk)
     print(f'frame {rig.w}x{rig.h}   walk {walk.duration:.2f}s')
 

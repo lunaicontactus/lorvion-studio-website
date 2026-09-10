@@ -32,7 +32,7 @@ def main(char):
     OUT = Path('assets/sprites') / char
     mesh = load_glb(SRC / f'{char}_meshy_raw.glb')
     rig = Rig(mesh, Image.open(SRC / f'{char}_meshy_raw_base_color.png'), height=HEIGHT)
-    r = Posed(SRC / f'{char}_anim_walk.glb')
+    r = Posed(SRC / f'{st.rig}_anim_walk.glb')
     sk = Skinner(mesh['V'].astype(np.float64), r)
     # The base stance is this rig's own feet-together phase, not a shared
     # constant: two walk clips do not reach it at the same moment.

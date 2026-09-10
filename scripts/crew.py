@@ -25,6 +25,33 @@ What is allowed to differ:
 The numbers are small on purpose. Five characters that each move to their own
 completely different rhythm read as five different animations; five that share
 a rhythm and vary around it read as five personalities.
+
+On borrowed skeletons
+---------------------
+Meshy's auto-rigger fails on these characters about half the time, always the
+same way: it hands a wrist a slab of the head, which then swings from the
+shoulder on every step. Re-rigging usually fixes it, because the rigger is not
+deterministic — but RUKI failed three times running, which is the carrier and
+not the lottery. Its hair is spikier than the others' and hangs near the
+hands, and the rigger keeps deciding that is what a hand is.
+
+So RUKI, YOMI and POKO borrow MOMO's skeleton. This is not a compromise:
+
+  - they are one character design in five colourways, at one set of
+    proportions, and the transfer normalises both meshes by their own bounding
+    box before matching, so it does not even need them to be the same size;
+  - every rig Meshy returns carries the same library walk, so nothing about
+    the movement is lost by sharing one;
+  - the transfer is the same operation either way. A borrowed skeleton is not
+    a worse version of an own skeleton; it is the same code with a source mesh
+    that is 95% the same shape instead of 100%.
+
+It also means three fewer remeshes and three fewer rigs — thirty credits, and
+three more chances to draw a bad rig that are simply not taken.
+
+NUNU keeps its own, because its second rig passed and its frames were already
+rendered from it. Re-rendering thirty-five minutes of frames to make the
+provenance tidier would buy nothing anybody can see.
 """
 from dataclasses import dataclass, field
 
@@ -40,6 +67,7 @@ class Style:
     tempo: float = 1.00          # >1 = more frames = slower, smoother
     swell: float = 0.009         # idle breath
     pace: float = 1.00           # keep in step with src/data/behaviour.ts
+    rig: str = 'momo'            # whose skeleton drives it; see the note above
     walk_frames: int = 8
     idle_frames: int = 4
     # action -> directions worth rendering; 'left' also writes a mirrored right
@@ -52,7 +80,8 @@ CREW = {s.id: s for s in (
     # MOMO is the one the room was tuned against; her numbers are the baseline.
     Style('momo', 'MOMO', amp=1.00, tempo=1.00, swell=0.009),
     # NUNU is slow and heavy: shallower swings, longer cycles, a deeper breath.
-    Style('nunu', 'NUNU', amp=0.88, tempo=1.25, swell=0.012, pace=0.78),
+    Style('nunu', 'NUNU', amp=0.88, tempo=1.25, swell=0.012, pace=0.78,
+          rig='nunu'),
     # RUKI works: the biggest lean over the bench, and a quick one.
     Style('ruki', 'RUKI', amp=1.12, tempo=0.90, swell=0.008),
     # YOMI is restless: sharp, fast, and never quite still.
