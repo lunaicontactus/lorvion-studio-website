@@ -550,7 +550,12 @@ export function mountNpc(
           return
         }
         if (next === 'sit') {
-          sitAt = pick(seats.map((p) => [p, p.weight] as const))
+          // Nearest decent seat, not best seat anywhere. Choosing by comfort
+          // alone had NUNU — the one whose whole character is being unhurried
+          // — crossing the entire room to sit down, and walking further in
+          // half an hour than anybody else.
+          sitAt = pick(seats.map((p) =>
+            [p, p.weight / (1 + Math.hypot(p.x - x, p.y - y) / 500)] as const))
           target = { id: sitAt.id, x: sitAt.x, y: sitAt.y }
           if (crowd) {
             crowd.claim(sitAt.id, id)
