@@ -143,9 +143,14 @@ test.describe('desktop', () => {
     // walking at once, so any one of them spends most of a minute waiting its
     // turn. This is a floor for "moved about the room", not a target.
     expect(travelled).toBeGreaterThan(240)
-    // Walking towards something, and facing it once there.
+    // Walking towards something, and facing it once there. Any back-facing
+    // pose will do: leaning over the bench is `work:back` and standing at the
+    // fridge is `idle:back`, and which one it happens to be doing in any
+    // given minute is not the point. Naming `idle:back` specifically made
+    // this fail the day the dokkaebi learned to turn round afterwards, which
+    // was an improvement.
     expect(seen.some((s) => s.startsWith('walk:'))).toBe(true)
-    expect(seen.some((s) => s === 'idle:back')).toBe(true)
+    expect(seen.some((s) => s.endsWith(':back'))).toBe(true)
     // And most of the time it is doing nothing at all.
     const still = seen.filter((s) => s.startsWith('idle:')).length
     expect(still / seen.length).toBeGreaterThan(0.4)
@@ -339,12 +344,21 @@ test.describe('desktop', () => {
     expect(await whoIsHere(page)).toEqual(before)
   })
 
-  test('resizing the window does not clone it', async ({ page }) => {
+  test('turning the phone does not clone them', async ({ page }) => {
     await enter(page)
     const before = await whoIsHere(page)
+    expect(before.length).toBeGreaterThan(3)
+
+    // Portrait is a smaller room — the upper half of the workshop, with a
+    // wall below it — and fewer of them live in it. Fewer, never duplicated.
     await page.setViewportSize({ width: 900, height: 1200 })
     await page.waitForTimeout(900)
-    expect(new Set(await whoIsHere(page)).size).toBe(before.length)
+    const upstairs = await whoIsHere(page)
+    expect(upstairs.length).toBeLessThan(before.length)
+    expect(new Set(upstairs).size).toBe(upstairs.length)
+    expect(before).toEqual(expect.arrayContaining(upstairs))
+
+    // And back again: the same crew, once each.
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.waitForTimeout(900)
     expect(await whoIsHere(page)).toEqual(before)
