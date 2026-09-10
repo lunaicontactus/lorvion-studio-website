@@ -14,7 +14,7 @@
  */
 import { chromium } from '@playwright/test'
 
-const WANT = { momo: 89.0, nunu: 90.8 }
+const WANT = { momo: 89.0, nunu: 90.8, ruki: 89.0, yomi: 89.0, poko: 89.0 }
 const b = await chromium.launch()
 const p = await b.newPage({ viewport: { width: 1440, height: 900 } })
 await p.goto('http://localhost:4173/', { waitUntil: 'load' })

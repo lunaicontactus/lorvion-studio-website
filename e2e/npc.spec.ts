@@ -139,8 +139,10 @@ test.describe('desktop', () => {
       seen.push(await pose(page))
     }
     // It went somewhere. The pace is set by the walk cycle — 100 world units
-    // a second — so this is about a third of the room's width.
-    expect(travelled).toBeGreaterThan(400)
+    // a second — but the room now holds five of them and only two may be
+    // walking at once, so any one of them spends most of a minute waiting its
+    // turn. This is a floor for "moved about the room", not a target.
+    expect(travelled).toBeGreaterThan(240)
     // Walking towards something, and facing it once there.
     expect(seen.some((s) => s.startsWith('walk:'))).toBe(true)
     expect(seen.some((s) => s === 'idle:back')).toBe(true)
@@ -194,25 +196,33 @@ test.describe('desktop', () => {
     expect(await pose(page)).toMatch(/^(idle|wave|look):(front|left|right)$/)
   })
 
-  test('it works at the bench, sits down, and looks about', async ({ page }) => {
+  test('somebody works, somebody sits, somebody looks about', async ({ page }) => {
     // Longer than the default: this one is about what the weights reach over
     // time, and there is no way to hurry a machine whose whole point is that
     // it does not rush.
+    //
+    // Asked of the room rather than of one dokkaebi. With five of them the
+    // seats and the benches are shared, and one character reaching all five
+    // states inside three minutes stopped being a fair contract the moment
+    // somebody else could be sitting in the chair — NUNU sits 40% of the
+    // time, and it only takes one long stint to keep MOMO standing.
     test.setTimeout(240_000)
     await enter(page)
     const seen = await page.evaluate(async () => {
-      const img = document.querySelector('[data-npc="momo"] img') as HTMLImageElement
+      const imgs = [...document.querySelectorAll('[data-npc] img')] as HTMLImageElement[]
       const out = new Set<string>()
       const t0 = Date.now()
       while (Date.now() - t0 < 170000) {
-        const m = /\/dokkaebi\/\w+\/(\w+)\//.exec(img.src)
-        if (m) out.add(m[1]!)
+        for (const img of imgs) {
+          const m = /\/dokkaebi\/\w+\/(\w+)\//.exec(img.src)
+          if (m) out.add(m[1]!)
+        }
         await new Promise((r) => setTimeout(r, 150))
       }
       return [...out]
     })
     for (const action of ['idle', 'walk', 'work', 'sit', 'look']) {
-      expect(seen, `never reached ${action}`).toContain(action)
+      expect(seen, `nobody in the room ever ${action}`).toContain(action)
     }
   })
 

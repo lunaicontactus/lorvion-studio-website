@@ -31,12 +31,16 @@ export interface CrowdMember {
   /** True when it is mid-errand and should not be pulled into a conversation. */
   readonly busy: boolean
   /**
-   * Whether it is something to walk around. A dokkaebi sitting on the rug is
-   * not: standing beside somebody who is sitting is what people do, and
-   * pushing the standing one away from them turns a companionable picture
-   * into two strangers avoiding each other.
+   * How much room it takes up, as a fraction of the usual personal space.
+   *
+   * A dokkaebi sitting on the rug takes less than one standing: standing
+   * beside somebody who is sitting is what people do, and holding a full body
+   * width away from them turns a companionable picture into two strangers
+   * avoiding each other. It is emphatically not zero, which is what this was
+   * first — and then YOMI walked straight through POKO on the rug, because
+   * something that takes up no room is something you can occupy.
    */
-  readonly solid: boolean
+  readonly radius: number
   /** How readily it engages, 0 to 1. */
   readonly social: number
   /** Turn to `other`, say hello, then carry on. */
@@ -201,18 +205,19 @@ export class Crowd {
     let py = 0
     let closest = Infinity
     for (const [other, m] of this.members) {
-      if (other === id || !m.solid) continue
+      if (other === id) continue
       const dx = x - m.at.x
       // The floor is a strip: two dokkaebi a hundred units apart in depth are
       // visually one behind the other, not side by side, so depth counts for
       // more than distance along the boards.
       const dy = (y - m.at.y) * 2.2
       const d = Math.hypot(dx, dy)
-      if (d >= PERSONAL) continue
-      closest = Math.min(closest, d)
+      const space = PERSONAL * m.radius
+      if (d >= space) continue
+      closest = Math.min(closest, d / Math.max(m.radius, 0.01))
       // Straight apart, hardest when they are closest. A perpendicular
       // component would be smoother, and would also make them orbit.
-      const push = (PERSONAL - d) / PERSONAL
+      const push = (space - d) / space
       const n = Math.max(d, 1)
       px += (dx / n) * push
       py += (dy / n) * push * 0.4

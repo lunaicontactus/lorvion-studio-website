@@ -647,7 +647,13 @@ export function mountNpc(
           return
         }
         target = next
-        if (crowd && next.objectId) {
+        // Every waypoint, not only the ones in front of something. A patch of
+        // floor is as bookable as a fridge door and for the same reason: two
+        // dokkaebi walking to the same one arrive in the same place and merge
+        // into a single animal with too many legs. Only the object points
+        // were booked, which is why they never collided at the fridge and
+        // regularly did in the middle of the room.
+        if (crowd) {
           crowd.claim(next.id, id)
           booked = next.id
         }
@@ -846,8 +852,11 @@ export function mountNpc(
     get at(): { x: number; y: number } {
       return { x, y }
     },
-    get solid(): boolean {
-      return state !== 'SIT'
+    get radius(): number {
+      // Sitting takes less floor than standing, and reads as less: a
+      // dokkaebi on the rug is a low shape you walk round rather than a
+      // silhouette you have to clear.
+      return state === 'SIT' ? 0.55 : 1
     },
     get busy(): boolean {
       // Free to be spoken to only when it is standing about. Interrupting a

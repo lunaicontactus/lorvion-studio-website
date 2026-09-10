@@ -19,9 +19,7 @@ function member(id: string, x: number, y = 1030, social = 1): CrowdMember & {
     get busy() {
       return !m.free
     },
-    get solid() {
-      return true
-    },
+    radius: 1,
     greet(other: CrowdMember) {
       m.greeted.push(other.id)
     },
@@ -102,13 +100,25 @@ describe('personal space', () => {
     expect(push.slow).toBeLessThan(1)
   })
 
-  it('leaves a dokkaebi standing beside one that is sitting', () => {
-    const crowd = new Crowd()
-    const sitting = member('nunu', 1340)
-    Object.defineProperty(sitting, 'solid', { get: () => false })
-    crowd.join(member('momo', 1300))
-    crowd.join(sitting)
-    expect(crowd.separation('momo', 1300, 1030)).toEqual({ x: 0, y: 0, slow: 1 })
+  it('lets one stand closer to a dokkaebi that is sitting, but not through it', () => {
+    // 60 units apart: inside a standing dokkaebi's personal space (96) and
+    // outside a seated one's (96 x 0.55 = 53).
+    const standing = new Crowd()
+    standing.join(member('momo', 1300))
+    standing.join(member('nunu', 1360))
+    expect(standing.separation('momo', 1300, 1030).x).toBeLessThan(0)
+
+    const seated = new Crowd()
+    const sitting = member('nunu', 1360)
+    Object.defineProperty(sitting, 'radius', { value: 0.55, writable: true })
+    seated.join(member('momo', 1300))
+    seated.join(sitting)
+    expect(seated.separation('momo', 1300, 1030)).toEqual({ x: 0, y: 0, slow: 1 })
+
+    // But standing on one is still standing on one — which is what a plain
+    // "sitting dokkaebi are not solid" got wrong, by letting a walker pass
+    // straight through somebody sitting on the rug.
+    expect(seated.separation('momo', 1345, 1030).x).toBeLessThan(0)
   })
 
   it('counts depth for more than distance along the boards', () => {

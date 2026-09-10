@@ -42,13 +42,21 @@ const report = await p.evaluate(async (seconds) => {
   let samples = 0
   let walkersHistogram = {}
   let closest = Infinity
+  let closestWho = null
   let stuckWarnings = 0
+  // Real frames, from the browser's own callback. Timing the sampling loop
+  // measures the sampling loop, which is set to 120ms and will cheerfully
+  // report 120ms whatever the room is doing.
   const frames = []
   let lastFrame = performance.now()
+  const tick = (now) => {
+    frames.push(now - lastFrame)
+    lastFrame = now
+    requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
   const t0 = Date.now()
   while (Date.now() - t0 < seconds * 1000) {
-    const now = performance.now()
-    frames.push(now - lastFrame); lastFrame = now
     let walking = 0
     for (const n of npcs) {
       const m = /\/dokkaebi\/\w+\/(\w+)\/(\w+)\//.exec(n.img.src)
@@ -65,21 +73,31 @@ const report = await p.evaluate(async (seconds) => {
       n.lastBubble = up
     }
     walkersHistogram[walking] = (walkersHistogram[walking] ?? 0) + 1
+    const act = (n) => (/\/dokkaebi\/\w+\/(\w+)\/(\w+)\//.exec(n.img.src) ?? [0, '?', '?']).slice(1).join(':')
     for (let a = 0; a < npcs.length; a++) {
       for (let c = a + 1; c < npcs.length; c++) {
         const p1 = npcs[a].last, p2 = npcs[c].last
-        closest = Math.min(closest, Math.hypot(p1.x - p2.x, (p1.y - p2.y) * 2.2))
+        const d = Math.hypot(p1.x - p2.x, (p1.y - p2.y) * 2.2)
+        if (d < closest) {
+          closest = d
+          closestWho = `${npcs[a].id} ${act(npcs[a])} @${Math.round(p1.x)},${Math.round(p1.y)}`
+            + `  <->  ${npcs[c].id} ${act(npcs[c])} @${Math.round(p2.x)},${Math.round(p2.y)}`
+        }
       }
     }
     samples++
     await new Promise((r) => setTimeout(r, 120))
   }
   frames.sort((a, b) => a - b)
+  const q = (v) => frames[Math.min(frames.length - 1, Math.floor(v * frames.length))]
   return {
+    frameMedian: q(0.5),
+    frameWorst: frames[frames.length - 1],
     samples,
     seconds,
     walkersHistogram,
     closest,
+    closestWho,
     stuckWarnings,
     frameP95: frames[Math.floor(frames.length * 0.95)],
     heapMB: performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(1) : null,
@@ -105,7 +123,9 @@ for (const n of report.npcs) {
 }
 console.log('\nwalking at once', JSON.stringify(pct(report.walkersHistogram)))
 console.log('closest approach', report.closest.toFixed(1), 'world units')
-console.log('frame p95', report.frameP95.toFixed(0), 'ms   heap', report.heapMB, 'MB   DOM', report.dom)
+console.log('  ', report.closestWho)
+console.log(`frames: median ${report.frameMedian.toFixed(1)}ms  p95 ${report.frameP95.toFixed(1)}ms  `
+  + `worst ${report.frameWorst.toFixed(0)}ms   heap ${report.heapMB}MB   DOM ${report.dom}`)
 console.log('console errors', errors.length ? errors.slice(0, 5) : 0)
 console.log('failed requests', bad.length ? bad.slice(0, 5) : 0)
 await b.close()
