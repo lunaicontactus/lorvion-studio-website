@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Crowd, type CrowdMember } from '@/systems/crowd'
+import { navFor } from '@/data/navigation'
 
 /** A stand-in for a dokkaebi: a position and a willingness to talk. */
 function member(id: string, x: number, y = 1030, social = 1): CrowdMember & {
@@ -249,4 +250,54 @@ describe('the ambience floor', () => {
     crowd.startSpeaking('momo')
     expect(crowd.attention(levels)).toBe(30)
   })
+})
+
+/**
+ * The room's own geometry, checked as data.
+ *
+ * Two waypoints closer together than a dokkaebi is wide are one waypoint with
+ * a fight over it: whoever arrives second is pushed by the separation and
+ * pulled by its target at the same time, and walks on the spot until it gives
+ * up. Both of these were found by watching the room rather than by reading
+ * the file, which is exactly the sort of thing a test is for.
+ */
+describe('where they may stand', () => {
+  // Mirrors PERSONAL and the seated radius in src/systems/crowd.ts.
+  const PERSONAL = 96
+  const SEATED = 0.55
+
+  for (const portrait of [false, true]) {
+    const graph = navFor(portrait)
+    const where = portrait ? 'portrait' : 'landscape'
+    const all = [
+      ...graph.points.map((p) => ({ ...p, seated: false })),
+      ...graph.sits.map((p) => ({ ...p, seated: true })),
+    ]
+
+    it(`${where}: every place has its own name`, () => {
+      const ids = all.map((p) => p.id)
+      expect(new Set(ids).size, ids.join(' ')).toBe(ids.length)
+    })
+
+    it(`${where}: no two places are inside each other`, () => {
+      for (let i = 0; i < all.length; i++) {
+        for (let j = i + 1; j < all.length; j++) {
+          const a = all[i]!
+          const b = all[j]!
+          // Depth counts for more than distance along the boards, as in
+          // Crowd.separation, and a seat takes less room than a stance.
+          const d = Math.hypot(a.x - b.x, (a.y - b.y) * 2.2)
+          const room = PERSONAL * (a.seated || b.seated ? SEATED : 1)
+          expect(d, `${a.id} and ${b.id} are ${d.toFixed(0)} apart`).toBeGreaterThan(room)
+        }
+      }
+    })
+
+    it(`${where}: every place is on the floor`, () => {
+      for (const p of all) {
+        expect(p.y, p.id).toBeGreaterThanOrEqual(graph.floor.top)
+        expect(p.y, p.id).toBeLessThanOrEqual(graph.floor.bottom)
+      }
+    })
+  }
 })

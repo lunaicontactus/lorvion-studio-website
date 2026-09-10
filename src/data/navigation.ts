@@ -44,7 +44,14 @@ export interface SitPoint {
 }
 
 export interface NavGraph {
-  /** The band the feet stay inside. */
+  /**
+   * The band the feet stay inside — both lanes, not just the front one.
+   *
+   * It has to reach the back lane or a dokkaebi sent there is clamped short
+   * of its own destination, walks on the spot until it gives up, and does
+   * that every time. Half an hour of watching showed them covering ground at
+   * 46 units a second while playing a walk built for a hundred.
+   */
   readonly floor: { readonly top: number; readonly bottom: number }
   readonly points: readonly Waypoint[]
   /** How tall a dokkaebi stands here, in world units. */
@@ -74,7 +81,7 @@ export interface NavGraph {
  * dokkaebi standing there is a hat behind a beam.
  */
 const LANDSCAPE: NavGraph = {
-  floor: { top: 990, bottom: 1070 },
+  floor: { top: 960, bottom: 1075 },
   height: 210,
   speed: 100,
   // Several of these stand in front of the same object. A workbench two and a
@@ -97,7 +104,7 @@ const LANDSCAPE: NavGraph = {
     { id: 'right-floor', x: 2652, y: 1036 },
     { id: 'tv-left', x: 2790, y: 1030, objectId: 'tv', facing: 'back', kind: 'watch' },
     { id: 'tv-right', x: 2900, y: 1030, objectId: 'tv', facing: 'back', kind: 'watch' },
-    { id: 'behind-left', x: 2076, y: 966 },
+    { id: 'behind-left', x: 2030, y: 966 },
     { id: 'behind-right', x: 2440, y: 966 },
   ],
   // Read off the painting: the rug, the cushions on the left, and the boards
@@ -130,15 +137,19 @@ const PORTRAIT: NavGraph = {
   height: 198,
   speed: 100,
   points: [
-    { id: 'left-floor', x: 250, y: 1630 },
+    { id: 'left-floor', x: 352, y: 1630 },
     { id: 'pc-front', x: 518, y: 1612, objectId: 'pc', facing: 'back', kind: 'work' },
     { id: 'mid-floor', x: 700, y: 1638 },
-    { id: 'workbench-a', x: 875, y: 1606, objectId: 'workbench', facing: 'back', kind: 'work' },
-    { id: 'workbench-b', x: 960, y: 1606, objectId: 'workbench', facing: 'back', kind: 'work' },
+    { id: 'workbench-a', x: 858, y: 1606, objectId: 'workbench', facing: 'back', kind: 'work' },
+    { id: 'workbench-b', x: 972, y: 1606, objectId: 'workbench', facing: 'back', kind: 'work' },
   ],
   sits: [
     { id: 'floor', x: 430, y: 1640, facing: 'front', weight: 2 },
-    { id: 'left-floor', x: 250, y: 1636, facing: 'right', weight: 1 },
+    // Not 'left-floor'. That is the name of the standing point six units
+    // away, and two different places with one name are one place as far as
+    // the booking is concerned: claiming the seat locked the floor beside it,
+    // and looking up either by name found whichever came first.
+    { id: 'left-cushion', x: 250, y: 1636, facing: 'right', weight: 1 },
   ],
 }
 
