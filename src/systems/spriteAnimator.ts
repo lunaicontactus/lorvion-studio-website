@@ -82,12 +82,29 @@ export class SpriteAnimator {
  * Warm the browser cache for a set of frames without putting them in the
  * document. A walk that fetches its second frame when the first is already on
  * screen shows a hole where the character was.
+ *
+ * The images are kept. An Image with nothing referring to it can be collected,
+ * and once it is, the next play of that frame is at the mercy of the HTTP
+ * cache — which, on a host that serves `no-cache`, means fetching it again.
+ * Five characters cycling through four hundred frames did that a thousand
+ * times in two minutes. Holding the references costs the encoded bytes, about
+ * 35KB a frame, and the frames are the whole reason the room is worth looking
+ * at.
  */
+const held = new Map<string, HTMLImageElement>()
+
 export function preloadFrames(frames: readonly string[]): void {
   for (const src of frames) {
+    if (held.has(src)) continue
     const img = new Image()
     img.decoding = 'async'
     img.setAttribute('fetchpriority', 'low')
     img.src = src
+    held.set(src, img)
   }
+}
+
+/** How many frames are being held. Used by the memory check in the QA. */
+export function heldFrames(): number {
+  return held.size
 }

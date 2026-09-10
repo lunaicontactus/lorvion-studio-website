@@ -18,11 +18,15 @@ const p = await b.newPage({ viewport: { width: W, height: H } })
 
 let bytes = 0
 const byKind = {}
+const seen = new Set()
+let repeats = 0
 p.on('response', async (r) => {
   const len = Number(r.headers()['content-length'] ?? 0)
   const size = len || (await r.body().catch(() => Buffer.alloc(0))).length
   bytes += size
   const url = r.url()
+  if (seen.has(url)) repeats++
+  seen.add(url)
   const kind = /dokkaebi\/(\w+)\//.exec(url)?.[1]
     ?? (url.endsWith('.webp') ? 'room art' : url.endsWith('.css') ? 'css'
       : url.endsWith('.js') ? 'js' : 'other')
@@ -31,7 +35,7 @@ p.on('response', async (r) => {
 
 const kb = (n) => `${(n / 1024).toFixed(0)}KB`
 const marks = []
-await p.goto('http://localhost:4173/', { waitUntil: 'load' })
+await p.goto('http://localhost:4180/', { waitUntil: 'load' })
 await p.waitForTimeout(1200)
 marks.push(['entrance, ready to click', bytes])
 await p.locator('[data-alley-enter]').click()
@@ -60,5 +64,6 @@ const mem = await p.evaluate(() => ({
   dom: document.querySelectorAll('*').length,
   images: performance.getEntriesByType('resource').filter((r) => r.initiatorType === 'img').length,
 }))
-console.log(`\n  heap ${mem.heap}MB   DOM ${mem.dom} nodes   ${mem.images} images fetched`)
+console.log(`\n  ${seen.size} distinct files, ${repeats} re-requests`)
+console.log(`  heap ${mem.heap}MB   DOM ${mem.dom} nodes   ${mem.images} images fetched`)
 await b.close()
