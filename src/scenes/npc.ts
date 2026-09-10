@@ -243,8 +243,11 @@ export function mountNpc(
     // Real left and right frames exist, so nothing is mirrored at runtime.
     const flip = !sprites && view === 'side' && !facingRight ? ' scaleX(-1)' : ''
     art.style.transform = `translate(-50%, -100%)${flip}`
-    shadow.style.width = `${frameHeight * 0.44}px`
-    shadow.style.height = `${frameHeight * 0.13}px`
+    // Sized from the dokkaebi, not from its frame. The frame is taller than
+    // the character by that character's own headroom, so taking the shadow
+    // from it would give whoever has the most hair the biggest feet.
+    shadow.style.width = `${graph.height * 0.42}px`
+    shadow.style.height = `${graph.height * 0.125}px`
     // The element's origin is the feet, so a bubble over the head is lifted
     // by the character's own height and a little clearance for the horns.
     bubble.style.bottom = `${frameHeight + 10}px`
@@ -329,6 +332,8 @@ export function mountNpc(
   let calm = false
   /** Who this one is currently turned toward. */
   let partner: CrowdMember | null = null
+  /** Something across the room worth standing and looking at. */
+  let lookAt: { x: number; y: number } | null = null
   /** How long it has been walking without getting anywhere. */
   let stuck = 0
   let lastX = 0
@@ -374,8 +379,8 @@ export function mountNpc(
    * a beat and ask again — the errand is not cancelled, only deferred, which
    * is why a busy room still gets everything done, just not all at once.
    */
-  const beginWalk = (): void => {
-    if (crowd && !crowd.mayWalk(id)) {
+  const beginWalk = (force = false): void => {
+    if (!force && crowd && !crowd.mayWalk(id)) {
       unbook()
       target = null
       sitAt = null
@@ -428,8 +433,19 @@ export function mountNpc(
     return from[from.length - 1] ?? null
   }
 
-  /** Keep the feet on the painted boards whatever the steering asks for. */
+  /**
+   * Keep the feet on the painted boards whatever the steering asks for.
+   *
+   * The band is read from the graph; the ends are read from the waypoints,
+   * because the floor is painted and its edges are wherever the artist put
+   * the furniture. Being pushed out of somebody's way is not a reason to end
+   * up standing in the wall.
+   */
+  const FLOOR_ENDS = graph.points.reduce(
+    (r, p) => ({ min: Math.min(r.min, p.x), max: Math.max(r.max, p.x) }),
+    { min: Infinity, max: -Infinity })
   const clampFloor = (): void => {
+    x = Math.min(FLOOR_ENDS.max, Math.max(FLOOR_ENDS.min, x))
     y = Math.min(graph.floor.bottom, Math.max(graph.floor.top, y))
   }
 
@@ -471,7 +487,25 @@ export function mountNpc(
           return
         }
         if (wait > 0) return
-        say('idle', 0.12 * profile.talkative * 0.2)
+        // Per idle spell, not per tick — this line is past the `wait` guard.
+        // The crowd's budget and cooldowns do the real limiting; this only
+        // decides which of them is the chatty one.
+        say('idle', 0.08 * profile.talkative)
+
+        // Somebody else is at the thing this one likes. Stand and look at it
+        // rather than quietly going somewhere else: two dokkaebi both wanting
+        // the fridge is the room having a moment, and the alternative — the
+        // second one silently rerouting — is the room hiding one.
+        const wanted = objectPoints(graph).filter(
+          (p) => p.objectId !== undefined && profile.favours.includes(p.objectId))
+        const held = wanted.length > 0 && crowd !== null
+          && wanted.every((p) => !crowd.free(p.id, id))
+        if (held && rng() < 0.45) {
+          lookAt = wanted[0]!
+          say('idle', 0.6)
+          go('LOOK', 2200 + rng() * 2200)
+          return
+        }
         // What to do next is the whole personality: the same machine, pulled
         // by different numbers per character (src/data/behaviour.ts).
         const benches = objectPoints(graph).filter(
@@ -516,9 +550,20 @@ export function mountNpc(
       }
 
       case 'LOOK':
-        // A glance round the room, then back to standing.
-        pose('look', 'front')
-        if (wait <= 0) go('IDLE', between(IDLE_MS))
+        if (lookAt) {
+          // Watching something across the room rather than glancing round
+          // it. The glance animation is front-only, and a dokkaebi looking
+          // at the fridge has to be facing the fridge, so this uses the
+          // standing frames — which exist in all four directions — and lets
+          // the direction carry it.
+          pose('idle', faceFor(lookAt.x - x, lookAt.y - y))
+        } else {
+          pose('look', 'front')
+        }
+        if (wait <= 0) {
+          lookAt = null
+          go('IDLE', between(IDLE_MS))
+        }
         return
 
       case 'WORK':
@@ -813,7 +858,9 @@ export function mountNpc(
       unbook()
       const floors = graph.points.filter((p) => p.objectId === undefined)
       target = floors[Math.floor(rng() * floors.length)] ?? graph.points[0]!
-      if (state !== 'PAUSED') beginWalk()
+      // Past the budget: the visitor is waiting on this one to move, and
+      // "there are already two walking" is not an answer they can see.
+      if (state !== 'PAUSED') beginWalk(true)
     },
     get state(): NpcState {
       return state

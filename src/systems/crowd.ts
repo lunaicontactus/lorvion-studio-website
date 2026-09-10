@@ -89,7 +89,10 @@ export class Crowd {
   private readonly pairSpoke = new Map<string, number>()
   private readonly saidAt = new Map<string, number>()
   private speaking = new Set<string>()
-  private lastSocial = 0
+  // Never, rather than zero. Zero means "one just happened at start-up", so
+  // the first greeting of a session would have waited out SOCIAL_GAP on top
+  // of SOCIAL_NOT_BEFORE — a minute of the crew pointedly ignoring each other.
+  private lastSocial = -Infinity
   private lastBubble = 0
   private sinceSocial = 0
   private clock = 0
