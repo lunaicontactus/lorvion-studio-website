@@ -484,7 +484,10 @@ export function mountNpc(
     if (crowd && (state === 'IDLE' || state === 'LOOK' || state === 'CHOOSE_TARGET')) {
       const sep = crowd.separation(id, x, y)
       if (sep.x !== 0 || sep.y !== 0) {
-        const shuffle = (26 * dt) / 1000
+        // Brisk enough to be out of the way before a walker arrives. At 26
+        // a second a dokkaebi took most of a second to clear its own width,
+        // which is long enough to be photographed standing inside somebody.
+        const shuffle = (44 * dt) / 1000
         x += sep.x * shuffle
         y += sep.y * shuffle
         clampFloor()

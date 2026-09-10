@@ -43,6 +43,9 @@ const report = await p.evaluate(async (seconds) => {
   let walkersHistogram = {}
   let closest = Infinity
   let closestWho = null
+  // How often any pair is closer than half a body width. One frame of it is
+  // a pass; a percentage of it is a merge.
+  let tooClose = 0
   let stuckWarnings = 0
   // Real frames, from the browser's own callback. Timing the sampling loop
   // measures the sampling loop, which is set to 120ms and will cheerfully
@@ -78,6 +81,7 @@ const report = await p.evaluate(async (seconds) => {
       for (let c = a + 1; c < npcs.length; c++) {
         const p1 = npcs[a].last, p2 = npcs[c].last
         const d = Math.hypot(p1.x - p2.x, (p1.y - p2.y) * 2.2)
+        if (d < 60) tooClose++
         if (d < closest) {
           closest = d
           closestWho = `${npcs[a].id} ${act(npcs[a])} @${Math.round(p1.x)},${Math.round(p1.y)}`
@@ -98,6 +102,7 @@ const report = await p.evaluate(async (seconds) => {
     walkersHistogram,
     closest,
     closestWho,
+    tooClosePercent: (tooClose / Math.max(samples, 1)) * 100,
     stuckWarnings,
     frameP95: frames[Math.floor(frames.length * 0.95)],
     heapMB: performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(1) : null,
@@ -124,6 +129,7 @@ for (const n of report.npcs) {
 console.log('\nwalking at once', JSON.stringify(pct(report.walkersHistogram)))
 console.log('closest approach', report.closest.toFixed(1), 'world units')
 console.log('  ', report.closestWho)
+console.log(`   pairs under 60 units: ${report.tooClosePercent.toFixed(2)}% of samples`)
 console.log(`frames: median ${report.frameMedian.toFixed(1)}ms  p95 ${report.frameP95.toFixed(1)}ms  `
   + `worst ${report.frameWorst.toFixed(0)}ms   heap ${report.heapMB}MB   DOM ${report.dom}`)
 console.log('console errors', errors.length ? errors.slice(0, 5) : 0)
