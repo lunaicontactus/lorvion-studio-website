@@ -28,6 +28,10 @@ await p.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
 const report = await p.evaluate(async (seconds) => {
   const npcs = [...document.querySelectorAll('[data-npc]')].map((el) => ({
     id: el.dataset.npc, el, img: el.querySelector('img'),
+    // A sibling of the dokkaebi, not a child: it has to clear everybody's
+    // z-index to be readable.
+    bubble: [...document.querySelectorAll('.npc__bubble')][
+      [...document.querySelectorAll('[data-npc]')].indexOf(el)],
     actions: {}, dirs: {}, visits: {}, bubbles: 0, lastBubble: false,
     last: null, distance: 0,
   }))
@@ -56,8 +60,7 @@ const report = await p.evaluate(async (seconds) => {
       const at = feet(n.el)
       if (n.last) n.distance += Math.hypot(at.x - n.last.x, at.y - n.last.y)
       n.last = at
-      const bubble = n.el.querySelector('.npc__bubble')
-      const up = bubble && !bubble.hidden
+      const up = n.bubble && !n.bubble.hidden
       if (up && !n.lastBubble) n.bubbles++
       n.lastBubble = up
     }

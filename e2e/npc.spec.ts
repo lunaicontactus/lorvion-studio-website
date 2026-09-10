@@ -238,7 +238,7 @@ test.describe('desktop', () => {
     test.setTimeout(180_000)
     await enter(page)
     const result = await page.evaluate(async () => {
-      const bubbles = [...document.querySelectorAll('[data-npc] .npc__bubble')]
+      const bubbles = [...document.querySelectorAll('.npc__bubble')]
       const lines = new Set<string>()
       let mostAtOnce = 0
       const t0 = Date.now()

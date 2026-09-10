@@ -97,6 +97,13 @@ const SHEETS: Readonly<Record<string, Sheet>> = {
     walkFps: 8.99, aspect: 337 / 420, figureRatio: 0.9429, bodyWidth: 0.864,
     tempo: 0.9,
   },
+  // YOMI: 1.15 pace, so 115 units a second over an 89-unit cycle needs
+  // 8 frames at 10.34fps. The fastest and the shortest cycles of the five.
+  yomi: {
+    frames: { idle: 4, walk: 8, work: 5, sit: 3, wave: 4, look: 5 },
+    walkFps: 10.34, aspect: 331 / 420, figureRatio: 0.9452, bodyWidth: 0.846,
+    tempo: 0.8,
+  },
 }
 
 /** Six steps over four frames: out and back, so a breath does not snap. */

@@ -411,7 +411,13 @@ export function mountNpc(
    */
   const chooseTarget = (): Waypoint | null => {
     const bookable = (p: Waypoint): boolean => !crowd || crowd.free(p.id, id)
-    const objects = objectPoints(graph).filter((p) => p.objectId !== avoid && bookable(p))
+    // Not the benches. Those are reached by deciding to work, which is a
+    // separate pull in the profile — and while wandering could also land on
+    // them, `work` and `wander` were the same decision by another name, and
+    // the one dokkaebi who is supposed to be at the bench all day looked no
+    // busier than the one who is supposed to be at the fridge.
+    const objects = objectPoints(graph).filter(
+      (p) => p.objectId !== avoid && p.kind !== 'work' && bookable(p))
     const floors = graph.points.filter((p) => p.objectId === undefined && bookable(p))
     // Mostly a thing to do, sometimes just standing somewhere else: a room
     // where every trip has a purpose reads as a machine, not a person.
@@ -578,6 +584,11 @@ export function mountNpc(
         if (wait <= 0) {
           say('work', 0.35)
           unbook()
+          // Turn round when the job is done. Work faces the wall, and an idle
+          // that inherits that facing leaves a dokkaebi with its nose to the
+          // bench for the whole of the pause afterwards — which over twenty
+          // minutes is most of what the visitor sees of it.
+          pose('idle', 'front')
           go('IDLE', between(IDLE_MS))
         }
         return
