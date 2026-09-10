@@ -376,21 +376,30 @@ test.describe('desktop', () => {
 test.describe('phone', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
 
-  test('there is one, on the floor of the room it is in', async ({ page }) => {
+  test('they are on the floor of the room they are in, and the room moves', async ({ page }) => {
     await enter(page, '?npcseed=7')
-    await expect(page.locator(NPC).first()).toBeAttached()
-    const where = await feet(page)
-    expect(where.y).toBeGreaterThan(1570)
-    expect(where.y).toBeLessThan(1670)
+    const here = await whoIsHere(page)
+    expect(here.length).toBeGreaterThan(0)
+    for (const id of here) {
+      const where = await feet(page, `[data-npc="${id}"]`)
+      expect(where.y, id).toBeGreaterThan(1570)
+      expect(where.y, id).toBeLessThan(1670)
+    }
+    // Asked of the room, not of one of them. The portrait floor is 620 world
+    // units end to end and only two may walk at once, so any one dokkaebi can
+    // honestly spend twenty seconds standing still — and did, which is what
+    // this test used to call a failure.
     let travelled = 0
-    let previous = where
+    let previous = await Promise.all(here.map((id) => feet(page, `[data-npc="${id}"]`)))
     for (let i = 0; i < 16; i++) {
       await page.waitForTimeout(1200)
-      const now = await feet(page)
-      travelled += Math.hypot(now.x - previous.x, now.y - previous.y)
+      const now = await Promise.all(here.map((id) => feet(page, `[data-npc="${id}"]`)))
+      for (let k = 0; k < now.length; k++) {
+        travelled += Math.hypot(now[k]!.x - previous[k]!.x, now[k]!.y - previous[k]!.y)
+      }
       previous = now
     }
-    expect(travelled).toBeGreaterThan(200)
+    expect(travelled).toBeGreaterThan(300)
   })
 })
 
