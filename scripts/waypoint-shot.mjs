@@ -2,7 +2,7 @@
 import { chromium } from '@playwright/test'
 const b = await chromium.launch()
 const p = await b.newPage({ viewport: { width: 1440, height: 900 } })
-await p.goto('http://localhost:4173/?npc=debug', { waitUntil: 'load' })
+await p.goto('http://localhost:4180/?npc=debug', { waitUntil: 'load' })
 await p.locator('[data-alley-enter]').click()
 await p.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
 await p.waitForTimeout(1200)

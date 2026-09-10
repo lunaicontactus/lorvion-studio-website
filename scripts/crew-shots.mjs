@@ -16,7 +16,7 @@ const VIEWPORTS = [
 const b = await chromium.launch()
 for (const [name, w, h] of VIEWPORTS) {
   const p = await b.newPage({ viewport: { width: w, height: h }, ...(w < 500 ? { isMobile: true, hasTouch: true } : {}) })
-  await p.goto('http://localhost:4173/', { waitUntil: 'load' })
+  await p.goto('http://localhost:4180/', { waitUntil: 'load' })
   await p.locator('[data-alley-enter]').click()
   await p.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
   await p.waitForTimeout(6000)

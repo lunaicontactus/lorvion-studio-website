@@ -84,6 +84,10 @@ const LANDSCAPE: NavGraph = {
   // "the bench is taken" is a fact about a place to stand and not about the
   // furniture.
   points: [
+    // The rest end. Without these the crew lived in the right two thirds of
+    // the room and the whole cushion corner stood empty, which the camera
+    // does not show at once but a picture of the whole room does.
+    { id: 'rest-floor', x: 1058, y: 1044 },
     { id: 'left-floor', x: 1268, y: 1030 },
     { id: 'pc-front', x: 1578, y: 1012, objectId: 'pc', facing: 'back', kind: 'work' },
     { id: 'mid-floor', x: 1860, y: 1042 },
@@ -99,6 +103,7 @@ const LANDSCAPE: NavGraph = {
   // Read off the painting: the rug, the cushions on the left, and the boards
   // beside the bench. Nothing in a doorway and nothing inside the furniture.
   sits: [
+    { id: 'big-cushion', x: 862, y: 1048, facing: 'right', weight: 3 },
     { id: 'rug', x: 2360, y: 1046, facing: 'front', weight: 3 },
     { id: 'cushions', x: 1330, y: 1040, facing: 'right', weight: 3 },
     { id: 'by-the-bench', x: 1740, y: 1036, facing: 'front', weight: 2 },
