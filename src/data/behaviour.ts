@@ -55,7 +55,9 @@ const PROFILES: Readonly<Record<string, BehaviourProfile>> = {
   // Watches. Stays put a long time, mostly by the television or the shelf.
   poko: {
     idle: 6, wander: 2, work: 2, sit: 3, look: 3,
-    favours: ['tv', 'shelf'], pace: 0.88, idleFor: [6000, 16000], waveChance: 0.22,
+    // Not the shelf: it is on the wall above the rest area, out of reach of
+    // any floor, so listing it only diluted the preference that can be acted on.
+    favours: ['tv'], pace: 0.88, idleFor: [6000, 16000], waveChance: 0.22,
     workFor: [6000, 13000], sitFor: [12000, 28000],
     // Will look over. Rarely crosses the room to do it.
     social: 0.35, stubborn: 0.3, talkative: 2, home: 'tv-left',

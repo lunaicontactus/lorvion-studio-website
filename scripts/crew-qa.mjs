@@ -6,13 +6,29 @@
  * of them is always at the bench and another is always near the food, which
  * is only answerable by watching and counting.
  *
+ * Run it wide — 2560x860 shows all 3,600 world units at once.
+ *
+ * At a normal viewport the room culls whoever is off the side of the screen:
+ * they keep thinking and keep their place in the world, but stop writing
+ * their transform, which is the only thing this harness can see. Positions
+ * then freeze wherever they were last on screen, and the numbers lie in two
+ * directions at once — errands to the far end of the room look like they
+ * never happened, and a frozen dokkaebi looks like it is standing inside
+ * whoever walks past its last known position. That is where a reported
+ * closest approach of 26 units came from, and where the locked door appeared
+ * to be a place nobody ever went.
+ *
  *     node scripts/crew-qa.mjs [seconds] [width] [height]
  */
 import { chromium } from '@playwright/test'
+import { navFor } from '../src/data/navigation.ts'
 
 const secs = Number(process.argv[2] ?? 300)
 const W = Number(process.argv[3] ?? 1440)
 const H = Number(process.argv[4] ?? 900)
+
+const graph = navFor(H > W)
+const PLACES = [...graph.points, ...graph.sits].map((p) => ({ id: p.id, x: p.x, y: p.y }))
 
 const b = await chromium.launch()
 const p = await b.newPage({ viewport: { width: W, height: H } })
@@ -21,13 +37,15 @@ p.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
 p.on('pageerror', (e) => errors.push(String(e)))
 const bad = []
 p.on('response', (r) => { if (r.status() >= 400) bad.push(`${r.status()} ${r.url()}`) })
-await p.goto('http://localhost:4173/', { waitUntil: 'load' })
+await p.goto('http://localhost:4180/', { waitUntil: 'load' })
 await p.locator('[data-alley-enter]').click()
 await p.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
+await p.evaluate((places) => { window.__places = places }, PLACES)
 
 const report = await p.evaluate(async (seconds) => {
+  const PLACES = window.__places ?? []
   const npcs = [...document.querySelectorAll('[data-npc]')].map((el) => ({
-    id: el.dataset.npc, el, img: el.querySelector('img'),
+    id: el.dataset.npc, el, img: el.querySelector('img'), lastStop: null,
     // A sibling of the dokkaebi, not a child: it has to clear everybody's
     // z-index to be readable.
     bubble: [...document.querySelectorAll('.npc__bubble')][
@@ -70,6 +88,15 @@ const report = await p.evaluate(async (seconds) => {
       }
       const at = feet(n.el)
       if (n.last) n.distance += Math.hypot(at.x - n.last.x, at.y - n.last.y)
+      // Which place it has stopped at. Standing still within a few units of a
+      // waypoint for more than a moment is a visit; passing through is not.
+      const still = n.last && Math.hypot(at.x - n.last.x, at.y - n.last.y) < 1
+      if (still) {
+        const near = PLACES.find((p) => Math.hypot(at.x - p.x, at.y - p.y) < 12)
+        const id = near ? near.id : null
+        if (id && id !== n.lastStop) n.visits[id] = (n.visits[id] ?? 0) + 1
+        n.lastStop = id
+      }
       n.last = at
       const up = n.bubble && !n.bubble.hidden
       if (up && !n.lastBubble) n.bubbles++
@@ -108,7 +135,7 @@ const report = await p.evaluate(async (seconds) => {
     heapMB: performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(1) : null,
     dom: document.querySelectorAll('*').length,
     npcs: npcs.map((n) => ({
-      id: n.id, actions: n.actions, dirs: n.dirs,
+      id: n.id, actions: n.actions, dirs: n.dirs, visits: n.visits,
       bubbles: n.bubbles, distance: Math.round(n.distance),
     })),
   }
@@ -125,6 +152,10 @@ for (const n of report.npcs) {
   console.log('  ', JSON.stringify(pct(n.actions)))
   const top = Object.entries(pct(n.dirs)).slice(0, 5)
   console.log('   top poses', JSON.stringify(Object.fromEntries(top)))
+  const visits = Object.entries(n.visits).sort((a, b) => b[1] - a[1])
+  const total = visits.reduce((a, [, v]) => a + v, 0)
+  console.log(`   visited ${total} times:`,
+    visits.map(([k, v]) => `${k} ${v}`).join('  ') || 'nowhere')
 }
 console.log('\nwalking at once', JSON.stringify(pct(report.walkersHistogram)))
 console.log('closest approach', report.closest.toFixed(1), 'world units')

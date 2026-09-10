@@ -438,12 +438,18 @@ export function mountNpc(
     const fresh = pool.filter((p) => p.id !== target?.id && p.objectId !== recent[0])
     const from = fresh.length > 0 ? fresh : pool
     const weights = from.map((p) => {
-      const near = 1 / (1 + Math.hypot(p.x - x, p.y - y) / 420)
-      // A favourite is worth crossing the room for. Not so much that it
-      // becomes the only place it ever goes — see the bias check in the QA.
-      const liked = p.objectId && profile.favours.includes(p.objectId) ? 2.4 : 1
+      // A favourite is worth crossing the room for, which is a statement
+      // about distance and not about desire — so it lengthens the scale
+      // rather than multiplying the result. Multiplying was not enough:
+      // YOMI's whole character is being interested in the locked door at the
+      // far end, and over fifteen minutes it never once went, because a
+      // preference three times as strong still loses to a discount five times
+      // as steep. It keeps a small multiplier as well, so a favourite that is
+      // equally close still wins.
+      const liked = p.objectId !== undefined && profile.favours.includes(p.objectId)
+      const near = 1 / (1 + Math.hypot(p.x - x, p.y - y) / (liked ? 1100 : 420))
       const stale = p.objectId !== undefined && p.objectId === recent[1] ? 0.35 : 1
-      return near * liked * stale
+      return near * (liked ? 1.6 : 1) * stale
     })
     const total = weights.reduce((a, w) => a + w, 0)
     let choice = rng() * total

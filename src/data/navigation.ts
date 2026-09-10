@@ -104,6 +104,10 @@ const LANDSCAPE: NavGraph = {
     { id: 'right-floor', x: 2652, y: 1036 },
     { id: 'tv-left', x: 2790, y: 1030, objectId: 'tv', facing: 'back', kind: 'watch' },
     { id: 'tv-right', x: 2900, y: 1030, objectId: 'tv', facing: 'back', kind: 'watch' },
+    // The locked door. Nothing opens here, which is the point: YOMI's whole
+    // character is being interested in it, and without somewhere to stand
+    // that preference did nothing at all for fifteen minutes of watching.
+    { id: 'secret-front', x: 3306, y: 1016, objectId: 'secret-door', facing: 'back', kind: 'watch' },
     { id: 'behind-left', x: 2030, y: 966 },
     { id: 'behind-right', x: 2440, y: 966 },
   ],
