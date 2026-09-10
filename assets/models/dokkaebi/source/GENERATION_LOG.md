@@ -266,3 +266,12 @@ against what is in the repository, and costs nothing.
 
 That is what they are for: 88MB so that a change to the room's lighting is a
 command rather than a purchase order.
+
+## Deployment record — 2026-09-11
+
+    live before this deploy   25fb251  "Put the new mark on every icon"
+                              bundle main-CDQq0eTL.js, last-modified 2026-09-09 13:02 UTC
+                              (verified by rebuilding 25fb251: same bundle hash)
+    rollback                  git revert of the range 25fb251..<deploy sha>, or
+                              re-deploy 25fb251 via workflow_dispatch — never a force push
+    remote before push        origin/main == 25fb251, nothing to merge, fast-forward

@@ -17,7 +17,7 @@ import { chromium } from '@playwright/test'
 const WANT = { momo: 89.0, nunu: 90.8, ruki: 89.0, yomi: 89.0, poko: 89.0 }
 const b = await chromium.launch()
 const p = await b.newPage({ viewport: { width: 1440, height: 900 } })
-await p.goto('http://localhost:4173/', { waitUntil: 'load' })
+await p.goto('http://localhost:4180/', { waitUntil: 'load' })
 await p.locator('[data-alley-enter]').click()
 await p.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
 const seconds = Number(process.argv[2] ?? 90)
