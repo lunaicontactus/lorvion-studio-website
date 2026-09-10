@@ -24,6 +24,9 @@ import { save } from '@/systems/storage'
 import { log } from '@/systems/log'
 import { mountNpc, npcAllowed, seededRandom, type NpcHandle } from '@/scenes/npc'
 import { Crowd } from '@/systems/crowd'
+
+/** How many of them live in the portrait room. See the note where it is used. */
+const PHONE_CREW = 3
 import { CHARACTERS } from '@/data/characters'
 import { spritesFor } from '@/data/sprites'
 import type { WorldLayout, WorldObject } from '@/types/world'
@@ -276,7 +279,14 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       // Whoever has rendered frames walks; the rest are still turnarounds and
       // would stand about instead. As their frames land they join the crew
       // without this line changing.
-      const here = CHARACTERS.filter((c) => spritesFor(c.id))
+      // The portrait plate is the upper half of the workshop with a wall
+      // below it, so its floor is a 710-unit strip against the landscape
+      // room's 1,400. Five dokkaebi fit in it the way five people fit in a
+      // lift. Three is the same room with room to move, and the ones left out
+      // are not missing from a phone — the phone is a different composition.
+      const portrait = world.height > world.width
+      const all = CHARACTERS.filter((c) => spritesFor(c.id))
+      const here = portrait ? all.slice(0, PHONE_CREW) : all
       const who = here[0] ?? CHARACTERS.find((c) => c.id === 'poko') ?? CHARACTERS[0]
       if (who) {
         // ?npc=debug draws the waypoints; ?npcseed=N pins the route so a test
@@ -327,9 +337,9 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         // One crowd for the whole room: it holds the things that only make
         // sense between them — the walking budget, who has booked the fridge
         // door, how close two may stand, who may speak.
-        crowd = new Crowd({ narrow: world.height > world.width })
+        crowd = new Crowd({ narrow: portrait })
         crew = here.map((c, i) =>
-          mountNpc(roomEl, c, world.height > world.width, {
+          mountNpc(roomEl, c, portrait, {
             debug: params.get('npc') === 'debug',
             scale,
             crowd: crowd!,

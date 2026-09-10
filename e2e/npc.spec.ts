@@ -222,6 +222,31 @@ test.describe('desktop', () => {
     expect(Math.min(...fronts.map((f) => Math.abs(at!.x - f)))).toBeLessThan(20)
   })
 
+  test('somebody says something, and never two of them at once', async ({ page }) => {
+    // Chatter is deliberately rare — the room is a workshop, not a chat
+    // window — so this watches for a while and asserts the shape of it
+    // rather than a count.
+    test.setTimeout(180_000)
+    await enter(page)
+    const result = await page.evaluate(async () => {
+      const bubbles = [...document.querySelectorAll('[data-npc] .npc__bubble')]
+      const lines = new Set<string>()
+      let mostAtOnce = 0
+      const t0 = Date.now()
+      while (Date.now() - t0 < 120000) {
+        const up = bubbles.filter((b) => !(b as HTMLElement).hidden)
+        mostAtOnce = Math.max(mostAtOnce, up.length)
+        for (const b of up) lines.add(b.textContent ?? '')
+        await new Promise((r) => setTimeout(r, 100))
+      }
+      return { said: [...lines], mostAtOnce }
+    })
+    expect(result.said.length, 'nobody said anything in two minutes').toBeGreaterThan(0)
+    // The budget is two on a desktop. Three would be a comic strip.
+    expect(result.mostAtOnce).toBeLessThanOrEqual(2)
+    for (const line of result.said) expect(line.length).toBeLessThan(20)
+  })
+
   test('it never takes a click from the visitor', async ({ page }) => {
     await enter(page)
     expect(

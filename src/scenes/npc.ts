@@ -705,11 +705,16 @@ export function mountNpc(
   }
 
   // ── Start ────────────────────────────────────────────────────────────────
-  // Where this one already was. Five dokkaebi found in the places they belong
-  // have lived here; five that appear together and disperse have just arrived.
+  // Where this one already was. Dokkaebi found in the places they belong have
+  // lived here; dokkaebi that appear together and disperse have just arrived.
+  //
+  // The named home is a landscape place — the fridge, the bench, in front of
+  // the television — and the portrait room has none of those, being the upper
+  // half of the workshop with a wall between it and the rest. So the fallback
+  // hands out a different waypoint to each of them rather than putting them
+  // all on the same one, which is what a shared default would do.
   const home = pointNamed(graph, profile.home)
-    ?? graph.points.find((p) => p.id === 'left-floor')
-    ?? graph.points[0]!
+    ?? graph.points[(opts.order ?? 0) % graph.points.length]!
   x = home.x
   y = home.y
   pose('idle', rng() < 0.5 ? 'front' : 'left')

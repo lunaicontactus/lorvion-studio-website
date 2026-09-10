@@ -88,6 +88,15 @@ const SHEETS: Readonly<Record<string, Sheet>> = {
     walkFps: 6.87, aspect: 342 / 420, figureRatio: 0.9143, bodyWidth: 0.792,
     tempo: 1.25,
   },
+  // RUKI, YOMI and POKO are driven by MOMO's skeleton (see the generation
+  // log), so their stride is hers exactly: 89.0 units per cycle. What differs
+  // is the pace each of them walks at, and the cadence follows from it.
+  // RUKI: full pace, 8 frames / 0.89s = 8.99fps. Quick, short cycles.
+  ruki: {
+    frames: { idle: 4, walk: 8, work: 5, sit: 4, wave: 4, look: 5 },
+    walkFps: 8.99, aspect: 337 / 420, figureRatio: 0.9429, bodyWidth: 0.864,
+    tempo: 0.9,
+  },
 }
 
 /** Six steps over four frames: out and back, so a breath does not snap. */

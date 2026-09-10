@@ -227,3 +227,22 @@ under the figures. `scripts/cut_views.py` trims them at the blank band between
 the feet and the lettering rather than at a fixed fraction — the toes come
 within a few pixels of the caption, and any margin wide enough to be safe from
 the lettering takes the feet with it.
+
+
+## What is committed, and what is not
+
+    committed       turnaround sheets, the three cut plates per character,
+                    these parameters, and the 640px neutral-light frame
+                    masters in assets/sprites/
+    not committed   the Meshy GLBs and their 2K atlases — 470MB across the
+                    five, and .gitignored
+
+The masters look like an intermediate worth throwing away, and they are the
+one thing here that cannot be regenerated for free. Meshy's download URLs
+expire, so re-fetching a GLB means paying for the generation again. The
+masters are rendered under a neutral light and graded to the room on export,
+so re-lighting the whole crew is `python3 scripts/export_sprites.py <char>`
+against what is in the repository, and costs nothing.
+
+That is what they are for: 88MB so that a change to the room's lighting is a
+command rather than a purchase order.
