@@ -20,11 +20,12 @@
 import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
 import { log } from '@/systems/log'
-import { navFor, objectPoints, type NavGraph, type Waypoint } from '@/data/navigation'
+import { navFor, objectPoints, type NavGraph, type SitPoint, type Waypoint } from '@/data/navigation'
+import { behaviourFor } from '@/data/behaviour'
 import { depthOf } from '@/data/occlusion'
 import { FIGURE_RATIO, HIT_BOX, allFrames, idleFrames, spritesFor } from '@/data/sprites'
 import { SpriteAnimator, preloadFrames } from '@/systems/spriteAnimator'
-import type { CharacterConfig, SpriteDirection } from '@/types/character'
+import type { CharacterConfig, SpriteAction, SpriteDirection } from '@/types/character'
 
 export type NpcState =
   | 'SPAWN'
@@ -32,7 +33,20 @@ export type NpcState =
   | 'CHOOSE_TARGET'
   | 'WALK'
   | 'INTERACT'
+  | 'WORK'
+  | 'SIT'
+  | 'LOOK'
+  | 'REACT'
   | 'PAUSED'
+
+/**
+ * Which state may interrupt which. A touch from the visitor beats anything; a
+ * dokkaebi that wanders off mid-conversation is the room ignoring you.
+ */
+const PRIORITY: Readonly<Record<NpcState, number>> = {
+  REACT: 70, INTERACT: 60, WORK: 50, SIT: 40, WALK: 30,
+  LOOK: 20, IDLE: 10, CHOOSE_TARGET: 10, SPAWN: 0, PAUSED: 0,
+}
 
 export interface NpcOptions {
   /** Injected so a test can pin the route. Defaults to Math.random. */
@@ -74,6 +88,13 @@ export interface NpcHandle {
 const IDLE_MS = { min: 3000, max: 10000 }
 /** How long it spends at a thing once it gets there. */
 const INTERACT_MS = { min: 2000, max: 7000 }
+/** Long enough to be doing something, short enough not to become furniture. */
+const WORK_MS = { min: 6000, max: 16000 }
+const SIT_MS = { min: 8000, max: 22000 }
+/** One glance across the room: six frames at four a second. */
+const LOOK_MS = 1500
+/** A wave is five frames at six a second, and then it goes back to standing. */
+const WAVE_MS = 900
 /** Under a fingertip of travel is not worth a walk. */
 const ARRIVED = 4
 /** The same floor every other hit area in this room stands on. */
@@ -89,6 +110,8 @@ export function mountNpc(
 ): NpcHandle {
   const rng = opts.random ?? Math.random
   const graph: NavGraph = navFor(portrait)
+  const profile = behaviourFor(character.id)
+  const pace = graph.speed * profile.pace
 
   const el = document.createElement('div')
   el.className = 'npc'
@@ -178,9 +201,11 @@ export function mountNpc(
   }
 
   /** One place decides what is on screen: an action and a direction. */
-  const pose = (action: 'idle' | 'walk', next: SpriteDirection = direction): void => {
+  const pose = (action: SpriteAction, next: SpriteDirection = direction): void => {
     direction = next
     if (!sprites || !animator) {
+      // A character with only a turnaround has three views and no more, so
+      // everything it might be doing collapses onto standing or walking.
       show(action === 'walk' ? 'side' : next === 'back' ? 'back' : 'front')
       return
     }
@@ -216,11 +241,28 @@ export function mountNpc(
   const between = (range: { min: number; max: number }): number =>
     range.min + rng() * (range.max - range.min)
 
+  /** Weighted pick, by the profile's own pulls. */
+  const pick = <T,>(options: readonly (readonly [T, number])[]): T => {
+    const total = options.reduce((a, [, w]) => a + w, 0)
+    let n = rng() * total
+    for (const [value, w] of options) {
+      n -= w
+      if (n <= 0) return value
+    }
+    return options[options.length - 1]![0]
+  }
+
+  let sitAt: SitPoint | null = null
+
   const go = (next: NpcState, ms = 0): void => {
     state = next
     wait = ms
     if (debugEl) debugEl.textContent = `${state} ${target?.id ?? ''}`
   }
+
+  /** Whether `next` is allowed to cut in on what is happening now. */
+  const mayInterrupt = (next: NpcState): boolean =>
+    state === 'PAUSED' || PRIORITY[next] >= PRIORITY[state]
 
   /**
    * Somewhere to go that is not where we just were, and probably not the far
@@ -264,7 +306,7 @@ export function mountNpc(
         if (wait <= 0) go('IDLE', between(IDLE_MS))
         return
 
-      case 'IDLE':
+      case 'IDLE': {
         // Whatever it was facing when it stopped. Turning to the camera on
         // arrival is the tell that nobody is home behind the sprite.
         pose('idle')
@@ -272,7 +314,58 @@ export function mountNpc(
           wait = 500
           return
         }
-        if (wait <= 0) go('CHOOSE_TARGET')
+        if (wait > 0) return
+        // What to do next is the whole personality: the same machine, pulled
+        // by different numbers per character (src/data/behaviour.ts).
+        const bench = objectPoints(graph).find((p) => p.objectId === 'workbench')
+        const next = pick<'wander' | 'work' | 'sit' | 'look'>([
+          ['wander', profile.wander],
+          ['work', bench && bench.objectId !== avoid ? profile.work : 0],
+          ['sit', graph.sits.length ? profile.sit : 0],
+          ['look', profile.look],
+        ])
+        if (next === 'look') {
+          go('LOOK', LOOK_MS)
+          return
+        }
+        if (next === 'sit') {
+          sitAt = pick(graph.sits.map((p) => [p, p.weight] as const))
+          target = { id: sitAt.id, x: sitAt.x, y: sitAt.y }
+          go('WALK')
+          return
+        }
+        if (next === 'work' && bench) {
+          target = bench
+          go('WALK')
+          return
+        }
+        sitAt = null
+        go('CHOOSE_TARGET')
+        return
+      }
+
+      case 'LOOK':
+        // A glance round the room, then back to standing.
+        pose('look', 'front')
+        if (wait <= 0) go('IDLE', between(IDLE_MS))
+        return
+
+      case 'WORK':
+        pose('work', 'back')
+        if (wait <= 0) go('IDLE', between(IDLE_MS))
+        return
+
+      case 'SIT':
+        pose('sit', sitAt?.facing ?? 'front')
+        if (wait <= 0) {
+          sitAt = null
+          go('IDLE', between(IDLE_MS))
+        }
+        return
+
+      case 'REACT':
+        // Looked up at whoever touched it. Waving is a maybe, not a reflex.
+        if (wait <= 0) go('IDLE', between(IDLE_MS))
         return
 
       case 'CHOOSE_TARGET': {
@@ -293,7 +386,14 @@ export function mountNpc(
           x = target.x
           y = target.y
           place()
-          if (target.objectId) {
+          if (sitAt) {
+            pose('sit', sitAt.facing)
+            go('SIT', between(SIT_MS))
+          } else if (target.objectId === 'workbench') {
+            recent = [target.objectId, ...recent].slice(0, 2)
+            pose('work', 'back')
+            go('WORK', between(WORK_MS))
+          } else if (target.objectId) {
             recent = [target.objectId, ...recent].slice(0, 2)
             // Everything worth using is against the back wall.
             pose('idle', target.facing === 'back' ? 'back' : 'front')
@@ -303,7 +403,7 @@ export function mountNpc(
           }
           return
         }
-        const move = (graph.speed * dt) / 1000
+        const move = (pace * dt) / 1000
         const ratio = Math.min(1, move / distance)
         x += dx * ratio
         y += dy * ratio
@@ -369,11 +469,17 @@ export function mountNpc(
   const onHit = (e: Event): void => {
     e.preventDefault()
     e.stopPropagation()
+    // Already reacting: let the wave finish rather than restarting it on
+    // every click, which turns a greeting into a stutter.
+    if (!mayInterrupt('REACT')) return
     if (resume) clearTimeout(resume)
     // Stop where it is, look up, and let the room decide what that means.
     target = null
-    pose('idle', 'front')
-    go('IDLE', 2200)
+    sitAt = null
+    // Look up first, then decide whether it is worth waving about.
+    const wave = rng() < profile.waveChance
+    pose(wave ? 'wave' : 'idle', 'front')
+    go('REACT', wave ? WAVE_MS + 1200 : 2000)
     opts.onTouch?.(character)
     resume = setTimeout(() => {
       resume = null

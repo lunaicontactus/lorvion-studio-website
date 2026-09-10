@@ -23,6 +23,20 @@ export interface Waypoint {
   readonly facing?: 'front' | 'back'
 }
 
+/**
+ * Somewhere it is reasonable to sit down. Not anywhere: a dokkaebi sitting in
+ * the middle of the floor looks lost, and one sitting inside the fridge looks
+ * broken.
+ */
+export interface SitPoint {
+  readonly id: string
+  readonly x: number
+  readonly y: number
+  readonly facing: 'front' | 'left' | 'right'
+  /** Relative pull. The rug is a nicer place to sit than the bare boards. */
+  readonly weight: number
+}
+
 export interface NavGraph {
   /** The band the feet stay inside. */
   readonly floor: { readonly top: number; readonly bottom: number }
@@ -39,6 +53,7 @@ export interface NavGraph {
    * floor. Changing one of these three numbers means re-deriving the others.
    */
   readonly speed: number
+  readonly sits: readonly SitPoint[]
 }
 
 /**
@@ -66,6 +81,14 @@ const LANDSCAPE: NavGraph = {
     { id: 'behind-left', x: 2150, y: 966 },
     { id: 'behind-right', x: 2440, y: 966 },
   ],
+  // Read off the painting: the rug, the cushions on the left, and the boards
+  // beside the bench. Nothing in a doorway and nothing inside the furniture.
+  sits: [
+    { id: 'rug', x: 2360, y: 1046, facing: 'front', weight: 3 },
+    { id: 'cushions', x: 1330, y: 1040, facing: 'right', weight: 3 },
+    { id: 'by-the-bench', x: 1740, y: 1036, facing: 'front', weight: 2 },
+    { id: 'right-boards', x: 2720, y: 1042, facing: 'left', weight: 1 },
+  ],
 }
 
 /**
@@ -91,6 +114,10 @@ const PORTRAIT: NavGraph = {
     { id: 'pc-front', x: 518, y: 1612, objectId: 'pc', facing: 'back' },
     { id: 'mid-floor', x: 700, y: 1638 },
     { id: 'workbench-front', x: 905, y: 1606, objectId: 'workbench', facing: 'back' },
+  ],
+  sits: [
+    { id: 'floor', x: 430, y: 1640, facing: 'front', weight: 2 },
+    { id: 'left-floor', x: 250, y: 1636, facing: 'right', weight: 1 },
   ],
 }
 

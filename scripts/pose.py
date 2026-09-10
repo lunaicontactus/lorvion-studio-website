@@ -55,20 +55,39 @@ class Gltf:
         return self.j['meshes'][mesh]['primitives'][p]
 
 
-def _trs(node):
+def _quat(q):
+    x, y, z, w = q
+    return np.array([
+        [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+        [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+        [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+    ])
+
+
+def _trs(node, extra=None):
+    """The node's local matrix, optionally with a rotation added at the joint.
+
+    `extra` goes between the translation and the node's own rotation — that is
+    what "rotating a joint" means. Multiplying it on at the end instead rotates
+    in the bone's own frame, which is a twist along the bone rather than a
+    swing of it, and produces poses that look almost right and are not.
+    """
     if 'matrix' in node:
-        return np.array(node['matrix'], np.float64).reshape(4, 4).T
+        m = np.array(node['matrix'], np.float64).reshape(4, 4).T
+        if extra is None:
+            return m
+        t = m[:3, 3].copy()
+        m[:3, 3] = 0
+        out = extra @ m
+        out[:3, 3] = t
+        return out
     m = np.eye(4)
     if 'scale' in node:
         m[:3, :3] = np.diag(node['scale'])
     if 'rotation' in node:
-        x, y, z, w = node['rotation']
-        r = np.array([
-            [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
-            [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
-            [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
-        ])
-        m[:3, :3] = r @ m[:3, :3]
+        m[:3, :3] = _quat(node['rotation']) @ m[:3, :3]
+    if extra is not None:
+        m = extra @ m
     if 'translation' in node:
         m[:3, 3] = node['translation']
     return m
@@ -163,6 +182,137 @@ class Rigged:
         return np.stack([world(j) @ self.ibm[k] for k, j in enumerate(self.joints)])
 
 
+def _euler(x=0.0, y=0.0, z=0.0):
+    """Degrees about X, then Y, then Z, as a 4x4."""
+    rx, ry, rz = np.radians([x, y, z])
+    cx, sx = np.cos(rx), np.sin(rx)
+    cy, sy = np.cos(ry), np.sin(ry)
+    cz, sz = np.cos(rz), np.sin(rz)
+    X = np.array([[1, 0, 0, 0], [0, cx, -sx, 0], [0, sx, cx, 0], [0, 0, 0, 1]])
+    Y = np.array([[cy, 0, sy, 0], [0, 1, 0, 0], [-sy, 0, cy, 0], [0, 0, 0, 1]])
+    Z = np.array([[cz, -sz, 0, 0], [sz, cz, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    return Z @ Y @ X
+
+
+def _between(a, b):
+    """The rotation that takes unit vector `a` onto unit vector `b`."""
+    a = a / (np.linalg.norm(a) + 1e-12)
+    b = b / (np.linalg.norm(b) + 1e-12)
+    v = np.cross(a, b)
+    c = float(np.dot(a, b))
+    if c < -0.999999:
+        # Opposite: any perpendicular axis will do.
+        axis = np.cross(a, [1.0, 0, 0])
+        if np.linalg.norm(axis) < 1e-6:
+            axis = np.cross(a, [0, 1.0, 0])
+        axis /= np.linalg.norm(axis)
+        K = np.array([[0, -axis[2], axis[1]], [axis[2], 0, -axis[0]], [-axis[1], axis[0], 0]])
+        r = np.eye(3) + 2 * (K @ K)
+    else:
+        K = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+        r = np.eye(3) + K + K @ K / (1 + c)
+    m = np.eye(4)
+    m[:3, :3] = r
+    return m
+
+
+class Posed(Rigged):
+    """A rig driven by named joint rotations instead of a clip.
+
+    The rigged model arrives holding a T-pose and one walk. Everything else the
+    room needs — leaning over the bench, sitting down, waving, glancing across
+    the room — is a handful of angles on joints that are already named
+    (Hips, Spine, LeftArm, Head and the rest), so it can be written down here
+    rather than bought.
+
+    Angles are degrees applied on top of the bind pose, in the joint's own
+    space. Which way is positive is not guessable from the file; it was found
+    by rendering one joint at a time and looking.
+    """
+
+    def __init__(self, path):
+        super().__init__(path)
+        self.by_name = {n.get('name'): i for i, n in enumerate(self.nodes)}
+
+    def aim(self, joint, child, direction, base_t=None):
+        """The rotation that points `joint`'s bone at `direction` in world space.
+
+        Guessing which euler axis swings a bone is a losing game: a rig's bones
+        point wherever the rigger's solver left them, and the answer differs
+        per joint. Naming the direction the limb should end up pointing is
+        unambiguous, and it is what a pose actually means — "arm up and out",
+        not "Z minus a hundred and twenty".
+        """
+        M = self.joint_matrices({}, base_t) if False else None
+        world = self._world_matrices(base_t)
+        j = self.by_name[joint]
+        c = self.by_name[child]
+        here = world[j][:3, 3]
+        there = world[c][:3, 3]
+        current = there - here
+        want = np.array(direction, np.float64)
+        # Express the swing in the joint's parent frame, where its local
+        # rotation lives.
+        par = self.parent.get(j)
+        basis = world[par][:3, :3] if par is not None else np.eye(3)
+        inv = np.linalg.inv(basis)
+        return _between(inv @ current, inv @ want)
+
+    def _world_matrices(self, base_t=None):
+        over = self._sampled_trs(base_t) if base_t is not None else {}
+        local = []
+        for i, n in enumerate(self.nodes):
+            node = dict(n)
+            if i in over:
+                node.pop('matrix', None)
+                node.update({k: list(v) for k, v in over[i].items()})
+            local.append(_trs(node))
+        glob = {}
+
+        def world(i):
+            if i in glob:
+                return glob[i]
+            par = self.parent.get(i)
+            glob[i] = local[i] if par is None else world(par) @ local[i]
+            return glob[i]
+
+        for i in range(len(self.nodes)):
+            world(i)
+        return glob
+
+    def joint_matrices_for(self, angles, base_t=None):
+        """Angles on top of a base pose.
+
+        `base_t` samples the walk clip first, so a written pose starts from the
+        stance the room is already showing rather than from the T-pose. Without
+        it every authored pose would snap the arms back out to the sides on the
+        way in.
+        """
+        over = self._sampled_trs(base_t) if base_t is not None else {}
+        local = []
+        for i, n in enumerate(self.nodes):
+            node = dict(n)
+            if i in over:
+                node.pop('matrix', None)
+                node.update({k: list(v) for k, v in over[i].items()})
+            a = angles.get(n.get('name'))
+            extra = None
+            if a is not None:
+                # Either three degrees, or a 4x4 from aim().
+                extra = a if isinstance(a, np.ndarray) else _euler(*a)
+            local.append(_trs(node, extra))
+        glob = {}
+
+        def world(i):
+            if i in glob:
+                return glob[i]
+            par = self.parent.get(i)
+            glob[i] = local[i] if par is None else world(par) @ local[i]
+            return glob[i]
+
+        return np.stack([world(j) @ self.ibm[k] for k, j in enumerate(self.joints)])
+
+
 class Skinner:
     """Master mesh + borrowed skeleton."""
 
@@ -190,7 +340,13 @@ class Skinner:
         self.V_rig = self.to_rig(master_V)
 
     def deform(self, t):
-        M = self.rig.joint_matrices(t)
+        return self._apply(self.rig.joint_matrices(t))
+
+    def deform_pose(self, angles, base_t=None):
+        """Skin the master to a hand-written pose."""
+        return self._apply(self.rig.joint_matrices_for(angles, base_t))
+
+    def _apply(self, M):
         P = np.concatenate([self.V_rig, np.ones((len(self.V_rig), 1))], 1)
         out = np.zeros((len(P), 3))
         for k in range(self.J.shape[1]):

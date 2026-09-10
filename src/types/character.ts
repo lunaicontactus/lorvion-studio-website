@@ -72,7 +72,7 @@ export interface CharacterConfig {
 export type SpriteDirection = 'front' | 'back' | 'left' | 'right'
 
 /** What it is doing. Only what real frames exist for. */
-export type SpriteAction = 'idle' | 'walk'
+export type SpriteAction = 'idle' | 'walk' | 'work' | 'sit' | 'wave' | 'look'
 
 export interface SpriteAnimation {
   /** Absolute URLs, in play order. Ping-pong is expressed by repeating
@@ -86,3 +86,27 @@ export interface SpriteAnimation {
 export type SpriteSet = Readonly<
   Record<SpriteAction, Readonly<Record<SpriteDirection, SpriteAnimation>>>
 >
+
+/**
+ * How one dokkaebi differs from the next.
+ *
+ * Five characters running the same machine with the same numbers are one
+ * character five times. These are the numbers, kept as data so a personality
+ * is a row in a table rather than a branch in the state machine.
+ */
+export interface BehaviourProfile {
+  /** Relative pull of each way of spending time. Not percentages. */
+  readonly idle: number
+  readonly wander: number
+  readonly work: number
+  readonly sit: number
+  readonly look: number
+  /** Things this one gravitates to, most-liked first. */
+  readonly favours: readonly string[]
+  /** Multiplies the walking pace. The cadence follows it, so the feet keep up. */
+  readonly pace: number
+  /** How long it stands about, in milliseconds. */
+  readonly idleFor: readonly [number, number]
+  /** Chance a touch gets a wave rather than just a look up. */
+  readonly waveChance: number
+}

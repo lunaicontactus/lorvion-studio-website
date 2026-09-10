@@ -118,8 +118,32 @@ test.describe('desktop', () => {
     expect(box!.width).toBeGreaterThanOrEqual(44)
     expect(box!.height).toBeGreaterThanOrEqual(44)
     await hit.click({ force: true })
-    await page.waitForTimeout(300)
-    expect(await pose(page)).toBe('idle:front')
+    await page.waitForTimeout(400)
+    // It stops what it was doing and turns to whoever touched it. Whether it
+    // waves is a coin weighted by the character; both answers are correct.
+    expect(await pose(page)).toMatch(/^(idle|wave):front$/)
+  })
+
+  test('it works at the bench, sits down, and looks about', async ({ page }) => {
+    // Longer than the default: this one is about what the weights reach over
+    // time, and there is no way to hurry a machine whose whole point is that
+    // it does not rush.
+    test.setTimeout(240_000)
+    await enter(page)
+    const seen = await page.evaluate(async () => {
+      const img = document.querySelector('[data-npc] img') as HTMLImageElement
+      const out = new Set<string>()
+      const t0 = Date.now()
+      while (Date.now() - t0 < 170000) {
+        const m = /\/dokkaebi\/\w+\/(\w+)\//.exec(img.src)
+        if (m) out.add(m[1]!)
+        await new Promise((r) => setTimeout(r, 150))
+      }
+      return [...out]
+    })
+    for (const action of ['idle', 'walk', 'work', 'sit', 'look']) {
+      expect(seen, `never reached ${action}`).toContain(action)
+    }
   })
 
   test('it stands at the things it uses, not on them', async ({ page }) => {

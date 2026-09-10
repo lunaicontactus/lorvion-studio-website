@@ -26,9 +26,26 @@ export const FIGURE_RATIO = 0.9262
 
 const ROOT = '/assets/images/dokkaebi'
 const WALK_FPS = 9
+/**
+ * How many frames each action has, and which directions were rendered.
+ *
+ * Work happens at the bench with the dokkaebi's back to the room, so it is
+ * rendered back and front and nothing else; waving and looking are addressed
+ * to the visitor, who is the camera, so they are front only. A direction that
+ * was not rendered falls back to `front` — a slightly wrong angle rather than
+ * a missing image, which is the difference between a small compromise and a
+ * hole where the character was.
+ */
+const ACTIONS: Readonly<Record<SpriteAction, { frames: number; fps: number; dirs: readonly SpriteDirection[] }>> = {
+  idle: { frames: 4, fps: 3, dirs: ['front', 'back', 'left', 'right'] },
+  walk: { frames: 8, fps: WALK_FPS, dirs: ['front', 'back', 'left', 'right'] },
+  work: { frames: 6, fps: 5, dirs: ['back', 'front'] },
+  sit: { frames: 4, fps: 2, dirs: ['front', 'left', 'right'] },
+  wave: { frames: 5, fps: 6, dirs: ['front'] },
+  look: { frames: 6, fps: 4, dirs: ['front'] },
+}
 /** Six steps over four frames: out and back, so a breath does not snap. */
 const IDLE_ORDER = [1, 2, 3, 4, 3, 2]
-const IDLE_FPS = 3
 
 const DIRECTIONS: readonly SpriteDirection[] = ['front', 'back', 'left', 'right']
 
@@ -46,18 +63,25 @@ function sequence(
   return { frames: order.map((n) => frame(id, action, dir, n)), fps, loop: true }
 }
 
-function setFor(id: string, walkFrames: number): SpriteSet {
-  const walkOrder = Array.from({ length: walkFrames }, (_, i) => i + 1)
+function setFor(id: string): SpriteSet {
   const byDirection = <T>(make: (d: SpriteDirection) => T): Readonly<Record<SpriteDirection, T>> =>
     Object.fromEntries(DIRECTIONS.map((d) => [d, make(d)])) as Record<SpriteDirection, T>
+  const build = (action: SpriteAction): Readonly<Record<SpriteDirection, SpriteAnimation>> => {
+    const spec = ACTIONS[action]
+    const order = action === 'idle'
+      ? IDLE_ORDER
+      : Array.from({ length: spec.frames }, (_, i) => i + 1)
+    return byDirection((d) =>
+      sequence(id, action, spec.dirs.includes(d) ? d : 'front', order, spec.fps))
+  }
   return {
-    idle: byDirection((d) => sequence(id, 'idle', d, IDLE_ORDER, IDLE_FPS)),
-    walk: byDirection((d) => sequence(id, 'walk', d, walkOrder, WALK_FPS)),
+    idle: build('idle'), walk: build('walk'), work: build('work'),
+    sit: build('sit'), wave: build('wave'), look: build('look'),
   }
 }
 
 const SPRITES: Readonly<Record<string, SpriteSet>> = {
-  momo: setFor('momo', 8),
+  momo: setFor('momo'),
 }
 
 export function spritesFor(characterId: string): SpriteSet | null {
