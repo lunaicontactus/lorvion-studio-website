@@ -21,6 +21,12 @@ export interface Waypoint {
    * wall, so using it means turning away from the camera.
    */
   readonly facing?: 'front' | 'back'
+  /**
+   * What this point is for. `work` means there is a work animation to play
+   * here; `watch` means standing and looking at the thing, which the
+   * television and the shelf want and the fridge does not.
+   */
+  readonly kind?: 'use' | 'work' | 'watch'
 }
 
 /**
@@ -71,14 +77,23 @@ const LANDSCAPE: NavGraph = {
   floor: { top: 990, bottom: 1070 },
   height: 210,
   speed: 100,
+  // Several of these stand in front of the same object. A workbench two and a
+  // half metres wide has room for two, and a television has room for three;
+  // the fridge door has room for one, and a queue at it is a joke the room
+  // gets to make. Each point is booked separately (src/systems/crowd.ts), so
+  // "the bench is taken" is a fact about a place to stand and not about the
+  // furniture.
   points: [
     { id: 'left-floor', x: 1268, y: 1030 },
-    { id: 'pc-front', x: 1578, y: 1012, objectId: 'pc', facing: 'back' },
+    { id: 'pc-front', x: 1578, y: 1012, objectId: 'pc', facing: 'back', kind: 'work' },
     { id: 'mid-floor', x: 1860, y: 1042 },
-    { id: 'workbench-front', x: 2185, y: 1006, objectId: 'workbench', facing: 'back' },
-    { id: 'fridge-front', x: 2470, y: 1020, objectId: 'fridge', facing: 'back' },
-    { id: 'right-floor', x: 2760, y: 1036 },
-    { id: 'behind-left', x: 2150, y: 966 },
+    { id: 'workbench-a', x: 2116, y: 1006, objectId: 'workbench', facing: 'back', kind: 'work' },
+    { id: 'workbench-b', x: 2252, y: 1006, objectId: 'workbench', facing: 'back', kind: 'work' },
+    { id: 'fridge-front', x: 2470, y: 1020, objectId: 'fridge', facing: 'back', kind: 'use' },
+    { id: 'right-floor', x: 2652, y: 1036 },
+    { id: 'tv-left', x: 2790, y: 1030, objectId: 'tv', facing: 'back', kind: 'watch' },
+    { id: 'tv-right', x: 2900, y: 1030, objectId: 'tv', facing: 'back', kind: 'watch' },
+    { id: 'behind-left', x: 2076, y: 966 },
     { id: 'behind-right', x: 2440, y: 966 },
   ],
   // Read off the painting: the rug, the cushions on the left, and the boards
@@ -111,9 +126,10 @@ const PORTRAIT: NavGraph = {
   speed: 100,
   points: [
     { id: 'left-floor', x: 250, y: 1630 },
-    { id: 'pc-front', x: 518, y: 1612, objectId: 'pc', facing: 'back' },
+    { id: 'pc-front', x: 518, y: 1612, objectId: 'pc', facing: 'back', kind: 'work' },
     { id: 'mid-floor', x: 700, y: 1638 },
-    { id: 'workbench-front', x: 905, y: 1606, objectId: 'workbench', facing: 'back' },
+    { id: 'workbench-a', x: 875, y: 1606, objectId: 'workbench', facing: 'back', kind: 'work' },
+    { id: 'workbench-b', x: 960, y: 1606, objectId: 'workbench', facing: 'back', kind: 'work' },
   ],
   sits: [
     { id: 'floor', x: 430, y: 1640, facing: 'front', weight: 2 },
@@ -128,4 +144,10 @@ export function navFor(portrait: boolean): NavGraph {
 /** The points that stand in front of something, in the order they appear. */
 export function objectPoints(graph: NavGraph): readonly Waypoint[] {
   return graph.points.filter((p) => p.objectId !== undefined)
+}
+
+/** A named point, wherever it is — a standing place or a place to sit. */
+export function pointNamed(graph: NavGraph, id: string): { x: number; y: number } | null {
+  const p = graph.points.find((w) => w.id === id) ?? graph.sits.find((w) => w.id === id)
+  return p ? { x: p.x, y: p.y } : null
 }

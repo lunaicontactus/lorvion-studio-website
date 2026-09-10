@@ -234,6 +234,17 @@ class Posed(Rigged):
         super().__init__(path)
         self.by_name = {n.get('name'): i for i, n in enumerate(self.nodes)}
 
+    def bone_direction(self, joint, child, base_t=None):
+        """Where `joint`'s bone points right now, normalised.
+
+        Amplitude control needs this: "swing 88% of the way there" is a lerp
+        from where the bone already is toward where the pose wants it, and a
+        pose written as a direction has no other way to be scaled down.
+        """
+        world = self._world_matrices(base_t)
+        d = world[self.by_name[child]][:3, 3] - world[self.by_name[joint]][:3, 3]
+        return d / (np.linalg.norm(d) + 1e-9)
+
     def aim(self, joint, child, direction, base_t=None):
         """The rotation that points `joint`'s bone at `direction` in world space.
 
@@ -313,6 +324,48 @@ class Posed(Rigged):
         return np.stack([world(j) @ self.ibm[k] for k, j in enumerate(self.joints)])
 
 
+def weight_check(rigged, ratio=6.0, share=0.05):
+    """Complain about a rig whose skin weights are obviously wrong.
+
+    Distance cannot decide this. These characters are chubby and their bones
+    are tiny: MOMO's Head bone is 4% of her height and correctly owns hair
+    vertices half a height away, further than any of NUNU's bad weights. Nor
+    can connectivity — the bad region came back as one solid blob.
+
+    What does decide it is symmetry. The dokkaebi are bilaterally symmetric
+    and the skeleton is symmetrically named, so LeftHand and RightHand should
+    own comparable amounts of geometry. NUNU's first rig gave RightHand 11,091
+    vertices and LeftHand none: a hand had been handed the right side of the
+    head, and it dragged the hair sideways on every step.
+
+    The 5% share threshold has room either side of it: MOMO's worst pair is
+    LeftShoulder 36 against RightShoulder 1,332, which is 2% of her carrier
+    and renders perfectly — a shoulder sits near the body's axis and barely
+    moves, so owning the wrong side of one costs nothing visible. NUNU's bad
+    hand was 16%.
+
+    Cheap, and worth running before a render rather than after: a bad transfer
+    costs half an hour of rendering to discover by eye.
+    """
+    names = [n.get('name') for n in rigged.nodes]
+    dom = rigged.J[np.arange(len(rigged.J)), rigged.W.argmax(1)]
+    count = np.bincount(dom, minlength=len(rigged.joints))
+    owned = {names[j]: int(count[k]) for k, j in enumerate(rigged.joints)}
+    n = len(rigged.V)
+    bad = []
+    for name, c in sorted(owned.items()):
+        if not name or not name.startswith('Left'):
+            continue
+        twin = 'Right' + name[4:]
+        if twin not in owned:
+            continue
+        d = owned[twin]
+        big, small = max(c, d), min(c, d)
+        if big / n >= share and big > ratio * max(small, 1):
+            bad.append(f'{name} {c:,} vs {twin} {d:,}')
+    return owned, bad
+
+
 class Skinner:
     """Master mesh + borrowed skeleton."""
 
@@ -329,6 +382,10 @@ class Skinner:
 
         mn, mc, ms = norm(master_V)
         rn, rc, rs = norm(rigged.V)
+        # A bad weight transferred is a bad weight on 2.5M vertices, so say so
+        # here rather than after half an hour of rendering.
+        for complaint in weight_check(rigged)[1]:
+            print(f'   ! rig weights look wrong: {complaint}')
         tree = cKDTree(rn)
         _, nn = tree.query(mn, k=1, workers=-1)
         self.J = rigged.J[nn]

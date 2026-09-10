@@ -12,13 +12,23 @@ import type { SpriteAnimation } from '@/types/character'
 
 export class SpriteAnimator {
   readonly #img: HTMLImageElement
+  readonly #phase: number
   #anim: SpriteAnimation | null = null
   #key = ''
   #index = 0
   #acc = 0
 
-  constructor(img: HTMLImageElement) {
+  /**
+   * `phase` (0 to 1) is where in a sequence this animator starts.
+   *
+   * It matters once there is more than one character. Five dokkaebi all
+   * beginning their idle at frame one breathe in unison, which no five living
+   * things do, and the eye picks it up long before it works out why. Giving
+   * each one a fixed offset costs nothing and the room stops pulsing.
+   */
+  constructor(img: HTMLImageElement, phase = 0) {
     this.#img = img
+    this.#phase = phase
   }
 
   /** Which sequence is playing. Empty before the first play(). */
@@ -39,7 +49,7 @@ export class SpriteAnimator {
     if (key === this.#key) return
     this.#key = key
     this.#anim = anim
-    this.#index = 0
+    this.#index = Math.floor(this.#phase * anim.frames.length) % Math.max(anim.frames.length, 1)
     this.#acc = 0
     this.#show()
   }

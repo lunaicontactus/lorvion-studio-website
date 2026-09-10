@@ -90,12 +90,14 @@ export function mountWorld(): () => void {
       garage?.focusObject(id)
       // The visitor comes first: whoever is standing at that thing moves off,
       // and nobody starts a new errand while it is open.
-      garage?.npc?.yieldTo(id)
-      garage?.npc?.setCalm(true)
+      for (const one of garage?.crew ?? []) {
+        one.yieldTo(id)
+        one.setCalm(true)
+      }
     },
     restore: () => {
       garage?.restoreCamera()
-      garage?.npc?.setCalm(false)
+      for (const one of garage?.crew ?? []) one.setCalm(false)
     },
     open: (id) => {
       const obj = objectById(id)

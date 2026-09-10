@@ -209,9 +209,39 @@
   outline-offset:2px;
   border-radius:8px;
 }
+/* What one of them is saying. Sized in world units like everything else in
+   the room, so it scales with the camera instead of growing into a banner on
+   a phone. Never takes a pointer: a bubble that can be clicked is a button,
+   and these are not offering anything. */
+.npc__bubble{
+  position:absolute;
+  left:0;
+  /* `bottom` is set in world units by the scene: the element's own origin is
+     the feet, so the bubble has to be lifted by the character's own height. */
+  bottom:0;
+  margin:0;
+  transform:translate(-50%,0);
+  max-width:260px;
+  padding:10px 14px;
+  border-radius:16px 16px 16px 4px;
+  background:rgba(254,251,244,.94);
+  color:#3a2a1c;
+  font:600 26px/1.25 var(--sans);
+  white-space:nowrap;
+  text-align:center;
+  box-shadow:0 3px 10px rgba(38,24,14,.22);
+  pointer-events:none;
+  animation:npc-say .22s ease-out;
+}
+@keyframes npc-say{
+  from{opacity:0;transform:translate(-50%,8%) scale(.9)}
+  to{opacity:1;transform:translate(-50%,0) scale(1)}
+}
+
 /* Standing still is the whole animation when motion is reduced. */
 @media (prefers-reduced-motion:reduce){
   .npc__art{transition:none}
+  .npc__bubble{animation:none}
 }
 
 /* Foreground pieces: the room plate redrawn over the crew, in the shape of the

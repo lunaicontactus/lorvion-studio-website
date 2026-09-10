@@ -1,5 +1,7 @@
 """
-Build MOMO's sprite set from the master mesh and the borrowed skeleton.
+Build one dokkaebi's idle and walk from its master mesh and borrowed skeleton.
+
+    python3 scripts/build_sprites.py <char>
 
 Two behaviours, because two is what the rig honestly supports:
 
@@ -25,17 +27,21 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).parent))
+from crew import CREW                       # noqa: E402
 from pose import Rigged, Skinner            # noqa: E402
 from render_sprites import Rig, load_glb    # noqa: E402
 
 SRC = Path('assets/models/dokkaebi/source')
-OUT = Path('assets/sprites/momo')
 HEIGHT = 640
-WALK_FRAMES = 8
-IDLE_FRAMES = 4
-# A breath: the body swells about the floor, so the feet never leave it.
-IDLE_SWELL = [1.000, 1.006, 1.009, 1.005]
 FACING = [('front', 0), ('back', 180), ('left', 90)]   # right is left, mirrored
+
+
+def breath(n, swell):
+    """A breath over n frames: the body swells about the floor, so the feet
+    never leave it. Peak a little past the middle, because a breath in is
+    quicker than a breath out."""
+    return [1.0 + swell * (0.5 - 0.5 * np.cos(2 * np.pi * (i / n) ** 0.85))
+            for i in range(n)]
 
 
 def double_support(sk, walk, samples=24):
@@ -51,10 +57,12 @@ def double_support(sk, walk, samples=24):
     return best_t, best
 
 
-def main():
-    mesh = load_glb(SRC / 'momo_meshy_raw.glb')
-    rig = Rig(mesh, Image.open(SRC / 'momo_meshy_raw_base_color.png'), height=HEIGHT)
-    walk = Rigged(SRC / 'momo_anim_walk.glb')
+def main(char):
+    st = CREW[char]
+    OUT = Path('assets/sprites') / char
+    mesh = load_glb(SRC / f'{char}_meshy_raw.glb')
+    rig = Rig(mesh, Image.open(SRC / f'{char}_meshy_raw_base_color.png'), height=HEIGHT)
+    walk = Rigged(SRC / f'{char}_anim_walk.glb')
     sk = Skinner(mesh['V'].astype(np.float64), walk)
     print(f'frame {rig.w}x{rig.h}   walk {walk.duration:.2f}s')
 
@@ -67,25 +75,27 @@ def main():
         d.mkdir(parents=True, exist_ok=True)
         az = dict(FACING)[facing]
         img = rig.frame(azimuth=az, verts=V, swell=swell)
-        img.save(d / f'momo_{action}_{facing}_{i:02d}.png')
+        img.save(d / f'{char}_{action}_{facing}_{i:02d}.png')
         if facing == 'left':
             m = OUT / action / 'right'
             m.mkdir(parents=True, exist_ok=True)
             img.transpose(Image.FLIP_LEFT_RIGHT).save(
-                m / f'momo_{action}_right_{i:02d}.png')
+                m / f'{char}_{action}_right_{i:02d}.png')
 
+    swells = breath(st.idle_frames, st.swell)
     for facing, _ in FACING:
-        for i, sw in enumerate(IDLE_SWELL[:IDLE_FRAMES]):
+        for i, sw in enumerate(swells):
             write(V_idle, 'idle', facing, i + 1, swell=sw)
         print('  idle', facing)
 
-    for i in range(WALK_FRAMES):
-        V = sk.deform(walk.duration * i / WALK_FRAMES)
+    for i in range(st.walk_frames):
+        V = sk.deform(walk.duration * i / st.walk_frames)
         for facing, _ in FACING:
             write(V, 'walk', facing, i + 1)
-        print(f'  walk frame {i + 1}/{WALK_FRAMES}')
+        print(f'  walk frame {i + 1}/{st.walk_frames}', flush=True)
+    print(f'base_t {t_idle:.3f}   walk {walk.duration:.3f}s')
     return 0
 
 
 if __name__ == '__main__':
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1]))

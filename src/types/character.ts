@@ -109,4 +109,27 @@ export interface BehaviourProfile {
   readonly idleFor: readonly [number, number]
   /** Chance a touch gets a wave rather than just a look up. */
   readonly waveChance: number
+  /**
+   * How readily this one engages with another dokkaebi it meets, 0 to 1.
+   * Both parties are consulted, so two shy ones almost never speak and the
+   * gregarious one carries most of the room's conversation.
+   */
+  readonly social: number
+  /**
+   * How hard it is to interrupt with a touch, 0 to 1. RUKI at the bench looks
+   * up more slowly than YOMI, who was looking for an excuse anyway. Never 1:
+   * a dokkaebi that ignores the visitor entirely reads as broken, not busy.
+   */
+  readonly stubborn: number
+  /** How often it has something to say, relative to the others. */
+  readonly talkative: number
+  /**
+   * Where this one already is when the visitor walks in, as a waypoint or sit
+   * id. Five dokkaebi appearing in the same spot and dispersing is an
+   * entrance; five found in the places they belong have been here all along.
+   */
+  readonly home: string
 }
+
+/** What a dokkaebi is doing when it says something. */
+export type ChatterMood = 'idle' | 'work' | 'sit' | 'greet' | 'touched'

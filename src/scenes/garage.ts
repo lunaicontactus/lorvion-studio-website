@@ -23,12 +23,16 @@ import { audio } from '@/systems/audio'
 import { save } from '@/systems/storage'
 import { log } from '@/systems/log'
 import { mountNpc, npcAllowed, seededRandom, type NpcHandle } from '@/scenes/npc'
+import { Crowd } from '@/systems/crowd'
 import { CHARACTERS } from '@/data/characters'
 import { spritesFor } from '@/data/sprites'
 import type { WorldLayout, WorldObject } from '@/types/world'
 
 export interface GarageHandle {
-  /** The one dokkaebi in the room, if this visit has one. */
+  /** Everybody in the room. */
+  readonly crew: readonly NpcHandle[]
+  /** The first of them. Kept for the callers and tests that only ever needed
+   *  one, from when there only was one. */
   readonly npc: NpcHandle | null
   /** Stop reacting while a panel is open, so the room does not slide behind it. */
   setPaused(v: boolean): void
@@ -81,11 +85,15 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     timers.add(t)
   }
   const camera = new Camera(motion.reduced ? 1 : 0.16)
-  let npc: NpcHandle | null = null
+  let crew: NpcHandle[] = []
+  let crowd: Crowd | null = null
   /** Where the visitor was looking before an object took the camera. */
   let parked: { x: number; y: number } | null = null
   let world: WorldLayout = worldFor(false)
   let scale = 1
+  /** The visible window, in world units. Kept so the crew can be culled. */
+  let viewW = 0
+  let viewH = 0
   let lights = new Map<string, HTMLElement>()
   let ambient: Ambient | null = null
   let built = false
@@ -259,18 +267,17 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     // One dokkaebi, built with the room so it lives in world space and the
     // camera carries it. Rebuilt with the room, so turning the phone cannot
     // leave a second one behind.
-    npc?.destroy()
-    npc = null
+    for (const one of crew) one.destroy()
+    crew = []
+    crowd = null
     ambient?.destroy()
     ambient = null
     if (npcAllowed()) {
       // Whoever has rendered frames walks; the rest are still turnarounds and
-      // would stand about instead. As their frames land they become eligible
-      // here without this line changing.
-      const who =
-        CHARACTERS.find((c) => spritesFor(c.id)) ??
-        CHARACTERS.find((c) => c.id === 'poko') ??
-        CHARACTERS[0]
+      // would stand about instead. As their frames land they join the crew
+      // without this line changing.
+      const here = CHARACTERS.filter((c) => spritesFor(c.id))
+      const who = here[0] ?? CHARACTERS.find((c) => c.id === 'poko') ?? CHARACTERS[0]
       if (who) {
         // ?npc=debug draws the waypoints; ?npcseed=N pins the route so a test
         // can assert on it. Neither does anything unless it is asked for.
@@ -317,20 +324,33 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
           })
           ambient.start()
         }
-        npc = mountNpc(roomEl, who, world.height > world.width, {
-          debug: params.get('npc') === 'debug',
-          scale,
-          // Touching one stops it and makes it look up; the room's part is to
-          // acknowledge that quietly. No bubble, no name tag, no panel — the
-          // dokkaebi are not another menu.
-          onTouch: (c) => {
-            audio.play('click', 0.22)
-            save.update((d) => {
-              if (!d.discoveredCharacters.includes(c.id)) d.discoveredCharacters.push(c.id)
-            })
-          },
-          ...(Number.isFinite(seed) && seed > 0 ? { random: seededRandom(seed) } : {}),
-        })
+        // One crowd for the whole room: it holds the things that only make
+        // sense between them — the walking budget, who has booked the fridge
+        // door, how close two may stand, who may speak.
+        crowd = new Crowd({ narrow: world.height > world.width })
+        crew = here.map((c, i) =>
+          mountNpc(roomEl, c, world.height > world.width, {
+            debug: params.get('npc') === 'debug',
+            scale,
+            crowd: crowd!,
+            // Spread round the cycle so five of them do not breathe in unison.
+            phase: i / Math.max(here.length, 1),
+            // Touching one stops it and makes it look up; the room's part is
+            // to acknowledge that quietly. No bubble, no name tag, no panel —
+            // the dokkaebi are not another menu.
+            onTouch: (touched) => {
+              audio.play('click', 0.22)
+              save.update((d) => {
+                if (!d.discoveredCharacters.includes(touched.id)) {
+                  d.discoveredCharacters.push(touched.id)
+                }
+              })
+            },
+            // The seed pins one route, so it goes to the one the tests watch.
+            ...(Number.isFinite(seed) && seed > 0 && i === 0
+              ? { random: seededRandom(seed) }
+              : {}),
+          }))
       }
     }
 
@@ -378,6 +398,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     // Fit the short axis: a wide room fills the height, a tall room the width,
     // so there is never an empty margin to look at.
     scale = portrait ? r.width / world.width : r.height / world.height
+    viewW = r.width / scale
+    viewH = r.height / scale
     stage.style.setProperty('--scale', String(scale))
 
     if (changed) {
@@ -404,6 +426,29 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     const x = -camera.viewX * scale
     const y = -camera.viewY * scale
     roomEl.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`
+  }
+
+  /**
+   * Tell the crew who is in shot.
+   *
+   * This is not a performance measure — five sprites are nothing. It is that
+   * on a phone the room is a long strip and most of the crew is off the side
+   * of the screen, where writing their transform every frame buys the visitor
+   * nothing. They keep thinking and keep their place in the world; a dokkaebi
+   * that walked out of view and was deleted would have to be invented again
+   * when the camera came back, and it would be somewhere it had never been.
+   */
+  const OFFSCREEN_MARGIN = 280
+  const cull = (): void => {
+    if (crew.length === 0 || viewW === 0) return
+    const x0 = camera.viewX - OFFSCREEN_MARGIN
+    const x1 = camera.viewX + viewW + OFFSCREEN_MARGIN
+    const y0 = camera.viewY - OFFSCREEN_MARGIN
+    const y1 = camera.viewY + viewH + OFFSCREEN_MARGIN
+    for (const one of crew) {
+      const p = one.at
+      one.setOnscreen(p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1)
+    }
   }
 
   // ── Movement ─────────────────────────────────────────────────────────────
@@ -501,7 +546,14 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       //
       // Ambience gives way to whoever is walking: two things worth watching
       // at once is one thing too many.
-      ambient?.setAttention(paused ? ATTENTION.interaction : npc?.walking ? ATTENTION.crew : 0)
+      // Ambience gives way to the crew: with five of them there is nearly
+      // always somebody moving, so the floor is set by how much is going on
+      // rather than by any one of them.
+      const walkers = crowd?.walkers ?? 0
+      ambient?.setAttention(
+        paused ? ATTENTION.interaction : walkers > 0 ? ATTENTION.crew : 0)
+      crowd?.step(Math.min(info.delta, 64))
+      cull()
       if (!paused && keys.size) {
         const step = (KEY_PAN * info.delta) / 1000
         let dx = 0
@@ -577,13 +629,17 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     get world(): WorldLayout {
       return world
     },
+    get crew(): readonly NpcHandle[] {
+      return crew
+    },
     get npc(): NpcHandle | null {
-      return npc
+      return crew[0] ?? null
     },
     destroy(): void {
-      npc?.destroy()
+      for (const one of crew) one.destroy()
       ambient?.destroy()
-      npc = null
+      crew = []
+      crowd = null
       for (const t of timers) clearTimeout(t)
       timers.clear()
       for (const fn of off) fn()

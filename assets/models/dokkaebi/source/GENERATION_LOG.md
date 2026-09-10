@@ -110,3 +110,67 @@ from the walk cycle instead — the phase where the feet are closest together,
 t = 0.844s. Arms hang, feet under the body.
 
 Running total: 40 credits (30 generate + 5 remesh + 5 rig).
+
+
+## NUNU
+
+    date        2026-09-10
+    generate    01a08a95-dbf0-711f-8257-825a142fdb5e   30 credits
+    remesh      01a08a9a-7984-77da-afc0-525014c7d37f    5 credits
+    rig (1st)   01a08a9c-7ebf-7276-b19a-1bed5c767291    5 credits   REJECTED
+    rig (2nd)   01a08aaa-4b7f-74c3-8404-edd1fe0e717e    5 credits   used
+                                                        45 credits
+
+Same parameters as MOMO, from `input/nunu_t_{front,left,back}.png`, cut by
+`scripts/cut_views.py` from the turnaround sheet. Result: 1,908,352 triangles,
+2,514,063 vertices. Likeness is good from all four angles including the
+three-quarter the generator was never shown.
+
+**The first rig was broken, and the second was not.**
+
+Meshy's rigger gave `RightHand` 11,091 of the carrier's 68,530 vertices — the
+whole right side of the head. The master inherited it through the weight
+transfer, and NUNU walked with a wedge of hair swinging off its shoulder.
+
+It took a while to find because every plausible suspect was innocent: the
+weight transfer was *better* than MOMO's by nearest-neighbour distance (p95
+0.011 against 0.031), rest pose and inverse bind matrices agreed to within
+floating point on both, and the animated hips tilt matched MOMO's to a degree
+at every phase of the clip. Rendering the carrier's own mesh with its own
+weights is what settled it: the defect was already there, before any of my
+code touched it.
+
+Neither obvious repair works, and it is worth writing down why:
+
+  distance   these characters are chubby and their bones are tiny. MOMO's Head
+             bone is 4% of her height and correctly owns hair half a height
+             away — further than any of NUNU's bad weights reached. No
+             distance threshold separates them.
+  connectivity  the bad region came back as one solid blob of 11,012 vertices,
+             and the real hand was not in it. There was nothing to split.
+
+What does separate them is symmetry: LeftHand owned nothing at all. That is
+now checked before every render (`weight_check` in scripts/pose.py) — the
+threshold has a factor of three of room either side, since MOMO's worst
+asymmetric pair is 2% of her carrier and NUNU's bad hand was 16%.
+
+Re-rigging the identical input produced a clean rig, so the rigger is not
+deterministic. One retry, five credits, no loop.
+
+Gait: 90.8 world units per cycle against MOMO's 89.0, walked at 0.78 pace, so
+eight frames must play at 6.87fps. Measured in the browser over 38 cycles:
+91.0 median against 90.8 rendered.
+
+Frames: 93, all 342x420, foot gap 2px on every one.
+
+## RUKI
+
+    date        2026-09-10
+    generate    01a08ba6-88f5-74b4-b419-b55a1394ab88   30 credits
+    remesh      01a08bab-a375-7305-a18a-a99520e7b5ac    5 credits
+
+RUKI, YOMI and POKO's turnaround sheets carry FRONT / SIDE / BACK captions
+under the figures. `scripts/cut_views.py` trims them at the blank band between
+the feet and the lettering rather than at a fixed fraction — the toes come
+within a few pixels of the caption, and any margin wide enough to be safe from
+the lettering takes the feet with it.

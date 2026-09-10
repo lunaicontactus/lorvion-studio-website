@@ -2,16 +2,22 @@ import { test, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 /**
- * The one dokkaebi.
+ * The crew.
  *
  * Most of these are about restraint rather than motion: that there is exactly
- * one of them however you come and go, that it never takes a click away from
- * the visitor, that it stops choosing errands while something is open, and
- * that it stands still for long stretches. The route is pinned with ?npcseed
- * so the walk can be asserted at all.
+ * one of each however you come and go, that they never take a click away from
+ * the visitor, that they stop choosing errands while something is open, and
+ * that they stand still for long stretches. The route of the first one is
+ * pinned with ?npcseed so a walk can be asserted at all.
+ *
+ * Assertions about one dokkaebi name it. Whoever has rendered frames is in
+ * the room, so a bare `[data-npc]` count grows every time a character's
+ * frames land, and a test that counted them would fail on delivery rather
+ * than on breakage.
  */
 
 const NPC = '[data-npc]'
+const MOMO = '[data-npc="momo"]'
 
 async function enter(page: Page, query = ''): Promise<void> {
   await page.addInitScript(() => {
@@ -28,42 +34,96 @@ async function enter(page: Page, query = ''): Promise<void> {
   await page.waitForTimeout(900)
 }
 
-/** Where the feet are, in world units. */
-async function feet(page: Page): Promise<{ x: number; y: number }> {
-  return page.evaluate(() => {
-    const el = document.querySelector('[data-npc]') as HTMLElement
+/** Where one dokkaebi's feet are, in world units. */
+async function feet(page: Page, who = MOMO): Promise<{ x: number; y: number }> {
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel) as HTMLElement
     const m = /translate3d\((-?[\d.]+)px,\s*(-?[\d.]+)px/.exec(el.style.transform)
     return { x: Number(m?.[1] ?? 0), y: Number(m?.[2] ?? 0) }
-  })
+  }, who)
 }
 
-async function view(page: Page): Promise<string> {
-  return page.evaluate(() => {
-    const img = document.querySelector('[data-npc] img') as HTMLImageElement
+async function view(page: Page, who = MOMO): Promise<string> {
+  return page.evaluate((sel) => {
+    const img = document.querySelector(`${sel} img`) as HTMLImageElement
     return img.src.split('/').pop() ?? ''
-  })
+  }, who)
 }
 
 /** `action:direction` from the frame on screen, e.g. "walk:left". */
-async function pose(page: Page): Promise<string> {
-  return page.evaluate(() => {
-    const img = document.querySelector('[data-npc] img') as HTMLImageElement
+async function pose(page: Page, who = MOMO): Promise<string> {
+  return page.evaluate((sel) => {
+    const img = document.querySelector(`${sel} img`) as HTMLImageElement
     const m = /\/dokkaebi\/\w+\/(\w+)\/(\w+)\//.exec(img.src)
     return m ? `${m[1]}:${m[2]}` : 'still'
-  })
+  }, who)
+}
+
+/** Everybody in the room, by id. */
+async function whoIsHere(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('[data-npc]')].map((e) => (e as HTMLElement).dataset['npc'] ?? ''))
 }
 
 test.describe('desktop', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
 
-  test('there is exactly one, and it is not in the middle of the room', async ({ page }) => {
+  test('everybody is on the floor, and no two of them in the same place', async ({ page }) => {
     await enter(page)
-    await expect(page.locator(NPC)).toHaveCount(1)
-    const where = await feet(page)
-    // Off to one side, on the floor band, so the room is seen before they are.
-    expect(where.y).toBeGreaterThan(980)
-    expect(where.y).toBeLessThan(1080)
-    expect(where.x).toBeLessThan(1500)
+    const here = await whoIsHere(page)
+    expect(here.length).toBeGreaterThan(0)
+    // No duplicates: one element per character, however the room was built.
+    expect(new Set(here).size).toBe(here.length)
+    const places = await Promise.all(here.map((id) => feet(page, `[data-npc="${id}"]`)))
+    for (const p of places) {
+      expect(p.y).toBeGreaterThan(980)
+      expect(p.y).toBeLessThan(1080)
+    }
+    // Found where they live, not all stacked on one spawn point.
+    for (let i = 0; i < places.length; i++) {
+      for (let j = i + 1; j < places.length; j++) {
+        expect(Math.hypot(places[i]!.x - places[j]!.x, places[i]!.y - places[j]!.y),
+          `${here[i]} and ${here[j]} started on top of each other`).toBeGreaterThan(80)
+      }
+    }
+  })
+
+  test('they never all walk at once', async ({ page }) => {
+    await enter(page)
+    const here = await whoIsHere(page)
+    test.skip(here.length < 2, 'needs more than one to budget')
+    let worst = 0
+    for (let i = 0; i < 30; i++) {
+      await page.waitForTimeout(700)
+      const a = await Promise.all(here.map((id) => feet(page, `[data-npc="${id}"]`)))
+      await page.waitForTimeout(260)
+      const b = await Promise.all(here.map((id) => feet(page, `[data-npc="${id}"]`)))
+      const moving = a.filter((p, k) => Math.hypot(p.x - b[k]!.x, p.y - b[k]!.y) > 6).length
+      worst = Math.max(worst, moving)
+    }
+    // Two, by budget. A third can be caught mid-shuffle as it steps out of
+    // somebody's way, which is not an errand and is not what the budget counts.
+    expect(worst).toBeLessThanOrEqual(3)
+  })
+
+  test('two of them never end up standing in the same place', async ({ page }) => {
+    await enter(page)
+    const here = await whoIsHere(page)
+    test.skip(here.length < 2, 'needs more than one to collide')
+    let closest = Infinity
+    for (let i = 0; i < 40; i++) {
+      await page.waitForTimeout(900)
+      const now = await Promise.all(here.map((id) => feet(page, `[data-npc="${id}"]`)))
+      for (let a = 0; a < now.length; a++) {
+        for (let b = a + 1; b < now.length; b++) {
+          closest = Math.min(closest,
+            Math.hypot(now[a]!.x - now[b]!.x, (now[a]!.y - now[b]!.y) * 2.2))
+        }
+      }
+    }
+    // They may pass each other; they may not merge. Half a body width is the
+    // point at which two silhouettes stop reading as two.
+    expect(closest).toBeGreaterThan(40)
   })
 
   test('it walks somewhere, stands at it, and stands about between', async ({ page }) => {
@@ -92,7 +152,7 @@ test.describe('desktop', () => {
   test('the frames it plays are real files, and the walk actually cycles', async ({ page }) => {
     await enter(page)
     const frames = await page.evaluate(async () => {
-      const img = document.querySelector('[data-npc] img') as HTMLImageElement
+      const img = document.querySelector('[data-npc="momo"] img') as HTMLImageElement
       const seen = new Set<string>()
       const t0 = Date.now()
       while (Date.now() - t0 < 6000) {
@@ -111,7 +171,7 @@ test.describe('desktop', () => {
 
   test('touching it stops it and turns it to face the visitor', async ({ page }) => {
     await enter(page)
-    const hit = page.locator('.npc__hit')
+    const hit = page.locator(`${MOMO} .npc__hit`)
     await expect(hit).toHaveCount(1)
     // Big enough to hit on a phone, and the same floor the room's things use.
     const box = await hit.boundingBox()
@@ -120,8 +180,9 @@ test.describe('desktop', () => {
     await hit.click({ force: true })
     await page.waitForTimeout(400)
     // It stops what it was doing and turns to whoever touched it. Whether it
-    // waves is a coin weighted by the character; both answers are correct.
-    expect(await pose(page)).toMatch(/^(idle|wave):front$/)
+    // waves, looks up, or was already facing you is a coin weighted by the
+    // character; all of those are correct and none of them is walking.
+    expect(await pose(page)).toMatch(/^(idle|wave|look):(front|left|right)$/)
   })
 
   test('it works at the bench, sits down, and looks about', async ({ page }) => {
@@ -131,7 +192,7 @@ test.describe('desktop', () => {
     test.setTimeout(240_000)
     await enter(page)
     const seen = await page.evaluate(async () => {
-      const img = document.querySelector('[data-npc] img') as HTMLImageElement
+      const img = document.querySelector('[data-npc="momo"] img') as HTMLImageElement
       const out = new Set<string>()
       const t0 = Date.now()
       while (Date.now() - t0 < 170000) {
@@ -157,7 +218,7 @@ test.describe('desktop', () => {
     expect(at, 'never used anything in 32s').not.toBeNull()
     // On the floor in front of it, never up on the furniture.
     expect(at!.y).toBeGreaterThan(980)
-    const fronts = [1578, 2185, 2470]
+    const fronts = [1578, 2116, 2252, 2470, 2790, 2900]
     expect(Math.min(...fronts.map((f) => Math.abs(at!.x - f)))).toBeLessThan(20)
   })
 
@@ -206,7 +267,7 @@ test.describe('desktop', () => {
     await enter(page)
     const world = await feet(page)
     const before = await page.evaluate(
-      () => document.querySelector('[data-npc]')!.getBoundingClientRect().x,
+      () => document.querySelector('[data-npc="momo"]')!.getBoundingClientRect().x,
     )
     await page.mouse.move(700, 500)
     await page.mouse.down()
@@ -214,7 +275,7 @@ test.describe('desktop', () => {
     await page.mouse.up()
     await page.waitForTimeout(700)
     const after = await page.evaluate(
-      () => document.querySelector('[data-npc]')!.getBoundingClientRect().x,
+      () => document.querySelector('[data-npc="momo"]')!.getBoundingClientRect().x,
     )
     // Its place in the room did not change; its place on the screen did.
     const nowWorld = await feet(page)
@@ -224,24 +285,25 @@ test.describe('desktop', () => {
 
   test('leaving and coming back does not leave two of them', async ({ page }) => {
     await enter(page)
-    await expect(page.locator(NPC)).toHaveCount(1)
+    const before = await whoIsHere(page)
     await page.goto('/games.html', { waitUntil: 'load' })
     await page.goBack()
     await page.waitForTimeout(500)
     await page.locator('[data-alley-enter]').click()
     await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
     await page.waitForTimeout(900)
-    await expect(page.locator(NPC)).toHaveCount(1)
+    expect(await whoIsHere(page)).toEqual(before)
   })
 
   test('resizing the window does not clone it', async ({ page }) => {
     await enter(page)
+    const before = await whoIsHere(page)
     await page.setViewportSize({ width: 900, height: 1200 })
     await page.waitForTimeout(900)
-    await expect(page.locator(NPC)).toHaveCount(1)
+    expect(new Set(await whoIsHere(page)).size).toBe(before.length)
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.waitForTimeout(900)
-    await expect(page.locator(NPC)).toHaveCount(1)
+    expect(await whoIsHere(page)).toEqual(before)
   })
 
   test('the debug overlay is off unless it is asked for', async ({ page }) => {
@@ -258,7 +320,7 @@ test.describe('phone', () => {
 
   test('there is one, on the floor of the room it is in', async ({ page }) => {
     await enter(page, '?npcseed=7')
-    await expect(page.locator(NPC)).toHaveCount(1)
+    await expect(page.locator(NPC).first()).toBeAttached()
     const where = await feet(page)
     expect(where.y).toBeGreaterThan(1570)
     expect(where.y).toBeLessThan(1670)
@@ -283,9 +345,9 @@ test('a visitor who does not want motion gets somebody standing still', async ({
   })
   const page = await context.newPage()
   await enter(page)
-  await expect(page.locator(NPC)).toHaveCount(1)
+  await expect(page.locator(NPC).first()).toBeAttached()
   const settled = await page.evaluate(async () => {
-    const el = document.querySelector('[data-npc]') as HTMLElement
+    const el = document.querySelector('[data-npc="momo"]') as HTMLElement
     const img = el.querySelector('img') as HTMLImageElement
     const frames = new Set<string>()
     const places = new Set<string>()

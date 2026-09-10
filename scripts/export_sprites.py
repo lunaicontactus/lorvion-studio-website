@@ -21,7 +21,7 @@ its own bounding box. Per-frame cropping moves the body axis by up to 10px
 between frames of a walk, and a sprite anchored at 50% of its own width then
 twitches sideways on every step.
 
-    python3 scripts/export_sprites.py [--height 420]
+    python3 scripts/export_sprites.py <char> [--height 420]
 """
 import sys
 from pathlib import Path
@@ -29,8 +29,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-SRC = Path('assets/sprites/momo')
-DST = Path('public/assets/images/dokkaebi/momo')
+SRC_ROOT = Path('assets/sprites')
+DST_ROOT = Path('public/assets/images/dokkaebi')
 # Measured ratio, normalised to hold luminance: warmth without the hue.
 ROOM_LIGHT = np.array([1.040, 1.000, 0.940], np.float32)
 FLOOR_ROW = 604          # every master puts the feet here
@@ -59,6 +59,8 @@ def grade(img, height, x0, x1):
 
 
 def main():
+    char = sys.argv[1]
+    SRC, DST = SRC_ROOT / char, DST_ROOT / char
     height = HEIGHT
     if '--height' in sys.argv:
         height = int(sys.argv[sys.argv.index('--height') + 1])

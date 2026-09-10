@@ -1,10 +1,17 @@
 """
-MOMO's poses, written as directions rather than angles.
+The crew's poses, written as directions rather than angles.
 
-The rig arrives with a T-pose and one walk. Everything else the room needs is
-authored here, on top of the stance the walk already shows (BASE_T, the phase
-where the feet are together) so a pose does not snap the arms back out to the
-sides on the way in.
+Every rig arrives with a T-pose and one walk. Everything else the room needs
+is authored here, on top of the stance that rig's own walk already shows (the
+phase where the feet are together) so a pose does not snap the arms back out
+to the sides on the way in. That phase is found per character, not shared:
+two walk clips of the same length do not put the feet together at the same
+moment.
+
+One set of poses serves all five. What varies per character is how far the
+swing goes and how many frames it takes — see `crew.Style`. Writing five sets
+of poses by hand would give five characters that move differently and also
+five chances to get a bone axis wrong.
 
 Poses are written as "point this limb THERE", not as euler angles. Which axis
 swings a bone depends on where the rigger's solver left it, differs per joint,
@@ -18,7 +25,8 @@ site. A wrist that turns eleven degrees is invisible there.
 """
 import numpy as np
 
-# The walk phase with the feet together; every pose is written on top of it.
+# MOMO's walk phase with the feet together, kept as the default so the
+# existing MOMO build reproduces exactly. Other characters pass their own.
 BASE_T = 0.844
 
 # limb: (joint, child) — the bone whose direction a pose names.
@@ -34,12 +42,23 @@ LIMBS = {
 }
 
 
-def build(rig, aims, angles=None):
-    """One pose: limb directions, plus optional plain angles for the spine."""
-    out = dict(angles or {})
+def build(rig, aims, angles=None, amp=1.0, base_t=BASE_T):
+    """One pose: limb directions, plus optional plain angles for the spine.
+
+    `amp` scales the whole pose toward the stance it starts from — the limb
+    directions by lerping from where the bone already points, the spine angles
+    by plain multiplication. Scaling a direction any other way (shortening the
+    vector, say) does nothing at all, because only its direction is read.
+    """
+    out = {k: tuple(c * amp for c in v) for k, v in (angles or {}).items()}
     for limb, direction in aims.items():
         joint, child = LIMBS[limb]
-        out[joint] = rig.aim(joint, child, direction, BASE_T)
+        want = np.array(direction, np.float64)
+        want /= np.linalg.norm(want) + 1e-9
+        if amp != 1.0:
+            here = rig.bone_direction(joint, child, base_t)
+            want = here + (want - here) * amp
+        out[joint] = rig.aim(joint, child, want, base_t)
     return out
 
 
@@ -49,6 +68,7 @@ def _mix(a, b, u):
 
 def _cycle(keys, frames):
     """Sample a list of keyframes round a loop. Keys are (aims, angles)."""
+    frames = max(2, int(round(frames)))
     out = []
     span = 1 / (len(keys) - 1)
     for i in range(frames):
@@ -76,7 +96,7 @@ _W_B = ({'l_arm': (0.55, -0.05, 0.83), 'l_fore': (0.16, -0.70, 0.70),
 _W_C = ({'l_arm': (0.60, -0.30, 0.74), 'l_fore': (0.18, -0.45, 0.87),
          'r_arm': (-0.60, -0.35, 0.72), 'r_fore': (-0.18, -0.35, 0.92)},
         {'Spine': (-6, 0, 0), 'Head': (8, 0, 0)})
-WORK = _cycle([_W_A, _W_B, _W_A, _W_C, _W_A], 6)
+_WORK_KEYS = [_W_A, _W_B, _W_A, _W_C, _W_A]
 
 # ── sit ────────────────────────────────────────────────────────────────────
 # On the floor, legs forward, hands back. The renderer plants the lowest
@@ -86,7 +106,7 @@ _S_A = ({'l_thigh': (0.30, -0.24, 0.92), 'l_shin': (0.16, -0.90, 0.40),
          'l_arm': (0.72, -0.60, -0.34), 'r_arm': (-0.72, -0.60, -0.34)},
         {'Spine': (9, 0, 0), 'Spine01': (4, 0, 0)})
 _S_B = (_S_A[0], {'Spine': (12, 0, 0), 'Spine01': (5, 0, 0), 'Head': (-4, 0, 0)})
-SIT = _cycle([_S_A, _S_B, _S_A], 4)
+_SIT_KEYS = [_S_A, _S_B, _S_A]
 
 # ── wave ───────────────────────────────────────────────────────────────────
 # One arm up, forearm swinging across. Big, because it has to read at 210px.
@@ -96,7 +116,7 @@ _V_A = ({'l_arm': (0.52, 0.84, 0.14), 'l_fore': (0.20, 0.94, 0.28),
 _V_B = ({'l_arm': (0.52, 0.84, 0.14), 'l_fore': (0.70, 0.66, 0.28),
          'r_arm': (-0.40, -0.86, 0.32)},
         {'Head': (0, -14, 0), 'Spine': (0, -8, 0)})
-WAVE = _cycle([_V_A, _V_B, _V_A, _V_B, _V_A], 5)
+_WAVE_KEYS = [_V_A, _V_B, _V_A, _V_B, _V_A]
 
 # ── look ───────────────────────────────────────────────────────────────────
 # A glance across the room and back. The neck leads and the shoulders follow,
@@ -104,11 +124,16 @@ WAVE = _cycle([_V_A, _V_B, _V_A, _V_B, _V_A], 5)
 _L = ({}, {'Head': (0, -55, 0), 'neck': (0, -20, 0), 'Spine': (0, -12, 0)})
 _C = ({}, {})
 _R = ({}, {'Head': (0, 55, 0), 'neck': (0, 20, 0), 'Spine': (0, 12, 0)})
-LOOK = _cycle([_C, _L, _C, _R, _C], 6)
+_LOOK_KEYS = [_C, _L, _C, _R, _C]
 
-POSE_KEYS = {'work': WORK, 'sit': SIT, 'wave': WAVE, 'look': LOOK}
+# action -> (keyframes, MOMO's frame count). Tempo scales the count: more
+# frames is the same movement taking longer at the same playback rate.
+POSE_KEYS = {'work': (_WORK_KEYS, 6), 'sit': (_SIT_KEYS, 4),
+             'wave': (_WAVE_KEYS, 5), 'look': (_LOOK_KEYS, 6)}
 
 
-def frames_for(rig, name):
+def frames_for(rig, name, amp=1.0, tempo=1.0, base_t=BASE_T):
     """Concrete override dicts for one action, ready to skin."""
-    return [build(rig, aims, angles) for aims, angles in POSE_KEYS[name]]
+    keys, n = POSE_KEYS[name]
+    return [build(rig, aims, angles, amp, base_t)
+            for aims, angles in _cycle(keys, n * tempo)]
