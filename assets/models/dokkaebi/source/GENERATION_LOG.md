@@ -212,6 +212,26 @@ Consequence: YOMI and POKO were generated and nothing else. No remesh, no rig
     yomi    generate  01a08bb6-baa6-7430-bb92-dabd0a74d85e   30 credits
     poko    generate  01a08bbc-462b-72ed-b64e-3182ac38110b   30 credits
 
+## The five, as rendered
+
+    character  frames   frame     anchor   stride   pace   cadence
+    MOMO          83   298x420   1-2px     89.0     1.00    8.99fps
+    NUNU          93   342x420     2px     90.8     0.78    6.87fps
+    RUKI          79   337x420   1-2px     89.0     1.00    8.99fps
+    YOMI          76   331x420   1-2px     89.0     1.15   10.34fps
+    POKO          90   337x420   1-2px     89.0     0.88    7.91fps
+
+Cadence is not a choice. Each of them walks at `NavGraph.speed * pace`, the
+rendered stride covers a known distance per cycle, and the frame rate that
+makes the feet agree with the floor follows from those two. Playing them all
+at MOMO's nine would make NUNU moonwalk at 0.78 pace and YOMI mince at 1.15.
+
+Frame widths differ because each character's frames share one crop window
+wide enough for its own widest pose, and the four who sit with their legs
+further forward need a wider one. That is why `figureRatio` is measured per
+character too: dividing by a shared one would make whoever has the most hair
+stand 3% shorter than the rest.
+
 ## Credits
 
     MOMO    40    (earlier session)

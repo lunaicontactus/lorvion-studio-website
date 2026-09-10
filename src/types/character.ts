@@ -107,6 +107,16 @@ export interface BehaviourProfile {
   readonly pace: number
   /** How long it stands about, in milliseconds. */
   readonly idleFor: readonly [number, number]
+  /**
+   * How long a stint at the bench lasts, and how long it sits down for.
+   *
+   * These carry more of the personality than the weights do, because what a
+   * visitor sees is time and not decisions. RUKI picking work twice as often
+   * as MOMO but leaving after the same ten seconds does not look like the one
+   * who is absorbed in a job; RUKI staying half a minute does.
+   */
+  readonly workFor: readonly [number, number]
+  readonly sitFor: readonly [number, number]
   /** Chance a touch gets a wave rather than just a look up. */
   readonly waveChance: number
   /**

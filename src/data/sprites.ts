@@ -104,6 +104,13 @@ const SHEETS: Readonly<Record<string, Sheet>> = {
     walkFps: 10.34, aspect: 331 / 420, figureRatio: 0.9452, bodyWidth: 0.846,
     tempo: 0.8,
   },
+  // POKO: 0.88 pace, 8 frames at 7.91fps. The longest cycles of the five, and
+  // the smallest movements — it is mostly watching something.
+  poko: {
+    frames: { idle: 4, walk: 8, work: 7, sit: 5, wave: 6, look: 7 },
+    walkFps: 7.91, aspect: 337 / 420, figureRatio: 0.9452, bodyWidth: 0.819,
+    tempo: 1.2,
+  },
 }
 
 /** Six steps over four frames: out and back, so a breath does not snap. */

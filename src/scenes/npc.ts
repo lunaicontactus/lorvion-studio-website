@@ -119,9 +119,6 @@ const IDLE_MS = { min: 3000, max: 10000 }
 const INTERACT_MS = { min: 2000, max: 7000 }
 /** Watching something is a longer stay than opening a fridge. */
 const WATCH_MS = { min: 9000, max: 26000 }
-/** Long enough to be doing something, short enough not to become furniture. */
-const WORK_MS = { min: 6000, max: 16000 }
-const SIT_MS = { min: 8000, max: 22000 }
 /** Long enough to read as an exchange, short enough not to be a scene. */
 const GREET_MS = 2600
 /** Under a fingertip of travel is not worth a walk. */
@@ -149,6 +146,10 @@ export function mountNpc(
   const graph: NavGraph = navFor(portrait)
   const profile = behaviourFor(character.id)
   const pace = graph.speed * profile.pace
+  // How long this one stays at a thing. Written per character, because what
+  // the visitor reads as personality is time spent, not choices made.
+  const workFor = { min: profile.workFor[0], max: profile.workFor[1] }
+  const sitFor = { min: profile.sitFor[0], max: profile.sitFor[1] }
   const crowd = opts.crowd ?? null
   const id = character.id
 
@@ -341,6 +342,8 @@ export function mountNpc(
   let partner: CrowdMember | null = null
   /** Something across the room worth standing and looking at. */
   let lookAt: { x: number; y: number } | null = null
+  /** Held up by the walking budget, with the errand still to run. */
+  let waiting = false
   /** How long it has been walking without getting anywhere. */
   let stuck = 0
   let lastX = 0
@@ -388,12 +391,17 @@ export function mountNpc(
    */
   const beginWalk = (force = false): void => {
     if (!force && crowd && !crowd.mayWalk(id)) {
-      unbook()
-      target = null
-      sitAt = null
-      go('IDLE', 1200 + rng() * 1800)
+      // Wait for a gap and go anyway. Throwing the errand away and rolling
+      // again biased the whole room: a dokkaebi whose personality is mostly
+      // "wants to be at the bench" wants to walk more often than one whose
+      // personality is mostly "looks around", so it lost more decisions to
+      // the budget and ended up looking the less busy of the two. The place
+      // stays booked while it waits, which is what a reservation is for.
+      waiting = true
+      go('IDLE', 900 + rng() * 1400)
       return
     }
+    waiting = false
     crowd?.startWalk(id)
     stuck = 0
     lastX = x
@@ -500,6 +508,13 @@ export function mountNpc(
           return
         }
         if (wait > 0) return
+        // Still owed a trip that the budget held up. Take it now rather than
+        // deciding again, or the errand never happens.
+        if (waiting && target) {
+          beginWalk()
+          return
+        }
+        waiting = false
         // Per idle spell, not per tick — this line is past the `wait` guard.
         // The crowd's budget and cooldowns do the real limiting; this only
         // decides which of them is the chatty one.
@@ -656,11 +671,11 @@ export function mountNpc(
           place()
           if (sitAt) {
             pose('sit', sitAt.facing)
-            go('SIT', between(SIT_MS))
+            go('SIT', between(sitFor))
           } else if (target.kind === 'work') {
             recent = [target.objectId!, ...recent].slice(0, 2)
             pose('work', 'back')
-            go('WORK', between(WORK_MS))
+            go('WORK', between(workFor))
           } else if (target.objectId) {
             recent = [target.objectId, ...recent].slice(0, 2)
             // Everything worth using is against the back wall.
@@ -668,6 +683,12 @@ export function mountNpc(
             go('INTERACT', between(target.kind === 'watch' ? WATCH_MS : INTERACT_MS))
           } else {
             unbook()
+            // Arrived somewhere with nothing to look at. Turn back to the
+            // room if the walk left it facing the wall: the back lane runs
+            // along the tool wall, and a dokkaebi that walks up to it and
+            // then stands there with its back to you spent a quarter of one
+            // watch looking like it was sulking.
+            if (direction === 'back') pose('idle', 'front')
             go('IDLE', between(IDLE_MS))
           }
           return
@@ -692,13 +713,19 @@ export function mountNpc(
         }
         const sep = crowd?.separation(id, x, y) ?? { x: 0, y: 0, slow: 1 }
         paceScale = sep.slow
-        const move = (pace * sep.slow * dt) / 1000
+        const full = (pace * dt) / 1000
+        const move = full * sep.slow
         const ratio = Math.min(1, move / distance)
         // Steering, not collision: the push bends the path around the other
         // one instead of stopping dead at it, and two of them meeting in the
         // middle of the floor drift past each other the way people do.
-        x += dx * ratio + sep.x * move * 0.85
-        y += dy * ratio + sep.y * move * 0.85
+        //
+        // The push is scaled by the full pace, not the slowed one. Slowing
+        // down is what happens when they are too close, so tying the strength
+        // of the correction to it made the correction weakest exactly when it
+        // was most needed, and they went on closing.
+        x += dx * ratio + sep.x * full * 1.1
+        y += dy * ratio + sep.y * full * 1.1
         clampFloor()
         facingRight = dx >= 0
         pose('walk', faceFor(dx, dy))
