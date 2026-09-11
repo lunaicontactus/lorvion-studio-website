@@ -155,7 +155,7 @@ test('a deep link still lands on the entrance and opens its thing after ENTER', 
   await expect(page.locator('[data-alley-base]')).toBeVisible()
   await page.locator('[data-alley-enter]').click()
   await expect(page.locator('[data-crt]')).toBeVisible({ timeout: 8000 })
-  await expect(page.locator('.hub__row')).toHaveCount(4, { timeout: 8000 })
+  await expect(page.locator('[data-game]')).toHaveCount(4, { timeout: 8000 })
 })
 
 test('the door is never shown open before the shutter arrives', async ({ page }) => {

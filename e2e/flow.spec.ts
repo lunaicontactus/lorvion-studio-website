@@ -77,7 +77,7 @@ test.describe('desktop', () => {
   test('the games are reachable, through the PC and as a page', async ({ page }) => {
     await enter(page)
     await touch(page, 'pc')
-    await expect(page.locator('.hub__row')).toHaveCount(4, { timeout: 6000 })
+    await expect(page.locator('[data-game]')).toHaveCount(4, { timeout: 6000 })
     for (const title of ['LUNAI', 'LIMINAL', 'WORM UP!', 'RUBATO']) {
       await expect(page.locator('.hub')).toContainText(title)
     }
