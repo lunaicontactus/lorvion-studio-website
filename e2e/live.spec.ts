@@ -75,7 +75,7 @@ for (const vp of [{ w: 1440, h: 900 }, { w: 1920, h: 1080 }]) {
         await page.locator(`.thing--${id}`).hover()
         await expect.poll(async () => page.evaluate(() =>
           [...document.querySelectorAll('.thing')]
-            .filter((t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5)
+            .filter((t) => (t.querySelector('.thing__outline') ? Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5 : false))
             .map((t) => (t as HTMLElement).dataset['object'])), { timeout: 5000 }).toEqual([id])
         await page.screenshot({ path: `e2e/shots/live-${vp.w}-hover-${id}.png` })
       }
@@ -87,7 +87,7 @@ for (const vp of [{ w: 1440, h: 900 }, { w: 1920, h: 1080 }]) {
     await page.mouse.move(vp.w / 2, vp.h - 30)
     await page.waitForTimeout(300)
     const after = await page.evaluate(() => [...document.querySelectorAll('.thing')]
-      .filter((t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5).length)
+      .filter((t) => (t.querySelector('.thing__outline') ? Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5 : false)).length)
     expect(after).toBe(0)
   })
 }
@@ -109,7 +109,7 @@ test.describe('mobile', () => {
   await page.waitForTimeout(120)
   const litOnTouch = await page.evaluate(() =>
     [...document.querySelectorAll('.thing')]
-      .filter((t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5)
+      .filter((t) => (t.querySelector('.thing__outline') ? Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5 : false))
       .map((t) => (t as HTMLElement).dataset['object']))
   expect(litOnTouch).toEqual(['pc'])
   await page.screenshot({ path: 'e2e/shots/live-390-02-tap-outline.png' })
