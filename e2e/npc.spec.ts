@@ -259,16 +259,24 @@ test.describe('desktop', () => {
 
   test('it stands at the things it uses, not on them', async ({ page }) => {
     await enter(page, '?npcseed=7')
-    // Watch until it faces away, which only happens at a thing.
+    // Watch until it is using something. Not by the frame on screen: the
+    // busy places face the camera now, so "it turned its back" stopped
+    // meaning "it arrived somewhere" and started meaning nothing at all.
+    // The state is the thing being asserted about anyway.
     let at: { x: number; y: number } | null = null
     for (let i = 0; i < 40 && !at; i++) {
       await page.waitForTimeout(800)
-      if ((await view(page)).includes('back')) at = await feet(page)
+      const state = await page.evaluate(
+        (sel) => (document.querySelector(sel) as HTMLElement).dataset.state,
+        MOMO,
+      )
+      if (state === 'WORK' || state === 'INTERACT') at = await feet(page)
     }
     expect(at, 'never used anything in 32s').not.toBeNull()
     // On the floor in front of it, never up on the furniture.
     expect(at!.y).toBeGreaterThan(980)
-    const fronts = [1578, 2116, 2252, 2470, 2790, 2900]
+    // Every place in the room that stands in front of something.
+    const fronts = [1578, 2116, 2252, 2470, 2830, 2942, 3062, 3306]
     expect(Math.min(...fronts.map((f) => Math.abs(at!.x - f)))).toBeLessThan(20)
   })
 
