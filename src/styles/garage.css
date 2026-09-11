@@ -13,7 +13,9 @@
      stage 630px sideways while the camera stayed where it was. A clipped
      box cannot scroll at all; the camera is the only thing that moves. */
   overflow:clip;
-  background:#241a13;
+  /* The ground behind the plate, seen only in a letterbox: the colour of the
+     plaster, not of a cellar. */
+  background:#c9a97e;
   touch-action:none;
   cursor:grab;
   user-select:none;
@@ -33,7 +35,7 @@
   will-change:transform;
   background-repeat:no-repeat;
   background-size:100% 100%;
-  background-color:#2a1d13;
+  background-color:#c9a97e;
 }
 
 /* ── Things you can touch ──────────────────────────────────────────────── */
@@ -140,7 +142,13 @@
   /* Height is set in world units by the scene; the transform hangs the sprite
      above its standing point, so the element's position is the feet. */
   transform-origin:50% 100%;
-  filter:drop-shadow(0 3px 5px rgba(30,20,12,.34));
+  /* A little fill light on everybody, and no contact shadow on the art: the
+     drop shadow darkened the fur around the face and read as a ring of
+     shadow round the eyes. The floor shadow (.npc__shadow) does the joining. */
+  filter:brightness(1.06) saturate(1.04);
+  /* Small moves the room asks for — a tilt, a sway, a hop — compose with the
+     anchoring transform through the individual properties, about the feet. */
+  transition:rotate 320ms ease, translate 320ms ease, scale 320ms ease;
 }
 
 /* Development only, behind ?npc=debug. Never on for a visitor. */
@@ -339,11 +347,113 @@
   left:0;top:0;
   transform:translate(-50%,-50%);
   border-radius:50%;
-  background:radial-gradient(closest-side,rgba(38,24,14,.42),rgba(38,24,14,0));
+  /* Soft and faint: a toy on a table, not a figure under a lamp. */
+  background:radial-gradient(closest-side,rgba(60,40,26,.17),rgba(60,40,26,0));
   pointer-events:none;
 }
 
 @media (prefers-reduced-motion:reduce){
   .garage__light,.garage__star{transition:none}
   .garage__shooting{display:none}
+}
+
+/* ── Alive, in small ways ───────────────────────────────────────────────── */
+/* Off the edge of the plate: still mounted, not in the room. */
+.npc.is-away{visibility:hidden;pointer-events:none}
+/* Sitting: a little forward and a little to one side, the way a small
+   creature sits, rather than bolt upright like a doll on a shelf. */
+.npc[data-state="SIT"] .npc__art{rotate:3deg;scale:1 .97}
+/* Small movements, about the feet. The anchoring transform is untouched. */
+.npc__art.is-tilt{animation:npc-tilt 1000ms ease-in-out}
+.npc__art.is-sway{animation:npc-sway 1500ms ease-in-out}
+.npc__art.is-hop{animation:npc-hop 560ms cubic-bezier(.3,.9,.4,1)}
+@keyframes npc-tilt{30%{rotate:-4deg}70%{rotate:4deg}100%{rotate:0deg}}
+@keyframes npc-sway{25%{translate:-4px 0;rotate:-2deg}75%{translate:4px 0;rotate:2deg}100%{translate:0 0;rotate:0deg}}
+@keyframes npc-hop{
+  0%{translate:0 0;scale:1.05 .93}
+  40%{translate:0 -14px;scale:.96 1.06}
+  75%{translate:0 0;scale:1.03 .96}
+  100%{translate:0 0;scale:1 1}
+}
+/* Sparks over the head when the visitor touches one. Sized against the
+   camera like the bubbles. */
+.npc__spark{
+  position:absolute;left:0;top:0;
+  z-index:721;
+  pointer-events:none;
+  color:#ffb3c6;
+  font-size:calc(15px / var(--scale,1));
+  line-height:1;
+  text-shadow:0 0 calc(4px / var(--scale,1)) rgba(255,255,255,.9);
+  animation:npc-spark 1200ms ease-out var(--delay,0ms) forwards;
+  opacity:0;
+}
+.npc__spark:nth-child(odd){color:#ffd166}
+@keyframes npc-spark{
+  0%{opacity:0;translate:0 0;scale:.6}
+  20%{opacity:1;scale:1.1}
+  100%{opacity:0;translate:var(--dx,0px) calc(-44px / var(--scale,1));scale:.8}
+}
+/* The part that falls off the bench now and then. */
+.garage__gear{
+  position:absolute;
+  width:34px;height:34px;
+  pointer-events:none;
+  opacity:0;
+  transform-origin:50% 50%;
+}
+.garage__gear.is-falling{animation:gear-fall 4200ms ease-out forwards}
+@keyframes gear-fall{
+  0%{opacity:0;translate:0 -280px;rotate:0deg}
+  6%{opacity:1}
+  22%{translate:0 0;rotate:160deg}
+  30%{translate:4px -36px;rotate:230deg}
+  38%{translate:8px 0;rotate:300deg}
+  44%{translate:10px -10px}
+  50%{translate:11px 0;rotate:340deg}
+  88%{opacity:1;translate:11px 0}
+  100%{opacity:0;translate:11px 0}
+}
+/* Things on the floor that nobody touches. */
+.garage__decor{position:absolute;pointer-events:none;max-width:none;object-fit:contain}
+
+@media (prefers-reduced-motion:reduce){
+  .npc__art.is-tilt,.npc__art.is-sway,.npc__art.is-hop,.npc__spark,.garage__gear{animation:none}
+  .npc__spark{display:none}
+}
+
+/* ── Small movements in the painting ────────────────────────────────────── */
+/* Pieces of the plate over the plate, like the foreground; each moves a
+   little, now and then, about the point it is fixed at. */
+.garage__bit{position:absolute;z-index:61;pointer-events:none;background-repeat:no-repeat}
+.garage__bit[data-motion="wiggle"].is-live{animation:bit-wiggle 1600ms ease-in-out}
+.garage__bit[data-motion="wobble"].is-live{animation:bit-wobble 1400ms ease-in-out}
+.garage__bit[data-motion="sway"].is-live{animation:bit-sway 2600ms ease-in-out}
+@keyframes bit-wiggle{20%{rotate:-1.6deg}50%{rotate:1.4deg}80%{rotate:-.7deg}100%{rotate:0deg}}
+@keyframes bit-wobble{25%{rotate:4deg;translate:1px 0}60%{rotate:-3deg;translate:-1px 0}100%{rotate:0deg;translate:0 0}}
+@keyframes bit-sway{25%{rotate:1.6deg}60%{rotate:-1.3deg}100%{rotate:0deg}}
+/* Steam off the mug. */
+.garage__steam{position:absolute;z-index:62;width:60px;height:80px;pointer-events:none;opacity:0;transition:opacity 600ms ease}
+.garage__steam.is-live{opacity:1}
+.garage__steam span{
+  position:absolute;left:50%;bottom:0;
+  width:14px;height:14px;border-radius:50%;
+  background:rgba(255,255,255,.6);
+  filter:blur(4px);
+  opacity:0;
+}
+.garage__steam.is-live span{animation:steam-rise 2400ms ease-out infinite}
+.garage__steam span:nth-child(2){animation-delay:800ms}
+.garage__steam span:nth-child(3){animation-delay:1600ms}
+@keyframes steam-rise{
+  0%{opacity:0;translate:-50% 0;scale:.6}
+  20%{opacity:.75}
+  100%{opacity:0;translate:calc(-50% + 9px) -62px;scale:1.5}
+}
+/* The television, when the static comes on. */
+.garage__tvflicker{position:absolute;z-index:61;pointer-events:none;mix-blend-mode:screen;background:rgba(190,225,255,.22);opacity:0}
+.garage__tvflicker.is-live{animation:tv-flicker 1400ms steps(1)}
+@keyframes tv-flicker{0%,100%{opacity:0}10%{opacity:1}20%{opacity:0}35%{opacity:.7}45%{opacity:0}70%{opacity:1}80%{opacity:0}}
+@media (prefers-reduced-motion:reduce){
+  .garage__bit,.garage__steam span,.garage__tvflicker{animation:none}
 }

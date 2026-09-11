@@ -18,9 +18,10 @@ export interface Waypoint {
   readonly objectId?: string
   /**
    * Which way to face on arrival. Everything worth using is against the back
-   * wall, so using it means turning away from the camera.
+   * wall, so using it means turning away from the camera; the parcel on the
+   * floor is the one thing looked at sideways.
    */
-  readonly facing?: 'front' | 'back'
+  readonly facing?: 'front' | 'back' | 'left' | 'right'
   /**
    * What this point is for. `work` means there is a work animation to play
    * here; `watch` means standing and looking at the thing, which the
@@ -82,8 +83,16 @@ export interface NavGraph {
  */
 const LANDSCAPE: NavGraph = {
   floor: { top: 960, bottom: 1075 },
-  height: 210,
-  speed: 100,
+  /**
+   * 160, from 210. At 210 a dokkaebi stood taller than the desk and its
+   * head reached the shelf: five of them filled the room the way giant dolls
+   * fill a shoebox. At 160 the head is level with the desk top and the
+   * fridge handle, which is what a small creature in a workshop looks like.
+   * The stride scales with the figure, so the speed does too: 89 units per
+   * cycle at 210 is 67.8 at 160, and 100 units a second becomes 76.
+   */
+  height: 160,
+  speed: 76,
   // Several of these stand in front of the same object. A workbench two and a
   // half metres wide has room for two, and a television has room for three;
   // the fridge door has room for one, and a queue at it is a joke the room
@@ -108,6 +117,9 @@ const LANDSCAPE: NavGraph = {
     // character is being interested in it, and without somewhere to stand
     // that preference did nothing at all for fifteen minutes of watching.
     { id: 'secret-front', x: 3306, y: 1016, objectId: 'secret-door', facing: 'back', kind: 'watch' },
+    // Beside the parcel. Not a place anybody wanders to: only somebody
+    // summoned when the box is opened stands here, looking at it.
+    { id: 'parcel-side', x: 3010, y: 1066, objectId: 'parcel', facing: 'right', kind: 'watch' },
     { id: 'behind-left', x: 2030, y: 966 },
     { id: 'behind-right', x: 2440, y: 966 },
   ],
@@ -138,8 +150,9 @@ const PORTRAIT: NavGraph = {
    * belongs to the furniture, where 1.25 starts to loom. Checked at 360, 390
    * and 430 — it overlaps no hit area at any of them.
    */
-  height: 198,
-  speed: 100,
+  // 150, from 198, for the same reason as the landscape room; 76 = 100 x 150/198.
+  height: 150,
+  speed: 76,
   points: [
     { id: 'left-floor', x: 352, y: 1630 },
     { id: 'pc-front', x: 518, y: 1612, objectId: 'pc', facing: 'back', kind: 'work' },

@@ -100,6 +100,21 @@ export const MOBILE_WORLD: WorldLayout = {
 }
 
 /**
+ * Placed on the floor, not in the painting, and not a hit area: the cup of
+ * noodles beside the rug. `y` is the base line, which is what sorts it
+ * against the crew — somebody sitting on the rug is behind it, somebody
+ * walking along the front of the room is in front of it.
+ */
+export const DECOR: Readonly<Record<'landscape' | 'portrait', readonly { readonly art: string; readonly x: number; readonly y: number; readonly w: number; readonly h: number }[]>> = {
+  landscape: [
+    { art: `${ART}/prop_cup_ramen_open.webp`, x: 1384, y: 1078, w: 44, h: 55 },
+  ],
+  portrait: [
+    { art: `${ART}/prop_cup_ramen_open.webp`, x: 470, y: 1672, w: 40, h: 50 },
+  ],
+}
+
+/**
  * What the label under the pointer says. Korean, because the visitor is: the
  * aria-labels above stay as they are for the tests and the screen readers
  * that already know them. One line per thing, naming what it opens.

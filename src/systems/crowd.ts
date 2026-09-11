@@ -43,19 +43,27 @@ export interface CrowdMember {
   readonly radius: number
   /** How readily it engages, 0 to 1. */
   readonly social: number
+  /** On the rug, or the cushion: something a passer-by glances at. */
+  readonly seated: boolean
   /** Turn to `other`, say hello, then carry on. */
   greet(other: CrowdMember): void
 }
 
 /**
- * How close two of them may stand before one gives way, in world units. A
- * dokkaebi is about 130 units across the shoulders at the room's scale, so
- * this is a little over one body width: close enough to look like company,
- * far enough that the silhouettes stay separate.
+ * How close two of them may stand before one gives way, in world units,
+ * measured mostly along the boards. A dokkaebi is about 110 units across the
+ * shoulders at the room's scale, so this is a body width: the silhouettes
+ * stay separate, which is the whole point — two of them overlapping read as
+ * one creature with too many limbs, whatever their depth.
  */
-const PERSONAL = 96
+const PERSONAL = 108
 /** Below this they are properly overlapping and the push is at full strength. */
-const PRESSING = 48
+const PRESSING = 54
+/**
+ * Two walkers heading for the same stretch of floor: the one that yields
+ * stands for a moment and lets the other by. Checked this far ahead.
+ */
+const CROSSING = 150
 /**
  * How many may be walking at once.
  *
@@ -93,6 +101,7 @@ export class Crowd {
   private readonly pairSpoke = new Map<string, number>()
   private readonly saidAt = new Map<string, number>()
   private speaking = new Set<string>()
+  private readonly fidgeting = new Set<string>()
   // Never, rather than zero. Zero means "one just happened at start-up", so
   // the first greeting of a session would have waited out SOCIAL_GAP on top
   // of SOCIAL_NOT_BEFORE — a minute of the crew pointedly ignoring each other.
@@ -116,6 +125,7 @@ export class Crowd {
     this.members.delete(id)
     this.walking.delete(id)
     this.speaking.delete(id)
+    this.fidgeting.delete(id)
     for (const [slot, b] of this.bookings) if (b.by === id) this.bookings.delete(slot)
   }
 
@@ -173,6 +183,43 @@ export class Crowd {
   }
 
   /**
+   * Small movements while standing about — a tilt of the head, a sway, a
+   * hop. Two at once is a room that is alive; five at once is a room that
+   * is twitching.
+   */
+  mayFidget(id: string): boolean {
+    return this.fidgeting.has(id) || this.fidgeting.size < 2
+  }
+
+  startFidget(id: string): void {
+    this.fidgeting.add(id)
+  }
+
+  endFidget(id: string): void {
+    this.fidgeting.delete(id)
+  }
+
+  /** The nearest other member along the boards within `r`, if any. */
+  nearest(id: string, x: number, y: number, r: number): CrowdMember | null {
+    let best: CrowdMember | null = null
+    let bestD = r
+    for (const [other, m] of this.members) {
+      if (other === id) continue
+      const d = Math.hypot(m.at.x - x, (m.at.y - y) * 0.5)
+      if (d < bestD) {
+        bestD = d
+        best = m
+      }
+    }
+    return best
+  }
+
+  /** Everybody within `r` of a point, along the boards. */
+  around(x: number, y: number, r: number): CrowdMember[] {
+    return [...this.members.values()].filter((m) => Math.hypot(m.at.x - x, (m.at.y - y) * 0.5) <= r)
+  }
+
+  /**
    * How much is going on, as an attention floor for the room's own ambience.
    *
    * With one dokkaebi this was simply "is it walking". With five, somebody is
@@ -206,11 +253,15 @@ export class Crowd {
     let closest = Infinity
     for (const [other, m] of this.members) {
       if (other === id) continue
-      const dx = x - m.at.x
-      // The floor is a strip: two dokkaebi a hundred units apart in depth are
-      // visually one behind the other, not side by side, so depth counts for
-      // more than distance along the boards.
-      const dy = (y - m.at.y) * 2.2
+      // Directly in front of or behind somebody, the only way apart that the
+      // eye can see is sideways; which side is decided by name, so the two of
+      // them do not both pick the same one.
+      const dx = Math.abs(x - m.at.x) < 8 ? (id < other ? -40 : 40) : x - m.at.x
+      // The floor is a shallow strip and the figures are taller than it is
+      // deep, so two of them at different depths still overlap on screen
+      // unless they are clear of each other along the boards. Depth counts
+      // for little; the push is along the boards.
+      const dy = (y - m.at.y) * 0.5
       const d = Math.hypot(dx, dy)
       const space = PERSONAL * m.radius
       if (d >= space) continue
@@ -228,6 +279,27 @@ export class Crowd {
     // has time to work before either of them has walked through the other.
     const slow = closest < PRESSING ? 0.45 : 0.8
     return { x: px / len, y: py / len, slow }
+  }
+
+  /**
+   * Whether this walker should stand aside for a moment: somebody else is
+   * walking toward it on the same stretch and the two would meet. The one
+   * later in the alphabet yields, which is arbitrary and therefore stable —
+   * both stepping aside for each other is the deadlock this exists to avoid.
+   */
+  shouldYield(id: string, x: number, y: number, headingX: number): boolean {
+    if (!this.walking.has(id)) return false
+    for (const other of this.walking) {
+      if (other === id || other > id) continue
+      const m = this.members.get(other)
+      if (!m) continue
+      const dx = m.at.x - x
+      if (Math.abs(m.at.y - y) > 70) continue
+      // Ahead of us, and close.
+      if (Math.sign(dx) !== Math.sign(headingX) || Math.abs(dx) > CROSSING) continue
+      return true
+    }
+    return false
   }
 
   // ── Talking ──────────────────────────────────────────────────────────────

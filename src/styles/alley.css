@@ -202,8 +202,9 @@
   /* A vignette, not a curtain: the painted interior of the base plate, pushed
      in about the doorway, stays visible in the middle. STEP 3's garage takes
      over from exactly this view. */
-  /* A plain fade to the garage's own ground colour. No wipe, no vignette. */
-  background:#2a1d13;
+  /* A plain fade to the garage's own ground colour. No wipe, no vignette.
+     Warm plaster, not a cellar: the door opens onto light. */
+  background:#e9d3ae;
   transition:opacity 700ms ease-in;
 }
 .alley--inside .alley__inside{opacity:1}
@@ -240,4 +241,55 @@
 
 @media (max-width:480px){
   .alley__enter{font-size:.76rem;letter-spacing:.2em;padding:16px 26px}
+}
+
+/* ── Through the open door ─────────────────────────────────────────────── */
+/* Sized to the doorway by the scene, like the glow; above the glow and
+   under the shutter, so nothing shows until the shutter has gone up. */
+.alley__doorway{
+  position:absolute;
+  z-index:1;
+  overflow:hidden;
+  pointer-events:none;
+}
+/* A little dust in the light. Seven motes, each on its own path and delay. */
+.alley__dust i{
+  position:absolute;
+  bottom:10%;
+  width:3px;height:3px;
+  border-radius:50%;
+  background:rgba(255,240,210,.9);
+  box-shadow:0 0 6px rgba(255,230,180,.8);
+  opacity:0;
+}
+.alley__dust i:nth-child(1){left:22%;--d:0ms;--x:6px}
+.alley__dust i:nth-child(2){left:38%;--d:400ms;--x:-8px}
+.alley__dust i:nth-child(3){left:51%;--d:900ms;--x:4px}
+.alley__dust i:nth-child(4){left:63%;--d:200ms;--x:-5px}
+.alley__dust i:nth-child(5){left:75%;--d:1100ms;--x:7px}
+.alley__dust i:nth-child(6){left:31%;--d:1500ms;--x:-3px}
+.alley__dust i:nth-child(7){left:58%;--d:700ms;--x:2px}
+.alley--light .alley__dust i{animation:dust-rise 2600ms ease-out var(--d) infinite}
+@keyframes dust-rise{
+  0%{opacity:0;translate:0 0;scale:.5}
+  15%{opacity:.9}
+  100%{opacity:0;translate:var(--x) -70%;scale:1.2}
+}
+/* Somebody looks round the frame: in from the left, tilted, and gone again
+   once the camera is through. */
+.alley__peek{
+  position:absolute;
+  left:4%;
+  bottom:4%;
+  height:42%;
+  transform:translateX(-130%) rotate(0deg);
+  transform-origin:50% 100%;
+  transition:transform 520ms cubic-bezier(.3,1.35,.5,1),opacity 300ms ease;
+}
+.alley__peek img{height:100%;width:auto;max-width:none;display:block;filter:brightness(1.08)}
+.alley--peek .alley__peek{transform:translateX(-30%) rotate(-9deg)}
+.alley--push .alley__peek{opacity:0}
+@media (prefers-reduced-motion:reduce){
+  .alley__dust i{animation:none}
+  .alley__peek{transition:none;transform:none;opacity:0}
 }

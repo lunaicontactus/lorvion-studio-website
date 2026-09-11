@@ -11,6 +11,7 @@ function member(id: string, x: number, y = 1030, social = 1): CrowdMember & {
   const m = {
     id,
     greeted: [] as string[],
+    seated: false,
     place: { x, y },
     free: true,
     social,
@@ -122,10 +123,11 @@ describe('personal space', () => {
     expect(seated.separation('momo', 1345, 1030).x).toBeLessThan(0)
   })
 
-  it('counts depth for more than distance along the boards', () => {
-    // The floor is a strip seen from the front, so two dokkaebi 45 units
-    // apart in depth are one behind the other and read as separate, while two
-    // 45 units apart along the boards are shoulder to shoulder.
+  it('counts distance along the boards for more than depth, and never lets one hide behind another', () => {
+    // The floor is a shallow strip and the figures are taller than it is
+    // deep: two dokkaebi 45 units apart in depth at the same x are one on
+    // top of the other on screen, and read as a single creature. Both cases
+    // push, and the one directly behind is pushed sideways, not deeper.
     const beside = new Crowd()
     beside.join(member('momo', 1300, 1030))
     beside.join(member('nunu', 1345, 1030))
@@ -134,7 +136,25 @@ describe('personal space', () => {
     const behind = new Crowd()
     behind.join(member('momo', 1300, 1030))
     behind.join(member('nunu', 1300, 1075))
-    expect(behind.separation('momo', 1300, 1030)).toEqual({ x: 0, y: 0, slow: 1 })
+    const push = behind.separation('momo', 1300, 1030)
+    expect(push.x).toBeLessThan(0)
+    expect(Math.abs(push.x)).toBeGreaterThan(Math.abs(push.y))
+  })
+
+  it('has the later name stand aside when two walkers would meet', () => {
+    const crowd = new Crowd()
+    crowd.join(member('momo', 1300, 1030))
+    crowd.join(member('nunu', 1400, 1040))
+    crowd.startWalk('momo')
+    crowd.startWalk('nunu')
+    // NUNU walks left toward MOMO, 100 units ahead: NUNU yields, MOMO does not.
+    expect(crowd.shouldYield('nunu', 1400, 1040, -1)).toBe(true)
+    expect(crowd.shouldYield('momo', 1300, 1030, 1)).toBe(false)
+    // Walking away from each other, nobody yields.
+    expect(crowd.shouldYield('nunu', 1400, 1040, 1)).toBe(false)
+    // Nor when the other one is standing still.
+    crowd.endWalk('momo')
+    expect(crowd.shouldYield('nunu', 1400, 1040, -1)).toBe(false)
   })
 })
 
@@ -263,7 +283,7 @@ describe('the ambience floor', () => {
  */
 describe('where they may stand', () => {
   // Mirrors PERSONAL and the seated radius in src/systems/crowd.ts.
-  const PERSONAL = 96
+  const PERSONAL = 108
   const SEATED = 0.55
 
   for (const portrait of [false, true]) {

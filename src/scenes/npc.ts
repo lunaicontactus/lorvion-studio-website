@@ -47,6 +47,10 @@ export type NpcState =
   | 'LOOK'
   | 'GREET'
   | 'REACT'
+  /** Stopped mid-walk for a moment: to let somebody by, or to glance at somebody sitting. */
+  | 'GLANCE'
+  /** Off the edge of the plate. Still here, still one of the crew, not on the floor. */
+  | 'AWAY'
   | 'PAUSED'
 
 /**
@@ -54,8 +58,8 @@ export type NpcState =
  * dokkaebi that wanders off mid-conversation is the room ignoring you.
  */
 const PRIORITY: Readonly<Record<NpcState, number>> = {
-  REACT: 70, INTERACT: 60, GREET: 55, WORK: 50, SIT: 40, WALK: 30,
-  LOOK: 20, IDLE: 10, CHOOSE_TARGET: 10, SPAWN: 0, PAUSED: 0,
+  REACT: 70, INTERACT: 60, GREET: 55, WORK: 50, SIT: 40, WALK: 30, GLANCE: 30,
+  LOOK: 20, IDLE: 10, CHOOSE_TARGET: 10, SPAWN: 0, PAUSED: 0, AWAY: 0,
 }
 
 export interface NpcOptions {
@@ -90,9 +94,23 @@ export interface NpcOptions {
    * thing the visitor was waiting for — came in last.
    */
   readonly ready?: Promise<unknown>
+  /** Start off the edge of the plate rather than in the room (src/systems/stage.ts). */
+  readonly away?: boolean
 }
 
 export interface NpcHandle {
+  /** Walk off the edge of the plate. False when it is in the middle of something. */
+  leave(): boolean
+  /** Walk back on from an edge, to wherever it usually is. False when it is not away. */
+  comeBack(): boolean
+  /** Off the plate. */
+  readonly away: boolean
+  /** Something happened at `from`: hop, and turn to look. */
+  startle(from: { x: number; y: number }): void
+  /** Go and look at a thing. False when it is busy or away. */
+  summon(to: Waypoint): boolean
+  /** The visitor has just come in: notice them. */
+  greetVisitor(): void
   /** Stop choosing and moving; the current pose is held. */
   setPaused(paused: boolean): void
   /**
@@ -238,6 +256,19 @@ export function mountNpc(
    * the same fault as the wrong frame rate and just as visible.
    */
   let paceScale = 1
+  /** Off the plate, or on the way off / on. */
+  let away = opts.away === true
+  let exiting = false
+  let entering = false
+  /** How far past the last waypoint the edge of the plate is. */
+  const EDGE = 170
+  /** Countdown to the next small movement while standing about. */
+  let fidgetAt = 3000 + rng() * 6000
+  let fidgetTimer: ReturnType<typeof setTimeout> | null = null
+  /** The seated one this walk has already glanced at. */
+  let glancedAt: string | null = null
+  /** What to go back to after a brief reaction that interrupted a job. */
+  let back: { state: NpcState; wait: number; action: SpriteAction; dir: SpriteDirection } | null = null
 
   // Rendered frames run from the floor row up and carry headroom above the
   // hair, so the frame is taller than the dokkaebi by a known ratio.
@@ -248,6 +279,10 @@ export function mountNpc(
     // Positioned by the feet: the sprite hangs above its own standing point.
     el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`
     el.style.zIndex = String(depthOf(y))
+    // Past the last waypoint the boards run out: fade over the edge rather
+    // than walk into the wall and vanish.
+    const over = Math.max(FLOOR_ENDS.min - x, x - FLOOR_ENDS.max, 0)
+    el.style.opacity = away ? '0' : String(Math.max(0, Math.min(1, 1 - over / (EDGE - 20))))
     art.style.height = `${frameHeight}px`
     // Real left and right frames exist, so nothing is mirrored at runtime.
     const flip = !sprites && view === 'side' && !facingRight ? ' scaleX(-1)' : ''
@@ -377,6 +412,7 @@ export function mountNpc(
   const go = (next: NpcState, ms = 0): void => {
     state = next
     wait = ms
+    el.dataset['state'] = next
     if (next !== 'WALK') crowd?.endWalk(id)
     if (debugEl) debugEl.textContent = `${state} ${target?.id ?? ''}`
   }
@@ -479,13 +515,98 @@ export function mountNpc(
     (r, p) => ({ min: Math.min(r.min, p.x), max: Math.max(r.max, p.x) }),
     { min: Infinity, max: -Infinity })
   const clampFloor = (): void => {
-    x = Math.min(FLOOR_ENDS.max, Math.max(FLOOR_ENDS.min, x))
+    // Leaving or arriving, the walk continues past the last waypoint to the
+    // edge of the plate; the rest of the time it stops at the furniture.
+    const slack = exiting || entering ? EDGE : 0
+    x = Math.min(FLOOR_ENDS.max + slack, Math.max(FLOOR_ENDS.min - slack, x))
     y = Math.min(graph.floor.bottom, Math.max(graph.floor.top, y))
   }
 
+  /** Which edge is nearer, as somewhere to walk to. */
+  const exitFor = (): Waypoint => {
+    const left = x < (FLOOR_ENDS.min + FLOOR_ENDS.max) / 2
+    return left
+      ? { id: 'exit-left', x: FLOOR_ENDS.min - EDGE, y }
+      : { id: 'exit-right', x: FLOOR_ENDS.max + EDGE, y }
+  }
+
+  // ── Small movements ──────────────────────────────────────────────────────
+  /**
+   * A tilt of the head, a sway, a hop: the difference between a figure that
+   * is standing and a figure that is standing still. Done with the art's own
+   * rotate/translate/scale so the anchoring transform is untouched.
+   */
+  const nudge = (kind: 'tilt' | 'sway' | 'hop', ms: number): void => {
+    if (motion.reduced) return
+    art.classList.remove('is-tilt', 'is-sway', 'is-hop')
+    void art.offsetWidth
+    art.classList.add(`is-${kind}`)
+    crowd?.startFidget(id)
+    if (fidgetTimer) clearTimeout(fidgetTimer)
+    fidgetTimer = setTimeout(() => {
+      art.classList.remove(`is-${kind}`)
+      crowd?.endFidget(id)
+      fidgetTimer = null
+    }, ms)
+  }
+
+  /** A few sparks over the head: the visitor touched it. */
+  const sparkle = (): void => {
+    if (motion.reduced) return
+    const n = 2 + Math.floor(rng() * 3)
+    for (let i = 0; i < n; i++) {
+      const s = document.createElement('span')
+      s.className = 'npc__spark'
+      s.textContent = rng() < 0.5 ? '✦' : '♥'
+      s.style.setProperty('--dx', `${Math.round((rng() - 0.5) * 70)}px`)
+      s.style.setProperty('--delay', `${Math.round(i * 90)}ms`)
+      s.style.transform =
+        `translate3d(${Math.round(x)}px, ${Math.round(y - frameHeight * 0.92)}px, 0) translate(-50%, -100%)`
+      room.append(s)
+      setTimeout(() => s.remove(), 1400)
+    }
+  }
+
+  /** What a standing dokkaebi does with a spare few seconds. */
+  const fidget = (): void => {
+    if (!crowd?.mayFidget(id) && crowd) return
+    fidgetAt = 4000 + rng() * 6000
+    const seated = state === 'SIT'
+    const kinds: readonly (readonly ['tilt' | 'sway' | 'hop' | 'wave' | 'peek' | 'glance', number])[] = seated
+      ? [['tilt', 4], ['sway', 3], ['peek', 2]]
+      : [['tilt', 3], ['sway', 3], ['hop', 1], ['wave', 1], ['peek', 2], ['glance', 3]]
+    const kind = pick(kinds)
+    if (kind === 'tilt') nudge('tilt', 1000)
+    else if (kind === 'sway') nudge('sway', 1500)
+    else if (kind === 'hop') nudge('hop', 560)
+    else if (state !== 'IDLE') nudge('tilt', 1000)
+    else if (kind === 'wave') {
+      pose('wave', 'front')
+      go('LOOK', waveMs)
+    } else if (kind === 'peek') {
+      go('LOOK', lookMs)
+    } else {
+      // Look over at whoever is nearest. Real left and right frames, so a
+      // real turn — and then back, so it is a glance and not a stare.
+      const who = crowd?.nearest(id, x, y, 900)
+      if (!who) {
+        nudge('tilt', 1000)
+        return
+      }
+      lookAt = { x: who.at.x, y: who.at.y }
+      go('LOOK', 1400 + rng() * 800)
+    }
+  }
+
   const step = (dt: number): void => {
-    if (state === 'PAUSED') return
+    if (state === 'PAUSED' || state === 'AWAY') return
     wait -= dt
+    // Standing about is never standing still. Not while calm, though: a
+    // figure fidgeting behind an open panel is a distraction.
+    if (!calm && onscreen && (state === 'IDLE' || state === 'INTERACT' || state === 'SIT')) {
+      fidgetAt -= dt
+      if (fidgetAt <= 0) fidget()
+    }
 
     // Standing too close to somebody is corrected while standing about, not
     // only while walking: two of them can end up shoulder to shoulder because
@@ -658,7 +779,27 @@ export function mountNpc(
 
       case 'REACT':
         // Looked up at whoever touched it. Waving is a maybe, not a reflex.
-        if (wait <= 0) go('IDLE', between(IDLE_MS))
+        if (wait <= 0) {
+          if (back) {
+            // Back to the bench, the rug, the fridge: a startle or a hello
+            // is a moment, not a change of plan.
+            const b = back
+            back = null
+            pose(b.action, b.dir)
+            go(b.state, b.wait)
+          } else {
+            go('IDLE', between(IDLE_MS))
+          }
+        }
+        return
+
+      case 'GLANCE':
+        // Stopped mid-walk. The errand is still on; carry on when the moment
+        // has passed, past the budget — the walk was already counted.
+        if (wait <= 0) {
+          if (target) beginWalk(true)
+          else go('IDLE', between(IDLE_MS))
+        }
         return
 
       case 'CHOOSE_TARGET': {
@@ -695,7 +836,21 @@ export function mountNpc(
           x = target.x
           y = target.y
           crowd?.endWalk(id)
+          entering = false
+          glancedAt = null
           place()
+          if (exiting) {
+            // Off the edge. Still one of the crew, just not in the room.
+            exiting = false
+            away = true
+            el.classList.add('is-away')
+            crowd?.leave(id)
+            unbook()
+            target = null
+            go('AWAY')
+            place()
+            return
+          }
           if (sitAt) {
             pose('sit', sitAt.facing)
             go('SIT', between(sitFor))
@@ -705,8 +860,10 @@ export function mountNpc(
             go('WORK', between(workFor))
           } else if (target.objectId) {
             recent = [target.objectId, ...recent].slice(0, 2)
-            // Everything worth using is against the back wall.
-            pose('idle', target.facing === 'back' ? 'back' : 'front')
+            // Everything worth using is against the back wall; the parcel on
+            // the floor is looked at sideways, and arrived at with a hop.
+            pose('idle', target.facing ?? 'front')
+            if (target.objectId === 'parcel') nudge('hop', 560)
             go('INTERACT', between(target.kind === 'watch' ? WATCH_MS : INTERACT_MS))
           } else {
             unbook()
@@ -737,6 +894,25 @@ export function mountNpc(
           stuck = 0
           lastX = x
           lastY = y
+        }
+        if (crowd && !exiting && !entering) {
+          // Somebody coming the other way on the same stretch: stand aside a
+          // moment and let them by, rather than shoulder past.
+          if (crowd.shouldYield(id, x, y, Math.sign(dx))) {
+            pose('idle')
+            go('GLANCE', 600 + rng() * 400)
+            return
+          }
+          // Passing somebody sitting down: a glance, once per walk. People
+          // look at people eating.
+          const near = crowd.nearest(id, x, y, 150)
+          if (near?.seated && glancedAt !== near.id) {
+            glancedAt = near.id
+            pose('idle', near.at.x >= x ? 'right' : 'left')
+            nudge('tilt', 900)
+            go('GLANCE', 900)
+            return
+          }
         }
         const sep = crowd?.separation(id, x, y) ?? { x: 0, y: 0, slow: 1 }
         paceScale = sep.slow
@@ -785,14 +961,51 @@ export function mountNpc(
   // half of the workshop with a wall between it and the rest. So the fallback
   // hands out a different waypoint to each of them rather than putting them
   // all on the same one, which is what a shared default would do.
+  const homePoint = graph.points.find((p) => p.id === profile.home) ?? null
+  const homeSeat = graph.sits.find((p) => p.id === profile.home) ?? null
   const home = pointNamed(graph, profile.home)
     ?? graph.points[(opts.order ?? 0) % graph.points.length]!
-  x = home.x
-  y = home.y
-  pose('idle', rng() < 0.5 ? 'front' : 'left')
-  place()
-  // Staggered, so they do not all come to life on the same frame.
-  go('SPAWN', 600 + rng() * 3400)
+
+  /**
+   * Found where it lives, already doing what it does there: at the bench
+   * working, on the rug sitting, at the fridge with the door open. Not
+   * standing on its mark waiting for the scene to start.
+   */
+  const settleAtHome = (): void => {
+    x = home.x
+    y = home.y
+    if (homeSeat && (!crowd || crowd.free(homeSeat.id, id))) {
+      sitAt = homeSeat
+      if (crowd) {
+        crowd.claim(homeSeat.id, id)
+        booked = homeSeat.id
+      }
+      pose('sit', homeSeat.facing)
+      go('SIT', between(sitFor))
+    } else if (homePoint?.kind === 'work' && (!crowd || crowd.free(homePoint.id, id))) {
+      target = homePoint
+      if (crowd) {
+        crowd.claim(homePoint.id, id)
+        booked = homePoint.id
+      }
+      recent = [homePoint.objectId!, ...recent].slice(0, 2)
+      pose('work', 'back')
+      go('WORK', between(workFor))
+    } else if (homePoint?.objectId && (!crowd || crowd.free(homePoint.id, id))) {
+      target = homePoint
+      if (crowd) {
+        crowd.claim(homePoint.id, id)
+        booked = homePoint.id
+      }
+      pose('idle', homePoint.facing ?? 'front')
+      go('INTERACT', between(homePoint.kind === 'watch' ? WATCH_MS : INTERACT_MS))
+    } else {
+      pose('idle', rng() < 0.5 ? 'front' : 'left')
+      // Staggered, so they do not all come to life on the same frame.
+      go('SPAWN', 600 + rng() * 3400)
+    }
+    place()
+  }
 
   // Standing still is what a visitor sees first, so those frames are fetched
   // now and the walk follows once the room has finished arriving. Loading all
@@ -846,6 +1059,7 @@ export function mountNpc(
     // every click, which turns a greeting into a stutter.
     if (!mayInterrupt('REACT')) return
     if (resume) clearTimeout(resume)
+    back = null
     // Stop where it is, look up, and let the room decide what that means.
     unbook()
     target = null
@@ -858,14 +1072,21 @@ export function mountNpc(
       pokes = 0
       pokeReset = null
     }, 9000)
-    // The first poke gets the character's own reaction. Poke it again and it
-    // runs out of ways to be surprised, which is also true of people.
+    // Pleased, not alarmed: a wave, a tilt of the head or a little hop, and
+    // a few sparks. Never a stare at the visitor. The first poke gets the
+    // character's own reaction; poke it again and it runs out of ways to be
+    // surprised, which is also true of people.
     const wave = pokes === 1
-      ? rng() < profile.waveChance
+      ? rng() < profile.waveChance + 0.25
       : pokes === 2 && rng() < profile.waveChance * 0.5
-    pose(wave ? 'wave' : 'look', 'front')
-    // RUKI looks up more slowly than YOMI, who was looking for an excuse.
-    const hold = (wave ? waveMs + 1200 : 2000) * (1 + profile.stubborn * 0.5)
+    if (wave) {
+      pose('wave', 'front')
+    } else {
+      pose('idle', 'front')
+      nudge(rng() < 0.5 ? 'hop' : 'tilt', 900)
+    }
+    sparkle()
+    const hold = (wave ? waveMs + 600 : 1300) * (1 + profile.stubborn * 0.3)
     go('REACT', hold)
     say('touched', pokes === 1 ? 0.55 : 0.25)
     opts.onTouch?.(character)
@@ -886,6 +1107,9 @@ export function mountNpc(
       // dokkaebi on the rug is a low shape you walk round rather than a
       // silhouette you have to clear.
       return state === 'SIT' ? 0.55 : 1
+    },
+    get seated(): boolean {
+      return state === 'SIT'
     },
     get busy(): boolean {
       // Free to be spoken to only when it is standing about. Interrupting a
@@ -909,12 +1133,110 @@ export function mountNpc(
       say('greet', profile.social)
     },
   }
-  crowd?.join(member)
+  if (away) {
+    // Not in the room yet. Off the left edge, invisible, not in anybody's
+    // way; the stage brings it on when there is room for it.
+    x = FLOOR_ENDS.min - EDGE
+    y = (graph.floor.top + graph.floor.bottom) / 2
+    el.classList.add('is-away')
+    pose('idle', 'right')
+    go('AWAY')
+    place()
+  } else {
+    crowd?.join(member)
+    settleAtHome()
+  }
 
   log.debug('npc: mounted', id, portrait ? 'portrait' : 'landscape')
 
   return {
     id,
+    get away(): boolean {
+      return away
+    },
+    leave(): boolean {
+      if (away || exiting || state === 'PAUSED' || calm || !mayInterrupt('WALK')) return false
+      unbook()
+      sitAt = null
+      partner = null
+      lookAt = null
+      exiting = true
+      target = exitFor()
+      beginWalk(true)
+      return true
+    },
+    comeBack(): boolean {
+      if (!away || state === 'PAUSED') return false
+      away = false
+      exiting = false
+      entering = true
+      const fromLeft = rng() < 0.5
+      x = fromLeft ? FLOOR_ENDS.min - EDGE : FLOOR_ENDS.max + EDGE
+      y = graph.floor.top + rng() * (graph.floor.bottom - graph.floor.top)
+      el.classList.remove('is-away')
+      crowd?.join(member)
+      // Back to where it lives if that is free, else anywhere on the boards.
+      const floors = graph.points.filter((p) => p.objectId === undefined)
+      const there = homeSeat && (!crowd || crowd.free(homeSeat.id, id))
+        ? { id: homeSeat.id, x: homeSeat.x, y: homeSeat.y }
+        : homePoint && (!crowd || crowd.free(homePoint.id, id))
+          ? homePoint
+          : floors[Math.floor(rng() * floors.length)] ?? graph.points[0]!
+      if (there.id === homeSeat?.id) sitAt = homeSeat
+      target = there
+      if (crowd) {
+        crowd.claim(there.id, id)
+        booked = there.id
+      }
+      pose('idle', fromLeft ? 'right' : 'left')
+      place()
+      beginWalk(true)
+      return true
+    },
+    startle(from: { x: number; y: number }): void {
+      if (away || state === 'PAUSED' || state === 'WALK' || state === 'REACT' || calm) return
+      nudge('hop', 560)
+      if (state === 'IDLE' || state === 'LOOK' || state === 'INTERACT' || state === 'WORK') {
+        lookAt = null
+        back = state === 'WORK'
+          ? { state, wait, action: 'work', dir: 'back' }
+          : state === 'INTERACT'
+            ? { state, wait, action: 'idle', dir: direction }
+            : null
+        pose('idle', faceFor(from.x - x, from.y - y))
+        go('REACT', 1300 + rng() * 600)
+      }
+    },
+    summon(to: Waypoint): boolean {
+      if (away || state === 'PAUSED' || calm || !mayInterrupt('WALK')) return false
+      if (crowd && !crowd.free(to.id, id)) return false
+      unbook()
+      sitAt = null
+      partner = null
+      lookAt = null
+      target = to
+      if (crowd) {
+        crowd.claim(to.id, id)
+        booked = to.id
+      }
+      beginWalk(true)
+      return true
+    },
+    greetVisitor(): void {
+      if (away || state === 'PAUSED' || state === 'WALK' || !mayInterrupt('REACT')) return
+      // Then carry on with whatever it was doing; the bench is not abandoned
+      // because somebody came in.
+      back = state === 'WORK'
+        ? { state, wait, action: 'work', dir: 'back' }
+        : state === 'SIT'
+          ? { state, wait, action: 'sit', dir: sitAt?.facing ?? 'front' }
+          : state === 'INTERACT'
+            ? { state, wait, action: 'idle', dir: direction }
+            : null
+      pose('wave', 'front')
+      nudge('hop', 560)
+      go('REACT', waveMs + 500)
+    },
     setPaused(paused: boolean): void {
       if (paused) {
         if (state === 'PAUSED') return
@@ -954,7 +1276,7 @@ export function mountNpc(
       return state
     },
     get walking(): boolean {
-      return state === 'WALK'
+      return state === 'WALK' && !away
     },
     get target(): string | null {
       return target?.id ?? null
@@ -970,6 +1292,7 @@ export function mountNpc(
       if (resume) clearTimeout(resume)
       if (pokeReset) clearTimeout(pokeReset)
       if (bubbleTimer) clearTimeout(bubbleTimer)
+      if (fidgetTimer) clearTimeout(fidgetTimer)
       hit?.removeEventListener('click', onHit)
       el.remove()
       bubble.remove()

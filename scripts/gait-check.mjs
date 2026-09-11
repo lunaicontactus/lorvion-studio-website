@@ -14,7 +14,10 @@
  */
 import { chromium } from '@playwright/test'
 
-const WANT = { momo: 89.0, nunu: 90.8, ruki: 89.0, yomi: 89.0, poko: 89.0 }
+// Rendered stride per cycle at the frames' own 210-unit height, scaled to the
+// 160 the landscape room draws them at now (src/data/navigation.ts).
+const AT_210 = { momo: 89.0, nunu: 90.8, ruki: 89.0, yomi: 89.0, poko: 89.0 }
+const WANT = Object.fromEntries(Object.entries(AT_210).map(([k, v]) => [k, v * 160 / 210]))
 const b = await chromium.launch()
 const p = await b.newPage({ viewport: { width: 1440, height: 900 } })
 await p.goto('http://localhost:4180/', { waitUntil: 'load' })

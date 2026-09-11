@@ -46,6 +46,8 @@ const BEATS = {
   hesitate: 420,
   rise: 640,
   light: 1150,
+  /** Somebody looks round the door frame, once the shutter is clear of it. */
+  peek: 1300,
   push: 1550,
   inside: 2300,
 } as const
@@ -215,6 +217,7 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
       scene.classList.add('alley--rise')
     }, BEATS.rise)
     beat('alley--light', BEATS.light)
+    beat('alley--peek', BEATS.peek)
     beat('alley--push', BEATS.push)
     // Whatever the transitions do, we are inside by the deadline.
     later(finish, BEATS.inside)

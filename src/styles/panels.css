@@ -9,7 +9,9 @@
 
 .panel-layer__scrim{
   position:absolute;inset:0;
-  background:rgba(38,26,16,.5);
+  /* Dims the room, does not bury it: lighter and a little cooler than the
+     old brown, so a panel over the workshop is a curtain and not a blackout. */
+  background:rgba(70,52,40,.38);
   opacity:0;
   transition:opacity 280ms ease;
 }
