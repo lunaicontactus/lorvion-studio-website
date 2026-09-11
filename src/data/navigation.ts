@@ -17,9 +17,15 @@ export interface Waypoint {
   /** The thing this point stands in front of, if any. */
   readonly objectId?: string
   /**
-   * Which way to face on arrival. Everything worth using is against the back
-   * wall, so using it means turning away from the camera; the parcel on the
-   * floor is the one thing looked at sideways.
+   * Which way to face on arrival.
+   *
+   * The furniture is all against the back wall, so the honest answer is
+   * `back` everywhere — and a room of small creatures seen entirely from
+   * behind is a room of fur balls. The rendered set has a front work cycle
+   * and side standing frames, so the busy places turn round: the near end of
+   * the bench and the fridge face the camera, one of the two television
+   * places faces the other, and the machine and the locked door keep their
+   * backs to us because that is the whole picture there.
    */
   readonly facing?: 'front' | 'back' | 'left' | 'right'
   /**
@@ -107,12 +113,12 @@ const LANDSCAPE: NavGraph = {
     { id: 'left-floor', x: 1180, y: 1030 },
     { id: 'pc-front', x: 1578, y: 1012, objectId: 'pc', facing: 'back', kind: 'work' },
     { id: 'mid-floor', x: 1860, y: 1042 },
-    { id: 'workbench-a', x: 2116, y: 1006, objectId: 'workbench', facing: 'back', kind: 'work' },
+    { id: 'workbench-a', x: 2116, y: 1006, objectId: 'workbench', facing: 'front', kind: 'work' },
     { id: 'workbench-b', x: 2252, y: 1006, objectId: 'workbench', facing: 'back', kind: 'work' },
-    { id: 'fridge-front', x: 2470, y: 1020, objectId: 'fridge', facing: 'back', kind: 'use' },
+    { id: 'fridge-front', x: 2470, y: 1020, objectId: 'fridge', facing: 'front', kind: 'use' },
     { id: 'right-floor', x: 2652, y: 1036 },
     { id: 'tv-left', x: 2830, y: 1030, objectId: 'tv', facing: 'back', kind: 'watch' },
-    { id: 'tv-right', x: 2942, y: 1030, objectId: 'tv', facing: 'back', kind: 'watch' },
+    { id: 'tv-right', x: 2942, y: 1030, objectId: 'tv', facing: 'left', kind: 'watch' },
     // The locked door. Nothing opens here, which is the point: YOMI's whole
     // character is being interested in it, and without somewhere to stand
     // that preference did nothing at all for fifteen minutes of watching.
@@ -158,7 +164,7 @@ const PORTRAIT: NavGraph = {
     { id: 'left-floor', x: 330, y: 1630 },
     { id: 'pc-front', x: 518, y: 1612, objectId: 'pc', facing: 'back', kind: 'work' },
     { id: 'mid-floor', x: 700, y: 1638 },
-    { id: 'workbench-a', x: 858, y: 1606, objectId: 'workbench', facing: 'back', kind: 'work' },
+    { id: 'workbench-a', x: 858, y: 1606, objectId: 'workbench', facing: 'front', kind: 'work' },
     { id: 'workbench-b', x: 972, y: 1606, objectId: 'workbench', facing: 'back', kind: 'work' },
   ],
   sits: [

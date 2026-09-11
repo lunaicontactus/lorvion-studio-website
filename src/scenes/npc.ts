@@ -269,6 +269,18 @@ export function mountNpc(
   let glancedAt: string | null = null
   /** What to go back to after a brief reaction that interrupted a job. */
   let back: { state: NpcState; wait: number; action: SpriteAction; dir: SpriteDirection } | null = null
+  /**
+   * Which way the current job is done. The bench has a front cycle as well as
+   * a back one, so a dokkaebi can be busy without showing us the back of its
+   * head for the whole shift.
+   */
+  let workDir: 'front' | 'back' = 'back'
+  /**
+   * Milliseconds left of turning round to the room. A dokkaebi at the fridge
+   * or the bench is facing its job, which is right and also means the visitor
+   * never sees its face; this is the glance over the shoulder that fixes it.
+   */
+  let facingHold = 0
 
   // Rendered frames run from the floor row up and carry headroom above the
   // hair, so the frame is taller than the dokkaebi by a known ratio.
@@ -572,11 +584,24 @@ export function mountNpc(
     if (!crowd?.mayFidget(id) && crowd) return
     fidgetAt = 4000 + rng() * 6000
     const seated = state === 'SIT'
-    const kinds: readonly (readonly ['tilt' | 'sway' | 'hop' | 'wave' | 'peek' | 'glance', number])[] = seated
-      ? [['tilt', 4], ['sway', 3], ['peek', 2]]
-      : [['tilt', 3], ['sway', 3], ['hop', 1], ['wave', 1], ['peek', 2], ['glance', 3]]
+    // Facing its job, so the visitor is looking at the back of its head. The
+    // only fidget worth having here is the one that turns it round.
+    const turnedAway = (state === 'WORK' && workDir === 'back')
+      || (state === 'INTERACT' && direction === 'back')
+    const kinds: readonly (readonly ['tilt' | 'sway' | 'hop' | 'wave' | 'peek' | 'glance' | 'turn', number])[] =
+      turnedAway
+        ? [['turn', 5], ['tilt', 2], ['sway', 2]]
+        : seated
+          ? [['tilt', 4], ['sway', 3], ['peek', 2]]
+          : [['tilt', 3], ['sway', 3], ['hop', 1], ['wave', 1], ['peek', 2], ['glance', 3]]
     const kind = pick(kinds)
-    if (kind === 'tilt') nudge('tilt', 1000)
+    if (kind === 'turn') {
+      // Over the shoulder and back to it. Long enough to be read as a face
+      // and short enough that the job it walked over for still looks like a
+      // job rather than an excuse to stand about.
+      facingHold = 1700 + rng() * 1000
+      nudge('tilt', 900)
+    } else if (kind === 'tilt') nudge('tilt', 1000)
     else if (kind === 'sway') nudge('sway', 1500)
     else if (kind === 'hop') nudge('hop', 560)
     else if (state !== 'IDLE') nudge('tilt', 1000)
@@ -603,7 +628,11 @@ export function mountNpc(
     wait -= dt
     // Standing about is never standing still. Not while calm, though: a
     // figure fidgeting behind an open panel is a distraction.
-    if (!calm && onscreen && (state === 'IDLE' || state === 'INTERACT' || state === 'SIT')) {
+    if (facingHold > 0) facingHold -= dt
+    if (
+      !calm && onscreen
+      && (state === 'IDLE' || state === 'INTERACT' || state === 'SIT' || state === 'WORK')
+    ) {
       fidgetAt -= dt
       if (fidgetAt <= 0) fidget()
     }
@@ -737,7 +766,7 @@ export function mountNpc(
         return
 
       case 'WORK':
-        pose('work', 'back')
+        pose('work', facingHold > 0 ? 'front' : workDir)
         if (wait <= 0) {
           say('work', 0.35)
           unbook()
@@ -858,7 +887,8 @@ export function mountNpc(
             go('SIT', between(sitFor))
           } else if (target.kind === 'work') {
             recent = [target.objectId!, ...recent].slice(0, 2)
-            pose('work', 'back')
+            workDir = target.facing === 'front' ? 'front' : 'back'
+            pose('work', workDir)
             go('WORK', between(workFor))
           } else if (target.objectId) {
             recent = [target.objectId, ...recent].slice(0, 2)
@@ -941,7 +971,7 @@ export function mountNpc(
       case 'INTERACT':
         // Standing at the thing, facing it. There is no work animation to
         // play, so it breathes there, which is what a person mostly does.
-        pose('idle')
+        pose('idle', facingHold > 0 ? 'front' : undefined)
         if (wait <= 0) {
           unbook()
           // Done with it: turn back to the room. Holding the wall-facing pose
@@ -991,7 +1021,8 @@ export function mountNpc(
         booked = homePoint.id
       }
       recent = [homePoint.objectId!, ...recent].slice(0, 2)
-      pose('work', 'back')
+      workDir = homePoint.facing === 'front' ? 'front' : 'back'
+      pose('work', workDir)
       go('WORK', between(workFor))
     } else if (homePoint?.objectId && (!crowd || crowd.free(homePoint.id, id))) {
       target = homePoint
