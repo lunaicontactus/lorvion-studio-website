@@ -83,6 +83,13 @@ export interface NpcOptions {
    * frame is one request storm where five small ones would do.
    */
   readonly order?: number
+  /**
+   * The painted room. Nothing beyond this one's own standing frame is fetched
+   * until it has arrived: on a slow phone two hundred low-priority frame
+   * requests used to share the line with the plate, and the plate — the one
+   * thing the visitor was waiting for — came in last.
+   */
+  readonly ready?: Promise<unknown>
 }
 
 export interface NpcHandle {
@@ -792,20 +799,28 @@ export function mountNpc(
   // 48 up front delays the room; loading a walk frame when it is already due
   // on screen leaves a hole where the dokkaebi was.
   const warm: ReturnType<typeof setTimeout>[] = []
+  let gone = false
   if (sprites) {
     // Queued behind whoever is ahead in the crew, so five characters do not
     // ask for everything at once and leave the room waiting on its own
     // background. The order is arbitrary; the spacing is the point.
     const slot = opts.order ?? 0
-    // Standing is what a visitor sees first.
-    warm.push(setTimeout(() => preloadFrames(idleFrames(sprites)), slot * 140))
-    // Then the two directions this room actually walks in: the floor is a
-    // strip, so front and back walking barely happens.
-    warm.push(setTimeout(() => {
-      preloadFrames([...sprites.walk.left.frames, ...sprites.walk.right.frames])
-    }, 2000 + slot * 500))
-    // The rest last, long after the room has settled.
-    warm.push(setTimeout(() => preloadFrames(allFrames(sprites)), 9000 + slot * 1800))
+    const start = (): void => {
+      if (gone) return
+      // Standing is what a visitor sees first.
+      warm.push(setTimeout(() => preloadFrames(idleFrames(sprites)), slot * 140))
+      // Then the two directions this room actually walks in: the floor is a
+      // strip, so front and back walking barely happens.
+      warm.push(setTimeout(() => {
+        preloadFrames([...sprites.walk.left.frames, ...sprites.walk.right.frames])
+      }, 2000 + slot * 500))
+      // The rest last, long after the room has settled.
+      warm.push(setTimeout(() => preloadFrames(allFrames(sprites)), 9000 + slot * 1800))
+    }
+    // The room first. Its plate is the thing the visitor is waiting for, and
+    // the frames used to be fetched beside it at the same priority.
+    if (opts.ready) void opts.ready.then(start, start)
+    else start()
   }
 
   // Reduced motion still gets somebody in the room — standing, not pacing.
@@ -948,6 +963,7 @@ export function mountNpc(
       return { x, y }
     },
     destroy(): void {
+      gone = true
       off()
       crowd?.leave(id)
       for (const t of warm) clearTimeout(t)

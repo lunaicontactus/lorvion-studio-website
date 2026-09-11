@@ -28,6 +28,9 @@ const OPENS: Readonly<Record<string, string>> = {
   'poster-rubato': '[data-kind~="poster--rubato"] .wall',
 }
 
+/** Things that open nothing: touching one changes the thing itself. */
+const TOGGLES: readonly string[] = ['parcel']
+
 async function enter(page: Page): Promise<void> {
   await page.addInitScript(() => {
     try {
@@ -68,8 +71,8 @@ test.describe('desktop', () => {
 
   test('the room holds exactly the things the registry lists', async ({ page }) => {
     await enter(page)
-    await expect(page.locator('.thing')).toHaveCount(Object.keys(OPENS).length)
-    for (const id of Object.keys(OPENS)) {
+    await expect(page.locator('.thing')).toHaveCount(Object.keys(OPENS).length + TOGGLES.length)
+    for (const id of [...Object.keys(OPENS), ...TOGGLES]) {
       await expect(page.locator(`.thing--${id}`)).toHaveCount(1)
     }
   })

@@ -1,0 +1,145 @@
+/* ── Immersive touches ──────────────────────────────────────────────────────
+   Ported from the ChatGPT edition of 2026-09-10 (REVIEW-KO: "심야 작업실 1차
+   수정본"), reworked to fit the crew and the camera that arrived after it.
+   Everything here is light, labels and where the monitor's panel stands.
+   Nothing here draws furniture and nothing here moves.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* ── One game's light over the room ─────────────────────────────────────── */
+/* Shown only while the monitor is on one game (data-world on the scene).
+   Above the crew as well as the plate, and under the bubbles (720): a wash
+   that stopped at the floor would leave five unlit figures in a lit room. */
+.garage__wash{
+  position:absolute;inset:0;
+  z-index:710;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity 900ms ease;
+}
+.garage[data-world] .garage__wash{opacity:1}
+.garage[data-world="liminal"] .garage__wash{
+  background:
+    linear-gradient(0deg,rgba(19,51,53,.34),rgba(10,19,29,.22)),
+    radial-gradient(ellipse at 90% 70%,rgba(138,226,203,.16),transparent 45%);
+}
+.garage[data-world="lunai"] .garage__wash{
+  background:radial-gradient(ellipse at 48% 34%,rgba(178,123,220,.16),rgba(37,32,75,.26));
+}
+.garage[data-world="wormup"] .garage__wash{
+  background:radial-gradient(ellipse at 48% 65%,rgba(253,181,74,.14),rgba(42,22,14,.14));
+}
+.garage[data-world="rubato"] .garage__wash{
+  background:linear-gradient(110deg,rgba(40,21,13,.24),rgba(204,154,74,.14));
+}
+
+/* Under the locked door, for the one game that is behind it. */
+.garage__doorlight{
+  position:absolute;
+  z-index:711;
+  pointer-events:none;
+  opacity:0;
+  background:radial-gradient(ellipse,rgba(157,229,219,.6),transparent 68%);
+  filter:blur(12px);
+  transition:opacity 1s ease;
+}
+.garage[data-world="liminal"] .garage__doorlight{
+  opacity:1;
+  animation:door-breathe 7s ease-in-out infinite alternate;
+}
+@keyframes door-breathe{to{opacity:.5;transform:scaleX(1.12)}}
+
+/* ── What a thing is, under the pointer ─────────────────────────────────── */
+/* Beside the white outline, not instead of it. Sized against the camera's
+   scale like the bubbles, so it is 13px on every screen. */
+.thing__label{
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 8px);
+  transform:translate(-50%,4px);
+  padding:calc(7px / var(--scale,1)) calc(11px / var(--scale,1));
+  border:calc(1px / var(--scale,1)) solid rgba(255,255,255,.22);
+  border-radius:calc(8px / var(--scale,1));
+  background:rgba(23,30,36,.9);
+  color:#fff7e6;
+  font:500 calc(13px / var(--scale,1))/1.35 var(--sans);
+  letter-spacing:0;
+  white-space:nowrap;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 150ms ease,transform 150ms ease;
+  z-index:2;
+}
+.thing:hover .thing__label,
+.thing:focus-visible .thing__label,
+.thing.is-pressed .thing__label{opacity:1;transform:translate(-50%,0)}
+@media (hover:none){
+  .thing:hover .thing__label{opacity:0}
+  .thing.is-pressed .thing__label{opacity:1;transform:translate(-50%,0)}
+}
+
+/* ── A thing with two states ────────────────────────────────────────────── */
+/* Both cut-outs share one canvas and one box; only which is visible changes. */
+.thing__art--open{opacity:0;transition:opacity 140ms ease}
+.thing.is-open .thing__art--open{opacity:1}
+.thing.is-open .thing__art--closed{opacity:0}
+.thing__art--closed{transition:opacity 140ms ease}
+/* Placed art has no silhouette path to trace, so it lifts a little instead. */
+.thing:hover .thing__art,
+.thing:focus-visible .thing__art,
+.thing.is-pressed .thing__art{filter:brightness(1.07)}
+
+/* ── The monitor's panel, beside the room ───────────────────────────────── */
+/* On a wide screen the PC's panel stands to the right and the camera leaves
+   the PC itself in the half that stays visible (garage.ts focusObject). The
+   panel keeps the felt; the monitor cut-out is dropped, because the real one
+   is on screen next to it. */
+.panel-layer[data-kind="pc"]{--world-accent:#a8e6b8}
+.panel-layer[data-world="liminal"]{--world-accent:#a4dacc}
+.panel-layer[data-world="lunai"]{--world-accent:#c9b8ff}
+.panel-layer[data-world="wormup"]{--world-accent:#ffd189}
+.panel-layer[data-world="rubato"]{--world-accent:#e3c68f}
+.panel-layer[data-world] .crt__screen{color:var(--world-accent);transition:color 500ms ease}
+@media (min-width:1000px){
+  .panel-layer[data-kind="pc"]{justify-items:end;padding-right:4vw}
+  .panel-layer[data-kind="pc"] .panel{width:min(46vw,640px);max-height:84dvh}
+  .panel-layer[data-kind="pc"] .panel__portrait{display:none}
+  .panel-layer[data-kind="pc"] .panel-layer__scrim{
+    background:linear-gradient(90deg,rgba(38,26,16,.06) 0%,rgba(38,26,16,.16) 45%,rgba(38,26,16,.58) 100%);
+  }
+}
+
+/* ── The bench, in the studio's note ────────────────────────────────────── */
+.bench{
+  display:grid;
+  grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);
+  gap:4px 14px;
+  align-items:end;
+  margin:0 0 14px;
+  padding:12px 12px 8px;
+  border-radius:10px;
+  background:rgba(120,96,66,.08);
+}
+.bench__car{
+  position:relative;
+  width:100%;
+  aspect-ratio:520/439;
+  padding:0;border:0;background:none;
+  cursor:pointer;
+  border-radius:8px;
+}
+.bench__car img{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:contain;
+  transition:opacity 160ms ease;
+}
+.bench__car img[data-state="closed"]{opacity:0}
+.bench__car.is-done img[data-state="closed"]{opacity:1}
+.bench__car.is-done img[data-state="open"]{opacity:0}
+.bench__car:hover img,.bench__car:focus-visible img{filter:brightness(1.05)}
+.bench__tray{width:100%;display:block;margin-bottom:6%}
+.bench__note{grid-column:1/-1;margin:4px 0 0;font-size:.8rem;color:#5a4634;opacity:.8}
+
+@media (prefers-reduced-motion:reduce){
+  .garage__wash,.garage__doorlight,.thing__label,.thing__art--open,.thing__art--closed,.bench__car img{transition:none;animation:none}
+}

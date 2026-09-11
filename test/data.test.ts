@@ -3,7 +3,7 @@ import { CHARACTERS, MAX_ACTIVE_CHARACTERS, getCharacter } from '@/data/characte
 import { PROJECTS, VISIBLE_PROJECTS, getProject } from '@/data/projects'
 import { EASTER_EGGS } from '@/data/easterEggs'
 import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART, PROP_ART, PROP_NAMES } from '@/data/alley'
-import { DESKTOP_WORLD, MOBILE_WORLD } from '@/data/world'
+import { DESKTOP_WORLD, MOBILE_WORLD, CAPTIONS } from '@/data/world'
 import { OUTLINE_PATHS } from '@/data/outlines'
 
 describe('DOKKA CREW data', () => {
@@ -97,11 +97,28 @@ describe('what the room can tell you', () => {
       }
     })
 
-    it(`gives every ${name} object a silhouette to trace`, () => {
+    it(`gives every ${name} object a silhouette to trace, or art of its own`, () => {
       for (const o of world.objects) {
+        // A placed cut-out is its own silhouette; a hit area over the painting
+        // has to draw one.
+        if (o.art) continue
         expect(o.outline, o.id).toBeTruthy()
         expect(OUTLINE_PATHS[o.outline as keyof typeof OUTLINE_PATHS], o.id).toMatch(/^M[\d.]/)
       }
+    })
+
+    it(`names every ${name} thing under the pointer`, () => {
+      for (const o of world.objects) expect(CAPTIONS[o.id], o.id).toBeTruthy()
+    })
+
+    it(`keeps the ${name} parcel's two states on one canvas`, () => {
+      const parcel = world.objects.find((o) => o.id === 'parcel')!
+      expect(parcel.action.kind).toBe('toggle')
+      expect(parcel.art).toMatch(/prop_parcel_closed\.webp$/)
+      expect(parcel.artOpen).toMatch(/prop_parcel_open\.webp$/)
+      // The cut-outs are 520x431; the box must keep that ratio or one state
+      // would be squashed against the other.
+      expect(parcel.rect.w / parcel.rect.h).toBeCloseTo(520 / 431, 1)
     })
 
     it(`does not stack two ${name} hit areas on the same spot`, () => {

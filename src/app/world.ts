@@ -43,6 +43,13 @@ export function mountWorld(): () => void {
   const panels = new Panels(panelRoot, {
     onClose: () => interaction.dismiss(),
     onGoTo: (id) => goTo(id),
+    // The monitor is showing one game: the room takes that game's light, and
+    // the panel takes its colour. Null puts both back.
+    onWorldChange: (world) => {
+      garage?.setWorld(world)
+      if (world) panelRoot.dataset['world'] = world
+      else delete panelRoot.dataset['world']
+    },
     // A game is not a panel: the monitor closes, the room stops behind the
     // game, and the game has the whole screen and the whole keyboard.
     onPlay: (gameId) => {
@@ -75,6 +82,8 @@ export function mountWorld(): () => void {
       if (project) panels.openPoster(project)
       return
     }
+    // A toggle is the scene's own business; it never gets this far.
+    if (action.kind !== 'panel') return
     switch (action.panelId) {
       case 'pc':
         panels.openPc()

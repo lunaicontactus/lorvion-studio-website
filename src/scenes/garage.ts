@@ -12,7 +12,8 @@
  * is an outline tracing the object under the pointer.
  */
 import { Camera } from '@/systems/camera'
-import { worldFor, ROOM_ART } from '@/data/world'
+import { worldFor, ROOM_ART, CAPTIONS } from '@/data/world'
+import { loadImage } from '@/systems/assets'
 import { depthOf, occludersFor } from '@/data/occlusion'
 import { LIGHTS, SKY, STARS } from '@/data/ambience'
 import { ATTENTION, Ambient } from '@/systems/ambient'
@@ -43,6 +44,12 @@ export interface GarageHandle {
   focusObject(id: string): void
   /** Put the camera back where the visitor had left it. */
   restoreCamera(): void
+  /**
+   * Which game the monitor is showing, or null. The room takes that game's
+   * light while it is up: a wash over the whole plate, and for LIMINAL the
+   * glow under the locked door. Nothing moves; only the light changes.
+   */
+  setWorld(world: string | null): void
   readonly world: WorldLayout
   destroy(): void
 }
@@ -92,6 +99,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   let crowd: Crowd | null = null
   /** Where the visitor was looking before an object took the camera. */
   let parked: { x: number; y: number } | null = null
+  /** Things with two states that have been opened. Kept across a rebuild on rotation. */
+  const opened = new Set<string>()
   let world: WorldLayout = worldFor(false)
   let scale = 1
   /** The visible window, in world units. Kept so the crew can be culled. */
@@ -113,6 +122,10 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     roomEl.style.height = `${world.height}px`
     const plate = world.width > world.height ? ROOM_ART.landscape : ROOM_ART.portrait
     roomEl.style.backgroundImage = `url('${plate.src}')`
+    // The crew wait for this before fetching anything beyond the frame they
+    // are standing in. Shares the browser's own request with the background,
+    // so it costs no second download.
+    const plateReady = loadImage(plate.src)
 
     // The foreground: the same plate, redrawn over the top in the shape of the
     // things that stand on the floor, so somebody walking behind one of them
@@ -172,6 +185,28 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     }
     lights = lit
 
+    // One game's light over the whole room, on only while the monitor shows
+    // that game (see setWorld). Above the crew as well as the plate: a wash
+    // that stopped at the floor would leave five unlit figures standing in a
+    // lit room. Under the bubbles, which are text.
+    const wash = document.createElement('div')
+    wash.className = 'garage__wash'
+    wash.setAttribute('aria-hidden', 'true')
+    roomEl.append(wash)
+    const door = world.objects.find((o) => o.id === 'secret-door')
+    if (door) {
+      const spill = document.createElement('div')
+      spill.className = 'garage__doorlight'
+      spill.setAttribute('aria-hidden', 'true')
+      Object.assign(spill.style, {
+        left: `${door.rect.x - 55}px`,
+        top: `${door.rect.y + door.rect.h - 30}px`,
+        width: `${door.rect.w + 110}px`,
+        height: '110px',
+      })
+      roomEl.append(spill)
+    }
+
     // Zones are grouping in the data (src/data/world.ts), not elements: they
     // carry no pixels and no hit area, so nothing is built for them here.
     for (const obj of world.objects) {
@@ -180,12 +215,21 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       el.className = `thing thing--${obj.id}`
       el.dataset['object'] = obj.id
       el.setAttribute('aria-label', obj.label)
+      // What it opens, said under the pointer. Sized against the camera's
+      // scale like the bubbles, so it is 13px on every screen.
+      const caption = document.createElement('span')
+      caption.className = 'thing__label'
+      caption.setAttribute('aria-hidden', 'true')
+      caption.textContent = CAPTIONS[obj.id] ?? obj.label
+      el.append(caption)
       // The hit region is looser than the object so it is comfortable to click;
       // the outline inside it is not, so it can trace the real thing.
       // The world is scaled to fit, so a hit area measured in world pixels can
       // land well under a fingertip on a phone. Grow it until it is at least
       // MIN_TOUCH on screen, and never let two things reach into each other.
-      const pad = obj.art ? 0 : hitPadding(obj)
+      // Placed art gets the same fingertip guarantee: the hit area grows,
+      // the picture inside it stays the size the data says.
+      const pad = hitPadding(obj)
       Object.assign(el.style, {
         left: `${obj.rect.x - pad}px`,
         top: `${obj.rect.y - pad}px`,
@@ -232,16 +276,44 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       if (obj.art) {
         // Not in the painting; this one is placed into the room.
         const art = document.createElement('img')
-        art.className = 'thing__art'
+        art.className = 'thing__art thing__art--closed'
         art.src = obj.art
         art.alt = ''
         art.decoding = 'async'
+        const fit = (img: HTMLImageElement): void => {
+          Object.assign(img.style, {
+            left: `${pad}px`, top: `${pad}px`, width: `${obj.rect.w}px`, height: `${obj.rect.h}px`,
+          })
+        }
+        fit(art)
         el.append(art)
+        if (obj.artOpen) {
+          // Its open state, on the same canvas, so the swap moves nothing.
+          const open = document.createElement('img')
+          open.className = 'thing__art thing__art--open'
+          open.src = obj.artOpen
+          open.alt = ''
+          open.decoding = 'async'
+          fit(open)
+          el.append(open)
+          el.setAttribute('aria-pressed', String(opened.has(obj.id)))
+          el.classList.toggle('is-open', opened.has(obj.id))
+        }
       }
 
       el.addEventListener('click', (e) => {
         e.stopPropagation()
         if (obj.sfx) audio.play(obj.sfx)
+        if (obj.action.kind === 'toggle') {
+          // Nothing opens. The thing itself changes, and stays changed —
+          // through a rebuild on rotation as well.
+          const now = !opened.has(obj.id)
+          if (now) opened.add(obj.id)
+          else opened.delete(obj.id)
+          el.classList.toggle('is-open', now)
+          el.setAttribute('aria-pressed', String(now))
+          return
+        }
         opts.onObject?.(obj)
       })
       // Touch has no hover, so the outline is shown while the finger is down.
@@ -343,6 +415,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
             debug: params.get('npc') === 'debug',
             scale,
             crowd: crowd!,
+            ready: plateReady,
             // Spread round the cycle so five of them do not breathe in unison.
             phase: i / Math.max(here.length, 1),
             order: i,
@@ -530,6 +603,24 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     keys.delete(e.key.toLowerCase())
   }
 
+  // Keyboard: focus landing on a thing outside the view brings the camera to
+  // it, since the stage itself can no longer be scrolled there.
+  const onFocusIn = (e: FocusEvent): void => {
+    const t = e.target as HTMLElement | null
+    if (!t?.classList.contains('thing') || paused) return
+    const id = t.dataset['object']
+    const obj = world.objects.find((o) => o.id === id)
+    if (!obj) return
+    const cx = obj.rect.x + obj.rect.w / 2
+    const cy = obj.rect.y + obj.rect.h / 2
+    const inView =
+      cx >= camera.viewX + 40 && cx <= camera.viewX + viewW - 40 &&
+      cy >= camera.viewY + 40 && cy <= camera.viewY + viewH - 40
+    if (!inView) camera.moveTo(cx, cy)
+  }
+  roomEl.addEventListener('focusin', onFocusIn)
+  off.push(() => roomEl.removeEventListener('focusin', onFocusIn))
+
   scene.addEventListener('pointerdown', onDown)
   addEventListener('pointermove', onMove, { passive: true })
   addEventListener('pointerup', endDrag)
@@ -630,7 +721,15 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       if (!obj) return
       // Remember where the visitor was looking before we moved them.
       if (parked === null) parked = { x: camera.x, y: camera.y }
-      camera.moveTo(obj.rect.x + obj.rect.w / 2, obj.rect.y + obj.rect.h / 2)
+      // On a wide screen the monitor's panel stands to the right of the room
+      // (immersive.css), so the camera aims a little right of the PC and
+      // leaves the PC itself in the half that stays visible.
+      const aside = id === 'pc' && scene.clientWidth >= 1000 ? viewW * 0.24 : 0
+      camera.moveTo(obj.rect.x + obj.rect.w / 2 + aside, obj.rect.y + obj.rect.h / 2)
+    },
+    setWorld(w: string | null): void {
+      if (w) scene.dataset['world'] = w
+      else delete scene.dataset['world']
     },
     restoreCamera(): void {
       if (!parked) return

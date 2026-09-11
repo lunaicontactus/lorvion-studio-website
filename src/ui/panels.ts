@@ -31,6 +31,11 @@ export interface PanelHost {
   readonly onProgress?: () => void
   /** The visitor picked a mini-game on the PC. */
   readonly onPlay?: (gameId: string) => void
+  /**
+   * The monitor is showing one game (its `world`), or none again. The room
+   * lights itself from this; the panel colours itself from it.
+   */
+  readonly onWorldChange?: (world: string | null) => void
 }
 
 /** The only place a status is turned into words. */
@@ -160,6 +165,10 @@ export class Panels {
     this.#clearTimers()
     this.#lastFocus = document.activeElement as HTMLElement | null
     this.#shell.dataset['kind'] = kind
+    // The layer too, so the PC can be laid out beside the room rather than
+    // over it (immersive.css) without the shell knowing.
+    this.#root.dataset['kind'] = kind
+    this.#host.onWorldChange?.(null)
     this.#title.textContent = title
     this.#body.innerHTML = html
     this.#root.hidden = false
@@ -176,6 +185,7 @@ export class Panels {
     if (!this.#open) return
     this.#clearTimers()
     this.#open = false
+    this.#host.onWorldChange?.(null)
     this.#root.classList.remove('is-open')
     const done = (): void => {
       if (!this.#open) this.#root.hidden = true
@@ -220,14 +230,17 @@ export class Panels {
       if (project) this.#pcDetail(view, project)
       else this.#pcList(view)
     }
+    // 300, not 520: measured on a throttled phone, the boot was a third of
+    // the wait between the tap and a list that takes a tap.
     if (motion.reduced) showList()
-    else this.#later(showList, 520)
+    else this.#later(showList, 300)
   }
 
   /** The catalogue, straight from PROJECTS — and the mini-games above it.
    *  Above, because they are played here and the projects are only read
    *  about here; nothing about the projects is behind them. */
   #pcList(view: HTMLElement): void {
+    this.#host.onWorldChange?.(null)
     const games = GAMES.length === 0 ? '' : `
       <p class="hub__head">미니게임</p>
       <div class="hub">${GAMES.map((g) => `
@@ -268,6 +281,7 @@ export class Panels {
 
   /** One game, still inside the monitor. Leaving the room is a deliberate act. */
   #pcDetail(view: HTMLElement, project: ProjectConfig): void {
+    this.#host.onWorldChange?.(project.world)
     if (!save.data.visitedProjects.includes(project.id)) {
       save.update((d) => {
         d.visitedProjects.push(project.id)
@@ -277,7 +291,7 @@ export class Panels {
     view.innerHTML = `
       <div class="crtgame">
         <button class="crtgame__back" type="button" data-crt-back>
-          <span aria-hidden="true">←</span> BACK
+          <span aria-hidden="true">←</span> 작품 목록
         </button>
         <h3 class="crtgame__name">${project.title}</h3>
         <div class="crtgame__art"${project.keyArt ? ` style="background-image:url('${project.keyArt}')"` : ' data-empty'}></div>
@@ -288,7 +302,7 @@ export class Panels {
           <div><dt>STATUS</dt><dd>${STATUS_LABEL[project.status]}</dd></div>
           <div><dt>PLATFORM</dt><dd>${project.platforms.join(' · ')}</dd></div>
         </dl>
-        <a class="crtgame__full" href="./games.html#${project.id}">VIEW FULL PAGE <span aria-hidden="true">↗</span></a>
+        <a class="crtgame__full" href="./games.html#${project.id}">작품 자세히 보기 <span aria-hidden="true">↗</span></a>
       </div>`
     view.querySelector('[data-crt-back]')?.addEventListener('click', () => {
       audio.play('click', 0.3)
@@ -353,6 +367,15 @@ export class Panels {
             감정과 캐릭터, 그리고 그들이 사는 세계를 중심으로 만듭니다.</p>
          <section class="note__block">
            <h3 class="note__label">ON THE BENCH</h3>
+           <div class="bench">
+             <button class="bench__car" type="button" data-bench-car aria-pressed="false"
+                     aria-label="조립 중인 장난감 자동차. 누르면 뚜껑을 닫습니다">
+               <img data-state="open" src="${ART}/prop_toycar_open.webp" alt="" decoding="async">
+               <img data-state="closed" src="${ART}/prop_toycar_closed.webp" alt="" decoding="async">
+             </button>
+             <img class="bench__tray" src="${ART}/prop_parts_tray.webp" alt="" decoding="async">
+             <p class="bench__note" data-bench-note>태엽 자동차. 뚜껑 열고 기어 맞추는 중.</p>
+           </div>
            <ul class="note__list">${rows}</ul>
          </section>
          <section class="note__block">
@@ -366,6 +389,17 @@ export class Panels {
        </div>`,
     )
     audio.play('drawer', 0.3)
+    // The car on the bench: open, being built. A touch closes the bonnet and
+    // opens it again. Both cut-outs sit on one canvas, so nothing jumps.
+    const car = this.#body.querySelector<HTMLButtonElement>('[data-bench-car]')
+    const note = this.#body.querySelector<HTMLElement>('[data-bench-note]')
+    car?.addEventListener('click', () => {
+      const done = !car.classList.contains('is-done')
+      car.classList.toggle('is-done', done)
+      car.setAttribute('aria-pressed', String(done))
+      if (note) note.textContent = done ? '닫았다. 남은 부품은 못 본 걸로.' : '태엽 자동차. 뚜껑 열고 기어 맞추는 중.'
+      audio.play('click', 0.3)
+    })
   }
 
   // ── The TV: a set that warms up, and can be switched off again ─────────

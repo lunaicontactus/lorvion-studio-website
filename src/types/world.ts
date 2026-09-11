@@ -42,6 +42,8 @@ export type ObjectKind = 'screen' | 'desk' | 'paper' | 'door' | 'storage' | 'app
 export type ObjectAction =
   | { kind: 'panel'; panelId: string }
   | { kind: 'project'; projectId: string }
+  /** Nothing opens: touching it swaps the thing between its two states. */
+  | { kind: 'toggle' }
   | { kind: 'exit' }
 
 export interface WorldObject {
@@ -64,6 +66,11 @@ export interface WorldObject {
   readonly locked?: boolean
   /** Drawn into the room. Only for things the painting does not already show. */
   readonly art?: string
+  /**
+   * The same thing, opened. Only with a `toggle` action. The two files are
+   * cut on one shared canvas, so swapping them moves nothing.
+   */
+  readonly artOpen?: string
   /**
    * Silhouette traced while the pointer is on it. `rect` is the hit region and
    * may be looser; this is the shape of the object inside it.

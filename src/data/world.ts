@@ -51,6 +51,11 @@ export const DESKTOP_WORLD: WorldLayout = {
     { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', kind: 'appliance', enabled: true, action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 2362, y: 573, w: 200, h: 397 }, outline: 'fridge', sfx: 'wrapper' },
     { id: 'tv', label: 'Contact', zone: 'tvArea', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'contact' }, rect: { x: 2680, y: 585, w: 305, h: 203 }, outline: 'tv', sfx: 'click', inMenu: true },
     { id: 'secret-door', label: 'Locked', zone: 'secretDoor', kind: 'door', enabled: true, action: { kind: 'panel', panelId: 'secret' }, rect: { x: 3212, y: 603, w: 210, h: 372 }, outline: 'arch', sfx: 'bell' },
+    // Not in the painting: the week's parcel, put down between the television
+    // and the door mat. Its base line is below the walkway (the crew's feet
+    // stop at 1075), so anyone passing goes behind it. 130 x 108 keeps the
+    // cut-out's own 520:431, and both states share that canvas.
+    { id: 'parcel', label: 'Parcel', zone: 'entry', kind: 'storage', enabled: true, action: { kind: 'toggle' }, rect: { x: 3030, y: 1004, w: 130, h: 108 }, art: `${ART}/prop_parcel_closed.webp`, artOpen: `${ART}/prop_parcel_open.webp`, sfx: 'wrapper' },
   ],
 }
 
@@ -88,7 +93,30 @@ export const MOBILE_WORLD: WorldLayout = {
     { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', kind: 'appliance', enabled: true, action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 276, y: 2121, w: 158, h: 306 }, outline: 'fridge', sfx: 'wrapper' },
     { id: 'tv', label: 'Contact', zone: 'tvArea', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'contact' }, rect: { x: 508, y: 2138, w: 190, h: 147 }, outline: 'tv', sfx: 'click', inMenu: true },
     { id: 'secret-door', label: 'Locked', zone: 'secretDoor', kind: 'door', enabled: true, action: { kind: 'panel', panelId: 'secret' }, rect: { x: 862, y: 2149, w: 129, h: 270 }, outline: 'arch', sfx: 'bell' },
+    // The lower floor has no walkway in portrait, so the parcel only has to
+    // clear the television stand and the mat. 150 wide is 53px at 390.
+    { id: 'parcel', label: 'Parcel', zone: 'centreFloor', kind: 'storage', enabled: true, action: { kind: 'toggle' }, rect: { x: 655, y: 2436, w: 150, h: 124 }, art: `${ART}/prop_parcel_closed.webp`, artOpen: `${ART}/prop_parcel_open.webp`, sfx: 'wrapper' },
   ],
+}
+
+/**
+ * What the label under the pointer says. Korean, because the visitor is: the
+ * aria-labels above stay as they are for the tests and the screen readers
+ * that already know them. One line per thing, naming what it opens.
+ */
+export const CAPTIONS: Readonly<Record<string, string>> = {
+  pc: 'PC · 작품과 미니게임',
+  workbench: '작업대 · 스튜디오',
+  tv: 'TV · 연락하기',
+  fridge: '냉장고 · 오늘의 간식',
+  cabinet: '캐비닛 · 자료',
+  shelf: '선반 · 컬렉션',
+  'secret-door': '잠긴 문',
+  parcel: '택배 · 열어 보기',
+  'poster-lunai': 'LUNAI',
+  'poster-liminal': 'LIMINAL',
+  'poster-wormup': 'WORM UP!',
+  'poster-rubato': 'RUBATO',
 }
 
 /** The painted room behind everything, one plate per orientation. */

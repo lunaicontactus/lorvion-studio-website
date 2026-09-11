@@ -8,7 +8,11 @@
 .garage{
   position:fixed;
   inset:0;
-  overflow:hidden;
+  /* clip, not hidden: a hidden box can still be scrolled by a focus() or a
+     scrollIntoView(), and Tab-ing to the locked door used to drag the whole
+     stage 630px sideways while the camera stayed where it was. A clipped
+     box cannot scroll at all; the camera is the only thing that moves. */
+  overflow:clip;
   background:#241a13;
   touch-action:none;
   cursor:grab;
@@ -18,7 +22,7 @@
 .garage.is-dragging{cursor:grabbing}
 .garage.is-paused{cursor:default}
 
-.garage__stage{position:absolute;inset:0;overflow:hidden}
+.garage__stage{position:absolute;inset:0;overflow:clip}
 
 /* Sized in world units and moved with one transform; panning never reflows.
    The painted room is the background, set by the scene per orientation. */
@@ -150,10 +154,12 @@
   background:rgba(255,90,90,.9);pointer-events:none;z-index:700;
 }
 
-/* Placed furniture — only for things the painting does not contain. */
+/* Placed furniture — only for things the painting does not contain. Sized
+   and offset inline by the scene: the hit area around it may be padded. */
 .thing__art{
-  position:absolute;inset:0;
+  position:absolute;left:0;top:0;
   width:100%;height:100%;
+  max-width:none;
   object-fit:contain;
   pointer-events:none;
 }
