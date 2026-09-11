@@ -121,10 +121,16 @@ test.describe('desktop', () => {
     expect(await page.evaluate(() => document.querySelector('[data-game-root]')?.hidden)).toBe(true)
     expect(await page.evaluate(() => document.querySelector('.garage')?.classList.contains('is-paused'))).toBe(false)
     await expect(page.locator('[data-npc]')).toHaveCount(crewBefore)
+    // Somebody moves again. Polled rather than sampled once: five dokkaebi
+    // can all be mid-idle for six seconds together, and did, once.
     const a = await page.evaluate(() => [...document.querySelectorAll('[data-npc]')].map((e) => (e as HTMLElement).style.transform))
-    await page.waitForTimeout(6000)
-    const b = await page.evaluate(() => [...document.querySelectorAll('[data-npc]')].map((e) => (e as HTMLElement).style.transform))
-    expect(a.some((t, i) => t !== b[i])).toBe(true)
+    let moved = false
+    for (let i = 0; i < 25 && !moved; i++) {
+      await page.waitForTimeout(1000)
+      const b = await page.evaluate(() => [...document.querySelectorAll('[data-npc]')].map((e) => (e as HTMLElement).style.transform))
+      moved = a.some((t, k) => t !== b[k])
+    }
+    expect(moved, 'the crew never moved again after the game').toBe(true)
     await page.evaluate(() =>
       document.querySelector('.thing--tv')?.dispatchEvent(new MouseEvent('click', { bubbles: true })))
     await expect(page.locator('.tvset')).toBeVisible({ timeout: 6000 })
