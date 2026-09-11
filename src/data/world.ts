@@ -110,7 +110,7 @@ export const DECOR: Readonly<Record<'landscape' | 'portrait', readonly { readonl
     { art: `${ART}/prop_cup_ramen_open.webp`, x: 1384, y: 1078, w: 44, h: 55 },
   ],
   portrait: [
-    { art: `${ART}/prop_cup_ramen_open.webp`, x: 470, y: 1672, w: 40, h: 50 },
+    { art: `${ART}/prop_cup_ramen_open.webp`, x: 462, y: 1672, w: 40, h: 50 },
   ],
 }
 

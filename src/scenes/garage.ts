@@ -25,19 +25,19 @@ import { save } from '@/systems/storage'
 import { log } from '@/systems/log'
 import { mountNpc, npcAllowed, seededRandom, type NpcHandle } from '@/scenes/npc'
 import { Crowd } from '@/systems/crowd'
-import { Stage } from '@/systems/stage'
+import { Stage, OPENING_CAST } from '@/systems/stage'
 import { pointNamed, navFor } from '@/data/navigation'
 
 /** How many of them live in the portrait room. See the note where it is used. */
 const PHONE_CREW = 3
 /**
  * How many are on the floor at once. The rest are off the edge of the plate
- * and take turns coming in (src/systems/stage.ts). Four on a desk, where the
+ * and take turns coming in (src/systems/stage.ts). Three on a desk, where the
  * window shows about half of a room they are spread along — so two or three
- * of them, and one at a time when the rotation has just sent somebody out;
- * two on a phone held upright, where the whole strip is in view.
+ * of them, briefly fewer when the rotation has just sent somebody out; two
+ * on a phone held upright, where the whole strip is in view.
  */
-const ON_STAGE = { landscape: 4, portrait: 2 }
+const ON_STAGE = { landscape: 3, portrait: 2 }
 import { CHARACTERS } from '@/data/characters'
 import { spritesFor } from '@/data/sprites'
 import type { WorldLayout, WorldObject } from '@/types/world'
@@ -506,8 +506,9 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
             scale,
             crowd: crowd!,
             ready: plateReady,
-            // The first few are in the room; the rest come in later.
-            away: i >= onStage,
+            // The opening cast is in the room; the rest come in later. On a
+            // phone the strip is short, so simply the first two.
+            away: portrait ? i >= onStage : !OPENING_CAST.includes(c.id),
             // Spread round the cycle so five of them do not breathe in unison.
             phase: i / Math.max(here.length, 1),
             order: i,
@@ -527,7 +528,11 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
               ? { random: seededRandom(seed) }
               : {}),
           }))
-        cast = new Stage(crew, { present: onStage })
+        cast = new Stage(crew, {
+          present: onStage,
+          // A pinned route (?npcseed) is worthless if the stage walks it off.
+          ...(Number.isFinite(seed) && seed > 0 ? { keep: here[0]?.id } : {}),
+        })
         // Somebody notices the visitor coming in: whoever is nearest the
         // middle of the room, a moment after the door.
         const centre = world.start.x
@@ -543,9 +548,10 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
           gear.src = '/assets/images/garage/prop_gear.webp'
           gear.alt = ''
           gear.decoding = 'async'
+          // Lands on the boards in front of the bench, having fallen from it.
           gear.style.left = `${bench.x + 70}px`
-          gear.style.top = `${bench.y + 40}px`
-          gear.style.zIndex = String(depthOf(bench.y + 40) + 1)
+          gear.style.top = `${bench.y - 30}px`
+          gear.style.zIndex = String(depthOf(bench.y + 4))
           roomEl.append(gear)
           ambient.add({
             id: 'gearDrop', every: { min: 45000, max: 95000 }, duration: 4200,

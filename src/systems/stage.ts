@@ -14,10 +14,17 @@
  */
 import type { NpcHandle } from '@/scenes/npc'
 
+/**
+ * Who is in when the visitor arrives, in the wide room: MOMO at the bench,
+ * RUKI on the cushions, YOMI at the fridge — the three the first view shows.
+ * POKO and NUNU are out, and walk in as the others walk out.
+ */
+export const OPENING_CAST: readonly string[] = ['momo', 'ruki', 'yomi']
+
 /** Between one departure and the next. */
 const LEAVE_EVERY = { min: 24_000, max: 50_000 }
 /** How long the room is one short before somebody comes back. */
-const RETURN_AFTER = { min: 8_000, max: 16_000 }
+const RETURN_AFTER = { min: 5_000, max: 10_000 }
 /** Nobody leaves in the first stretch: the visitor has only just arrived. */
 const NOT_BEFORE = 12_000
 
@@ -29,10 +36,14 @@ export class Stage {
   #leaveAt: number
   #returnAt = 0
 
-  constructor(crew: readonly NpcHandle[], opts: { present: number; random?: () => number }) {
+  #keep: string | undefined
+
+  constructor(crew: readonly NpcHandle[], opts: { present: number; random?: () => number; keep?: string | undefined }) {
     this.#crew = crew
     this.#present = Math.max(1, Math.min(opts.present, crew.length))
     this.#random = opts.random ?? Math.random
+    // One that is never sent out: the one a test has pinned a route for.
+    this.#keep = opts.keep
     this.#leaveAt = NOT_BEFORE + this.#between(LEAVE_EVERY)
   }
 
@@ -59,7 +70,7 @@ export class Stage {
     // Somebody due out. Only somebody standing about: the one at the bench
     // stays at the bench.
     if (here.length >= this.#present && this.#clock >= this.#leaveAt) {
-      const idle = here.filter((c) => c.state === 'IDLE' || c.state === 'LOOK' || c.state === 'CHOOSE_TARGET')
+      const idle = here.filter((c) => c.id !== this.#keep && (c.state === 'IDLE' || c.state === 'LOOK' || c.state === 'CHOOSE_TARGET'))
       const who = idle[Math.floor(this.#random() * idle.length)]
       if (who?.leave()) {
         this.#leaveAt = this.#clock + this.#between(LEAVE_EVERY)

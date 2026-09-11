@@ -847,6 +847,8 @@ export function mountNpc(
             crowd?.leave(id)
             unbook()
             target = null
+            // Standing, not frozen mid-stride, for whenever it is next seen.
+            pose('idle', 'front')
             go('AWAY')
             place()
             return
@@ -1106,7 +1108,7 @@ export function mountNpc(
       // Sitting takes less floor than standing, and reads as less: a
       // dokkaebi on the rug is a low shape you walk round rather than a
       // silhouette you have to clear.
-      return state === 'SIT' ? 0.55 : 1
+      return state === 'SIT' ? 0.8 : 1
     },
     get seated(): boolean {
       return state === 'SIT'

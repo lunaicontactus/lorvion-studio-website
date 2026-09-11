@@ -404,7 +404,7 @@
 }
 .garage__gear.is-falling{animation:gear-fall 4200ms ease-out forwards}
 @keyframes gear-fall{
-  0%{opacity:0;translate:0 -280px;rotate:0deg}
+  0%{opacity:0;translate:0 -420px;rotate:0deg}
   6%{opacity:1}
   22%{translate:0 0;rotate:160deg}
   30%{translate:4px -36px;rotate:230deg}

@@ -33,12 +33,12 @@ export interface CrowdMember {
   /**
    * How much room it takes up, as a fraction of the usual personal space.
    *
-   * A dokkaebi sitting on the rug takes less than one standing: standing
-   * beside somebody who is sitting is what people do, and holding a full body
-   * width away from them turns a companionable picture into two strangers
-   * avoiding each other. It is emphatically not zero, which is what this was
-   * first — and then YOMI walked straight through POKO on the rug, because
-   * something that takes up no room is something you can occupy.
+   * A dokkaebi sitting on the rug takes a little less than one standing:
+   * standing beside somebody who is sitting is what people do. It is
+   * emphatically not zero, which is what this was first — and then YOMI
+   * walked straight through POKO on the rug, because something that takes up
+   * no room is something you can occupy. And not much less, either: at
+   * about half, whoever stopped beside the cushions stood inside the sitter.
    */
   readonly radius: number
   /** How readily it engages, 0 to 1. */

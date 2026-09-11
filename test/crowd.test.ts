@@ -103,16 +103,16 @@ describe('personal space', () => {
   })
 
   it('lets one stand closer to a dokkaebi that is sitting, but not through it', () => {
-    // 60 units apart: inside a standing dokkaebi's personal space (96) and
-    // outside a seated one's (96 x 0.55 = 53).
+    // 95 units apart: inside a standing dokkaebi's personal space (108) and
+    // outside a seated one's (108 x 0.8 = 86).
     const standing = new Crowd()
     standing.join(member('momo', 1300))
-    standing.join(member('nunu', 1360))
+    standing.join(member('nunu', 1395))
     expect(standing.separation('momo', 1300, 1030).x).toBeLessThan(0)
 
     const seated = new Crowd()
-    const sitting = member('nunu', 1360)
-    Object.defineProperty(sitting, 'radius', { value: 0.55, writable: true })
+    const sitting = member('nunu', 1395)
+    Object.defineProperty(sitting, 'radius', { value: 0.8, writable: true })
     seated.join(member('momo', 1300))
     seated.join(sitting)
     expect(seated.separation('momo', 1300, 1030)).toEqual({ x: 0, y: 0, slow: 1 })
@@ -284,7 +284,7 @@ describe('the ambience floor', () => {
 describe('where they may stand', () => {
   // Mirrors PERSONAL and the seated radius in src/systems/crowd.ts.
   const PERSONAL = 108
-  const SEATED = 0.55
+  const SEATED = 0.8
 
   for (const portrait of [false, true]) {
     const graph = navFor(portrait)
@@ -304,9 +304,9 @@ describe('where they may stand', () => {
         for (let j = i + 1; j < all.length; j++) {
           const a = all[i]!
           const b = all[j]!
-          // Depth counts for more than distance along the boards, as in
-          // Crowd.separation, and a seat takes less room than a stance.
-          const d = Math.hypot(a.x - b.x, (a.y - b.y) * 2.2)
+          // Distance along the boards counts for more than depth, as in
+          // Crowd.separation, and a seat takes a little less room than a stance.
+          const d = Math.hypot(a.x - b.x, (a.y - b.y) * 0.5)
           const room = PERSONAL * (a.seated || b.seated ? SEATED : 1)
           expect(d, `${a.id} and ${b.id} are ${d.toFixed(0)} apart`).toBeGreaterThan(room)
         }

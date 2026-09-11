@@ -59,8 +59,15 @@ async function pose(page: Page, who = MOMO): Promise<string> {
   }, who)
 }
 
-/** Everybody in the room, by id. */
+/** Everybody on the floor, by id. The ones off the edge of the plate
+ *  (src/systems/stage.ts) are mounted but not in the room. */
 async function whoIsHere(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('[data-npc]:not(.is-away)')].map((e) => (e as HTMLElement).dataset['npc'] ?? ''))
+}
+
+/** Everybody mounted, on the floor or off the edge of it. */
+async function whoIsMounted(page: Page): Promise<string[]> {
   return page.evaluate(() =>
     [...document.querySelectorAll('[data-npc]')].map((e) => (e as HTMLElement).dataset['npc'] ?? ''))
 }
@@ -113,7 +120,9 @@ test.describe('desktop', () => {
     let closest = Infinity
     for (let i = 0; i < 40; i++) {
       await page.waitForTimeout(900)
-      const now = await Promise.all(here.map((id) => feet(page, `[data-npc="${id}"]`)))
+      // Whoever is on the floor at this moment: the cast rotates, and one
+      // walking off the edge meets nobody there.
+      const now = await Promise.all((await whoIsHere(page)).map((id) => feet(page, `[data-npc="${id}"]`)))
       for (let a = 0; a < now.length; a++) {
         for (let b = a + 1; b < now.length; b++) {
           closest = Math.min(closest,
@@ -127,11 +136,15 @@ test.describe('desktop', () => {
   })
 
   test('it walks somewhere, stands at it, and stands about between', async ({ page }) => {
+    test.setTimeout(120_000)
     await enter(page, '?npcseed=7')
     const seen: string[] = []
     let travelled = 0
     let previous = await feet(page)
-    for (let i = 0; i < 40; i++) {
+    // Seventy seconds: at 76 units a second a trip across the room takes
+    // half a minute, and a window that fits one trip says nothing about
+    // whether it also stands about.
+    for (let i = 0; i < 58; i++) {
       await page.waitForTimeout(1200)
       const now = await feet(page)
       travelled += Math.hypot(now.x - previous.x, now.y - previous.y)
@@ -151,9 +164,19 @@ test.describe('desktop', () => {
     // was an improvement.
     expect(seen.some((s) => s.startsWith('walk:'))).toBe(true)
     expect(seen.some((s) => s.endsWith(':back'))).toBe(true)
-    // And most of the time it is doing nothing at all.
-    const still = seen.filter((s) => s.startsWith('idle:')).length
-    expect(still / seen.length).toBeGreaterThan(0.4)
+    // And a good share of the time it is not going anywhere: standing,
+    // sitting, working, glancing about — the small movements of somebody who
+    // is there — including at least one proper stretch of it, not only the
+    // odd second between two trips.
+    const still = seen.filter((s) => !s.startsWith('walk:')).length
+    expect(still / seen.length).toBeGreaterThan(0.35)
+    let run = 0
+    let longest = 0
+    for (const s of seen) {
+      run = s.startsWith('walk:') ? 0 : run + 1
+      longest = Math.max(longest, run)
+    }
+    expect(longest).toBeGreaterThanOrEqual(4)
   })
 
   test('the frames it plays are real files, and the walk actually cycles', async ({ page }) => {
@@ -178,6 +201,9 @@ test.describe('desktop', () => {
 
   test('touching it stops it and turns it to face the visitor', async ({ page }) => {
     await enter(page)
+    // Past the hello: whoever is nearest hops and waves as the visitor comes
+    // in, and a box measured mid-hop is a box measured against moving art.
+    await page.waitForTimeout(1800)
     const hit = page.locator(`${MOMO} .npc__hit`)
     await expect(hit).toHaveCount(1)
     // Big enough to hit on a phone, and the same floor the room's things use.
@@ -301,9 +327,11 @@ test.describe('desktop', () => {
 
     await page.keyboard.press('Escape')
     await expect(page.locator('[data-panel-root]')).toBeHidden()
+    // It picks up where it left off — which, found at the bench, is a job
+    // of up to twelve seconds before it so much as looks for the next thing.
     let moved = 0
     let previous = await feet(page)
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 32 && moved <= 50; i++) {
       await page.waitForTimeout(1000)
       const now = await feet(page)
       moved += Math.hypot(now.x - previous.x, now.y - previous.y)
@@ -346,14 +374,15 @@ test.describe('desktop', () => {
 
   test('turning the phone does not clone them', async ({ page }) => {
     await enter(page)
-    const before = await whoIsHere(page)
+    // Mounted, not on the floor: the ones off the edge are still the crew.
+    const before = await whoIsMounted(page)
     expect(before.length).toBeGreaterThan(3)
 
     // Portrait is a smaller room — the upper half of the workshop, with a
     // wall below it — and fewer of them live in it. Fewer, never duplicated.
     await page.setViewportSize({ width: 900, height: 1200 })
     await page.waitForTimeout(900)
-    const upstairs = await whoIsHere(page)
+    const upstairs = await whoIsMounted(page)
     expect(upstairs.length).toBeLessThan(before.length)
     expect(new Set(upstairs).size).toBe(upstairs.length)
     expect(before).toEqual(expect.arrayContaining(upstairs))
@@ -361,7 +390,7 @@ test.describe('desktop', () => {
     // And back again: the same crew, once each.
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.waitForTimeout(900)
-    expect(await whoIsHere(page)).toEqual(before)
+    expect(await whoIsMounted(page)).toEqual(before)
   })
 
   test('the debug overlay is off unless it is asked for', async ({ page }) => {

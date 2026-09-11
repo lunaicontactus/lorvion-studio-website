@@ -104,24 +104,25 @@ const LANDSCAPE: NavGraph = {
     // the room and the whole cushion corner stood empty, which the camera
     // does not show at once but a picture of the whole room does.
     { id: 'rest-floor', x: 1058, y: 1044 },
-    { id: 'left-floor', x: 1268, y: 1030 },
+    { id: 'left-floor', x: 1180, y: 1030 },
     { id: 'pc-front', x: 1578, y: 1012, objectId: 'pc', facing: 'back', kind: 'work' },
     { id: 'mid-floor', x: 1860, y: 1042 },
     { id: 'workbench-a', x: 2116, y: 1006, objectId: 'workbench', facing: 'back', kind: 'work' },
     { id: 'workbench-b', x: 2252, y: 1006, objectId: 'workbench', facing: 'back', kind: 'work' },
     { id: 'fridge-front', x: 2470, y: 1020, objectId: 'fridge', facing: 'back', kind: 'use' },
     { id: 'right-floor', x: 2652, y: 1036 },
-    { id: 'tv-left', x: 2790, y: 1030, objectId: 'tv', facing: 'back', kind: 'watch' },
-    { id: 'tv-right', x: 2900, y: 1030, objectId: 'tv', facing: 'back', kind: 'watch' },
+    { id: 'tv-left', x: 2830, y: 1030, objectId: 'tv', facing: 'back', kind: 'watch' },
+    { id: 'tv-right', x: 2942, y: 1030, objectId: 'tv', facing: 'back', kind: 'watch' },
     // The locked door. Nothing opens here, which is the point: YOMI's whole
     // character is being interested in it, and without somewhere to stand
     // that preference did nothing at all for fifteen minutes of watching.
     { id: 'secret-front', x: 3306, y: 1016, objectId: 'secret-door', facing: 'back', kind: 'watch' },
     // Beside the parcel. Not a place anybody wanders to: only somebody
     // summoned when the box is opened stands here, looking at it.
-    { id: 'parcel-side', x: 3010, y: 1066, objectId: 'parcel', facing: 'right', kind: 'watch' },
-    { id: 'behind-left', x: 2030, y: 966 },
-    { id: 'behind-right', x: 2440, y: 966 },
+    { id: 'parcel-side', x: 3062, y: 1060, objectId: 'parcel', facing: 'right', kind: 'watch' },
+    // One back-lane point: behind the desk pot. A second one behind the
+    // plant stood inside the fridge's place along the boards.
+    { id: 'behind-left', x: 1990, y: 966 },
   ],
   // Read off the painting: the rug, the cushions on the left, and the boards
   // beside the bench. Nothing in a doorway and nothing inside the furniture.
@@ -130,7 +131,7 @@ const LANDSCAPE: NavGraph = {
     { id: 'rug', x: 2360, y: 1046, facing: 'front', weight: 3 },
     { id: 'cushions', x: 1330, y: 1040, facing: 'right', weight: 3 },
     { id: 'by-the-bench', x: 1740, y: 1036, facing: 'front', weight: 2 },
-    { id: 'right-boards', x: 2720, y: 1042, facing: 'left', weight: 1 },
+    { id: 'right-boards', x: 2740, y: 1042, facing: 'left', weight: 1 },
   ],
 }
 
@@ -154,19 +155,19 @@ const PORTRAIT: NavGraph = {
   height: 150,
   speed: 76,
   points: [
-    { id: 'left-floor', x: 352, y: 1630 },
+    { id: 'left-floor', x: 330, y: 1630 },
     { id: 'pc-front', x: 518, y: 1612, objectId: 'pc', facing: 'back', kind: 'work' },
     { id: 'mid-floor', x: 700, y: 1638 },
     { id: 'workbench-a', x: 858, y: 1606, objectId: 'workbench', facing: 'back', kind: 'work' },
     { id: 'workbench-b', x: 972, y: 1606, objectId: 'workbench', facing: 'back', kind: 'work' },
   ],
   sits: [
-    { id: 'floor', x: 430, y: 1640, facing: 'front', weight: 2 },
+    { id: 'floor', x: 424, y: 1640, facing: 'front', weight: 2 },
     // Not 'left-floor'. That is the name of the standing point six units
     // away, and two different places with one name are one place as far as
     // the booking is concerned: claiming the seat locked the floor beside it,
     // and looking up either by name found whichever came first.
-    { id: 'left-cushion', x: 250, y: 1636, facing: 'right', weight: 1 },
+    { id: 'left-cushion', x: 232, y: 1636, facing: 'right', weight: 1 },
   ],
 }
 
