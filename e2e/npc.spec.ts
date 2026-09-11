@@ -281,7 +281,7 @@ test.describe('desktop', () => {
     await page.evaluate(() =>
       document.querySelector('.thing--pc')?.dispatchEvent(new MouseEvent('click', { bubbles: true })),
     )
-    await expect(page.locator('.hub__row')).toHaveCount(4, { timeout: 6000 })
+    await expect(page.locator('[data-game]')).toHaveCount(4, { timeout: 6000 })
   })
 
   test('it stops choosing errands while something is open, and starts again after', async ({

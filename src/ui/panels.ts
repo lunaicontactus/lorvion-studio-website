@@ -7,6 +7,7 @@
  * strings typed into a component, which is why the PC and the posters can
  * never disagree about a game.
  */
+import { GAMES } from '@/games/registry'
 import { PROJECTS } from '@/data/projects'
 import { SITE_CONFIG, contactRows } from '@/data/site'
 import { CHARACTERS } from '@/data/characters'
@@ -28,6 +29,8 @@ export interface PanelHost {
   readonly onClose?: () => void
   /** Something worth remembering happened. */
   readonly onProgress?: () => void
+  /** The visitor picked a mini-game on the PC. */
+  readonly onPlay?: (gameId: string) => void
 }
 
 /** The only place a status is turned into words. */
@@ -221,9 +224,24 @@ export class Panels {
     else this.#later(showList, 520)
   }
 
-  /** The catalogue, straight from PROJECTS. */
+  /** The catalogue, straight from PROJECTS — and the mini-games above it.
+   *  Above, because they are played here and the projects are only read
+   *  about here; nothing about the projects is behind them. */
   #pcList(view: HTMLElement): void {
-    view.innerHTML = `<div class="hub">${PROJECTS.map(
+    const games = GAMES.length === 0 ? '' : `
+      <p class="hub__head">미니게임</p>
+      <div class="hub">${GAMES.map((g) => `
+      <button class="hub__row hub__row--game" type="button" data-minigame="${g.id}">
+        <span class="hub__thumb hub__thumb--game" aria-hidden="true">▶</span>
+        <span class="hub__meta">
+          <span class="hub__name">${g.title}</span>
+          <span class="hub__tag">${g.hint}</span>
+          <span class="hub__facts">${g.seconds}초 · 키보드 · 터치${save.data.games[g.id] !== undefined ? ` · 최고 ${save.data.games[g.id]}점` : ''}</span>
+        </span>
+        <span class="hub__right"><span class="hub__more">PLAY <span aria-hidden="true">›</span></span></span>
+      </button>`).join('')}</div>
+      <p class="hub__head">작품</p>`
+    view.innerHTML = `${games}<div class="hub">${PROJECTS.map(
       (p) => `
       <button class="hub__row" type="button" data-game="${p.id}">
         <span class="hub__thumb"${p.keyArt ? ` style="background-image:url('${p.keyArt}')"` : ' data-empty'}></span>
@@ -243,6 +261,8 @@ export class Panels {
         const project = PROJECTS.find((p) => p.id === btn.dataset['game'])
         if (project) this.#pcDetail(view, project)
       })
+    }    for (const btn of view.querySelectorAll<HTMLElement>('[data-minigame]')) {
+      btn.addEventListener('click', () => this.#host.onPlay?.(btn.dataset['minigame']!))
     }
   }
 
