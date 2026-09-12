@@ -128,6 +128,12 @@ export interface NpcHandle {
    * that costs anything.
    */
   setOnscreen(on: boolean): void
+  /** Whether the visitor can see its face from where the camera is. */
+  readonly faceShown: boolean
+  /** Whether asking it to turn round now would interrupt something. */
+  readonly mayTurn: boolean
+  /** Look over at the room for a moment, then back to the job. */
+  turnToCamera(ms?: number): void
   readonly id: string
   readonly state: NpcState
   /** On the move. The room drops its ambience while this is true. */
@@ -204,6 +210,10 @@ export function mountNpc(
   const sprites = spritesFor(id)
   const metrics = metricsFor(id)
   const animator = sprites ? new SpriteAnimator(art, opts.phase ?? 0) : null
+  // The same offset the frames use, handed to CSS: the breathing and the
+  // working bob are one animation each, and five of them starting together
+  // is a chorus line rather than five small creatures getting on with it.
+  el.style.setProperty('--phase', `${-(opts.phase ?? 0) * 4}s`)
   // A glance and a wave last exactly as long as their own frames do. Both
   // used to be constants, which was right for one character and wrong for the
   // second: NUNU's cycles were rendered with more frames in them, so its
@@ -332,6 +342,15 @@ export function mountNpc(
 
   /** One place decides what is on screen: an action and a direction. */
   const pose = (action: SpriteAction, next: SpriteDirection = direction): void => {
+    // Front and back are two drawings with nothing between them, so swapping
+    // one for the other is a cut: the figure is simply inside out on the next
+    // frame, which reads as a glitch rather than as a turn. A quarter second
+    // of narrowing and widening covers the swap and sells the rotation.
+    if (!motion.reduced && (next === 'back') !== (direction === 'back')) {
+      art.classList.remove('is-turn')
+      void art.offsetWidth
+      art.classList.add('is-turn')
+    }
     direction = next
     if (!sprites || !animator) {
       // A character with only a turnaround has three views and no more, so
@@ -599,7 +618,7 @@ export function mountNpc(
       // Over the shoulder and back to it. Long enough to be read as a face
       // and short enough that the job it walked over for still looks like a
       // job rather than an excuse to stand about.
-      facingHold = 1700 + rng() * 1000
+      facingHold = 700 + rng() * 700
       nudge('tilt', 900)
     } else if (kind === 'tilt') nudge('tilt', 1000)
     else if (kind === 'sway') nudge('sway', 1500)
@@ -668,7 +687,7 @@ export function mountNpc(
       case 'IDLE': {
         // Whatever it was facing when it stopped. Turning to the camera on
         // arrival is the tell that nobody is home behind the sprite.
-        pose('idle')
+        pose('idle', facingHold > 0 ? 'front' : undefined)
         if (calm) {
           wait = 500
           return
@@ -1304,6 +1323,28 @@ export function mountNpc(
       // Past the budget: the visitor is waiting on this one to move, and
       // "there are already two walking" is not an answer they can see.
       if (state !== 'PAUSED') beginWalk(true)
+    },
+    /** Whether the visitor can see its face from where the camera is. */
+    get faceShown(): boolean {
+      return !away && state !== 'AWAY' && direction !== 'back'
+    },
+    /**
+     * Whether asking it to turn round would be an interruption. Walking and
+     * reacting are not: a figure that snaps to the camera mid-stride, or
+     * mid-greeting, is worse than the back of a head.
+     */
+    get mayTurn(): boolean {
+      return !away
+        && state !== 'AWAY' && state !== 'PAUSED' && state !== 'WALK'
+        && state !== 'REACT' && state !== 'GREET' && state !== 'GLANCE'
+    },
+    turnToCamera(ms = 1100): void {
+      if (!this.mayTurn || direction !== 'back') return
+      facingHold = Math.max(facingHold, ms)
+      // Now, not on the next state tick: the room asks for this because the
+      // visitor is looking at the screen at this moment.
+      if (state === 'WORK') pose('work', 'front')
+      else pose('idle', 'front')
     },
     get state(): NpcState {
       return state

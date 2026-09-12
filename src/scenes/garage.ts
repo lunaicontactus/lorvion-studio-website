@@ -26,6 +26,7 @@ import { log } from '@/systems/log'
 import { mountNpc, npcAllowed, seededRandom, type NpcHandle } from '@/scenes/npc'
 import { Crowd } from '@/systems/crowd'
 import { Stage, OPENING_CAST } from '@/systems/stage'
+import { Faces } from '@/systems/faces'
 import { pointNamed, navFor } from '@/data/navigation'
 
 /** How many of them live in the portrait room. See the note where it is used. */
@@ -108,6 +109,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   let crew: NpcHandle[] = []
   let crowd: Crowd | null = null
   let cast: Stage | null = null
+  let faces: Faces | null = null
   /** Where the visitor was looking before an object took the camera. */
   let parked: { x: number; y: number } | null = null
   /** Things with two states that have been opened. Kept across a rebuild on rotation. */
@@ -416,6 +418,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     // leave a second one behind.
     for (const one of crew) one.destroy()
     crew = []
+    faces = null
     crowd = null
     cast = null
     ambient?.destroy()
@@ -533,6 +536,11 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
           // A pinned route (?npcseed) is worthless if the stage walks it off.
           ...(Number.isFinite(seed) && seed > 0 ? { keep: here[0]?.id } : {}),
         })
+        faces = new Faces(crew)
+        // The first look at the room is the one that decides whether anybody
+        // lives here, and it is over in a second. Two faces for it, not one,
+        // and not left to whichever way the seeded homes happened to point.
+        faces.ensure(Math.min(2, onStage))
         // Somebody notices the visitor coming in: whoever is nearest the
         // middle of the room, a moment after the door.
         const centre = world.start.x
@@ -787,7 +795,10 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         ? ATTENTION.interaction
         : crowd?.attention({ crew: ATTENTION.crew, object: ATTENTION.object }) ?? 0)
       crowd?.step(Math.min(info.delta, 64))
-      if (!paused) cast?.step(Math.min(info.delta, 64))
+      if (!paused) {
+        cast?.step(Math.min(info.delta, 64))
+        faces?.step(Math.min(info.delta, 64))
+      }
       cull()
       if (!paused && keys.size) {
         const step = (KEY_PAN * info.delta) / 1000
@@ -845,6 +856,10 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
 
   return {
     setPaused(v: boolean): void {
+      // Closing a panel puts the room back in front of the visitor, and the
+      // crew have been standing wherever they were told to wait. That is a
+      // first impression too.
+      if (paused && !v) faces?.ensure(1)
       paused = v
       if (v) keys.clear()
       scene.classList.toggle('is-paused', v)

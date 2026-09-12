@@ -361,9 +361,41 @@
 /* Off the edge of the plate: still mounted, not in the room. */
 .npc.is-away{visibility:hidden;pointer-events:none}
 /* Sitting: a little forward and a little to one side, the way a small
-   creature sits, rather than bolt upright like a doll on a shelf. */
-.npc[data-state="SIT"] .npc__art{rotate:3deg;scale:1 .97}
-/* Small movements, about the feet. The anchoring transform is untouched. */
+   creature sits, rather than bolt upright like a doll on a shelf. The pose
+   and its breathing are set below, with the other living-in-the-room loops. */
+/* Turning round. Front and back are two drawings with nothing in between, so
+   the swap is a cut; narrowing the figure across the swap and letting it come
+   back out reads as a body rotating rather than a sprite being replaced. */
+.npc__art.is-turn{animation:npc-turn 260ms cubic-bezier(.4,0,.3,1)}
+@keyframes npc-turn{
+  0%{scale:1 1}
+  45%{scale:.72 1.02}
+  100%{scale:1 1}
+}
+/* Busy, and breathing while busy. Both of these run for as long as the state
+   lasts, which is why they are tiny: anything you can name while watching is
+   too much. The delay is the character's own phase, so five of them are not
+   one animation played five times. */
+.npc[data-state="WORK"] .npc__art{
+  animation:npc-busy 2600ms var(--phase,0s) ease-in-out infinite;
+}
+.npc[data-state="SIT"] .npc__art{
+  rotate:3deg;scale:1 .97;
+  animation:npc-breathe 4200ms var(--phase,0s) ease-in-out infinite;
+}
+@keyframes npc-busy{
+  0%{translate:0 0;rotate:0deg}
+  25%{translate:-1.5px -1px;rotate:-1.2deg}
+  60%{translate:1.5px 0;rotate:1.2deg}
+  100%{translate:0 0;rotate:0deg}
+}
+@keyframes npc-breathe{
+  0%{scale:1 .97}
+  50%{scale:.995 .984}
+  100%{scale:1 .97}
+}
+/* Small movements, about the feet. The anchoring transform is untouched.
+   These are one-shots, so they win over the two loops above while they run. */
 .npc__art.is-tilt{animation:npc-tilt 1000ms ease-in-out}
 .npc__art.is-sway{animation:npc-sway 1500ms ease-in-out}
 .npc__art.is-hop{animation:npc-hop 560ms cubic-bezier(.3,.9,.4,1)}
@@ -418,7 +450,9 @@
 .garage__decor{position:absolute;pointer-events:none;max-width:none;object-fit:contain}
 
 @media (prefers-reduced-motion:reduce){
-  .npc__art.is-tilt,.npc__art.is-sway,.npc__art.is-hop,.npc__spark,.garage__gear{animation:none}
+  .npc__art.is-tilt,.npc__art.is-sway,.npc__art.is-hop,.npc__art.is-turn,
+  .npc[data-state="WORK"] .npc__art,.npc[data-state="SIT"] .npc__art,
+  .npc__spark,.garage__gear{animation:none}
   .npc__spark{display:none}
 }
 

@@ -43,13 +43,6 @@ async function feet(page: Page, who = MOMO): Promise<{ x: number; y: number }> {
   }, who)
 }
 
-async function view(page: Page, who = MOMO): Promise<string> {
-  return page.evaluate((sel) => {
-    const img = document.querySelector(`${sel} img`) as HTMLImageElement
-    return img.src.split('/').pop() ?? ''
-  }, who)
-}
-
 /** `action:direction` from the frame on screen, e.g. "walk:left". */
 async function pose(page: Page, who = MOMO): Promise<string> {
   return page.evaluate((sel) => {
