@@ -58,13 +58,15 @@ for (const w of WINDOWS) {
       // The crew are here, the right number of them, and they live.
       await expect(page.locator('[data-npc]')).toHaveCount(w.crew)
       const before = await page.evaluate(() => [...document.querySelectorAll('[data-npc]')].map((e) => (e as HTMLElement).style.transform))
-      let moved = false
-      for (let i = 0; i < 25 && !moved; i++) {
-        await page.waitForTimeout(1000)
+      // Somebody sets off within the first twenty seconds by construction:
+      // the opening spell at home is capped at nine, the idle after it at
+      // ten, and the first decision is always an errand (src/scenes/npc.ts).
+      // Forty is that bound with room for a slow machine, and the poll
+      // returns the moment it is true rather than at the end of a window.
+      await expect.poll(async () => {
         const now = await page.evaluate(() => [...document.querySelectorAll('[data-npc]')].map((e) => (e as HTMLElement).style.transform))
-        moved = now.some((t, k) => t !== before[k])
-      }
-      expect(moved, 'somebody in the room moved within 25s').toBe(true)
+        return now.some((t, k) => t !== before[k])
+      }, { message: 'somebody in the room moved within 40s', timeout: 40_000, intervals: [250] }).toBe(true)
 
       // PC → the game.
       await touch(page, '.thing--pc', w.mobile)

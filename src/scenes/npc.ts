@@ -277,6 +277,17 @@ export function mountNpc(
   let fidgetTimer: ReturnType<typeof setTimeout> | null = null
   /** The seated one this walk has already glanced at. */
   let glancedAt: string | null = null
+  /**
+   * Still owed its first errand.
+   *
+   * The opening spell at home is deliberately short, but a short spell only
+   * helps if what follows is a walk, and the idle that follows it is free to
+   * choose standing and looking instead — and then to choose it again. On a
+   * phone, where the cast is two, that is how the room stood completely still
+   * for the first thirty-five seconds of a visit. The first decision each one
+   * makes is an errand; every decision after it is its own.
+   */
+  let owesErrand = true
   /** What to go back to after a brief reaction that interrupted a job. */
   let back: { state: NpcState; wait: number; action: SpriteAction; dir: SpriteDirection } | null = null
   /**
@@ -491,8 +502,19 @@ export function mountNpc(
    * makes RUKI's day look different from POKO's without either of them being
    * a special case in this function.
    */
+  /**
+   * Far enough away that going there is visibly going somewhere.
+   *
+   * Only while the first errand is still owed. A dokkaebi is free to decide
+   * it would like to sit on the cushion it is already sitting on, and mostly
+   * that is fine — but as an opening move it is a walk of nought units, the
+   * room does not move, and the visitor's first ten seconds are a still life.
+   */
+  const farEnough = (p: { x: number; y: number }): boolean =>
+    !owesErrand || Math.hypot(p.x - x, p.y - y) >= 60
+
   const chooseTarget = (): Waypoint | null => {
-    const bookable = (p: Waypoint): boolean => !crowd || crowd.free(p.id, id)
+    const bookable = (p: Waypoint): boolean => (!crowd || crowd.free(p.id, id)) && farEnough(p)
     // Not the benches. Those are reached by deciding to work, which is a
     // separate pull in the profile — and while wandering could also land on
     // them, `work` and `wander` were the same decision by another name, and
@@ -713,7 +735,7 @@ export function mountNpc(
           (p) => p.objectId !== undefined && profile.favours.includes(p.objectId))
         const held = wanted.length > 0 && crowd !== null
           && wanted.every((p) => !crowd.free(p.id, id))
-        if (held && rng() < 0.45) {
+        if (held && !owesErrand && rng() < 0.45) {
           lookAt = wanted[0]!
           say('idle', 0.6)
           go('LOOK', 2200 + rng() * 2200)
@@ -722,14 +744,19 @@ export function mountNpc(
         // What to do next is the whole personality: the same machine, pulled
         // by different numbers per character (src/data/behaviour.ts).
         const benches = objectPoints(graph).filter(
-          (p) => p.kind === 'work' && p.objectId !== avoid && (!crowd || crowd.free(p.id, id)))
-        const seats = graph.sits.filter((p) => !crowd || crowd.free(p.id, id))
+          (p) => p.kind === 'work' && p.objectId !== avoid
+            && (!crowd || crowd.free(p.id, id)) && farEnough(p))
+        const seats = graph.sits.filter((p) => (!crowd || crowd.free(p.id, id)) && farEnough(p))
         const next = pick<'wander' | 'work' | 'sit' | 'look'>([
           ['wander', profile.wander],
           ['work', benches.length ? profile.work : 0],
           ['sit', seats.length ? profile.sit : 0],
-          ['look', profile.look],
+          // Standing and looking is a real thing to do, and not a thing to
+          // open a visit with. Wandering is always available, so dropping it
+          // here cannot leave the weights adding to nothing.
+          ['look', owesErrand ? 0 : profile.look],
         ])
+        owesErrand = false
         if (next === 'look') {
           go('LOOK', lookMs)
           return
@@ -1025,6 +1052,21 @@ export function mountNpc(
   const settleAtHome = (): void => {
     x = home.x
     y = home.y
+    /**
+     * How long the first spell lasts.
+     *
+     * A fraction of a normal one, and never more than nine seconds. Found
+     * mid-job is the right first impression; found mid-job and still there
+     * half a minute later is a photograph of a job. Measured on a phone,
+     * where the cast is two, the room went as long as forty-eight seconds
+     * before anybody took a step — RUKI can sit for thirty-two, and then it
+     * is somebody's turn to stand about for ten and think about it.
+     *
+     * The slice is the character's own phase, so they do not all finish
+     * together and leave the room empty at the same moment.
+     */
+    const opening = (range: { min: number; max: number }): number =>
+      Math.min(9000, Math.round(between(range) * (0.25 + (opts.phase ?? 0) * 0.3)))
     if (homeSeat && (!crowd || crowd.free(homeSeat.id, id))) {
       sitAt = homeSeat
       if (crowd) {
@@ -1032,7 +1074,7 @@ export function mountNpc(
         booked = homeSeat.id
       }
       pose('sit', homeSeat.facing)
-      go('SIT', between(sitFor))
+      go('SIT', opening(sitFor))
     } else if (homePoint?.kind === 'work' && (!crowd || crowd.free(homePoint.id, id))) {
       target = homePoint
       if (crowd) {
@@ -1042,7 +1084,7 @@ export function mountNpc(
       recent = [homePoint.objectId!, ...recent].slice(0, 2)
       workDir = homePoint.facing === 'front' ? 'front' : 'back'
       pose('work', workDir)
-      go('WORK', between(workFor))
+      go('WORK', opening(workFor))
     } else if (homePoint?.objectId && (!crowd || crowd.free(homePoint.id, id))) {
       target = homePoint
       if (crowd) {
@@ -1050,7 +1092,7 @@ export function mountNpc(
         booked = homePoint.id
       }
       pose('idle', homePoint.facing ?? 'front')
-      go('INTERACT', between(homePoint.kind === 'watch' ? WATCH_MS : INTERACT_MS))
+      go('INTERACT', opening(homePoint.kind === 'watch' ? WATCH_MS : INTERACT_MS))
     } else {
       pose('idle', rng() < 0.5 ? 'front' : 'left')
       // Staggered, so they do not all come to life on the same frame.

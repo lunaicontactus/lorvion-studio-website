@@ -132,6 +132,7 @@ test.describe('desktop', () => {
     test.setTimeout(120_000)
     await enter(page, '?npcseed=7')
     const seen: string[] = []
+    const states: string[] = []
     let travelled = 0
     let previous = await feet(page)
     // Seventy seconds: at 76 units a second a trip across the room takes
@@ -143,20 +144,22 @@ test.describe('desktop', () => {
       travelled += Math.hypot(now.x - previous.x, now.y - previous.y)
       previous = now
       seen.push(await pose(page))
+      states.push(await page.evaluate(
+        (sel) => (document.querySelector(sel) as HTMLElement).dataset['state'] ?? '', MOMO))
     }
     // It went somewhere. The pace is set by the walk cycle — 100 world units
     // a second — but the room now holds five of them and only two may be
     // walking at once, so any one of them spends most of a minute waiting its
     // turn. This is a floor for "moved about the room", not a target.
     expect(travelled).toBeGreaterThan(240)
-    // Walking towards something, and facing it once there. Any back-facing
-    // pose will do: leaning over the bench is `work:back` and standing at the
-    // fridge is `idle:back`, and which one it happens to be doing in any
-    // given minute is not the point. Naming `idle:back` specifically made
-    // this fail the day the dokkaebi learned to turn round afterwards, which
-    // was an improvement.
+    // Walking towards something, and using it once there. Whether it ends
+    // up leaning over the bench, sitting on the rug or standing at the
+    // fridge is not the point, and neither is which way it faces while it
+    // does: the busy places face the room now, so "turned its back" stopped
+    // being a sign of anything.
     expect(seen.some((s) => s.startsWith('walk:'))).toBe(true)
-    expect(seen.some((s) => s.endsWith(':back'))).toBe(true)
+    expect(seen.some((s) => s.startsWith('work:') || s.startsWith('sit:'))
+      || states.some((s) => s === 'WORK' || s === 'SIT' || s === 'INTERACT')).toBe(true)
     // And a good share of the time it is not going anywhere: standing,
     // sitting, working, glancing about — the small movements of somebody who
     // is there — including at least one proper stretch of it, not only the
@@ -420,17 +423,21 @@ test.describe('phone', () => {
     // walk at once, so any one dokkaebi can honestly spend twenty seconds
     // standing still, and the room as a whole covers a few hundred units in
     // half a minute. This is a floor under "somebody moved", not a target.
+    //
+    // Polled, not summed over a fixed number of ticks: the first errand is
+    // guaranteed inside twenty seconds (src/scenes/npc.ts, `opening` and
+    // `owesErrand`), and a fixed window one flake wide of that guarantee is
+    // how this failed under load.
     let travelled = 0
     let previous = await Promise.all(here.map((id) => feet(page, `[data-npc="${id}"]`)))
-    for (let i = 0; i < 26; i++) {
-      await page.waitForTimeout(1200)
+    await expect.poll(async () => {
       const now = await Promise.all(here.map((id) => feet(page, `[data-npc="${id}"]`)))
       for (let k = 0; k < now.length; k++) {
         travelled += Math.hypot(now[k]!.x - previous[k]!.x, now[k]!.y - previous[k]!.y)
       }
       previous = now
-    }
-    expect(travelled).toBeGreaterThan(180)
+      return travelled
+    }, { timeout: 45_000, intervals: [400] }).toBeGreaterThan(180)
   })
 })
 

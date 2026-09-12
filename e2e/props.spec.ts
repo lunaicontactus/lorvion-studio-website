@@ -25,6 +25,25 @@ async function enter(page: Page): Promise<void> {
   await page.waitForTimeout(400)
 }
 
+/**
+ * How far apart two elements' boxes are, read on one frame.
+ *
+ * Two `boundingBox()` calls are two round trips, and between them the room
+ * can move: the camera is still easing after `bring`, and a panel is still
+ * scaling in after `toBeVisible` first says yes. Measured that way, one box
+ * of art read twice came back six pixels apart and the test called it two
+ * boxes. This reads both rects inside a single evaluate, so they are from
+ * the same layout, whatever it is doing.
+ */
+async function apart(page: Page, a: string, b: string): Promise<number> {
+  return page.evaluate(([sa, sb]) => {
+    const ra = document.querySelector(sa!)!.getBoundingClientRect()
+    const rb = document.querySelector(sb!)!.getBoundingClientRect()
+    return Math.abs(ra.x - rb.x) + Math.abs(ra.y - rb.y)
+      + Math.abs(ra.width - rb.width) + Math.abs(ra.height - rb.height)
+  }, [a, b])
+}
+
 /** Bring a thing into view by touching nothing: the camera is asked directly. */
 async function bring(page: Page, id: string): Promise<void> {
   await page.evaluate((id) => {
@@ -56,12 +75,8 @@ test.describe('desktop', () => {
     const closed = parcel.locator('.thing__art--closed')
     const open = parcel.locator('.thing__art--open')
     // One canvas, one box: the open state may not move by a pixel.
-    const a = (await closed.boundingBox())!
-    const b = (await open.boundingBox())!
-    expect(Math.abs(a.x - b.x)).toBeLessThan(0.5)
-    expect(Math.abs(a.y - b.y)).toBeLessThan(0.5)
-    expect(Math.abs(a.width - b.width)).toBeLessThan(0.5)
-    expect(Math.abs(a.height - b.height)).toBeLessThan(0.5)
+    expect(await apart(page, '.thing--parcel .thing__art--closed', '.thing--parcel .thing__art--open'))
+      .toBeLessThan(1)
     await expect(open).toHaveCSS('opacity', '0')
 
     await parcel.click()
@@ -141,11 +156,9 @@ test.describe('desktop', () => {
     await page.locator('.thing--workbench').click()
     const car = page.locator('[data-bench-car]')
     await expect(car).toBeVisible({ timeout: 5000 })
-    const open = car.locator('img[data-state="open"]')
     const closed = car.locator('img[data-state="closed"]')
-    const a = (await open.boundingBox())!
-    const b = (await closed.boundingBox())!
-    expect(Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + Math.abs(a.width - b.width) + Math.abs(a.height - b.height)).toBeLessThan(1)
+    expect(await apart(page, '[data-bench-car] img[data-state="open"]', '[data-bench-car] img[data-state="closed"]'))
+      .toBeLessThan(1)
     await expect(closed).toHaveCSS('opacity', '0')
     await car.click()
     await expect(car).toHaveAttribute('aria-pressed', 'true')
