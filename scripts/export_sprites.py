@@ -58,7 +58,22 @@ def window(paths):
     return int(centre - half), int(centre + half)
 
 
-def grade(img, height, x0, x1):
+# Horn dye, per character. All of them soft — a coral, a peach, an apricot, a
+# rose, a lilac — and none of them the lacquer red the render came with. It is
+# a small thing on a small horn, and it is the one part of the figure with a
+# clean mask: the hair sits on the skin's own hue for MOMO and POKO, so it
+# cannot be dyed separately without the material mask the source model would
+# give, and the eyes would go with it.
+HORN = {
+    'momo': (1.06, 40, 0.55, 118, 0.55, 106),   # strawberry milk
+    'ruki': (1.06, 44, 0.60, 112, 0.50, 92),    # peach
+    'yomi': (1.04, 52, 0.62, 122, 0.52, 96),    # apricot
+    'poko': (1.02, 34, 0.50, 104, 0.52, 104),   # rose
+    'nunu': (1.00, 38, 0.52, 108, 0.62, 128),   # lilac
+}
+
+
+def grade(img, height, x0, x1, char='momo'):
     a = np.asarray(img.convert('RGBA')).astype(np.float32)
     rgb = a[..., :3]
     alpha = a[..., 3:4] / 255.0
@@ -70,10 +85,11 @@ def grade(img, height, x0, x1):
     sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1), 0)
     # Red that is really red: strongly saturated, red well above both others.
     horn = (sat > 0.5) & (r > 90) & (r > g * 1.9) & (r > b * 1.9)
+    kr, cr, kg, cg, kb, cb = HORN.get(char, HORN['momo'])
     coral = np.stack([
-        np.clip(r * 1.06 + 40, 0, 255),
-        np.clip(g * 0.55 + 118, 0, 255),
-        np.clip(b * 0.55 + 106, 0, 255)], axis=-1)
+        np.clip(r * kr + cr, 0, 255),
+        np.clip(g * kg + cg, 0, 255),
+        np.clip(b * kb + cb, 0, 255)], axis=-1)
     rgb = np.where(horn[..., None], coral, rgb)
 
     # ── Fill light: brighter, blacks lifted to a warm dark brown ──────────
@@ -107,7 +123,7 @@ def main():
         rel = src.relative_to(SRC)
         dst = (DST / rel).with_suffix('.webp')
         dst.parent.mkdir(parents=True, exist_ok=True)
-        grade(Image.open(src), height, x0, x1).save(dst, 'WEBP', quality=90, method=6)
+        grade(Image.open(src), height, x0, x1, char).save(dst, 'WEBP', quality=90, method=6)
         total += dst.stat().st_size
         n += 1
     print(f'{n} frames -> {DST}   {total / 1024:.0f}KB total, {total / 1024 / n:.0f}KB each')
