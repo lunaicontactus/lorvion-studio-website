@@ -1386,16 +1386,20 @@ export function mountNpc(
         && state !== 'REACT' && state !== 'GREET' && state !== 'GLANCE'
     },
     turnToCamera(ms = 1100): void {
-      if (!this.mayTurn || direction !== 'back') return
+      if (!this.mayTurn) return
       if (state === 'WALK') {
         // Still walking where it was walking; just seen from the side. The
         // room only asks for this when it would otherwise show no face at
         // all, and only one waypoint leads into the back lane, so it is both
         // rare and short.
-        pose('walk', facingRight ? 'right' : 'left')
+        if (direction === 'back') pose('walk', facingRight ? 'right' : 'left')
         return
       }
       facingHold = Math.max(facingHold, ms)
+      // Asked again while already turned, the hold is the whole of the
+      // answer: the room renews it before it lapses, and a figure already
+      // looking at the visitor has nothing left to turn.
+      if (direction !== 'back') return
       // Now, not on the next state tick: the room asks for this because the
       // visitor is looking at the screen at this moment.
       if (state === 'WORK') pose('work', 'front')

@@ -32,7 +32,11 @@ export interface FacesOptions {
    * happen because somebody wandered into one, not because it was ordered.
    */
   readonly want?: number
-  /** How often to look, in milliseconds. Not every frame: this is a floor. */
+  /**
+   * How often to look, in milliseconds. Zero — every frame — because the
+   * thing being promised is that there is no moment without a face, and a
+   * promise checked ten times a second is kept nine tenths of the time.
+   */
   readonly every?: number
   /** How long a face turned by this holds it for. */
   readonly hold?: number
@@ -44,14 +48,21 @@ export class Faces {
   readonly #every: number
   readonly #hold: number
   #due = 0
+  /** Whoever the room is currently leaning on to not be a picture of backs. */
+  #leaning: FaceMember | null = null
 
   constructor(crew: readonly FaceMember[], opts: FacesOptions = {}) {
     this.#crew = crew
     this.#want = opts.want ?? 1
-    // Often enough that a dropped frame or two cannot open a gap: the
-    // whole point is that there is no moment without a face, and a
-    // quarter-second check on a slow machine is not that.
-    this.#every = opts.every ?? 150
+    // Every frame. A face can stop being a face on any frame — a greeting
+    // ends, a reaction ends, somebody at the bench turns back to it — and a
+    // check that runs every hundred and fifty milliseconds cannot promise
+    // there was no moment without one; it can only promise the moment was
+    // short. It was a tenth of a second, once a second or so, and a room
+    // sampled frame by frame caught it. The check is a count over five, and
+    // it runs after the crew has moved and before the frame is done, so what
+    // the visitor sees has already been corrected.
+    this.#every = opts.every ?? 0
     this.#hold = opts.hold ?? 1200
   }
 
@@ -66,6 +77,19 @@ export class Faces {
    * a room they are about to look at again.
    */
   ensure(want = this.#want): number {
+    // A turn granted below lasts a fixed time and then lapses on its own
+    // clock, with the figure going straight back to the bench it was facing.
+    // Nothing tells the room that happened: it finds out at the next check,
+    // so the picture is entirely backs for however long is left of `every`.
+    // Checking oftener only shortens that; it is the lapse that has to go.
+    //
+    // So the room renews the turn while the face is still turned, and only
+    // while it is still needed — let go of somebody the moment the room has
+    // faces to spare, or the floor becomes a hand on the back of the head.
+    const lean = this.#leaning
+    if (lean && this.shown > want) this.#leaning = null
+    else if (lean?.faceShown && lean.mayTurn) lean.turnToCamera(this.#hold)
+
     let short = want - this.shown
     if (short <= 0) return 0
     let turned = 0
@@ -76,6 +100,7 @@ export class Faces {
       // Asking is not the same as getting: a member may refuse for reasons
       // of its own, and counting the ask would leave the room a face short.
       if (!one.faceShown) continue
+      this.#leaning = one
       turned += 1
       short -= 1
     }

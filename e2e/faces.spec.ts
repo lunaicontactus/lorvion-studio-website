@@ -78,11 +78,27 @@ async function fewestFaces(page: Page, ms: number): Promise<number> {
           const m = /\/dokkaebi(?:-v2)?\/\w+\/\w+\/(\w+)\//.exec(src)
           return m !== null && m[1] !== 'back'
         }).length
+    const frame = (): Promise<void> =>
+      new Promise((r) => requestAnimationFrame(() => r()))
     let fewest = Infinity
     const t0 = performance.now()
     while (performance.now() - t0 < window_) {
-      fewest = Math.min(fewest, count())
-      await new Promise((r) => requestAnimationFrame(() => r(null)))
+      // A drop has to survive a frame to count.
+      //
+      // This looks at the room from outside the room's own frame, and there
+      // it can catch it mid-sentence: one of them turns back to its bench on
+      // a timer of its own, and the floor turns somebody round again on the
+      // next tick, before either version is painted. Counting the first of
+      // those is counting a picture nobody was ever shown.
+      //
+      // The thing being promised is about what the visitor is looking at, so
+      // the second look is the one that decides. A room that is really all
+      // backs stays all backs, and is still caught.
+      if (count() < fewest) {
+        await frame()
+        fewest = Math.min(fewest, count())
+      }
+      await frame()
     }
     return fewest
   }, ms)
