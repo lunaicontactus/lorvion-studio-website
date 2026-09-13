@@ -51,7 +51,10 @@ for (const w of WINDOWS) {
     })
 
     test('from the alley to the first game and back, then the television', async ({ page }) => {
-      test.setTimeout(120_000)
+      // Room for a round played in slow motion; see the catch loop below. On
+      // a machine that is drawing frames at the usual rate the whole visit
+      // takes twenty-odd seconds and none of this is touched.
+      test.setTimeout(240_000)
       await fresh(page)
       await enter(page, w.mobile)
 
@@ -86,14 +89,42 @@ for (const w of WINDOWS) {
       await touch(page, '[data-game-resume]', w.mobile)
       await expect(page.locator('[data-game-resume]')).toBeHidden()
 
-      // Ignore the boss until caught.
-      for (let i = 0; i < 400; i++) {
-        if (await page.locator('[data-game-result]').count()) break
-        if (i % 4 === 0) {
-          if (w.mobile) await page.locator('[data-build-jump]').tap().catch(() => {})
-          else await page.keyboard.press('Space')
-        }
-        await page.waitForTimeout(80)
+      // Ignore the boss until caught — measured on the game's clock, not on
+      // the machine's.
+      //
+      // The round is forty-five seconds and it is spent a frame at a time,
+      // with each frame worth at most 64ms so that a tab coming back from
+      // the background cannot teleport through it (src/games/build/game.ts).
+      // A browser starved of processor therefore plays the same round in
+      // slow motion: it is not stuck, it is slow, and the clock says so.
+      // Counting off a fixed number of wall-clock seconds here is asking how
+      // fast the machine is — which is how this timed out on a loaded runner
+      // with the round still showing 36 and the boss on its first look.
+      //
+      // So press, and keep pressing for as long as the round is still
+      // counting down. A round that has stopped counting is the failure
+      // worth catching, and it is caught in ten seconds rather than four
+      // minutes.
+      //
+      // The press itself is given a second and no more. Being caught is the
+      // point of this loop, and the panel that says so covers the jump
+      // button — so the press that happens to land on the same beat as the
+      // result waits for a button it can never reach again. `catch` cannot
+      // help with that: there is no action timeout in this project, so the
+      // tap does not fail, it waits, and the whole test times out with the
+      // finished round sitting there on screen. That is what it was doing.
+      const onTheClock = async (): Promise<number> =>
+        Number(await page.locator('[data-game-time]').textContent())
+      let last = await onTheClock()
+      let stalled = 0
+      while (!(await page.locator('[data-game-result]').count())) {
+        if (w.mobile) await page.locator('[data-build-jump]').tap({ timeout: 1000 }).catch(() => {})
+        else await page.keyboard.press('Space')
+        await page.waitForTimeout(320)
+        const now = await onTheClock()
+        stalled = now < last ? 0 : stalled + 1
+        last = now
+        expect(stalled, 'the round stopped counting down').toBeLessThan(30)
       }
       await expect(page.locator('[data-game-result]')).toHaveAttribute('data-reason', 'caught')
       // Retry starts from nothing, and straight away: a fresh round, 45s on
