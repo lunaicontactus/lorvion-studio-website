@@ -47,7 +47,8 @@ def measure(V):
     return h, torso, lo, hi, float(wide.max())
 
 
-def pose(src, dst, degrees=70.0, blend=0.26, forward=5.0, report=True):
+def pose(src, dst, degrees=70.0, blend=0.26, forward=5.0,
+         shoulder_in=0.075, shoulder_down=0.022, report=True):
     scene = trimesh.load(src, process=False)
     key = list(scene.geometry.keys())[0]
     g = scene.geometry[key]
@@ -88,7 +89,10 @@ def pose(src, dst, degrees=70.0, blend=0.26, forward=5.0, report=True):
             V[side, 1] = py + dy2 * cf - dz2 * sf
             V[side, 2] = dy2 * sf + dz2 * cf
 
+    n_sh = absorb_shoulder(V, h, torso, lo, hi, inward=shoulder_in, drop=shoulder_down)
     if report:
+        print(f'  shoulder cap: {n_sh} vertices drawn in by {shoulder_in:.3f}'
+              f' and down {shoulder_down:.3f}')
         print(f'{src.split("/")[-1]}: torso {torso:.4f}  shoulder y {py:.4f}'
               f'  band {lo:.2f}-{hi:.2f}h  -> {int(arm.sum())} vertices'
               f'  down {degrees:.0f}deg, forward {forward:.0f}deg, blend {blend:.2f}')
@@ -96,8 +100,47 @@ def pose(src, dst, degrees=70.0, blend=0.26, forward=5.0, report=True):
     scene.export(dst)
 
 
+def absorb_shoulder(V, h, torso, lo, hi, inward=0.050, drop=0.016, core=0.62):
+    """Take the shoulder out of the silhouette.
+
+    Rotating a T-pose arm down leaves the stub it grew from still pointing
+    sideways, and that stub is the shoulder you can see. Measured against the
+    reference and normalised to figure height, MOMO is 0.249 wide where the
+    reference is 0.193 — wider at the shoulder and narrower at the hip, so the
+    outline reads as a column with an arm bolted on rather than a bell.
+
+    So the cap is drawn into the body instead of being rotated again. How much
+    a vertex moves depends on two things and neither of them is the arm: how
+    high it is, full at the top of the arm band and nothing by the middle of
+    the arm, and how far out it already sits, so the body's core stays where
+    it is and only what stands proud of it comes in. The arm below the joint,
+    its length, its thickness and the hand are not in the selection at all.
+    """
+    # A band, not a threshold. The first version used a rising step, which is
+    # one everywhere above the shoulder — so it drew the head in as well and
+    # flattened the hair into a block. It has to come back to nothing above
+    # the joint, because everything up there is head.
+    y_lo = h * (lo - (hi - lo) * 0.55)     # below mid-arm: nothing moves under here
+    y_peak = h * (hi - 0.01)               # the top of the arm band: full
+    y_hi = h * (hi + 0.045)                # the neck: back to nothing
+    core_x = torso * core
+    ax = np.abs(V[:, 0])
+    y = V[:, 1]
+    rise = smoothstep((y - y_lo) / max(y_peak - y_lo, 1e-6))
+    fall = 1.0 - smoothstep((y - y_peak) / max(y_hi - y_peak, 1e-6))
+    u = np.minimum(rise, fall)
+    t = smoothstep((ax - core_x) / max(torso - core_x, 1e-6))
+    w = u * t
+    moved = w > 0.01
+    V[moved, 0] -= np.sign(V[moved, 0]) * (w[moved] * inward)
+    V[moved, 1] -= w[moved] * drop
+    return int(moved.sum())
+
+
 if __name__ == '__main__':
     pose(sys.argv[1], sys.argv[2],
-         degrees=float(sys.argv[3]) if len(sys.argv) > 3 else 70.0,
+         degrees=float(sys.argv[3]) if len(sys.argv) > 3 else 68.0,
          blend=float(sys.argv[4]) if len(sys.argv) > 4 else 0.26,
-         forward=float(sys.argv[5]) if len(sys.argv) > 5 else 5.0)
+         forward=float(sys.argv[5]) if len(sys.argv) > 5 else 5.0,
+         shoulder_in=float(sys.argv[6]) if len(sys.argv) > 6 else 0.075,
+         shoulder_down=float(sys.argv[7]) if len(sys.argv) > 7 else 0.022)
