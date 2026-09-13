@@ -100,3 +100,54 @@ Head, neck, ears, horns, hair, arms and the whole front: not one vertex.
 
 Sheets: `neck/yomi_tail_four_views.png`, `neck/yomi_tail_closeup.png`,
 `neck/crew_130_before_after.png`.
+
+---
+
+# The ring under the jaw
+
+Under every chin there was a horizontal line: a collar, a crease, a seam
+drawn across the chest. It is not shading and not the texture. It is the
+widening this document describes a few paragraphs above — `widen = 1.30`,
+applied on a sine profile that is 1.0 at both ends of the band and 1.30 in
+the middle. A radius that grows and then shrinks again inside fourteen
+millimetres is a torus, and a torus around a neck is a collar.
+
+`widen = 1.0` removes it. Nothing else changes: the same band is detected,
+the same squash is applied, the head comes down by the same 41.6 mm, and
+every y in the mesh is identical to the approved version to four decimal
+places. Only x and z inside the band differ, and only by the bulge that is
+no longer added.
+
+## What was tried first, and why it was worse
+
+Four attempts treated the line as a junction to be filled, and all four made
+it worse, because filling a fourteen-millimetre band radially turns a lip
+into a skirt:
+
+| attempt | what it did | result |
+|---|---|---|
+| fill 10 mm short of the head, 0.07 h | pushed the body out under the jaw | a wider plate with a hard rim |
+| fill 22 mm short, 0.09 h | gentler version of the same | same plate, softer |
+| re-cone inside the band | scaled each slice to a smooth profile | a lampshade |
+| fill to the head's own radius, 0.10 h / 0.14 h | removed the step entirely | a ruff collar |
+
+The line was never the junction. It was the bulge.
+
+## Applied to all five
+
+`widen = 1.0` for every character, from the same `posed_fix` meshes, with
+YOMI's tail work re-applied on top. Verified per character against the
+approved version: the head drop, the figure height and every y are identical,
+and only the band's x and z differ.
+
+| id | drop | height | y identical | x/z changed |
+|---|---|---|---|---|
+| momo | 41.60 mm | 651.80 mm | 0.0000 mm | 3,265 verts, 0.47–0.49 h |
+| nunu | 42.00 mm | 658.00 mm | 0.0000 mm | 2,301 verts, 0.45–0.47 h |
+| ruki | 41.92 mm | 656.75 mm | 0.0000 mm | 2,807 verts, 0.46–0.48 h |
+| yomi | 45.00 mm | 705.00 mm | 0.0000 mm | 1,723 verts, 0.43–0.45 h |
+| poko | 37.13 mm | 457.96 mm | 0.0000 mm | 4,088 verts, 0.43–0.46 h |
+
+300 frames re-rendered from these. The measurements came back identical to
+the shipped ones — same windows, same figureRatio, same bodyWidth — so
+`src/data/sprites.ts` did not change.
