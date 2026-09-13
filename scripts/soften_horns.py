@@ -17,15 +17,25 @@ from collections import deque
 import numpy as np
 from PIL import Image
 
-HEAD = 0.30          # horns live in the top third of the figure and nowhere else
-CORE = (2.8, 0.66)   # red/green, saturation — the horn and nothing but
+HEAD = 0.28          # horns live in the top quarter; the eyes start below it
+CORE = (2.5, 0.50)   # red/green, saturation — the horn and nothing but
+DARK = 0.72          # and darker than the hair, which is the other red thing
 GROW = (2.0, 0.45)   # what the horn is allowed to spread into
 
 
 def horn_mask(rgb, alpha):
+    """The horns, and not the hair or the eyes.
+
+    Three things on this figure are red: the horns, the hair and the shadowed
+    side of the eyes. The hair is the brightest of them, so value separates it;
+    the eyes sit below the top quarter of the figure, so height separates them.
+    What is left is grown outward through merely-reddish neighbours to catch
+    the soft edge where a horn meets the fringe.
+    """
     r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
     mx, mn = rgb.max(-1), rgb.min(-1)
     sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1), 0)
+    val = mx / 255.0
     solid = alpha > 40
     rg = r / np.maximum(g, 1)
     rb = r / np.maximum(b, 1)
@@ -36,8 +46,10 @@ def horn_mask(rgb, alpha):
     head = np.zeros_like(solid)
     head[top:int(top + (bot - top) * HEAD)] = True
 
-    core = solid & head & (r > 90) & (rg > CORE[0]) & (rb > CORE[0]) & (sat > CORE[1])
-    grow = solid & head & (rg > GROW[0]) & (rb > GROW[0]) & (sat > GROW[1])
+    core = solid & head & (r > 90) & (rg > CORE[0]) & (rb > CORE[0]) \
+        & (sat > CORE[1]) & (val < DARK)
+    grow = solid & head & (rg > GROW[0]) & (rb > GROW[0]) & (sat > GROW[1]) \
+        & (val < DARK + 0.08)
 
     out = core.copy()
     q = deque(zip(*np.nonzero(core)))
@@ -52,25 +64,58 @@ def horn_mask(rgb, alpha):
     return out
 
 
-def soften(path, out_path):
+def to_hsv(rgb):
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    mx, mn = rgb.max(-1), rgb.min(-1)
+    d = mx - mn
+    h = np.zeros_like(mx)
+    m = d > 1e-6
+    rm, gm, bm = (mx == r) & m, (mx == g) & m, (mx == b) & m
+    h[rm] = ((g - b)[rm] / d[rm]) % 6
+    h[gm] = (b - r)[gm] / d[gm] + 2
+    h[bm] = (r - g)[bm] / d[bm] + 4
+    return h * 60, np.where(mx > 0, d / np.maximum(mx, 1e-6), 0), mx
+
+
+def to_rgb(h, s, v):
+    h = (h % 360) / 60.0
+    i = np.floor(h).astype(int) % 6
+    f = h - np.floor(h)
+    p, q, t = v * (1 - s), v * (1 - s * f), v * (1 - s * (1 - f))
+    out = np.zeros(h.shape + (3,), np.float32)
+    for k, (rr, gg, bb) in enumerate([(v, t, p), (q, v, p), (p, v, t),
+                                      (p, q, v), (t, p, v), (v, p, q)]):
+        mk = i == k
+        out[mk] = np.stack([rr, gg, bb], -1)[mk]
+    return out
+
+
+def soften(path, out_path, hue=10.0, sat=0.62, lift=0.45):
+    """Dye the horn coral in HSV, not by mixing channels.
+
+    Mixing channels was the first attempt and it works on a bright horn and
+    ruins a dark one: the constants added to green and blue swamp a shadowed
+    red pixel and it comes out olive. Setting hue and easing saturation
+    leaves every pixel as red as its own shading says it should be, and
+    lifting value keeps the shadowed side of the horn from going muddy.
+    """
     im = Image.open(path).convert('RGBA')
     a = np.asarray(im).astype(np.float32)
     rgb, alpha = a[..., :3], a[..., 3]
     m = horn_mask(rgb, alpha)
-    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
-    # Coral: red eased down, green and blue lifted a long way, so a glossy
-    # wound becomes a soft matte nub. Shading inside the horn is preserved
-    # because the source channel still carries it.
-    coral = np.stack([
-        np.clip(r * 0.94 + 22, 0, 255),
-        np.clip(g * 0.52 + 104, 0, 255),
-        np.clip(b * 0.46 + 88, 0, 255)], axis=-1)
+    h, s, v = to_hsv(rgb / 255.0)
+    h2 = np.full_like(h, hue)
+    s2 = np.clip(s * sat, 0, 0.55)
+    v2 = np.clip(lift + v * (1 - lift), 0, 1)
+    new = to_rgb(h2, s2, v2) * 255.0
     w = m[..., None].astype(np.float32)
-    a[..., :3] = rgb * (1 - w) + coral * w
+    a[..., :3] = rgb * (1 - w) + new * w
     Image.fromarray(a.astype(np.uint8)).save(out_path)
     ys = np.nonzero(m.any(1))[0]
     where = 'none' if len(ys) == 0 else f'rows {ys.min()}-{ys.max()}'
-    print(f'  {os.path.basename(out_path):18} {m.sum():6d} px   {where}')
+    if m.sum():
+        print(f'  {os.path.basename(out_path):18} {m.sum():6d} px   {where}'
+              f'   -> rgb {tuple(int(q) for q in a[..., :3][m].mean(0))}')
     return m
 
 
