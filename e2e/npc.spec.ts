@@ -19,6 +19,56 @@ import type { Page } from '@playwright/test'
 const NPC = '[data-npc]'
 const MOMO = '[data-npc="momo"]'
 
+declare global {
+  interface Window {
+    __npcStates?: { state: string; x: number; y: number }[]
+  }
+}
+
+/**
+ * Write down every state one dokkaebi enters, and where it stood at the time.
+ *
+ * Installed before the page runs, so nothing is missed between the room
+ * building a character and a test getting round to asking. Both halves of a
+ * transition are recorded together — a state read now and a position read a
+ * round trip later are not necessarily the same moment.
+ */
+async function watchStates(page: Page, who = 'momo'): Promise<void> {
+  await page.addInitScript((id) => {
+    window.__npcStates = []
+    const note = (el: Element): void => {
+      const node = el as HTMLElement
+      if (node.dataset['npc'] !== id || !node.dataset['state']) return
+      const m = /translate3d\((-?[\d.]+)px,\s*(-?[\d.]+)px/.exec(node.style.transform)
+      window.__npcStates!.push({
+        state: node.dataset['state']!,
+        x: Number(m?.[1] ?? 0),
+        y: Number(m?.[2] ?? 0),
+      })
+    }
+    const watch = (): void => {
+      new MutationObserver((records) => {
+        for (const r of records) {
+          // A state that changes on an element already in the page.
+          if (r.type === 'attributes') note(r.target as Element)
+          // And a character that arrives already in one: an attribute set
+          // before the element is appended raises no record of its own.
+          for (const added of r.addedNodes) {
+            if (!(added instanceof Element)) continue
+            note(added)
+            for (const el of added.querySelectorAll('[data-npc]')) note(el)
+          }
+        }
+      }).observe(document.documentElement, {
+        subtree: true, childList: true,
+        attributes: true, attributeFilter: ['data-state'],
+      })
+    }
+    if (document.documentElement) watch()
+    else document.addEventListener('DOMContentLoaded', watch)
+  }, who)
+}
+
 async function enter(page: Page, query = ''): Promise<void> {
   await page.addInitScript(() => {
     try {
@@ -254,34 +304,32 @@ test.describe('desktop', () => {
   })
 
   test('it stands at the things it uses, not on them', async ({ page }) => {
-    await enter(page, '?npcseed=7')
-    // Watch until it is using something. Not by the frame on screen: the
-    // busy places face the camera now, so "it turned its back" stopped
-    // meaning "it arrived somewhere" and started meaning nothing at all.
-    // The state is the thing being asserted about anyway.
+    // Recorded rather than sampled.
     //
-    // Sampled often and for a while, because the spell at a thing is short by
-    // design. The first one it takes on arriving is a quarter of a normal one
-    // and capped at nine seconds (src/scenes/npc.ts, `opening`), so for MOMO
-    // it can be over inside two — and then the room is free to send it
-    // wandering for a spell before it picks another bench. A thirty-second
-    // window caught that one time in four.
-    test.setTimeout(180_000)
-    let at: { x: number; y: number } | null = null
-    for (let i = 0; i < 400 && !at; i++) {
-      await page.waitForTimeout(300)
-      const state = await page.evaluate(
-        (sel) => (document.querySelector(sel) as HTMLElement).dataset.state,
-        MOMO,
-      )
-      if (state === 'WORK' || state === 'INTERACT') at = await feet(page)
-    }
-    expect(at, 'never used anything in 120s').not.toBeNull()
+    // The spell at a thing is deliberately short — the first one on arriving
+    // is a quarter of a normal one (src/scenes/npc.ts, `opening`), so for
+    // MOMO it can be over inside two seconds. Any test that looks every so
+    // often is racing that, and a longer window only makes the race rarer;
+    // this one failed a quarter of the time at thirty seconds.
+    //
+    // So nothing here waits for a moment to look. A watcher installed before
+    // the page runs writes down every state MOMO ever enters, with where its
+    // feet were at that instant, and the assertion reads the record. A spell
+    // one frame long is caught the same as a spell ten seconds long, and the
+    // position belongs to the state rather than to whenever the next query
+    // happened to land.
+    await watchStates(page)
+    await enter(page, '?npcseed=7')
+    await page.waitForFunction(
+      () => window.__npcStates?.some((s) => s.state === 'WORK' || s.state === 'INTERACT'),
+      undefined, { timeout: 60_000 })
+    const at = await page.evaluate(() =>
+      window.__npcStates.find((s) => s.state === 'WORK' || s.state === 'INTERACT')!)
     // On the floor in front of it, never up on the furniture.
-    expect(at!.y).toBeGreaterThan(980)
+    expect(at.y).toBeGreaterThan(980)
     // Every place in the room that stands in front of something.
     const fronts = [1578, 2116, 2252, 2470, 2830, 2942, 3062, 3306]
-    expect(Math.min(...fronts.map((f) => Math.abs(at!.x - f)))).toBeLessThan(20)
+    expect(Math.min(...fronts.map((f) => Math.abs(at.x - f)))).toBeLessThan(20)
   })
 
   test('somebody says something, and never two of them at once', async ({ page }) => {
