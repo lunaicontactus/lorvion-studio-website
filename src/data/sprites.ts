@@ -200,9 +200,9 @@ const ALL: Partial<Record<SpriteAction, number>> =
 const V2: Readonly<Record<string, V2Sheet>> = {
   momo: { frames: ALL, aspect: 282 / 420, figureRatio: 0.9310, bodyWidth: 0.940 },
   nunu: { frames: ALL, aspect: 277 / 420, figureRatio: 0.9310, bodyWidth: 0.935 },
-  ruki: { frames: ALL, aspect: 282 / 420, figureRatio: 0.9333, bodyWidth: 0.961 },
+  ruki: { frames: ALL, aspect: 282 / 420, figureRatio: 0.9333, bodyWidth: 0.936 },
   yomi: { frames: ALL, aspect: 268 / 420, figureRatio: 0.9310, bodyWidth: 0.937 },
-  poko: { frames: ALL, aspect: 273 / 420, figureRatio: 0.9333, bodyWidth: 0.956 },
+  poko: { frames: ALL, aspect: 271 / 420, figureRatio: 0.9333, bodyWidth: 0.937 },
 }
 
 function v2For(id: string): V2Sheet {

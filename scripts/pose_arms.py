@@ -36,15 +36,23 @@ def measure(V):
         rows.append((lo, np.abs(V[m][:, 0]).max()))
     ys = np.array([r[0] for r in rows])
     wide = np.array([r[1] for r in rows])
-    # The torso, read below the arms: the widest the body gets without them.
-    body = wide[(ys >= 0.30) & (ys <= 0.38)]
-    torso = float(body.max())
-    # The arm band: rows that reach well past that.
-    arm_rows = ys[wide > torso * 1.25]
+    # The torso, read below the arms. A percentile rather than the maximum:
+    # on YOMI one row of that band is wider than the rest and the maximum
+    # read a torso of 0.189 against a real 0.13, which then selected almost
+    # none of the arm.
+    body = wide[(ys >= 0.28) & (ys <= 0.38)]
+    torso = float(np.percentile(body, 80))
+    # The arm band: rows that reach well past that, and never above the neck.
+    # The neck is the narrowest row between body and head, and it is a feature
+    # of the mesh rather than a fraction chosen in advance — without it POKO's
+    # band ran to 0.57 of the figure, which is the middle of its hair.
+    neck_zone = (ys >= 0.46) & (ys <= 0.66)
+    neck = float(ys[np.nonzero(neck_zone)[0][np.argmin(wide[neck_zone])]]) if neck_zone.any() else 0.55
+    arm_rows = ys[(wide > torso * 1.18) & (ys < neck)]
     if len(arm_rows) == 0:
         raise SystemExit('no arm band found')
     lo, hi = float(arm_rows.min()), float(arm_rows.max() + 0.01)
-    return h, torso, lo, hi, float(wide.max())
+    return h, torso, lo, hi, float(wide[(ys >= lo) & (ys <= hi)].max())
 
 
 def pose(src, dst, degrees=70.0, blend=0.26, forward=5.0,
