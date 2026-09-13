@@ -30,8 +30,14 @@ export interface InteractionHost {
   readonly onUnavailable?: (id: string) => void
 }
 
-/** How long the camera is given to arrive before the interface opens. */
-export const FOCUS_MS = 320
+/**
+ * How long the camera is given to arrive before the interface opens.
+ *
+ * The camera eases at 0.14 a frame and is nine-tenths of the way there by
+ * 220ms; the panel's own fade covers the last tenth. It was 320, which on a
+ * throttled phone was a third of the wait between the tap and the list.
+ */
+export const FOCUS_MS = 220
 /**
  * How long the interface is given to leave before the camera goes back.
  *

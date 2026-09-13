@@ -28,6 +28,9 @@ const OPENS: Readonly<Record<string, string>> = {
   'poster-rubato': '[data-kind~="poster--rubato"] .wall',
 }
 
+/** Things that open nothing: touching one changes the thing itself. */
+const TOGGLES: readonly string[] = ['parcel']
+
 async function enter(page: Page): Promise<void> {
   await page.addInitScript(() => {
     try {
@@ -68,8 +71,8 @@ test.describe('desktop', () => {
 
   test('the room holds exactly the things the registry lists', async ({ page }) => {
     await enter(page)
-    await expect(page.locator('.thing')).toHaveCount(Object.keys(OPENS).length)
-    for (const id of Object.keys(OPENS)) {
+    await expect(page.locator('.thing')).toHaveCount(Object.keys(OPENS).length + TOGGLES.length)
+    for (const id of [...Object.keys(OPENS), ...TOGGLES]) {
       await expect(page.locator(`.thing--${id}`)).toHaveCount(1)
     }
   })
@@ -77,9 +80,11 @@ test.describe('desktop', () => {
   test('the games are reachable, through the PC and as a page', async ({ page }) => {
     await enter(page)
     await touch(page, 'pc')
-    await expect(page.locator('.hub__row')).toHaveCount(4, { timeout: 6000 })
+    await expect(page.locator('[data-game]')).toHaveCount(4, { timeout: 6000 })
+    // The projects are the second list on the monitor; the mini-games sit
+    // above them in a list of their own.
     for (const title of ['LUNAI', 'LIMINAL', 'WORM UP!', 'RUBATO']) {
-      await expect(page.locator('.hub')).toContainText(title)
+      await expect(page.locator('.hub').last()).toContainText(title)
     }
     await page.goto('/games.html', { waitUntil: 'load' })
     await expect(page.locator('.fb-game')).toHaveCount(4)

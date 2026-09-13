@@ -37,6 +37,38 @@ export const LIGHTS: readonly LightSource[] = [
   { id: 'secret', x: 3317, y: 789, r: 200, colour: 'rgba(140,255,214,.07)' },
 ]
 
+/**
+ * Small things in the painting that move now and then: the pencils in the
+ * cup, a magnet on the fridge, a note on the wall. Each is a piece of the
+ * plate redrawn over itself (the trick the foreground uses) and given a
+ * little animation, so nothing is repainted and nothing can drift from the
+ * room behind it. World rects, measured off the plate.
+ */
+export interface Bit {
+  readonly id: string
+  readonly x: number
+  readonly y: number
+  readonly w: number
+  readonly h: number
+  readonly motion: 'wiggle' | 'wobble' | 'sway'
+  /** Where it is fixed: pencils at the bottom of the cup, a note at its pin. */
+  readonly origin: string
+  readonly every: { readonly min: number; readonly max: number }
+  readonly duration: number
+}
+
+export const BITS: readonly Bit[] = [
+  { id: 'pencils', x: 1900, y: 600, w: 100, h: 140, motion: 'wiggle', origin: '50% 100%', every: { min: 22000, max: 55000 }, duration: 1600 },
+  { id: 'magnet', x: 2384, y: 672, w: 56, h: 44, motion: 'wobble', origin: '50% 50%', every: { min: 30000, max: 70000 }, duration: 1400 },
+  { id: 'memo', x: 1392, y: 362, w: 40, h: 92, motion: 'sway', origin: '50% 0%', every: { min: 18000, max: 48000 }, duration: 2600 },
+]
+
+/** The mug on the low table: where its steam rises from. */
+export const STEAM = { x: 666, y: 868 }
+
+/** The glass of the television, for the flicker. */
+export const TV_SCREEN = { x: 2700, y: 600, w: 262, h: 172 }
+
 /** Stars, as fractions of the sky box, so the box can move without redoing them. */
 export const STARS: readonly { readonly x: number; readonly y: number; readonly s: number }[] = [
   { x: 0.08, y: 0.22, s: 2 },

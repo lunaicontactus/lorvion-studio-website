@@ -12,6 +12,7 @@ import { installVisibilityGate } from '@/systems/tick'
 import { registerVisit, save } from '@/systems/storage'
 import { installImageFallback } from '@/systems/assets'
 import { motion } from '@/systems/motion'
+import { setNewCrew } from '@/data/sprites'
 import { mountNav } from '@/ui/nav'
 import { mountReveal } from '@/ui/reveal'
 import { mountSoundToggle } from '@/ui/soundToggle'
@@ -80,6 +81,17 @@ export function boot(): Teardown {
       root.dataset['motion'] = reduced ? 'reduced' : 'full'
     }),
   )
+
+  // Which crew's frames the room asks for. Set before anything mounts, so no
+  // character is built against one set and drawn from the other.
+  setNewCrew(flags.newCrew)
+  // The one character drawn in the markup rather than by the room: whoever
+  // leans round the door while the shutter is still going up. It has to be
+  // the same crew as the room behind it, including on the rollback path.
+  for (const img of document.querySelectorAll<HTMLImageElement>('[data-alley-peek] img')) {
+    const want = img.dataset[flags.newCrew ? 'crewV2' : 'crewV1']
+    if (want && img.getAttribute('src') !== want) img.src = want
+  }
 
   if (flags.alley && document.querySelector('[data-alley]')) {
     teardowns.push(guard('world', () => mountWorld()))

@@ -11,6 +11,7 @@ function member(id: string, x: number, y = 1030, social = 1): CrowdMember & {
   const m = {
     id,
     greeted: [] as string[],
+    seated: false,
     place: { x, y },
     free: true,
     social,
@@ -102,16 +103,16 @@ describe('personal space', () => {
   })
 
   it('lets one stand closer to a dokkaebi that is sitting, but not through it', () => {
-    // 60 units apart: inside a standing dokkaebi's personal space (96) and
-    // outside a seated one's (96 x 0.55 = 53).
+    // 95 units apart: inside a standing dokkaebi's personal space (108) and
+    // outside a seated one's (108 x 0.8 = 86).
     const standing = new Crowd()
     standing.join(member('momo', 1300))
-    standing.join(member('nunu', 1360))
+    standing.join(member('nunu', 1395))
     expect(standing.separation('momo', 1300, 1030).x).toBeLessThan(0)
 
     const seated = new Crowd()
-    const sitting = member('nunu', 1360)
-    Object.defineProperty(sitting, 'radius', { value: 0.55, writable: true })
+    const sitting = member('nunu', 1395)
+    Object.defineProperty(sitting, 'radius', { value: 0.8, writable: true })
     seated.join(member('momo', 1300))
     seated.join(sitting)
     expect(seated.separation('momo', 1300, 1030)).toEqual({ x: 0, y: 0, slow: 1 })
@@ -122,10 +123,11 @@ describe('personal space', () => {
     expect(seated.separation('momo', 1345, 1030).x).toBeLessThan(0)
   })
 
-  it('counts depth for more than distance along the boards', () => {
-    // The floor is a strip seen from the front, so two dokkaebi 45 units
-    // apart in depth are one behind the other and read as separate, while two
-    // 45 units apart along the boards are shoulder to shoulder.
+  it('counts distance along the boards for more than depth, and never lets one hide behind another', () => {
+    // The floor is a shallow strip and the figures are taller than it is
+    // deep: two dokkaebi 45 units apart in depth at the same x are one on
+    // top of the other on screen, and read as a single creature. Both cases
+    // push, and the one directly behind is pushed sideways, not deeper.
     const beside = new Crowd()
     beside.join(member('momo', 1300, 1030))
     beside.join(member('nunu', 1345, 1030))
@@ -134,7 +136,25 @@ describe('personal space', () => {
     const behind = new Crowd()
     behind.join(member('momo', 1300, 1030))
     behind.join(member('nunu', 1300, 1075))
-    expect(behind.separation('momo', 1300, 1030)).toEqual({ x: 0, y: 0, slow: 1 })
+    const push = behind.separation('momo', 1300, 1030)
+    expect(push.x).toBeLessThan(0)
+    expect(Math.abs(push.x)).toBeGreaterThan(Math.abs(push.y))
+  })
+
+  it('has the later name stand aside when two walkers would meet', () => {
+    const crowd = new Crowd()
+    crowd.join(member('momo', 1300, 1030))
+    crowd.join(member('nunu', 1400, 1040))
+    crowd.startWalk('momo')
+    crowd.startWalk('nunu')
+    // NUNU walks left toward MOMO, 100 units ahead: NUNU yields, MOMO does not.
+    expect(crowd.shouldYield('nunu', 1400, 1040, -1)).toBe(true)
+    expect(crowd.shouldYield('momo', 1300, 1030, 1)).toBe(false)
+    // Walking away from each other, nobody yields.
+    expect(crowd.shouldYield('nunu', 1400, 1040, 1)).toBe(false)
+    // Nor when the other one is standing still.
+    crowd.endWalk('momo')
+    expect(crowd.shouldYield('nunu', 1400, 1040, -1)).toBe(false)
   })
 })
 
@@ -263,8 +283,8 @@ describe('the ambience floor', () => {
  */
 describe('where they may stand', () => {
   // Mirrors PERSONAL and the seated radius in src/systems/crowd.ts.
-  const PERSONAL = 96
-  const SEATED = 0.55
+  const PERSONAL = 108
+  const SEATED = 0.8
 
   for (const portrait of [false, true]) {
     const graph = navFor(portrait)
@@ -284,9 +304,9 @@ describe('where they may stand', () => {
         for (let j = i + 1; j < all.length; j++) {
           const a = all[i]!
           const b = all[j]!
-          // Depth counts for more than distance along the boards, as in
-          // Crowd.separation, and a seat takes less room than a stance.
-          const d = Math.hypot(a.x - b.x, (a.y - b.y) * 2.2)
+          // Distance along the boards counts for more than depth, as in
+          // Crowd.separation, and a seat takes a little less room than a stance.
+          const d = Math.hypot(a.x - b.x, (a.y - b.y) * 0.5)
           const room = PERSONAL * (a.seated || b.seated ? SEATED : 1)
           expect(d, `${a.id} and ${b.id} are ${d.toFixed(0)} apart`).toBeGreaterThan(room)
         }

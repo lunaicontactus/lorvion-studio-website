@@ -26,6 +26,7 @@ export function createDefaultSave(): SaveData {
     fridgeSnack: null,
     fridgeOpens: 0,
     collection: [],
+    games: {},
   }
 }
 
@@ -61,7 +62,7 @@ export function migrate(raw: unknown): SaveData {
   // A v1 save is upgraded in place; anything we have never written restarts
   // from defaults rather than guessing at its shape.
   const version = o['v']
-  if (version !== SAVE_VERSION && version !== 1) return base
+  if (version !== SAVE_VERSION && version !== 1 && version !== 2) return base
 
   const arr = (v: unknown): string[] => (Array.isArray(v) ? v.filter(str) : [])
   const num = (v: unknown, min: number, max: number, fallback: number): number =>
@@ -85,7 +86,19 @@ export function migrate(raw: unknown): SaveData {
     fridgeSnack: str(o['fridgeSnack']) ? o['fridgeSnack'] : null,
     fridgeOpens: num(o['fridgeOpens'], 0, 1e6, 0),
     collection: arr(o['collection']),
+    // v3: best scores. Only sane numbers survive, keyed by whatever ids were
+    // written — a game that no longer exists just carries a harmless entry.
+    games: scores(o['games']),
   }
+}
+
+function scores(v: unknown): Record<string, number> {
+  if (typeof v !== 'object' || v === null) return {}
+  const out: Record<string, number> = {}
+  for (const [k, n] of Object.entries(v as Record<string, unknown>)) {
+    if (typeof n === 'number' && Number.isFinite(n) && n >= 0) out[k] = Math.trunc(n)
+  }
+  return out
 }
 
 export class SaveStore {

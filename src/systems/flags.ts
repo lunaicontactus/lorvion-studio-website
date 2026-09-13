@@ -17,6 +17,13 @@ export interface Flags {
   dokkaFire: boolean
   /** Mini games (STEP 20+). */
   miniGames: boolean
+  /**
+   * The rebuilt crew: sprites rendered from the new GLB masters.
+   *
+   * On by default. The first crew's frames are still on disk and still
+   * wired, so `?newCrew=off` puts them back without a deploy.
+   */
+  newCrew: boolean
   /** Verbose system logging. */
   debug: boolean
 }
@@ -27,6 +34,7 @@ const DEFAULTS: Flags = {
   characters: false,
   dokkaFire: false,
   miniGames: false,
+  newCrew: true,
   debug: false,
 }
 

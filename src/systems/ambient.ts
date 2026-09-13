@@ -99,7 +99,10 @@ export class Ambient {
         item.next = this.#now + this.#gap(item.event) / 2
         continue
       }
-      if (this.#items.some((o) => o.running && o.event.priority >= item.event.priority)) {
+      // Two small things at once is a room that is alive; more is a room that
+      // is busy. Anything above this one's priority still holds it off.
+      const running = this.#items.filter((o) => o.running && o.event.priority >= item.event.priority)
+      if (running.length >= 2 || running.some((o) => o.event.priority > item.event.priority)) {
         item.next = this.#now + 1500
         continue
       }

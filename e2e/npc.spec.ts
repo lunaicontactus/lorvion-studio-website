@@ -19,6 +19,56 @@ import type { Page } from '@playwright/test'
 const NPC = '[data-npc]'
 const MOMO = '[data-npc="momo"]'
 
+declare global {
+  interface Window {
+    __npcStates?: { state: string; x: number; y: number }[]
+  }
+}
+
+/**
+ * Write down every state one dokkaebi enters, and where it stood at the time.
+ *
+ * Installed before the page runs, so nothing is missed between the room
+ * building a character and a test getting round to asking. Both halves of a
+ * transition are recorded together — a state read now and a position read a
+ * round trip later are not necessarily the same moment.
+ */
+async function watchStates(page: Page, who = 'momo'): Promise<void> {
+  await page.addInitScript((id) => {
+    window.__npcStates = []
+    const note = (el: Element): void => {
+      const node = el as HTMLElement
+      if (node.dataset['npc'] !== id || !node.dataset['state']) return
+      const m = /translate3d\((-?[\d.]+)px,\s*(-?[\d.]+)px/.exec(node.style.transform)
+      window.__npcStates!.push({
+        state: node.dataset['state']!,
+        x: Number(m?.[1] ?? 0),
+        y: Number(m?.[2] ?? 0),
+      })
+    }
+    const watch = (): void => {
+      new MutationObserver((records) => {
+        for (const r of records) {
+          // A state that changes on an element already in the page.
+          if (r.type === 'attributes') note(r.target as Element)
+          // And a character that arrives already in one: an attribute set
+          // before the element is appended raises no record of its own.
+          for (const added of r.addedNodes) {
+            if (!(added instanceof Element)) continue
+            note(added)
+            for (const el of added.querySelectorAll('[data-npc]')) note(el)
+          }
+        }
+      }).observe(document.documentElement, {
+        subtree: true, childList: true,
+        attributes: true, attributeFilter: ['data-state'],
+      })
+    }
+    if (document.documentElement) watch()
+    else document.addEventListener('DOMContentLoaded', watch)
+  }, who)
+}
+
 async function enter(page: Page, query = ''): Promise<void> {
   await page.addInitScript(() => {
     try {
@@ -43,13 +93,6 @@ async function feet(page: Page, who = MOMO): Promise<{ x: number; y: number }> {
   }, who)
 }
 
-async function view(page: Page, who = MOMO): Promise<string> {
-  return page.evaluate((sel) => {
-    const img = document.querySelector(`${sel} img`) as HTMLImageElement
-    return img.src.split('/').pop() ?? ''
-  }, who)
-}
-
 /** `action:direction` from the frame on screen, e.g. "walk:left". */
 async function pose(page: Page, who = MOMO): Promise<string> {
   return page.evaluate((sel) => {
@@ -59,8 +102,15 @@ async function pose(page: Page, who = MOMO): Promise<string> {
   }, who)
 }
 
-/** Everybody in the room, by id. */
+/** Everybody on the floor, by id. The ones off the edge of the plate
+ *  (src/systems/stage.ts) are mounted but not in the room. */
 async function whoIsHere(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('[data-npc]:not(.is-away)')].map((e) => (e as HTMLElement).dataset['npc'] ?? ''))
+}
+
+/** Everybody mounted, on the floor or off the edge of it. */
+async function whoIsMounted(page: Page): Promise<string[]> {
   return page.evaluate(() =>
     [...document.querySelectorAll('[data-npc]')].map((e) => (e as HTMLElement).dataset['npc'] ?? ''))
 }
@@ -113,7 +163,9 @@ test.describe('desktop', () => {
     let closest = Infinity
     for (let i = 0; i < 40; i++) {
       await page.waitForTimeout(900)
-      const now = await Promise.all(here.map((id) => feet(page, `[data-npc="${id}"]`)))
+      // Whoever is on the floor at this moment: the cast rotates, and one
+      // walking off the edge meets nobody there.
+      const now = await Promise.all((await whoIsHere(page)).map((id) => feet(page, `[data-npc="${id}"]`)))
       for (let a = 0; a < now.length; a++) {
         for (let b = a + 1; b < now.length; b++) {
           closest = Math.min(closest,
@@ -127,33 +179,50 @@ test.describe('desktop', () => {
   })
 
   test('it walks somewhere, stands at it, and stands about between', async ({ page }) => {
+    test.setTimeout(120_000)
     await enter(page, '?npcseed=7')
     const seen: string[] = []
+    const states: string[] = []
     let travelled = 0
     let previous = await feet(page)
-    for (let i = 0; i < 40; i++) {
+    // Seventy seconds: at 76 units a second a trip across the room takes
+    // half a minute, and a window that fits one trip says nothing about
+    // whether it also stands about.
+    for (let i = 0; i < 58; i++) {
       await page.waitForTimeout(1200)
       const now = await feet(page)
       travelled += Math.hypot(now.x - previous.x, now.y - previous.y)
       previous = now
       seen.push(await pose(page))
+      states.push(await page.evaluate(
+        (sel) => (document.querySelector(sel) as HTMLElement).dataset['state'] ?? '', MOMO))
     }
     // It went somewhere. The pace is set by the walk cycle — 100 world units
     // a second — but the room now holds five of them and only two may be
     // walking at once, so any one of them spends most of a minute waiting its
     // turn. This is a floor for "moved about the room", not a target.
     expect(travelled).toBeGreaterThan(240)
-    // Walking towards something, and facing it once there. Any back-facing
-    // pose will do: leaning over the bench is `work:back` and standing at the
-    // fridge is `idle:back`, and which one it happens to be doing in any
-    // given minute is not the point. Naming `idle:back` specifically made
-    // this fail the day the dokkaebi learned to turn round afterwards, which
-    // was an improvement.
+    // Walking towards something, and using it once there. Whether it ends
+    // up leaning over the bench, sitting on the rug or standing at the
+    // fridge is not the point, and neither is which way it faces while it
+    // does: the busy places face the room now, so "turned its back" stopped
+    // being a sign of anything.
     expect(seen.some((s) => s.startsWith('walk:'))).toBe(true)
-    expect(seen.some((s) => s.endsWith(':back'))).toBe(true)
-    // And most of the time it is doing nothing at all.
-    const still = seen.filter((s) => s.startsWith('idle:')).length
-    expect(still / seen.length).toBeGreaterThan(0.4)
+    expect(seen.some((s) => s.startsWith('work:') || s.startsWith('sit:'))
+      || states.some((s) => s === 'WORK' || s === 'SIT' || s === 'INTERACT')).toBe(true)
+    // And a good share of the time it is not going anywhere: standing,
+    // sitting, working, glancing about — the small movements of somebody who
+    // is there — including at least one proper stretch of it, not only the
+    // odd second between two trips.
+    const still = seen.filter((s) => !s.startsWith('walk:')).length
+    expect(still / seen.length).toBeGreaterThan(0.35)
+    let run = 0
+    let longest = 0
+    for (const s of seen) {
+      run = s.startsWith('walk:') ? 0 : run + 1
+      longest = Math.max(longest, run)
+    }
+    expect(longest).toBeGreaterThanOrEqual(4)
   })
 
   test('the frames it plays are real files, and the walk actually cycles', async ({ page }) => {
@@ -178,6 +247,9 @@ test.describe('desktop', () => {
 
   test('touching it stops it and turns it to face the visitor', async ({ page }) => {
     await enter(page)
+    // Past the hello: whoever is nearest hops and waves as the visitor comes
+    // in, and a box measured mid-hop is a box measured against moving art.
+    await page.waitForTimeout(1800)
     const hit = page.locator(`${MOMO} .npc__hit`)
     await expect(hit).toHaveCount(1)
     // Big enough to hit on a phone, and the same floor the room's things use.
@@ -232,18 +304,32 @@ test.describe('desktop', () => {
   })
 
   test('it stands at the things it uses, not on them', async ({ page }) => {
+    // Recorded rather than sampled.
+    //
+    // The spell at a thing is deliberately short — the first one on arriving
+    // is a quarter of a normal one (src/scenes/npc.ts, `opening`), so for
+    // MOMO it can be over inside two seconds. Any test that looks every so
+    // often is racing that, and a longer window only makes the race rarer;
+    // this one failed a quarter of the time at thirty seconds.
+    //
+    // So nothing here waits for a moment to look. A watcher installed before
+    // the page runs writes down every state MOMO ever enters, with where its
+    // feet were at that instant, and the assertion reads the record. A spell
+    // one frame long is caught the same as a spell ten seconds long, and the
+    // position belongs to the state rather than to whenever the next query
+    // happened to land.
+    await watchStates(page)
     await enter(page, '?npcseed=7')
-    // Watch until it faces away, which only happens at a thing.
-    let at: { x: number; y: number } | null = null
-    for (let i = 0; i < 40 && !at; i++) {
-      await page.waitForTimeout(800)
-      if ((await view(page)).includes('back')) at = await feet(page)
-    }
-    expect(at, 'never used anything in 32s').not.toBeNull()
+    await page.waitForFunction(
+      () => window.__npcStates?.some((s) => s.state === 'WORK' || s.state === 'INTERACT'),
+      undefined, { timeout: 60_000 })
+    const at = await page.evaluate(() =>
+      window.__npcStates.find((s) => s.state === 'WORK' || s.state === 'INTERACT')!)
     // On the floor in front of it, never up on the furniture.
-    expect(at!.y).toBeGreaterThan(980)
-    const fronts = [1578, 2116, 2252, 2470, 2790, 2900]
-    expect(Math.min(...fronts.map((f) => Math.abs(at!.x - f)))).toBeLessThan(20)
+    expect(at.y).toBeGreaterThan(980)
+    // Every place in the room that stands in front of something.
+    const fronts = [1578, 2116, 2252, 2470, 2830, 2942, 3062, 3306]
+    expect(Math.min(...fronts.map((f) => Math.abs(at.x - f)))).toBeLessThan(20)
   })
 
   test('somebody says something, and never two of them at once', async ({ page }) => {
@@ -281,7 +367,7 @@ test.describe('desktop', () => {
     await page.evaluate(() =>
       document.querySelector('.thing--pc')?.dispatchEvent(new MouseEvent('click', { bubbles: true })),
     )
-    await expect(page.locator('.hub__row')).toHaveCount(4, { timeout: 6000 })
+    await expect(page.locator('[data-game]')).toHaveCount(4, { timeout: 6000 })
   })
 
   test('it stops choosing errands while something is open, and starts again after', async ({
@@ -301,9 +387,11 @@ test.describe('desktop', () => {
 
     await page.keyboard.press('Escape')
     await expect(page.locator('[data-panel-root]')).toBeHidden()
+    // It picks up where it left off — which, found at the bench, is a job
+    // of up to twelve seconds before it so much as looks for the next thing.
     let moved = 0
     let previous = await feet(page)
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 32 && moved <= 50; i++) {
       await page.waitForTimeout(1000)
       const now = await feet(page)
       moved += Math.hypot(now.x - previous.x, now.y - previous.y)
@@ -346,14 +434,15 @@ test.describe('desktop', () => {
 
   test('turning the phone does not clone them', async ({ page }) => {
     await enter(page)
-    const before = await whoIsHere(page)
+    // Mounted, not on the floor: the ones off the edge are still the crew.
+    const before = await whoIsMounted(page)
     expect(before.length).toBeGreaterThan(3)
 
     // Portrait is a smaller room — the upper half of the workshop, with a
     // wall below it — and fewer of them live in it. Fewer, never duplicated.
     await page.setViewportSize({ width: 900, height: 1200 })
     await page.waitForTimeout(900)
-    const upstairs = await whoIsHere(page)
+    const upstairs = await whoIsMounted(page)
     expect(upstairs.length).toBeLessThan(before.length)
     expect(new Set(upstairs).size).toBe(upstairs.length)
     expect(before).toEqual(expect.arrayContaining(upstairs))
@@ -361,7 +450,7 @@ test.describe('desktop', () => {
     // And back again: the same crew, once each.
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.waitForTimeout(900)
-    expect(await whoIsHere(page)).toEqual(before)
+    expect(await whoIsMounted(page)).toEqual(before)
   })
 
   test('the debug overlay is off unless it is asked for', async ({ page }) => {
@@ -390,17 +479,21 @@ test.describe('phone', () => {
     // walk at once, so any one dokkaebi can honestly spend twenty seconds
     // standing still, and the room as a whole covers a few hundred units in
     // half a minute. This is a floor under "somebody moved", not a target.
+    //
+    // Polled, not summed over a fixed number of ticks: the first errand is
+    // guaranteed inside twenty seconds (src/scenes/npc.ts, `opening` and
+    // `owesErrand`), and a fixed window one flake wide of that guarantee is
+    // how this failed under load.
     let travelled = 0
     let previous = await Promise.all(here.map((id) => feet(page, `[data-npc="${id}"]`)))
-    for (let i = 0; i < 26; i++) {
-      await page.waitForTimeout(1200)
+    await expect.poll(async () => {
       const now = await Promise.all(here.map((id) => feet(page, `[data-npc="${id}"]`)))
       for (let k = 0; k < now.length; k++) {
         travelled += Math.hypot(now[k]!.x - previous[k]!.x, now[k]!.y - previous[k]!.y)
       }
       previous = now
-    }
-    expect(travelled).toBeGreaterThan(180)
+      return travelled
+    }, { timeout: 45_000, intervals: [400] }).toBeGreaterThan(180)
   })
 })
 
@@ -430,6 +523,6 @@ test('a visitor who does not want motion gets somebody standing still', async ({
   expect(settled.frames).toBe(1)
   expect(settled.places).toBe(1)
   // And the room is otherwise complete.
-  await expect(page.locator('.thing')).toHaveCount(11)
+  await expect(page.locator('.thing')).toHaveCount(12)
   await context.close()
 })

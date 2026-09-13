@@ -71,6 +71,20 @@
         <!-- Everything staged in the doorway: the light that spills out, the
              shadow that crosses it, and the wash we push through into. -->
         <span class="alley__glow" data-alley-doorway></span>
+        <!-- What the open door shows before you are through it: a little
+             dust in the light, and somebody looking round the frame. -->
+        <div class="alley__doorway" data-alley-doorway aria-hidden="true">
+          <span class="alley__dust"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          <!-- Which crew leans round the door is decided at boot from the
+               flag, so the entrance never shows one crew and the room the
+               other. The markup names both; src/app/boot.ts picks. -->
+          <span class="alley__peek" data-alley-peek>
+            <img src="/assets/images/dokkaebi-v2/momo/idle/front/momo_idle_front_01.webp"
+                 data-crew-v1="/assets/images/dokkaebi/momo/idle/front/momo_idle_front_01.webp"
+                 data-crew-v2="/assets/images/dokkaebi-v2/momo/idle/front/momo_idle_front_01.webp"
+                 width="282" height="420" alt="" decoding="async" loading="lazy">
+          </span>
+        </div>
 
         <!-- A roll shutter: the housing at the top stays, the slats below it
              roll up into it. Both are slices of the same image. -->
@@ -135,6 +149,7 @@
     </div>
   </section>
   <div data-panel-root hidden></div>
+  <div data-game-root hidden></div>
 
   <!-- The long landing page that used to sit under the entrance has moved to
        games.html and studio.html. Nothing below the shutter: a visitor who

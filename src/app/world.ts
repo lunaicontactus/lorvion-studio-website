@@ -12,6 +12,8 @@
  */
 import { mountAlley } from '@/scenes/alley'
 import { mountGarage, type GarageHandle } from '@/scenes/garage'
+import { GameRunner } from '@/games/runner'
+import { gameById } from '@/games/registry'
 import { Panels } from '@/ui/panels'
 import { Interaction } from '@/systems/interaction'
 import { PROJECTS } from '@/data/projects'
@@ -41,6 +43,28 @@ export function mountWorld(): () => void {
   const panels = new Panels(panelRoot, {
     onClose: () => interaction.dismiss(),
     onGoTo: (id) => goTo(id),
+    // The monitor is showing one game: the room takes that game's light, and
+    // the panel takes its colour. Null puts both back.
+    onWorldChange: (world) => {
+      garage?.setWorld(world)
+      if (world) panelRoot.dataset['world'] = world
+      else delete panelRoot.dataset['world']
+    },
+    // A game is not a panel: the monitor closes, the room stops behind the
+    // game, and the game has the whole screen and the whole keyboard.
+    onPlay: (gameId) => {
+      const def = gameById(gameId)
+      if (!def) return
+      interaction.dismiss({ instant: true })
+      games.open(def)
+    },
+  })
+  const gameRoot = document.querySelector<HTMLElement>('[data-game-root]')!
+  const games = new GameRunner(gameRoot, {
+    onOpenChange: (open) => {
+      garage?.setPaused(open)
+      for (const one of garage?.crew ?? []) one.setCalm(open)
+    },
   })
 
   const objectById = (id: string): WorldObject | undefined =>
@@ -58,6 +82,8 @@ export function mountWorld(): () => void {
       if (project) panels.openPoster(project)
       return
     }
+    // A toggle is the scene's own business; it never gets this far.
+    if (action.kind !== 'panel') return
     switch (action.panelId) {
       case 'pc':
         panels.openPc()

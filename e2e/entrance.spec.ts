@@ -67,7 +67,8 @@ for (const vp of [
       expect(took).toBeLessThan(3000)
 
       await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
-      await expect(page.locator('.thing')).toHaveCount(11)
+      // Eleven hit areas over the painting and the parcel placed on it.
+      await expect(page.locator('.thing')).toHaveCount(12)
     })
   })
 }

@@ -36,7 +36,17 @@ export interface SaveDataV2 extends Omit<SaveDataV1, 'v'> {
   collection: string[]
 }
 
-/** The current schema. */
-export type SaveData = SaveDataV2
+/**
+ * Version 3 adds the mini-games' best scores, by game id. Per browser, like
+ * everything else here: there are no accounts and nothing leaves the device.
+ */
+export interface SaveDataV3 extends Omit<SaveDataV2, 'v'> {
+  readonly v: 3
+  /** Best score per mini-game id. Absent means never finished a round. */
+  games: Record<string, number>
+}
 
-export const SAVE_VERSION = 2 as const
+/** The current schema. */
+export type SaveData = SaveDataV3
+
+export const SAVE_VERSION = 3 as const

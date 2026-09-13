@@ -114,9 +114,11 @@ test('hover draws one heavy silhouette, sized to the object, and takes it away',
       async () =>
         page.evaluate(() =>
           [...document.querySelectorAll('.thing')]
-            .filter(
-              (t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5,
-            )
+            // Placed art (the parcel) has no silhouette to draw; it is never lit.
+            .filter((t) => {
+              const o = t.querySelector('.thing__outline')
+              return o ? Number(getComputedStyle(o).opacity) > 0.5 : false
+            })
             .map((t) => (t as HTMLElement).dataset['object']),
         ),
       { timeout: 5000 },
@@ -154,7 +156,7 @@ test('hover draws one heavy silhouette, sized to the object, and takes it away',
   const after = await page.evaluate(
     () =>
       [...document.querySelectorAll('.thing')].filter(
-        (t) => Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5,
+        (t) => (t.querySelector('.thing__outline') ? Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5 : false),
       ).length,
   )
   expect(after).toBe(0)

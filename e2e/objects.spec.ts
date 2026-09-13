@@ -66,7 +66,7 @@ for (const vp of [
       const before = await roomAt(page)
 
       await touch(page, 'pc')
-      await expect(page.locator('.hub__row')).toHaveCount(4, { timeout: 5000 })
+      await expect(page.locator('[data-game]')).toHaveCount(4, { timeout: 5000 })
       // The camera went to the object rather than the panel simply appearing.
       expect(samePlace(await roomAt(page), before)).toBe(false)
       await expect(page.locator('[data-panel]')).toContainText('EUNGARAGE SOFTWARE')
@@ -78,7 +78,7 @@ for (const vp of [
       await expect(page.locator('.crtgame__full')).toHaveAttribute('href', /games\.html/)
 
       await page.locator('[data-crt-back]').click()
-      await expect(page.locator('.hub__row')).toHaveCount(4)
+      await expect(page.locator('[data-game]')).toHaveCount(4)
 
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
@@ -151,7 +151,7 @@ test.describe('desktop', () => {
   test('the top nav opens the thing it names', async ({ page }) => {
     await enter(page)
     await page.locator('.nav-links a', { hasText: 'Games' }).click()
-    await expect(page.locator('.hub__row')).toHaveCount(4, { timeout: 5000 })
+    await expect(page.locator('[data-game]')).toHaveCount(4, { timeout: 5000 })
     await page.keyboard.press('Escape')
     await expect(page.locator(panel)).toBeHidden()
 
@@ -182,7 +182,7 @@ test.describe('desktop', () => {
     await expect(page.locator('[data-garage]')).toBeHidden()
     await page.locator('.nav-links a', { hasText: 'Games' }).click()
     await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 10000 })
-    await expect(page.locator('.hub__row')).toHaveCount(4, { timeout: 8000 })
+    await expect(page.locator('[data-game]')).toHaveCount(4, { timeout: 8000 })
   })
 })
 
@@ -235,7 +235,7 @@ test('a visitor who does not want motion still gets the whole thing', async ({ b
   await enter(page)
   await touch(page, 'pc')
   // No boot wait, no camera easing: the list is simply there.
-  await expect(page.locator('.hub__row')).toHaveCount(4, { timeout: 2000 })
+  await expect(page.locator('[data-game]')).toHaveCount(4, { timeout: 2000 })
   await page.keyboard.press('Escape')
   await expect(page.locator(panel)).toBeHidden()
   await touch(page, 'tv')

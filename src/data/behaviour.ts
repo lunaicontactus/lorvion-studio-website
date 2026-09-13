@@ -26,7 +26,7 @@ const PROFILES: Readonly<Record<string, BehaviourProfile>> = {
     favours: ['pc', 'workbench'], pace: 1, idleFor: [2600, 8000], waveChance: 0.45,
     workFor: [5000, 12000], sitFor: [7000, 15000],
     // Goes over to see what somebody else is doing. Usually says something.
-    social: 0.8, stubborn: 0.1, talkative: 4, home: 'mid-floor',
+    social: 0.8, stubborn: 0.1, talkative: 4, home: 'workbench-a',
   },
   // Unhurried. Near the food, sitting more than standing, in no rush anywhere.
   nunu: {
@@ -34,7 +34,7 @@ const PROFILES: Readonly<Record<string, BehaviourProfile>> = {
     favours: ['fridge'], pace: 0.78, idleFor: [5000, 14000], waveChance: 0.18,
     workFor: [4000, 9000], sitFor: [14000, 32000],
     // Notices you eventually. Answers in one syllable.
-    social: 0.3, stubborn: 0.4, talkative: 2, home: 'rug',
+    social: 0.3, stubborn: 0.4, talkative: 2, home: 'big-cushion',
   },
   // The one who actually builds things. At the bench, then the desk, then back.
   ruki: {
@@ -42,7 +42,7 @@ const PROFILES: Readonly<Record<string, BehaviourProfile>> = {
     favours: ['workbench', 'pc', 'cabinet'], pace: 1, idleFor: [2200, 7000], waveChance: 0.25,
     workFor: [12000, 26000], sitFor: [6000, 12000],
     // Mid-job, and it shows. Looks up, but not straight away.
-    social: 0.25, stubborn: 0.7, talkative: 3, home: 'workbench-a',
+    social: 0.25, stubborn: 0.7, talkative: 3, home: 'cushions',
   },
   // Trouble. Short trips, changes its mind, hangs about near the locked door.
   yomi: {
@@ -50,7 +50,7 @@ const PROFILES: Readonly<Record<string, BehaviourProfile>> = {
     favours: ['secret-door'], pace: 1.15, idleFor: [1800, 6000], waveChance: 0.55,
     workFor: [3000, 7000], sitFor: [5000, 11000],
     // Approaches first, every time, and is delighted to be interrupted.
-    social: 0.9, stubborn: 0.05, talkative: 5, home: 'right-floor',
+    social: 0.9, stubborn: 0.05, talkative: 5, home: 'fridge-front',
   },
   // Watches. Stays put a long time, mostly by the television or the shelf.
   poko: {

@@ -1,0 +1,186 @@
+<!doctype html><meta charset="utf-8">
+<title>states</title>
+<style>body{margin:0;background:#555;color:#eee;font:12px system-ui}</style>
+<div id="out"></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.137.0/examples/js/loaders/GLTFLoader.js"></script>
+<script type="module">
+import { REGIONS, ease, poseFor } from './states.js'
+
+// Exactly the camera, lights, canvas and baseline that IDLE was approved on.
+const CANVAS = 640, FLOOR_Y = 604, HEAD_Y = 44
+const FIGURE_PX = FLOOR_Y - HEAD_Y, H = 1.0
+
+// What the room asks for, per src/data/sprites.ts. Nothing invented: `glance`
+// is not a state the code has, so it is not a folder here.
+const PLAN = {
+  walk: { frames: 4, dirs: ['front', 'back', 'left', 'right'] },
+  work: { frames: 4, dirs: ['back', 'front'] },
+  sit:  { frames: 4, dirs: ['front', 'left', 'right'] },
+  wave: { frames: 4, dirs: ['front'] },
+  look: { frames: 4, dirs: ['front'] },
+}
+const YAW = { front: 0, left: Math.PI / 2, back: Math.PI, right: -Math.PI / 2 }
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })
+renderer.setSize(CANVAS, CANVAS); renderer.setPixelRatio(1)
+renderer.outputEncoding = THREE.sRGBEncoding
+renderer.setClearColor(0x000000, 0)
+document.getElementById('out').append(renderer.domElement)
+
+const halfW = H * (CANVAS / FIGURE_PX) / 2
+const cam = new THREE.OrthographicCamera(-halfW, halfW,
+  H * (1 + HEAD_Y / FIGURE_PX), -H * ((CANVAS - FLOOR_Y) / FIGURE_PX), 0.01, 100)
+cam.position.set(0, 0, 4); cam.lookAt(0, 0, 0)
+
+function lights(scene) {
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xd9cec2, 0.95))
+  const key = new THREE.DirectionalLight(0xffffff, 0.55); key.position.set(0.6, 1.1, 2.2)
+  const fill = new THREE.DirectionalLight(0xffffff, 0.28); fill.position.set(-1.6, 0.3, 1.2)
+  const rim = new THREE.DirectionalLight(0xffffff, 0.16); rim.position.set(0, 0.6, -2)
+  scene.add(key, fill, rim)
+}
+const load = (u) => new Promise((r, j) => new THREE.GLTFLoader().load(u, r, undefined, j))
+const post = (n, c) => fetch('/', { method: 'POST', body: n + '\n' + c.toDataURL('image/png') })
+
+function rotateAbout(p, i, px, py, ang, axis) {
+  const c = Math.cos(ang), s = Math.sin(ang)
+  if (axis === 'x') {           // swing forward and back, in z
+    const dy = p.getY(i) - py, dz = p.getZ(i)
+    p.setY(i, py + dy * c - dz * s); p.setZ(i, dy * s + dz * c)
+  } else if (axis === 'z') {    // swing sideways, in x
+    const dx = p.getX(i) - px, dy = p.getY(i) - py
+    p.setX(i, px + dx * c - dy * s); p.setY(i, py + dx * s + dy * c)
+  } else {                      // turn, about the vertical
+    const dx = p.getX(i) - px, dz = p.getZ(i)
+    p.setX(i, px + dx * c + dz * s); p.setZ(i, -dx * s + dz * c)
+  }
+}
+
+function apply(geo, base, pose, torsoHalf) {
+  const p = geo.attributes.position
+  const n = p.count
+  for (let i = 0; i < n; i++) {
+    let x = base[i * 3], y = base[i * 3 + 1], z = base[i * 3 + 2]
+    p.setXYZ(i, x, y, z)
+  }
+  const {
+    legSwing = 0, bob = 0, roll = 0, armSwing = 0, headBob = 0, lean = 0,
+    waveArm = 0, waveLift = 0, waveOut = 0, headTurn = 0, sit = 0, breath = 0,
+    sitBend = 0, sitDrop = 0,
+  } = pose
+
+  for (let i = 0; i < n; i++) {
+    const x = p.getX(i), y = p.getY(i)
+    // Legs swing about the hip, one forward while the other is back.
+    if (legSwing && y < REGIONS.legTop) {
+      const w = ease((REGIONS.legTop - y) / REGIONS.legTop)
+      const side = x >= 0 ? 1 : -1
+      rotateAbout(p, i, 0, REGIONS.hipY, THREE.MathUtils.degToRad(legSwing * side) * w, 'x')
+    }
+    // Arms swing about the shoulder, opposite the legs.
+    if ((armSwing || waveArm) && Math.abs(x) > torsoHalf * 0.92 && y > REGIONS.legTop && y < REGIONS.neckY) {
+      const side = x >= 0 ? 1 : -1
+      const w = ease((Math.abs(x) - torsoHalf * 0.92) / (torsoHalf * 0.5))
+      if (waveArm && side > 0) {
+        rotateAbout(p, i, side * torsoHalf, REGIONS.shoulderY,
+          THREE.MathUtils.degToRad(-(waveLift + waveOut)) * w, 'z')
+      } else if (armSwing) {
+        rotateAbout(p, i, side * torsoHalf, REGIONS.shoulderY,
+          THREE.MathUtils.degToRad(armSwing * side) * w, 'x')
+      }
+    }
+  }
+  // Head turn: the head only, about the neck.
+  if (headTurn) {
+    for (let i = 0; i < n; i++) {
+      const y = p.getY(i)
+      if (y <= REGIONS.neckY) continue
+      const w = ease((y - REGIONS.neckY) / 0.08)
+      rotateAbout(p, i, 0, 0, THREE.MathUtils.degToRad(headTurn) * w, 'y')
+    }
+  }
+  // Whole-body moves last, so they carry the limbs with them.
+  for (let i = 0; i < n; i++) {
+    const y = p.getY(i)
+    if (lean) {
+      const w = ease((y - REGIONS.hipY) / (1 - REGIONS.hipY))
+      if (w > 0) p.setZ(i, p.getZ(i) + w * lean * 0.0012)
+    }
+    if (headBob && y > REGIONS.neckY) p.setY(i, p.getY(i) + headBob)
+    if (breath && y > REGIONS.hipY) p.setY(i, p.getY(i) + breath)
+    if (bob) p.setY(i, p.getY(i) + bob)
+  }
+  if (roll) for (let i = 0; i < n; i++) {
+    rotateAbout(p, i, 0, 0, THREE.MathUtils.degToRad(roll), 'z')
+  }
+  // Sitting: a small bend and a drop, not a fold. The frame is cropped at
+  // the floor row, so the shins simply go below it.
+  if (sit) {
+    for (let i = 0; i < n; i++) {
+      const y = p.getY(i)
+      if (y < REGIONS.legTop) {
+        const w = ease((REGIONS.legTop - y) / REGIONS.legTop)
+        rotateAbout(p, i, 0, REGIONS.hipY, THREE.MathUtils.degToRad(sitBend) * w, 'x')
+      }
+      p.setY(i, p.getY(i) - sitDrop)
+    }
+  }
+  p.needsUpdate = true
+  geo.computeVertexNormals()
+  geo.computeBoundingBox()
+}
+
+async function run(char) {
+  document.title = 'running'
+  const gltf = await load(`posed/${char}.glb?t=${Date.now()}`)
+  const root = gltf.scene
+  const box = new THREE.Box3().setFromObject(root)
+  const s = H / box.getSize(new THREE.Vector3()).y
+  root.scale.setScalar(s)
+  const b2 = new THREE.Box3().setFromObject(root)
+  const mid = b2.getCenter(new THREE.Vector3())
+  root.position.x -= mid.x; root.position.z -= mid.z; root.position.y -= b2.min.y
+  root.updateMatrixWorld(true)
+
+  // Bake the placement into the vertices, so poses work in standing space.
+  let mesh = null
+  root.traverse((o) => { if (o.isMesh) mesh = o })
+  mesh.geometry = mesh.geometry.clone()
+  mesh.geometry.applyMatrix4(mesh.matrixWorld)
+  mesh.position.set(0, 0, 0); mesh.scale.setScalar(1); mesh.rotation.set(0, 0, 0)
+  mesh.parent.position.set(0, 0, 0); mesh.parent.scale.setScalar(1)
+  root.position.set(0, 0, 0); root.scale.setScalar(1)
+  root.updateMatrixWorld(true)
+
+  const p = mesh.geometry.attributes.position
+  const base = new Float32Array(p.array)
+  // The torso half-width, measured below the arms, same rule as the poser.
+  let widths = []
+  for (let i = 0; i < p.count; i++) {
+    const y = base[i * 3 + 1]
+    if (y > 0.22 && y < 0.32) widths.push(Math.abs(base[i * 3]))
+  }
+  widths.sort((a, b) => a - b)
+  const torsoHalf = widths[Math.floor(widths.length * 0.92)]
+
+  for (const [action, spec] of Object.entries(PLAN)) {
+    for (let i = 0; i < spec.frames; i++) {
+      apply(mesh.geometry, base, poseFor(action, i, spec.frames), torsoHalf)
+      for (const dir of spec.dirs) {
+        const scene = new THREE.Scene(); lights(scene)
+        const pivot = new THREE.Group(); pivot.rotation.y = YAW[dir]
+        pivot.add(root); scene.add(pivot)
+        renderer.render(scene, cam)
+        const nn = String(i + 1).padStart(2, '0')
+        await post(`${char}/${action}/${dir}/${char}_${action}_${dir}_${nn}.png`, renderer.domElement)
+        pivot.remove(root)
+      }
+    }
+    document.title = 'done ' + action
+  }
+  document.title = 'ready'
+}
+const char = new URLSearchParams(location.search).get('c') || 'momo'
+run(char).catch((e) => { document.title = 'ERROR ' + e; console.error(e) })
+</script>

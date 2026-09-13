@@ -73,7 +73,7 @@ for (const vp of [
     test('the fridge says one thing at a time and keeps no score', async ({ page }) => {
       await enter(page)
       await touch(page, 'fridge')
-      await expect(page.locator('.chill')).toHaveCount(5, { timeout: 6000 })
+      await expect(page.locator('.chill')).toHaveCount(7, { timeout: 6000 })
       await expect(page.locator('[data-fridge-say]')).toHaveText('')
       await page.locator('[data-item="eggs"]').click()
       const first = await page.locator('[data-fridge-say]').textContent()
