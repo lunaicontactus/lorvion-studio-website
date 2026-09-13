@@ -22,7 +22,12 @@ export default defineConfig({
   webServer: {
     command: 'npx vite preview --port 4173 --strictPort',
     url: 'http://localhost:4173',
-    reuseExistingServer: true,
+    // Never reuse. A `vite preview` left running from an earlier build serves
+    // that build, and the suite passes against code that is no longer there —
+    // which is exactly how a run of 84 green tests was reported against a
+    // stale dist while CI, building fresh, failed fifteen. If something else
+    // is holding the port, failing to start is the right answer.
+    reuseExistingServer: false,
     timeout: 60_000,
   },
   projects: [

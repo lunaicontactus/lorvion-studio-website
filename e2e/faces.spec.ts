@@ -16,14 +16,21 @@ import type { Page } from '@playwright/test'
  * through it would be a test of the shutter.
  */
 
-/** Faces on screen, counted off the frame each one is actually showing. */
+/**
+ * Faces on screen, counted off the frame each one is actually showing.
+ *
+ * Both asset roots are accepted. The rebuilt crew ships under
+ * `/dokkaebi-v2/`, and a pattern written for `/dokkaebi/` does not merely
+ * miss it — `\w+` will not cross the hyphen, so every frame reads as
+ * "no frame" and the room appears to be empty rather than wrong.
+ */
 async function faces(page: Page): Promise<number> {
   return page.evaluate(() =>
     [...document.querySelectorAll('.npc')]
       .filter((e) => !e.classList.contains('is-away'))
       .filter((e) => {
         const src = (e.querySelector('img') as HTMLImageElement | null)?.src ?? ''
-        const m = /\/dokkaebi\/\w+\/\w+\/(\w+)\//.exec(src)
+        const m = /\/dokkaebi(?:-v2)?\/\w+\/\w+\/(\w+)\//.exec(src)
         // No frame yet is not a face, and not a failure either — the sample
         // loop below starts once somebody is actually rendered.
         return m !== null && m[1] !== 'back'
@@ -68,7 +75,7 @@ async function fewestFaces(page: Page, ms: number): Promise<number> {
         .filter((e) => !e.classList.contains('is-away'))
         .filter((e) => {
           const src = (e.querySelector('img') as HTMLImageElement | null)?.src ?? ''
-          const m = /\/dokkaebi\/\w+\/\w+\/(\w+)\//.exec(src)
+          const m = /\/dokkaebi(?:-v2)?\/\w+\/\w+\/(\w+)\//.exec(src)
           return m !== null && m[1] !== 'back'
         }).length
     let fewest = Infinity
