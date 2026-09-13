@@ -75,9 +75,14 @@
              dust in the light, and somebody looking round the frame. -->
         <div class="alley__doorway" data-alley-doorway aria-hidden="true">
           <span class="alley__dust"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          <!-- Which crew leans round the door is decided at boot from the
+               flag, so the entrance never shows one crew and the room the
+               other. The markup names both; src/app/boot.ts picks. -->
           <span class="alley__peek" data-alley-peek>
-            <img src="/assets/images/dokkaebi/momo/idle/front/momo_idle_front_01.webp"
-                 width="298" height="420" alt="" decoding="async" loading="lazy">
+            <img src="/assets/images/dokkaebi-v2/momo/idle/front/momo_idle_front_01.webp"
+                 data-crew-v1="/assets/images/dokkaebi/momo/idle/front/momo_idle_front_01.webp"
+                 data-crew-v2="/assets/images/dokkaebi-v2/momo/idle/front/momo_idle_front_01.webp"
+                 width="282" height="420" alt="" decoding="async" loading="lazy">
           </span>
         </div>
 

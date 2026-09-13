@@ -259,16 +259,24 @@ test.describe('desktop', () => {
     // busy places face the camera now, so "it turned its back" stopped
     // meaning "it arrived somewhere" and started meaning nothing at all.
     // The state is the thing being asserted about anyway.
+    //
+    // Sampled often and for a while, because the spell at a thing is short by
+    // design. The first one it takes on arriving is a quarter of a normal one
+    // and capped at nine seconds (src/scenes/npc.ts, `opening`), so for MOMO
+    // it can be over inside two — and then the room is free to send it
+    // wandering for a spell before it picks another bench. A thirty-second
+    // window caught that one time in four.
+    test.setTimeout(180_000)
     let at: { x: number; y: number } | null = null
-    for (let i = 0; i < 40 && !at; i++) {
-      await page.waitForTimeout(800)
+    for (let i = 0; i < 400 && !at; i++) {
+      await page.waitForTimeout(300)
       const state = await page.evaluate(
         (sel) => (document.querySelector(sel) as HTMLElement).dataset.state,
         MOMO,
       )
       if (state === 'WORK' || state === 'INTERACT') at = await feet(page)
     }
-    expect(at, 'never used anything in 32s').not.toBeNull()
+    expect(at, 'never used anything in 120s').not.toBeNull()
     // On the floor in front of it, never up on the furniture.
     expect(at!.y).toBeGreaterThan(980)
     // Every place in the room that stands in front of something.
