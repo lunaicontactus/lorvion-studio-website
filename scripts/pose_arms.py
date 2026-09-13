@@ -47,7 +47,7 @@ def measure(V):
     return h, torso, lo, hi, float(wide.max())
 
 
-def pose(src, dst, degrees=68.0, blend=0.26, forward=5.0, report=True):
+def pose(src, dst, degrees=70.0, blend=0.26, forward=5.0, report=True):
     scene = trimesh.load(src, process=False)
     key = list(scene.geometry.keys())[0]
     g = scene.geometry[key]
@@ -98,6 +98,6 @@ def pose(src, dst, degrees=68.0, blend=0.26, forward=5.0, report=True):
 
 if __name__ == '__main__':
     pose(sys.argv[1], sys.argv[2],
-         degrees=float(sys.argv[3]) if len(sys.argv) > 3 else 68.0,
+         degrees=float(sys.argv[3]) if len(sys.argv) > 3 else 70.0,
          blend=float(sys.argv[4]) if len(sys.argv) > 4 else 0.26,
          forward=float(sys.argv[5]) if len(sys.argv) > 5 else 5.0)
