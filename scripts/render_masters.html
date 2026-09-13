@@ -1,0 +1,93 @@
+<!doctype html><meta charset="utf-8">
+<title>masters</title>
+<style>body{margin:0;background:#666;font:12px system-ui;color:#eee}canvas{display:block;background:transparent}</style>
+<div id="out"></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.137.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+// ── The contract the room already has ────────────────────────────────────────
+// Masters are 640 tall (src: assets/sprites/*), the floor row is 604
+// (scripts/export_sprites.py), and the feet sit on it. Everything else here
+// is chosen once and shared by all five, because five characters lit five
+// ways is five characters in five different rooms.
+const CANVAS = 640
+const FLOOR_Y = 604          // feet land on this pixel row
+const HEAD_Y = 44            // and the top of the head on this one
+const FIGURE_PX = FLOOR_Y - HEAD_Y   // 560
+const H = 1.0                // every model is scaled to this world height
+
+const VIEWS = [
+  ['front', 0],
+  ['three-quarter', Math.PI / 4],
+  ['side-left', Math.PI / 2],
+  ['side-right', -Math.PI / 2],
+  ['back', Math.PI],
+]
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })
+renderer.setSize(CANVAS, CANVAS)
+renderer.setPixelRatio(1)
+renderer.outputEncoding = THREE.sRGBEncoding
+renderer.setClearColor(0x000000, 0)
+document.getElementById('out').append(renderer.domElement)
+
+// One frustum, one exposure, one white balance, for every character.
+const halfW = H * (CANVAS / FIGURE_PX) / 2
+const cam = new THREE.OrthographicCamera(
+  -halfW, halfW,
+  H * (1 + HEAD_Y / FIGURE_PX),
+  -H * ((CANVAS - FLOOR_Y) / FIGURE_PX),
+  0.01, 100)
+cam.position.set(0, 0, 4)
+cam.lookAt(0, 0, 0)
+
+function lights(scene) {
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xd9cec2, 0.95))
+  const key = new THREE.DirectionalLight(0xffffff, 0.55); key.position.set(0.6, 1.1, 2.2)
+  const fill = new THREE.DirectionalLight(0xffffff, 0.28); fill.position.set(-1.6, 0.3, 1.2)
+  const rim = new THREE.DirectionalLight(0xffffff, 0.16); rim.position.set(0, 0.6, -2)
+  scene.add(key, fill, rim)
+}
+
+const load = (url) => new Promise((res, rej) =>
+  new THREE.GLTFLoader().load(url, res, undefined, rej))
+
+async function post(name, canvas) {
+  await fetch('/', { method: 'POST', body: name + '\n' + canvas.toDataURL('image/png') })
+}
+
+async function run() {
+  const only = new URLSearchParams(location.search).get('only')
+  const names = only ? only.split(',') : ['momo', 'nunu', 'ruki', 'yomi', 'poko']
+  const report = []
+  for (const n of names) {
+    const gltf = await load(`${(new URLSearchParams(location.search).get('src')||'final_glb')}/${n}.glb?t=${Date.now()}`)
+    const root = gltf.scene
+    // Normalise: same real height, feet on y=0, centred left to right.
+    const box = new THREE.Box3().setFromObject(root)
+    const size = box.getSize(new THREE.Vector3())
+    const s = H / size.y
+    root.scale.setScalar(s)
+    const box2 = new THREE.Box3().setFromObject(root)
+    const mid = box2.getCenter(new THREE.Vector3())
+    root.position.x -= mid.x
+    root.position.z -= mid.z
+    root.position.y -= box2.min.y
+    report.push({ id: n, rawHeight: +size.y.toFixed(4), scale: +s.toFixed(4) })
+
+    for (const [view, ry] of VIEWS) {
+      const scene = new THREE.Scene()
+      lights(scene)
+      const pivot = new THREE.Group()
+      pivot.rotation.y = ry
+      pivot.add(root.clone(true))
+      scene.add(pivot)
+      renderer.render(scene, cam)
+      await post(`${n}_${view}.png`, renderer.domElement)
+    }
+  }
+  window.__report = report
+  document.title = 'ready'
+}
+run().catch((e) => { document.title = 'ERROR ' + e; console.error(e) })
+</script>
