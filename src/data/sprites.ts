@@ -146,10 +146,12 @@ function setFor(id: string, sheet: Sheet): SpriteSet {
   const byDirection = <T>(make: (d: SpriteDirection) => T): Readonly<Record<SpriteDirection, T>> =>
     Object.fromEntries(DIRECTIONS.map((d) => [d, make(d)])) as Record<SpriteDirection, T>
   const build = (action: SpriteAction): Readonly<Record<SpriteDirection, SpriteAnimation>> => {
-    // Until the other actions are rendered, the new crew has standing frames
-    // and nothing else, so every action plays those.
-    const drawn: SpriteAction = useV2 ? 'idle' : action
-    const count = useV2 ? V2.frames.idle : sheet.frames[action]
+    // An action with no frames rendered yet plays the standing ones, so the
+    // room keeps working and a walk shows a character standing rather than a
+    // hole where one was.
+    const have = useV2 ? v2For(id).frames : null
+    const drawn: SpriteAction = have && have[action] === undefined ? 'idle' : action
+    const count = sheet.frames[drawn]
     const order = drawn === 'idle'
       ? IDLE_ORDER.filter((n) => n <= count)
       : Array.from({ length: count }, (_, i) => i + 1)
@@ -174,21 +176,48 @@ function setFor(id: string, sheet: Sheet): SpriteSet {
  * through one camera at one height: the numbers came back identical to four
  * decimal places, which is the point of rendering them that way.
  */
-const V2: Sheet = {
-  frames: { idle: 4, walk: 4, work: 4, sit: 4, wave: 4, look: 4 },
-  walkFps: 8.99, aspect: 268 / 420, figureRatio: 0.9310, bodyWidth: 0.988,
-  tempo: 1,
+/**
+ * Which actions each rebuilt character has frames for, and what those frames
+ * measure. A character is listed here as its states are rendered; anything
+ * not listed plays its standing frames, so the room never asks for a file
+ * that is not there.
+ */
+interface V2Sheet {
+  readonly frames: Partial<Record<SpriteAction, number>>
+  readonly aspect: number
+  readonly figureRatio: number
+  readonly bodyWidth: number
+}
+
+const V2_IDLE_ONLY: V2Sheet = {
+  frames: { idle: 4 },
+  aspect: 268 / 420, figureRatio: 0.9310, bodyWidth: 0.988,
+}
+
+const ALL: Partial<Record<SpriteAction, number>> =
+  { idle: 4, walk: 4, work: 4, sit: 4, wave: 4, look: 4 }
+
+const V2: Readonly<Record<string, V2Sheet>> = {
+  momo: { frames: ALL, aspect: 282 / 420, figureRatio: 0.9310, bodyWidth: 0.940 },
+  nunu: { frames: ALL, aspect: 277 / 420, figureRatio: 0.9310, bodyWidth: 0.935 },
+  ruki: { frames: ALL, aspect: 282 / 420, figureRatio: 0.9333, bodyWidth: 0.961 },
+  yomi: { frames: ALL, aspect: 268 / 420, figureRatio: 0.9310, bodyWidth: 0.937 },
+  poko: { frames: ALL, aspect: 273 / 420, figureRatio: 0.9333, bodyWidth: 0.956 },
+}
+
+function v2For(id: string): V2Sheet {
+  return V2[id] ?? V2_IDLE_ONLY
 }
 
 function sheetFor(id: string): Sheet | null {
   const base = SHEETS[id]
   if (!base) return null
+  if (!useV2) return base
+  const v = v2For(id)
   // The cadence and tempo stay the character's own; only what was measured
   // off the frames changes with the frames.
-  return useV2
-    ? { ...base, frames: V2.frames, aspect: V2.aspect,
-        figureRatio: V2.figureRatio, bodyWidth: V2.bodyWidth }
-    : base
+  return { ...base, frames: { ...base.frames, ...v.frames } as Sheet['frames'],
+    aspect: v.aspect, figureRatio: v.figureRatio, bodyWidth: v.bodyWidth }
 }
 
 export function spritesFor(characterId: string): SpriteSet | null {
