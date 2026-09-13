@@ -132,3 +132,22 @@ into a skirt:
 | fill to the head's own radius, 0.10 h / 0.14 h | removed the step entirely | a ruff collar |
 
 The line was never the junction. It was the bulge.
+
+## Applied to all five
+
+`widen = 1.0` for every character, from the same `posed_fix` meshes, with
+YOMI's tail work re-applied on top. Verified per character against the
+approved version: the head drop, the figure height and every y are identical,
+and only the band's x and z differ.
+
+| id | drop | height | y identical | x/z changed |
+|---|---|---|---|---|
+| momo | 41.60 mm | 651.80 mm | 0.0000 mm | 3,265 verts, 0.47–0.49 h |
+| nunu | 42.00 mm | 658.00 mm | 0.0000 mm | 2,301 verts, 0.45–0.47 h |
+| ruki | 41.92 mm | 656.75 mm | 0.0000 mm | 2,807 verts, 0.46–0.48 h |
+| yomi | 45.00 mm | 705.00 mm | 0.0000 mm | 1,723 verts, 0.43–0.45 h |
+| poko | 37.13 mm | 457.96 mm | 0.0000 mm | 4,088 verts, 0.43–0.46 h |
+
+300 frames re-rendered from these. The measurements came back identical to
+the shipped ones — same windows, same figureRatio, same bodyWidth — so
+`src/data/sprites.ts` did not change.
