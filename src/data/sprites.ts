@@ -197,12 +197,16 @@ const V2_IDLE_ONLY: V2Sheet = {
 const ALL: Partial<Record<SpriteAction, number>> =
   { idle: 4, walk: 4, work: 4, sit: 4, wave: 4, look: 4 }
 
+// Re-measured after the neck was hidden (scripts/sheet_metrics.py). Lowering
+// the head takes about six percent off the standing height, and the render
+// normalises every model to one height, so the same head comes back six
+// percent wider in the frame: every window grew by roughly that much.
 const V2: Readonly<Record<string, V2Sheet>> = {
-  momo: { frames: ALL, aspect: 282 / 420, figureRatio: 0.9310, bodyWidth: 0.940 },
-  nunu: { frames: ALL, aspect: 277 / 420, figureRatio: 0.9310, bodyWidth: 0.935 },
-  ruki: { frames: ALL, aspect: 282 / 420, figureRatio: 0.9333, bodyWidth: 0.936 },
-  yomi: { frames: ALL, aspect: 268 / 420, figureRatio: 0.9310, bodyWidth: 0.937 },
-  poko: { frames: ALL, aspect: 271 / 420, figureRatio: 0.9333, bodyWidth: 0.937 },
+  momo: { frames: ALL, aspect: 299 / 420, figureRatio: 0.9333, bodyWidth: 0.946 },
+  nunu: { frames: ALL, aspect: 292 / 420, figureRatio: 0.9333, bodyWidth: 0.945 },
+  ruki: { frames: ALL, aspect: 298 / 420, figureRatio: 0.9333, bodyWidth: 0.946 },
+  yomi: { frames: ALL, aspect: 284 / 420, figureRatio: 0.9333, bodyWidth: 0.944 },
+  poko: { frames: ALL, aspect: 292 / 420, figureRatio: 0.9333, bodyWidth: 0.945 },
 }
 
 function v2For(id: string): V2Sheet {
