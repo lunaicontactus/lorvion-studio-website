@@ -12,6 +12,7 @@ import { installVisibilityGate } from '@/systems/tick'
 import { registerVisit, save } from '@/systems/storage'
 import { installImageFallback } from '@/systems/assets'
 import { motion } from '@/systems/motion'
+import { setNewCrew } from '@/data/sprites'
 import { mountNav } from '@/ui/nav'
 import { mountReveal } from '@/ui/reveal'
 import { mountSoundToggle } from '@/ui/soundToggle'
@@ -80,6 +81,10 @@ export function boot(): Teardown {
       root.dataset['motion'] = reduced ? 'reduced' : 'full'
     }),
   )
+
+  // Which crew's frames the room asks for. Set before anything mounts, so no
+  // character is built against one set and drawn from the other.
+  setNewCrew(flags.newCrew)
 
   if (flags.alley && document.querySelector('[data-alley]')) {
     teardowns.push(guard('world', () => mountWorld()))

@@ -73,6 +73,32 @@ HORN = {
 }
 
 
+# Sitting the rebuilt crew under the room's lamp.
+#
+# The GLB renders come out of a neutral studio; the garage is lit by one warm
+# bulb. Dropped in untouched the crew glow, and it is measurable rather than a
+# matter of taste: their highlights came back at luma 247 against the first
+# crew's 216, with the green channel forty points higher. That gap is the
+# difference between a daylight room and a tungsten one, and this closes it
+# without touching anything else about them.
+ROOM_WARM = np.array([1.000, 0.930, 0.862], np.float32)
+ROOM_EXPOSURE = 0.90
+
+
+def room_light(img, height, x0, x1):
+    a = np.asarray(img.convert('RGBA')).astype(np.float32)
+    a[..., :3] = np.clip(a[..., :3] * ROOM_WARM * ROOM_EXPOSURE, 0, 255)
+    lit = Image.fromarray(a.astype(np.uint8))
+    return plain(lit, height, x0, x1)
+
+
+def plain(img, height, x0, x1):
+    """Crop to the shared window and scale. No colour touched."""
+    out = img.convert('RGBA').crop((x0, 0, x1, FLOOR_ROW))
+    s = height / FLOOR_ROW
+    return out.resize((max(1, round(out.width * s)), round(out.height * s)), Image.LANCZOS)
+
+
 def grade(img, height, x0, x1, char='momo'):
     a = np.asarray(img.convert('RGBA')).astype(np.float32)
     rgb = a[..., :3]
@@ -111,10 +137,18 @@ def grade(img, height, x0, x1, char='momo'):
 
 def main():
     char = sys.argv[1]
-    SRC, DST = SRC_ROOT / char, DST_ROOT / char
-    height = HEIGHT
-    if '--height' in sys.argv:
-        height = int(sys.argv[sys.argv.index('--height') + 1])
+    def opt(name, default):
+        return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
+    # The rebuilt crew are rendered with their colours already right — coral
+    # horns, even light, no baked shadow — so the grade below, which was
+    # written to rescue the first crew from looking like dark dolls, would
+    # brighten and re-dye something that does not need it. `--no-grade` crops
+    # and resizes and nothing else.
+    graded = '--no-grade' not in sys.argv
+    lit = '--room-light' in sys.argv
+    SRC = Path(opt('--src', str(SRC_ROOT))) / char
+    DST = Path(opt('--dst', str(DST_ROOT))) / char
+    height = int(opt('--height', HEIGHT))
     srcs = sorted(SRC.rglob('*.png'))
     x0, x1 = window(srcs)
     print(f'shared window x {x0}-{x1} ({x1 - x0}px of a {Image.open(srcs[0]).width}px frame)')
@@ -123,7 +157,14 @@ def main():
         rel = src.relative_to(SRC)
         dst = (DST / rel).with_suffix('.webp')
         dst.parent.mkdir(parents=True, exist_ok=True)
-        grade(Image.open(src), height, x0, x1, char).save(dst, 'WEBP', quality=90, method=6)
+        img = Image.open(src)
+        if graded:
+            out = grade(img, height, x0, x1, char)
+        elif lit:
+            out = room_light(img, height, x0, x1)
+        else:
+            out = plain(img, height, x0, x1)
+        out.save(dst, 'WEBP', quality=90, method=6)
         total += dst.stat().st_size
         n += 1
     print(f'{n} frames -> {DST}   {total / 1024:.0f}KB total, {total / 1024 / n:.0f}KB each')

@@ -29,6 +29,25 @@
 import type { SpriteAction, SpriteAnimation, SpriteDirection, SpriteSet } from '@/types/character'
 
 const ROOT = '/assets/images/dokkaebi'
+/**
+ * The rebuilt crew, rendered from the GLB masters in CREW_FINAL.
+ *
+ * Kept beside the first crew rather than over it, so a regression is one flag
+ * away from undone (?newCrew=off). Only the standing frames exist so far, so
+ * every action points at them: the room keeps working and a walk shows a
+ * character standing rather than a hole where one was. Rendering the rest is
+ * the next step, not a missing file.
+ */
+const ROOT_V2 = '/assets/images/dokkaebi-v2'
+let useV2 = false
+
+/** Switch the crew. Called once at boot from the flags. */
+export function setNewCrew(on: boolean): void {
+  useV2 = on
+  cache.clear()
+}
+
+const cache = new Map<string, SpriteSet>()
 
 /**
  * How many frames each action has, and which directions were rendered.
@@ -119,21 +138,25 @@ const IDLE_ORDER = [1, 2, 3, 4, 3, 2]
 const DIRECTIONS: readonly SpriteDirection[] = ['front', 'back', 'left', 'right']
 
 function frame(id: string, action: SpriteAction, dir: SpriteDirection, n: number): string {
-  return `${ROOT}/${id}/${action}/${dir}/${id}_${action}_${dir}_${String(n).padStart(2, '0')}.webp`
+  const root = useV2 ? ROOT_V2 : ROOT
+  return `${root}/${id}/${action}/${dir}/${id}_${action}_${dir}_${String(n).padStart(2, '0')}.webp`
 }
 
 function setFor(id: string, sheet: Sheet): SpriteSet {
   const byDirection = <T>(make: (d: SpriteDirection) => T): Readonly<Record<SpriteDirection, T>> =>
     Object.fromEntries(DIRECTIONS.map((d) => [d, make(d)])) as Record<SpriteDirection, T>
   const build = (action: SpriteAction): Readonly<Record<SpriteDirection, SpriteAnimation>> => {
-    const count = sheet.frames[action]
-    const order = action === 'idle'
+    // Until the other actions are rendered, the new crew has standing frames
+    // and nothing else, so every action plays those.
+    const drawn: SpriteAction = useV2 ? 'idle' : action
+    const count = useV2 ? V2.frames.idle : sheet.frames[action]
+    const order = drawn === 'idle'
       ? IDLE_ORDER.filter((n) => n <= count)
       : Array.from({ length: count }, (_, i) => i + 1)
     // The walk answers to the floor; everything else answers to the character.
     const fps = action === 'walk' ? sheet.walkFps : BASE_FPS[action] / sheet.tempo
     return byDirection((d) => ({
-      frames: order.map((n) => frame(id, action, DIRS[action].includes(d) ? d : 'front', n)),
+      frames: order.map((n) => frame(id, drawn, DIRS[drawn].includes(d) ? d : 'front', n)),
       fps,
       loop: true,
     }))
@@ -144,16 +167,43 @@ function setFor(id: string, sheet: Sheet): SpriteSet {
   }
 }
 
-const SPRITES: Readonly<Record<string, SpriteSet>> =
-  Object.fromEntries(Object.entries(SHEETS).map(([id, sheet]) => [id, setFor(id, sheet)]))
+/**
+ * The rebuilt crew's measurements, taken off the rendered frames.
+ *
+ * One `figureRatio` for all five and not one each, because they were rendered
+ * through one camera at one height: the numbers came back identical to four
+ * decimal places, which is the point of rendering them that way.
+ */
+const V2: Sheet = {
+  frames: { idle: 4, walk: 4, work: 4, sit: 4, wave: 4, look: 4 },
+  walkFps: 8.99, aspect: 268 / 420, figureRatio: 0.9310, bodyWidth: 0.988,
+  tempo: 1,
+}
+
+function sheetFor(id: string): Sheet | null {
+  const base = SHEETS[id]
+  if (!base) return null
+  // The cadence and tempo stay the character's own; only what was measured
+  // off the frames changes with the frames.
+  return useV2
+    ? { ...base, frames: V2.frames, aspect: V2.aspect,
+        figureRatio: V2.figureRatio, bodyWidth: V2.bodyWidth }
+    : base
+}
 
 export function spritesFor(characterId: string): SpriteSet | null {
-  return SPRITES[characterId] ?? null
+  const hit = cache.get(characterId)
+  if (hit) return hit
+  const sheet = sheetFor(characterId)
+  if (!sheet) return null
+  const set = setFor(characterId, sheet)
+  cache.set(characterId, set)
+  return set
 }
 
 /** The measured proportions of one character's frames, for sizing and hit boxes. */
 export function metricsFor(characterId: string): Sheet | null {
-  return SHEETS[characterId] ?? null
+  return sheetFor(characterId)
 }
 
 /** How long one pass of an animation takes, in milliseconds. Used for the

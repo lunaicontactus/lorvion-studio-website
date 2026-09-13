@@ -17,6 +17,8 @@ export interface Flags {
   dokkaFire: boolean
   /** Mini games (STEP 20+). */
   miniGames: boolean
+  /** The rebuilt crew: sprites rendered from the new GLB masters. */
+  newCrew: boolean
   /** Verbose system logging. */
   debug: boolean
 }
@@ -27,6 +29,7 @@ const DEFAULTS: Flags = {
   characters: false,
   dokkaFire: false,
   miniGames: false,
+  newCrew: false,
   debug: false,
 }
 

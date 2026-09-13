@@ -1,0 +1,76 @@
+<!doctype html><meta charset="utf-8">
+<title>idle</title>
+<style>body{margin:0;background:#555;color:#eee;font:12px system-ui}</style>
+<div id="out"></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.137.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+// The contract, read out of the site rather than invented:
+//   masters 640 tall, floor row 604 (scripts/export_sprites.py)
+//   four idle frames per direction, played 1-2-3-4-3-2 (src/data/sprites.ts)
+//   directions front / back / left / right, named in the filename
+// One camera and one set of lights for all five, so they share a room.
+const CANVAS = 640, FLOOR_Y = 604, HEAD_Y = 44
+const FIGURE_PX = FLOOR_Y - HEAD_Y
+const H = 1.0
+
+// Rotation 0 is the face; +90 is what this site has always called `left`
+// (scripts/render_sprites.py renders left at azimuth 90), so the names here
+// are the site's names and not a fresh opinion.
+const DIRS = [['front', 0], ['left', Math.PI / 2], ['back', Math.PI], ['right', -Math.PI / 2]]
+// A breath, not a bounce: four frames rising by half a percent of height.
+const BREATH = [0, 0.002, 0.004, 0.005]
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })
+renderer.setSize(CANVAS, CANVAS); renderer.setPixelRatio(1)
+renderer.outputEncoding = THREE.sRGBEncoding
+renderer.setClearColor(0x000000, 0)
+document.getElementById('out').append(renderer.domElement)
+
+const halfW = H * (CANVAS / FIGURE_PX) / 2
+const cam = new THREE.OrthographicCamera(-halfW, halfW,
+  H * (1 + HEAD_Y / FIGURE_PX), -H * ((CANVAS - FLOOR_Y) / FIGURE_PX), 0.01, 100)
+cam.position.set(0, 0, 4); cam.lookAt(0, 0, 0)
+
+function lights(scene) {
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xd9cec2, 0.95))
+  const key = new THREE.DirectionalLight(0xffffff, 0.55); key.position.set(0.6, 1.1, 2.2)
+  const fill = new THREE.DirectionalLight(0xffffff, 0.28); fill.position.set(-1.6, 0.3, 1.2)
+  const rim = new THREE.DirectionalLight(0xffffff, 0.16); rim.position.set(0, 0.6, -2)
+  scene.add(key, fill, rim)
+}
+const load = (u) => new Promise((r, j) => new THREE.GLTFLoader().load(u, r, undefined, j))
+const post = (n, c) => fetch('/', { method: 'POST', body: n + '\n' + c.toDataURL('image/png') })
+
+async function run() {
+  document.title = 'running'
+  for (const n of ['momo', 'nunu', 'ruki', 'yomi', 'poko']) {
+    const gltf = await load(`posed/${n}.glb?t=${Date.now()}`)
+    const root = gltf.scene
+    const box = new THREE.Box3().setFromObject(root)
+    const s = H / box.getSize(new THREE.Vector3()).y
+    root.scale.setScalar(s)
+    const b2 = new THREE.Box3().setFromObject(root)
+    const mid = b2.getCenter(new THREE.Vector3())
+    root.position.x -= mid.x; root.position.z -= mid.z; root.position.y -= b2.min.y
+    for (const [dir, ry] of DIRS) {
+      for (let i = 0; i < BREATH.length; i++) {
+        const k = BREATH[i]
+        const scene = new THREE.Scene(); lights(scene)
+        const pivot = new THREE.Group(); pivot.rotation.y = ry
+        const m = root.clone(true)
+        // Scaled about the feet, which sit on y=0, so they stay planted.
+        m.scale.y *= (1 + k); m.scale.x *= (1 - k * 0.35); m.scale.z *= (1 - k * 0.35)
+        pivot.add(m); scene.add(pivot)
+        renderer.render(scene, cam)
+        const nn = String(i + 1).padStart(2, '0')
+        await post(`${n}/idle/${dir}/${n}_idle_${dir}_${nn}.png`, renderer.domElement)
+      }
+    }
+    document.title = 'done ' + n
+  }
+  document.title = 'ready'
+}
+run().catch((e) => { document.title = 'ERROR ' + e; console.error(e) })
+
+</script>
