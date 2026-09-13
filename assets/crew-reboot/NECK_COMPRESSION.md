@@ -53,3 +53,50 @@ resolvable at 130 px.
 
 Sheets: `neck/ab_front_side.png`, `neck/ab_back_threequarter.png`,
 `neck/ab_room_scale_130.png`, `neck/after_zoom.png`.
+
+---
+
+# YOMI's tail
+
+The neck sheet showed a pink-tipped growth on YOMI's back. It is not something
+the neck work caused: it is in the pre-neck meshes and in the live sprites too.
+It is the tail this reconstruction gives every one of the five, and YOMI's is
+the one that was never actually removed — the earlier pass checked the back
+view, where a centre-line tail reads as a small nub, and never looked from the
+side, where seventy millimetres of it stick out.
+
+| | back reach at the waist | its neighbours |
+|---|---|---|
+| yomi | −158 mm | −77 mm above, −62 mm below |
+| momo, nunu, ruki, poko | within 4 mm of trend | — |
+
+## Why `excise.py` could not do it
+
+`excise.py` rebuilds the surface a lump interrupted from the ring around the
+lump. That needs the lump to be small next to the surface. This one is not: any
+ring wide enough to contain it contains the whole buttock, and the quadric
+fitted to that ring flattened the seat along with the tail — 663 vertices
+moved, 40 mm on average, the bottom pulled forward by 30 mm.
+
+## What replaced it
+
+`scripts/debulge.py` measures the back instead of the growth. A polynomial
+surface is fitted to the back of the hips, then refitted five more times with
+everything sitting behind it thrown out, so the tail cannot vote on where the
+skin is (final residual 1.2 mm). Whatever is still behind that skin by more
+than 4 mm is pushed onto it and 6 mm further in, tapered by how far it stood
+out, so the tip travels and the root does not.
+
+`scripts/reclothe.py` then deals with the texture, which is what defeated every
+earlier attempt — a flattened tail keeps its own beige and the red of its tip,
+painted flat across the briefs. The atlas island is never searched for. The
+faces that moved are known, so each is given the texture coordinate of the
+point on the skin it now rests on, taken barycentrically from the nearest
+untouched triangle. Those faces get their own copies of the vertices they share
+with the body (379 of them), so the body's own texture is not disturbed.
+
+Result: 336 vertices moved, all of them on the back between 0.18 h and 0.34 h.
+Head, neck, ears, horns, hair, arms and the whole front: not one vertex.
+
+Sheets: `neck/yomi_tail_four_views.png`, `neck/yomi_tail_closeup.png`,
+`neck/crew_130_before_after.png`.
