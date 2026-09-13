@@ -1,0 +1,42 @@
+{
+ "momo": {
+  "legTop": 0.3191,
+  "hipY": 0.3511,
+  "shoulderY": 0.4761,
+  "neckY": 0.5213,
+  "torsoLo": 0.234,
+  "torsoHi": 0.3404
+ },
+ "nunu": {
+  "legTop": 0.3191,
+  "hipY": 0.3511,
+  "shoulderY": 0.4601,
+  "neckY": 0.5213,
+  "torsoLo": 0.234,
+  "torsoHi": 0.3404
+ },
+ "ruki": {
+  "legTop": 0.3191,
+  "hipY": 0.3511,
+  "shoulderY": 0.4681,
+  "neckY": 0.5213,
+  "torsoLo": 0.234,
+  "torsoHi": 0.3404
+ },
+ "yomi": {
+  "legTop": 0.3191,
+  "hipY": 0.3511,
+  "shoulderY": 0.4441,
+  "neckY": 0.5213,
+  "torsoLo": 0.234,
+  "torsoHi": 0.3404
+ },
+ "poko": {
+  "legTop": 0.3243,
+  "hipY": 0.3568,
+  "shoulderY": 0.4514,
+  "neckY": 0.5135,
+  "torsoLo": 0.2378,
+  "torsoHi": 0.3459
+ }
+}

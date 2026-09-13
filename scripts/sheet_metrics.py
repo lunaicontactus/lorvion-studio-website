@@ -8,7 +8,7 @@ body — plus the one number that decides whether the render is sound: the gap
 under the lowest pixel, which has to be the same on every frame of every
 action or the character bobs as it changes what it is doing.
 
-    python3 scripts/sheet_metrics.py <char>
+    python3 scripts/sheet_metrics.py <char> [--dst <dir>]
 """
 import sys
 from collections import defaultdict
@@ -20,8 +20,8 @@ from PIL import Image
 DST = Path('public/assets/images/dokkaebi')
 
 
-def main(char):
-    files = sorted((DST / char).rglob('*.webp'))
+def main(char, dst=DST):
+    files = sorted((Path(dst) / char).rglob('*.webp'))
     if not files:
         print(f'no frames for {char}')
         return 1
@@ -57,4 +57,6 @@ def main(char):
 
 
 if __name__ == '__main__':
-    raise SystemExit(main(sys.argv[1]))
+    raise SystemExit(main(sys.argv[1],
+                        sys.argv[sys.argv.index('--dst') + 1]
+                        if '--dst' in sys.argv else DST))

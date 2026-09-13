@@ -57,7 +57,7 @@ function rotateAbout(p, i, px, py, ang, axis) {
   }
 }
 
-function apply(geo, base, pose, torsoHalf) {
+function apply(geo, base, pose, torsoHalf, R) {
   const p = geo.attributes.position
   const n = p.count
   for (let i = 0; i < n; i++) {
@@ -73,20 +73,20 @@ function apply(geo, base, pose, torsoHalf) {
   for (let i = 0; i < n; i++) {
     const x = p.getX(i), y = p.getY(i)
     // Legs swing about the hip, one forward while the other is back.
-    if (legSwing && y < REGIONS.legTop) {
-      const w = ease((REGIONS.legTop - y) / REGIONS.legTop)
+    if (legSwing && y < R.legTop) {
+      const w = ease((R.legTop - y) / R.legTop)
       const side = x >= 0 ? 1 : -1
-      rotateAbout(p, i, 0, REGIONS.hipY, THREE.MathUtils.degToRad(legSwing * side) * w, 'x')
+      rotateAbout(p, i, 0, R.hipY, THREE.MathUtils.degToRad(legSwing * side) * w, 'x')
     }
     // Arms swing about the shoulder, opposite the legs.
-    if ((armSwing || waveArm) && Math.abs(x) > torsoHalf * 0.92 && y > REGIONS.legTop && y < REGIONS.neckY) {
+    if ((armSwing || waveArm) && Math.abs(x) > torsoHalf * 0.92 && y > R.legTop && y < R.neckY) {
       const side = x >= 0 ? 1 : -1
       const w = ease((Math.abs(x) - torsoHalf * 0.92) / (torsoHalf * 0.5))
       if (waveArm && side > 0) {
-        rotateAbout(p, i, side * torsoHalf, REGIONS.shoulderY,
+        rotateAbout(p, i, side * torsoHalf, R.shoulderY,
           THREE.MathUtils.degToRad(-(waveLift + waveOut)) * w, 'z')
       } else if (armSwing) {
-        rotateAbout(p, i, side * torsoHalf, REGIONS.shoulderY,
+        rotateAbout(p, i, side * torsoHalf, R.shoulderY,
           THREE.MathUtils.degToRad(armSwing * side) * w, 'x')
       }
     }
@@ -95,8 +95,8 @@ function apply(geo, base, pose, torsoHalf) {
   if (headTurn) {
     for (let i = 0; i < n; i++) {
       const y = p.getY(i)
-      if (y <= REGIONS.neckY) continue
-      const w = ease((y - REGIONS.neckY) / 0.08)
+      if (y <= R.neckY) continue
+      const w = ease((y - R.neckY) / 0.08)
       rotateAbout(p, i, 0, 0, THREE.MathUtils.degToRad(headTurn) * w, 'y')
     }
   }
@@ -104,11 +104,11 @@ function apply(geo, base, pose, torsoHalf) {
   for (let i = 0; i < n; i++) {
     const y = p.getY(i)
     if (lean) {
-      const w = ease((y - REGIONS.hipY) / (1 - REGIONS.hipY))
+      const w = ease((y - R.hipY) / (1 - R.hipY))
       if (w > 0) p.setZ(i, p.getZ(i) + w * lean * 0.0012)
     }
-    if (headBob && y > REGIONS.neckY) p.setY(i, p.getY(i) + headBob)
-    if (breath && y > REGIONS.hipY) p.setY(i, p.getY(i) + breath)
+    if (headBob && y > R.neckY) p.setY(i, p.getY(i) + headBob)
+    if (breath && y > R.hipY) p.setY(i, p.getY(i) + breath)
     if (bob) p.setY(i, p.getY(i) + bob)
   }
   if (roll) for (let i = 0; i < n; i++) {
@@ -119,9 +119,9 @@ function apply(geo, base, pose, torsoHalf) {
   if (sit) {
     for (let i = 0; i < n; i++) {
       const y = p.getY(i)
-      if (y < REGIONS.legTop) {
-        const w = ease((REGIONS.legTop - y) / REGIONS.legTop)
-        rotateAbout(p, i, 0, REGIONS.hipY, THREE.MathUtils.degToRad(sitBend) * w, 'x')
+      if (y < R.legTop) {
+        const w = ease((R.legTop - y) / R.legTop)
+        rotateAbout(p, i, 0, R.hipY, THREE.MathUtils.degToRad(sitBend) * w, 'x')
       }
       p.setY(i, p.getY(i) - sitDrop)
     }
@@ -133,7 +133,13 @@ function apply(geo, base, pose, torsoHalf) {
 
 async function run(char) {
   document.title = 'running'
-  const gltf = await load(`posed/${char}.glb?t=${Date.now()}`)
+  // The states move the same material points they always did. The neck band
+  // was compressed and the head lowered, so the fractions that named those
+  // points moved with them: regions.json carries each character's own, and
+  // anything missing falls back to the shared defaults.
+  const table = await fetch('regions.json').then((r) => r.json()).catch(() => ({}))
+  const R = { ...REGIONS, ...(table[char] || {}) }
+  const gltf = await load(`${new URLSearchParams(location.search).get('src') || 'posed'}/${char}.glb?t=${Date.now()}`)
   const root = gltf.scene
   const box = new THREE.Box3().setFromObject(root)
   const s = H / box.getSize(new THREE.Vector3()).y
@@ -159,14 +165,14 @@ async function run(char) {
   let widths = []
   for (let i = 0; i < p.count; i++) {
     const y = base[i * 3 + 1]
-    if (y > 0.22 && y < 0.32) widths.push(Math.abs(base[i * 3]))
+    if (y > (R.torsoLo ?? 0.22) && y < (R.torsoHi ?? 0.32)) widths.push(Math.abs(base[i * 3]))
   }
   widths.sort((a, b) => a - b)
   const torsoHalf = widths[Math.floor(widths.length * 0.92)]
 
   for (const [action, spec] of Object.entries(PLAN)) {
     for (let i = 0; i < spec.frames; i++) {
-      apply(mesh.geometry, base, poseFor(action, i, spec.frames), torsoHalf)
+      apply(mesh.geometry, base, poseFor(action, i, spec.frames), torsoHalf, R)
       for (const dir of spec.dirs) {
         const scene = new THREE.Scene(); lights(scene)
         const pivot = new THREE.Group(); pivot.rotation.y = YAW[dir]
