@@ -210,19 +210,30 @@ test.describe('desktop', () => {
     expect(seen.some((s) => s.startsWith('walk:'))).toBe(true)
     expect(seen.some((s) => s.startsWith('work:') || s.startsWith('sit:'))
       || states.some((s) => s === 'WORK' || s === 'SIT' || s === 'INTERACT')).toBe(true)
-    // And a good share of the time it is not going anywhere: standing,
-    // sitting, working, glancing about — the small movements of somebody who
-    // is there — including at least one proper stretch of it, not only the
-    // odd second between two trips.
-    const still = seen.filter((s) => !s.startsWith('walk:')).length
-    expect(still / seen.length).toBeGreaterThan(0.35)
+    // And it stands about between trips, in proper stretches rather than the
+    // odd second between two of them.
+    //
+    // Counted in spells, not as a share of the clock. The walk covers a fixed
+    // distance at a fixed speed in the room's own time, so on a slow machine
+    // it takes more wall-clock seconds to cover it and the share of samples
+    // spent walking rises — the character has not become busier, the sampler
+    // has become slower. CI is that slow machine, and a ratio of 0.35 failed
+    // there while passing here. How many times it settles, and for how long
+    // at a stretch, does not move with the frame rate.
     let run = 0
     let longest = 0
+    let spells = 0
     for (const s of seen) {
-      run = s.startsWith('walk:') ? 0 : run + 1
-      longest = Math.max(longest, run)
+      if (s.startsWith('walk:')) {
+        run = 0
+      } else {
+        if (run === 0) spells += 1
+        run += 1
+        longest = Math.max(longest, run)
+      }
     }
-    expect(longest).toBeGreaterThanOrEqual(4)
+    expect(spells, 'never settled anywhere').toBeGreaterThanOrEqual(2)
+    expect(longest, 'never settled for long').toBeGreaterThanOrEqual(4)
   })
 
   test('the frames it plays are real files, and the walk actually cycles', async ({ page }) => {

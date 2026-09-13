@@ -1371,17 +1371,30 @@ export function mountNpc(
       return !away && state !== 'AWAY' && direction !== 'back'
     },
     /**
-     * Whether asking it to turn round would be an interruption. Walking and
-     * reacting are not: a figure that snaps to the camera mid-stride, or
-     * mid-greeting, is worse than the back of a head.
+     * Whether asking it to turn round would be an interruption.
+     *
+     * Reacting and greeting are: a figure that snaps to the camera in the
+     * middle of either is worse than the back of a head. Walking is not,
+     * quite — it cannot turn to face you while walking away, but it can be
+     * shown in profile, which is what `turnToCamera` does for it. That is
+     * the last resort, and it exists because the alternative is a room with
+     * nobody's face in it.
      */
     get mayTurn(): boolean {
       return !away
-        && state !== 'AWAY' && state !== 'PAUSED' && state !== 'WALK'
+        && state !== 'AWAY' && state !== 'PAUSED'
         && state !== 'REACT' && state !== 'GREET' && state !== 'GLANCE'
     },
     turnToCamera(ms = 1100): void {
       if (!this.mayTurn || direction !== 'back') return
+      if (state === 'WALK') {
+        // Still walking where it was walking; just seen from the side. The
+        // room only asks for this when it would otherwise show no face at
+        // all, and only one waypoint leads into the back lane, so it is both
+        // rare and short.
+        pose('walk', facingRight ? 'right' : 'left')
+        return
+      }
       facingHold = Math.max(facingHold, ms)
       // Now, not on the next state tick: the room asks for this because the
       // visitor is looking at the screen at this moment.

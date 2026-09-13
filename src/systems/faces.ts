@@ -48,7 +48,10 @@ export class Faces {
   constructor(crew: readonly FaceMember[], opts: FacesOptions = {}) {
     this.#crew = crew
     this.#want = opts.want ?? 1
-    this.#every = opts.every ?? 400
+    // Often enough that a dropped frame or two cannot open a gap: the
+    // whole point is that there is no moment without a face, and a
+    // quarter-second check on a slow machine is not that.
+    this.#every = opts.every ?? 150
     this.#hold = opts.hold ?? 1200
   }
 
