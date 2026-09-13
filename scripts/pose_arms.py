@@ -47,7 +47,7 @@ def measure(V):
     return h, torso, lo, hi, float(wide.max())
 
 
-def pose(src, dst, degrees=74.0, blend=0.18, report=True):
+def pose(src, dst, degrees=68.0, blend=0.26, forward=5.0, report=True):
     scene = trimesh.load(src, process=False)
     key = list(scene.geometry.keys())[0]
     g = scene.geometry[key]
@@ -76,15 +76,28 @@ def pose(src, dst, degrees=74.0, blend=0.18, report=True):
         V[side, 0] = s * px + dx * ca - dy * sa
         V[side, 1] = py + dx * sa + dy * ca
 
+        # And a few degrees forward, about the same joint. Seen from the side
+        # an arm hanging dead flat against the ribs reads as a plate stuck on
+        # rather than an arm; a little in front of the hip is how a soft toy
+        # stands. Small on purpose — far enough and the hands meet in front.
+        if forward:
+            fa = np.radians(-forward) * w
+            cf, sf = np.cos(fa), np.sin(fa)
+            dy2 = V[side, 1] - py
+            dz2 = V[side, 2]
+            V[side, 1] = py + dy2 * cf - dz2 * sf
+            V[side, 2] = dy2 * sf + dz2 * cf
+
     if report:
         print(f'{src.split("/")[-1]}: torso {torso:.4f}  shoulder y {py:.4f}'
-              f'  band {lo:.2f}-{hi:.2f}h  reach {tip:.4f}'
-              f'  -> {int(arm.sum())} vertices at {degrees:.0f}deg')
+              f'  band {lo:.2f}-{hi:.2f}h  -> {int(arm.sum())} vertices'
+              f'  down {degrees:.0f}deg, forward {forward:.0f}deg, blend {blend:.2f}')
     g.vertices = V
     scene.export(dst)
 
 
 if __name__ == '__main__':
     pose(sys.argv[1], sys.argv[2],
-         degrees=float(sys.argv[3]) if len(sys.argv) > 3 else 74.0,
-         blend=float(sys.argv[4]) if len(sys.argv) > 4 else 0.18)
+         degrees=float(sys.argv[3]) if len(sys.argv) > 3 else 68.0,
+         blend=float(sys.argv[4]) if len(sys.argv) > 4 else 0.26,
+         forward=float(sys.argv[5]) if len(sys.argv) > 5 else 5.0)
