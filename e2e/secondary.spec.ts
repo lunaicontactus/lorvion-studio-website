@@ -166,14 +166,26 @@ for (const vp of [
       expect(fit.w, 'wider than the window').toBeLessThanOrEqual(fit.vw * 0.92)
       expect(fit.h, 'taller than the window').toBeLessThanOrEqual(fit.vh * 0.86)
       // The way out of a picture: the backdrop, and Escape.
-      await page.locator('[data-panel-scrim]').click({ force: true })
+      //
+      // In the corner, not in the middle. The backdrop covers the window and
+      // the panel sits on top of it, so a click at the backdrop's centre is a
+      // click on the picture — `force` skips the actionability check but
+      // still aims at the same covered point, which is a click that closes
+      // nothing.
+      await page.locator('[data-panel-scrim]').click({ position: { x: 6, y: 6 } })
       await expect(page.locator(panel)).toBeHidden()
-      await touch(page, 'poster-rubato')
+      // Opened from the keyboard this time, because the point of the next
+      // line is where the focus goes back to. `touch` above dispatches an
+      // event at the button without focusing it, so there would be nothing
+      // to go back to.
+      const poster = page.locator('[data-object="poster-rubato"]')
+      await poster.focus()
+      await poster.press('Enter')
       await expect(shot).toBeVisible({ timeout: 6000 })
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
       // And the thing it came from has the focus back.
-      await expect(page.locator('[data-object="poster-rubato"]')).toBeFocused()
+      await expect(poster).toBeFocused()
     })
   })
 }

@@ -535,6 +535,6 @@ test('a visitor who does not want motion gets somebody standing still', async ({
   expect(settled.frames).toBe(1)
   expect(settled.places).toBe(1)
   // And the room is otherwise complete.
-  await expect(page.locator('.thing')).toHaveCount(12)
+  await expect(page.locator('.thing')).toHaveCount(13)
   await context.close()
 })

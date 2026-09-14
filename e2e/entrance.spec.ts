@@ -67,8 +67,10 @@ for (const vp of [
       expect(took).toBeLessThan(3000)
 
       await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
-      // Eleven hit areas over the painting and the parcel placed on it.
-      await expect(page.locator('.thing')).toHaveCount(12)
+      // Twelve hit areas over the painting — the eleven that were always
+      // there plus LUMIORA's print by the fridge — and the parcel placed on
+      // it. e2e/flow.spec.ts is the one that checks *which* twelve.
+      await expect(page.locator('.thing')).toHaveCount(13)
     })
   })
 }
