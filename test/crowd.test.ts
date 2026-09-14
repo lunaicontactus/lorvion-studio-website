@@ -7,6 +7,7 @@ function member(id: string, x: number, y = 1030, social = 1): CrowdMember & {
   greeted: string[]
   place: { x: number; y: number }
   free: boolean
+  onErrand: boolean
 } {
   const m = {
     id,
@@ -14,7 +15,11 @@ function member(id: string, x: number, y = 1030, social = 1): CrowdMember & {
     seated: false,
     place: { x, y },
     free: true,
+    onErrand: false,
     social,
+    get passing() {
+      return m.onErrand
+    },
     get at() {
       return m.place
     },
@@ -320,4 +325,58 @@ describe('where they may stand', () => {
       }
     })
   }
+
+  it('stands aside for somebody, then gets on with it', () => {
+    // What this stops, measured in a real room: the test behind `shouldYield`
+    // is "is somebody ahead of me on this stretch", which stays true for as
+    // long as they are ahead of me. A dokkaebi walking behind a slower one
+    // yielded, stepped once, yielded again, and did that nineteen times in a
+    // row without moving — seventeen seconds of standing aside for somebody
+    // who was never going to pass.
+    const crowd = new Crowd()
+    const ahead = member('aaa', 400, 1000)
+    const behind = member('zzz', 300, 1000)
+    crowd.join(ahead)
+    crowd.join(behind)
+    crowd.startWalk('aaa')
+    crowd.startWalk('zzz')
+    let yields = 0
+    for (let t = 0; t < 12_000; t += 100) {
+      // Neither of them moves: the worst case, and the one that hung.
+      if (crowd.shouldYield('zzz', 300, 1000, 1)) yields += 1
+      crowd.step(100)
+    }
+    expect(yields, `stood aside ${yields} times in twelve seconds`).toBeLessThanOrEqual(3)
+    expect(yields, 'never stood aside at all').toBeGreaterThan(0)
+  })
+
+  it('lets two of them say hello in passing, and keeps the errand', () => {
+    // Both standing still, close together, at the same moment is rare enough
+    // in a room this size that a rule which insisted on it meant they never
+    // said hello at all — nought greetings in five and a half minutes with
+    // three of them in the room. Somebody walking past is the commonest way
+    // two people in one room end up speaking.
+    const crowd = new Crowd()
+    const a = member('aaa', 1000)
+    const b = member('bbb', 1200)
+    a.free = false
+    a.onErrand = true
+    crowd.join(a)
+    crowd.join(b)
+    for (let t = 0; t < 60_000; t += 500) crowd.step(500)
+    expect(a.greeted, 'the one walking past never said hello').toContain('bbb')
+    expect(b.greeted).toContain('aaa')
+  })
+
+  it('still leaves alone somebody who is busy and not going anywhere', () => {
+    const crowd = new Crowd()
+    const a = member('aaa', 1000)
+    const b = member('bbb', 1100)
+    a.free = false
+    b.free = false
+    crowd.join(a)
+    crowd.join(b)
+    for (let t = 0; t < 60_000; t += 500) crowd.step(500)
+    expect(a.greeted, 'interrupted two of them mid-job').toEqual([])
+  })
 })

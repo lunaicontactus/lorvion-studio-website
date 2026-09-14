@@ -29,6 +29,7 @@ import { mountNpc, npcAllowed, seededRandom, type NpcHandle } from '@/scenes/npc
 import { Crowd } from '@/systems/crowd'
 import { Stage, OPENING_CAST } from '@/systems/stage'
 import { Faces } from '@/systems/faces'
+import { CrewInteractions } from '@/systems/interactions'
 import { pointNamed, navFor } from '@/data/navigation'
 
 /**
@@ -211,6 +212,9 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   let crowd: Crowd | null = null
   let cast: Stage | null = null
   let faces: Faces | null = null
+  let scenes: CrewInteractions | null = null
+  /** The last scene written onto the room, so it is written only on change. */
+  let shownScene = ''
   /** Where the visitor was looking before an object took the camera. */
   let parked: { x: number; y: number } | null = null
   /** Things with two states that have been opened. Kept across a rebuild on rotation. */
@@ -632,7 +636,11 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
               priority: ATTENTION.object, restless: true, notBefore: 12000,
               run: (on) => {
                 parcel.classList.toggle('is-knocked', on)
-                if (on) opts.onAmbient?.('parcelWiggle')
+                if (!on) return
+                opts.onAmbient?.('parcelWiggle')
+                // One of them, at most, and only if the room is otherwise
+                // quiet. A box that shifts is not an emergency.
+                scenes?.notice('parcelWiggle')
               },
             })
           }
@@ -677,6 +685,36 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
           ...(Number.isFinite(seed) && seed > 0 ? { keep: here[0]?.id } : {}),
         })
         faces = new Faces(crew)
+        // What happens *between* them: somebody looking up from the bench,
+        // one of them going to the fridge while another watches, exactly one
+        // of them noticing the parcel. One scene at a time, arranged in one
+        // place, because no dokkaebi can see what the other four are doing.
+        {
+          const nav = navFor(portrait)
+          const spotFor = (objectId: string) => nav.points.find((q) => q.objectId === objectId)
+          const centreOf = (objectId: string) => {
+            const o = world.objects.find((q) => q.id === objectId)
+            return o ? { x: o.rect.x + o.rect.w / 2, y: o.rect.y + o.rect.h / 2 } : undefined
+          }
+          const place = (objectId: string) => {
+            const at = centreOf(objectId)
+            if (!at) return undefined
+            const spot = spotFor(objectId)
+            return { at, objectId, ...(spot ? { spot } : {}) }
+          }
+          const places: Record<string, ReturnType<typeof place>> = {}
+          for (const key of ['parcel', 'fridge', 'pc', 'tv']) {
+            const p = place(key)
+            if (p) places[key] = p
+          }
+          scenes = new CrewInteractions({
+            // Two of them in a third of the room: the same rate of scenes
+            // would read as pestering rather than as a workshop.
+            slow: portrait ? 1.8 : 1,
+            places,
+          })
+          for (const one of crew) scenes.join(one)
+        }
         // The first look at the room is the one that decides whether anybody
         // lives here, and it is over in a second. Two faces for it, not one,
         // and not left to whichever way the seeded homes happened to point.
@@ -931,13 +969,29 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       // Ambience gives way to the crew: with five of them there is nearly
       // always somebody moving, so the floor is set by how much is going on
       // rather than by any one of them.
+      // A scene between them counts for more than any one of them walking:
+      // while one is going on, the flickers and the steam wait.
       ambient?.setAttention(paused
         ? ATTENTION.interaction
-        : crowd?.attention({ crew: ATTENTION.crew, object: ATTENTION.object }) ?? 0)
+        : Math.max(
+          crowd?.attention({ crew: ATTENTION.crew, object: ATTENTION.object }) ?? 0,
+          scenes?.attention ?? 0,
+        ))
       crowd?.step(Math.min(info.delta, 64))
       if (!paused) {
         cast?.step(Math.min(info.delta, 64))
+        scenes?.step(Math.min(info.delta, 64))
         faces?.step(Math.min(info.delta, 64))
+      }
+      // What is going on between them, said out loud on the room. Written
+      // only when it changes: the room is not a log. A test watches this
+      // rather than waiting to catch a glance in the act, and ?npc=debug
+      // shows it.
+      const nowScene = scenes?.running?.scene ?? ''
+      if (nowScene !== shownScene) {
+        shownScene = nowScene
+        if (nowScene) roomEl.dataset['scene'] = nowScene
+        else delete roomEl.dataset['scene']
       }
       cull()
       if (!paused && keys.size) {
@@ -1001,12 +1055,17 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       // first impression too.
       if (paused && !v) faces?.ensure(1)
       paused = v
+      scenes?.setPaused(v)
       if (v) keys.clear()
       scene.classList.toggle('is-paused', v)
     },
     focusObject(id: string): void {
       const obj = world.objects.find((o) => o.id === id)
       if (!obj) return
+      // The visitor wants this thing. Whatever the room was doing with it —
+      // somebody at the fridge door, somebody looking at the television —
+      // that is over; the crew are told to step aside separately.
+      scenes?.yieldTo(id)
       // Remember where the visitor was looking before we moved them.
       if (parked === null) parked = { x: camera.x, y: camera.y }
       // On a wide screen the monitor's panel stands to the right of the room
@@ -1038,6 +1097,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       ambient?.destroy()
       crew = []
       crowd = null
+      scenes = null
       for (const t of timers) clearTimeout(t)
       timers.clear()
       for (const fn of off) fn()

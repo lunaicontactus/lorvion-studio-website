@@ -72,3 +72,67 @@ There is no broom. Not in `public/assets/images/`, not painted into either
 plate — the long-handled thing by the door is a hook. A sweeping broom needs a
 broom, and drawing one would be new art for the website, which this project
 does not do. Everything else in the brief's ambient list is implemented.
+
+## PHASE 3 — living in the room
+
+`src/systems/interactions.ts` is the coordinator. Nothing in it belongs to any
+one character — it belongs *between* them, which is the whole reason it is one
+file and not five: a dokkaebi scheduling its own scenes has no way of knowing
+that two others are already in one.
+
+Five scenes, one at a time:
+
+| scene | what it is |
+|---|---|
+| `watchBench` | somebody at the bench, and somebody passing looks up at them — and they look back |
+| `doze` | whoever is sitting stays sitting a while longer; anyone passing may glance |
+| `parcel` | the parcel knocks and **exactly one** of them cares, from wherever they are |
+| `fridge` | one goes to the fridge, at most one watches from behind |
+| `screen` | somebody looks at the monitor or the television for a second |
+
+Rules the room is held together by:
+
+- **One scene at a time.** With the ambient ceiling of two that puts the room
+  at three moving things at most, and a scene raises the attention floor
+  (`SCENE_ATTENTION`) so the ambience stands aside rather than adding to it.
+- **The visitor outranks all of it.** Clicking a dokkaebi cuts through
+  anything; opening a thing makes the room give it back (`yieldTo`).
+- **Nothing is abandoned.** `glanceAt` remembers the job and hands it back.
+  Somebody who stops mid-walk resumes the same errand, with the same place
+  still booked.
+- **Not always the same two.** A pair cooldown, and the scene picks whoever
+  has been left out longest.
+- **Every kind gets a turn.** A glance at a screen needs no coincidence and
+  a scene at the bench needs two people in the right place, so without a
+  fairness rule the easy scenes took every slot — measured: `watchBench` and
+  `doze` ran zero times in five minutes while `screen` and `parcel` ran nine.
+
+### Two defects found by measuring, and fixed
+
+**The crew were walking 77% of the time and almost never arriving.** Sampled
+over three minutes: `WALK` 1662 samples, everything else 489. One walk took
+seventy seconds; one dokkaebi went `WALK 17ms → GLANCE 900ms` nineteen times
+in a row without moving.
+
+The cause was two rules meeting. `Crowd.shouldYield` asks "is somebody ahead
+of me on this stretch", which stays true for as long as they are ahead of me —
+so walking behind a slower one, you stand aside, step once, and stand aside
+again, for ever. And resuming after standing aside reset the patience clock,
+so the stuck check never got its four consecutive seconds to notice.
+
+Both fixed: standing aside has a cooldown (`YIELD_COOLDOWN`), and resuming a
+walk is not a new walk. After: `WALK` 24%, average walk 7.2s, `INTERACT` 28%,
+`WORK` 15%. The room does things now.
+
+**They never said hello.** Nought greetings in five and a half minutes. The
+rule wanted both of them standing still, close together, at the same moment,
+which in a room 3600 units wide almost never happens. Somebody walking past is
+the commonest way two people in one room end up speaking, so `passing` was
+added: a walker may stop to say hello and keeps its errand and its booking.
+After: greetings every minute or so.
+
+### Faces
+`glanceAt` never poses `back`. Looking up at somebody behind you is a turn of
+the head, not of the whole body — so a scene can only ever *add* a face, and
+the floor under `src/systems/faces.ts` cannot be broken by anything here.
+Checked in `e2e/crew.spec.ts` over a hundred seconds of a busy room.

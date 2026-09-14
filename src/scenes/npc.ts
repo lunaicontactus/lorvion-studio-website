@@ -128,6 +128,19 @@ export interface NpcHandle {
    * that costs anything.
    */
   setOnscreen(on: boolean): void
+  /**
+   * Free to be pulled into something small — a glance, a walk over to the
+   * parcel — without interrupting anything that matters. Standing about, or
+   * at a job it can look up from; never mid-stride, mid-hello or off-plate.
+   */
+  readonly openTo: boolean
+  /**
+   * Look over at a point for a moment, then go back to whatever it was
+   * doing. False when it is busy with something it should not be pulled off.
+   */
+  glanceAt(point: { x: number; y: number }, ms?: number): boolean
+  /** Stay where it is sitting a while longer. False unless it is sitting. */
+  linger(ms: number): boolean
   /** Whether the visitor can see its face from where the camera is. */
   readonly faceShown: boolean
   /** Whether asking it to turn round now would interrupt something. */
@@ -166,6 +179,12 @@ const BUBBLE_MS = 2800
  * that was rescued, and only one of those is achievable.
  */
 const STUCK_MS = 3800
+/**
+ * A beat after a reaction before the same dokkaebi can be poked again. Long
+ * enough that a double tap is one reaction, short enough that somebody
+ * playing with it never feels ignored.
+ */
+const POKE_GAP = 420
 
 export function mountNpc(
   room: HTMLElement,
@@ -474,7 +493,7 @@ export function mountNpc(
    * a beat and ask again — the errand is not cancelled, only deferred, which
    * is why a busy room still gets everything done, just not all at once.
    */
-  const beginWalk = (force = false): void => {
+  const beginWalk = (force = false, fresh = true): void => {
     if (!force && crowd && !crowd.mayWalk(id)) {
       // Wait for a gap and go anyway. Throwing the errand away and rolling
       // again biased the whole room: a dokkaebi whose personality is mostly
@@ -488,9 +507,15 @@ export function mountNpc(
     }
     waiting = false
     crowd?.startWalk(id)
-    stuck = 0
-    lastX = x
-    lastY = y
+    // Only a new errand starts the patience clock again. Carrying on after
+    // standing aside for somebody is the same walk, and resetting it there is
+    // how a walk that was going nowhere went nowhere for seventy seconds: the
+    // stuck check never got four consecutive seconds to notice.
+    if (fresh) {
+      stuck = 0
+      lastX = x
+      lastY = y
+    }
     go('WALK')
   }
 
@@ -847,8 +872,13 @@ export function mountNpc(
         }
         if (wait <= 0) {
           partner = null
-          pose('idle', 'front')
-          go('IDLE', between(IDLE_MS))
+          // Back to wherever it was going, if it was going anywhere.
+          if (target) {
+            beginWalk(true, false)
+          } else {
+            pose('idle', 'front')
+            go('IDLE', between(IDLE_MS))
+          }
         }
         return
 
@@ -872,7 +902,7 @@ export function mountNpc(
         // Stopped mid-walk. The errand is still on; carry on when the moment
         // has passed, past the budget — the walk was already counted.
         if (wait <= 0) {
-          if (target) beginWalk(true)
+          if (target) beginWalk(true, false)
           else go('IDLE', between(IDLE_MS))
         }
         return
@@ -1146,11 +1176,20 @@ export function mountNpc(
 
   let resume: ReturnType<typeof setTimeout> | null = null
   let pokeReset: ReturnType<typeof setTimeout> | null = null
+  /** Not ready to be touched again until this. Wall-clock, like the click. */
+  let pokeReady = 0
   const onHit = (e: Event): void => {
     e.preventDefault()
     e.stopPropagation()
-    // Already reacting: let the wave finish rather than restarting it on
-    // every click, which turns a greeting into a stutter.
+    // Already reacting to the visitor: let the wave finish rather than
+    // restarting it under a fast hand, which turns a greeting into a
+    // stutter. `mayInterrupt` cannot do this on its own — REACT is the top
+    // priority and equal priorities are allowed to cut in, which is exactly
+    // what makes a second click restart the first one's animation. The gap
+    // is the reaction plus a beat, and it is the visitor's alone: a glance
+    // the room arranged (glanceAt) sets nothing here, so a click always
+    // wins against the room.
+    if (Date.now() < pokeReady) return
     if (!mayInterrupt('REACT')) return
     if (resume) clearTimeout(resume)
     back = null
@@ -1181,6 +1220,7 @@ export function mountNpc(
     }
     sparkle()
     const hold = (wave ? waveMs + 600 : 1300) * (1 + profile.stubborn * 0.3)
+    pokeReady = Date.now() + hold + POKE_GAP
     go('REACT', hold)
     say('touched', pokes === 1 ? 0.55 : 0.25)
     opts.onTouch?.(character)
@@ -1205,6 +1245,12 @@ export function mountNpc(
     get seated(): boolean {
       return state === 'SIT'
     },
+    get passing(): boolean {
+      // On an errand of its own, in the room, and not on its way on or off
+      // the plate — those two are the stage's business and must not be
+      // interrupted by small talk.
+      return state === 'WALK' && !away && !calm && target !== null && !exiting && !entering
+    },
     get busy(): boolean {
       // Free to be spoken to only when it is standing about. Interrupting a
       // job for small talk is what makes an office look like a party.
@@ -1212,9 +1258,14 @@ export function mountNpc(
     },
     greet(other: CrowdMember): void {
       if (!mayInterrupt('GREET')) return
-      unbook()
-      target = null
-      sitAt = null
+      // Somebody stopping on their way past keeps the errand and the place
+      // they had booked: they are saying hello, not changing their mind. The
+      // GREET below hands the walk back when it ends.
+      if (state !== 'WALK') {
+        unbook()
+        target = null
+        sitAt = null
+      }
       partner = other
       // Turn to them. Left and right are real frames, so this is a real turn.
       const dx = other.at.x - x
@@ -1365,6 +1416,51 @@ export function mountNpc(
       // Past the budget: the visitor is waiting on this one to move, and
       // "there are already two walking" is not an answer they can see.
       if (state !== 'PAUSED') beginWalk(true)
+    },
+    get openTo(): boolean {
+      return !away && !calm && (
+        state === 'IDLE' || state === 'LOOK' || state === 'WORK'
+        || state === 'SIT' || state === 'INTERACT')
+    },
+    glanceAt(point: { x: number; y: number }, ms = 900): boolean {
+      if (away || calm || state === 'PAUSED' || state === 'AWAY') return false
+      // Never the back of a head. Looking up at somebody behind you is a turn
+      // of the head, not of the whole body — and a room where interactions
+      // can put every face away from the camera is the one thing the floor
+      // under src/systems/faces.ts exists to forbid. This way a glance can
+      // only ever add a face.
+      const towards = faceFor(point.x - x, point.y - y)
+      const facing = towards === 'back' ? 'front' : towards
+      if (state === 'WALK') {
+        // Somebody walking past is exactly who looks up at the bench, so a
+        // walk is not a reason to refuse — it is a reason to stop for a
+        // second. GLANCE is the room's own word for that and puts the errand
+        // back afterwards, so nothing is abandoned and nothing is counted
+        // twice against the walking budget.
+        if (!target || !mayInterrupt('GLANCE')) return false
+        pose('idle', facing)
+        go('GLANCE', ms)
+        return true
+      }
+      if (!mayInterrupt('REACT')) return false
+      // Remember the job. A glance is a moment, not a change of plan, and
+      // REACT hands `back` to whatever it was doing when the moment ends.
+      back = state === 'WORK'
+        ? { state, wait, action: 'work', dir: 'back' }
+        : state === 'SIT'
+          ? { state, wait, action: 'sit', dir: sitAt?.facing ?? 'front' }
+          : state === 'INTERACT'
+            ? { state, wait, action: 'idle', dir: direction }
+            : null
+      lookAt = null
+      pose('idle', facing)
+      go('REACT', ms)
+      return true
+    },
+    linger(ms: number): boolean {
+      if (away || calm || state !== 'SIT') return false
+      wait += ms
+      return true
     },
     /** Whether the visitor can see its face from where the camera is. */
     get faceShown(): boolean {

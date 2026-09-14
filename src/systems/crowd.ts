@@ -45,6 +45,13 @@ export interface CrowdMember {
   readonly social: number
   /** On the rug, or the cushion: something a passer-by glances at. */
   readonly seated: boolean
+  /**
+   * On its way somewhere, and able to stop for a second without losing the
+   * errand. Somebody passing is the commonest way two people in one room
+   * end up saying hello, and a rule that only let them do it while both
+   * stood still meant they almost never did.
+   */
+  readonly passing: boolean
   /** Turn to `other`, say hello, then carry on. */
   greet(other: CrowdMember): void
 }
@@ -73,12 +80,19 @@ const CROSSING = 150
  * are just doing them where they stand.
  */
 const WALKERS = 2
-/** Near enough to say hello. */
-const GREET_RADIUS = 240
+/** Near enough to say hello: a couple of body widths, close enough to pass. */
+const GREET_RADIUS = 320
 /** How often the crowd looks for a meeting worth having. */
 const SOCIAL_EVERY = 1500
 /** Nothing between the same two for a good while after they have spoken. */
 const PAIR_COOLDOWN = 90_000
+
+/**
+ * How long after standing aside before the same one does it again. Long
+ * enough to clear whoever it stood aside for, short enough that a corridor
+ * with two of them in it still works.
+ */
+const YIELD_COOLDOWN = 4200
 /** And nothing at all for a while after any greeting: this is seasoning. */
 const SOCIAL_GAP = 30_000
 /** Long enough after arrival that the room is not a welcome party. */
@@ -99,6 +113,8 @@ export class Crowd {
   private readonly bookings = new Map<string, Booking>()
   private readonly walking = new Set<string>()
   private readonly pairSpoke = new Map<string, number>()
+  /** When each one last stood aside, so it is a courtesy and not a stammer. */
+  private readonly yielded = new Map<string, number>()
   private readonly saidAt = new Map<string, number>()
   private speaking = new Set<string>()
   private readonly fidgeting = new Set<string>()
@@ -287,8 +303,19 @@ export class Crowd {
    * later in the alphabet yields, which is arbitrary and therefore stable —
    * both stepping aside for each other is the deadlock this exists to avoid.
    */
+  /**
+   * Stand aside for somebody coming the other way — at most once in a while.
+   *
+   * The cooldown is the whole of this method's memory, and it is here because
+   * of what happened without it: the test is "is somebody ahead of me on this
+   * stretch", which stays true for as long as they are ahead of me, so a
+   * dokkaebi walking behind a slower one yielded, stepped once, yielded
+   * again, and did that nineteen times in a row without moving. Standing
+   * aside is a courtesy; doing it twice a second is a stammer.
+   */
   shouldYield(id: string, x: number, y: number, headingX: number): boolean {
     if (!this.walking.has(id)) return false
+    if (this.clock - (this.yielded.get(id) ?? -Infinity) < YIELD_COOLDOWN) return false
     for (const other of this.walking) {
       if (other === id || other > id) continue
       const m = this.members.get(other)
@@ -297,6 +324,7 @@ export class Crowd {
       if (Math.abs(m.at.y - y) > 70) continue
       // Ahead of us, and close.
       if (Math.sign(dx) !== Math.sign(headingX) || Math.abs(dx) > CROSSING) continue
+      this.yielded.set(id, this.clock)
       return true
     }
     return false
@@ -333,7 +361,8 @@ export class Crowd {
     this.sinceSocial = 0
     if (this.clock - this.lastSocial < SOCIAL_GAP) return
 
-    const free = [...this.members.values()].filter((m) => !m.busy)
+    // Standing about, or passing close enough to stop for a second.
+    const free = [...this.members.values()].filter((m) => !m.busy || m.passing)
     for (let i = 0; i < free.length; i++) {
       for (let j = i + 1; j < free.length; j++) {
         const a = free[i]!
