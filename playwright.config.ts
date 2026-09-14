@@ -45,7 +45,11 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: /gameshell\.spec\.ts/,
+      // Both, because a project's own `testIgnore` replaces the top-level one
+      // rather than adding to it — which is how the live-origin audit, which
+      // hits production and is meant to run from its own config, started
+      // running here and failing against a build that is not this one.
+      testIgnore: [/live\.spec\.ts/, /gameshell\.spec\.ts/],
       use: { ...devices['Desktop Chrome'] },
     },
     {
