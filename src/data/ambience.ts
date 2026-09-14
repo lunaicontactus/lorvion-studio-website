@@ -38,6 +38,37 @@ export const LIGHTS: readonly LightSource[] = [
 ]
 
 /**
+ * The same room, stacked for a phone.
+ *
+ * Every one of these sits on a thing the portrait layout already places
+ * (src/data/world.ts), so they are not a second set of measurements that can
+ * drift from the first: the monitor's glow is the centre of the monitor's hit
+ * area, the television's is the centre of the television's, the door's is the
+ * foot of the door. The radii are the landscape ones as a share of the room's
+ * width, which is a third of what it was.
+ *
+ * What is deliberately not here: the sky. The window in the portrait plate is
+ * a different window in a different place, and stars measured off the
+ * landscape one would be scattered across the plaster.
+ */
+export const LIGHTS_PORTRAIT: readonly LightSource[] = [
+  // Over the desk, which is where the room's warmth is in this layout too.
+  { id: 'bench', x: 540, y: 1330, r: 300, colour: 'rgba(255,186,96,.13)' },
+  // pc rect { x: 439, y: 1251, w: 158, h: 135 }
+  { id: 'pc', x: 518, y: 1318, r: 155, colour: 'rgba(150,205,255,.10)' },
+  // tv rect { x: 508, y: 2138, w: 190, h: 147 }
+  { id: 'tv', x: 603, y: 2211, r: 140, colour: 'rgba(150,210,255,.09)' },
+  // secret-door rect { x: 862, y: 2149, w: 129, h: 270 }, at its foot
+  { id: 'secret', x: 926, y: 2390, r: 110, colour: 'rgba(140,255,214,.07)' },
+]
+
+/** The cup of noodles the portrait layout puts beside the rug (DECOR). */
+export const STEAM_PORTRAIT = { x: 482, y: 1626 }
+
+/** The glass of the portrait television, inset from its hit area. */
+export const TV_SCREEN_PORTRAIT = { x: 520, y: 2150, w: 166, h: 123 }
+
+/**
  * Small things in the painting that move now and then: the pencils in the
  * cup, a magnet on the fridge, a note on the wall. Each is a piece of the
  * plate redrawn over itself (the trick the foreground uses) and given a

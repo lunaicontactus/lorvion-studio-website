@@ -15,7 +15,7 @@ import { Camera } from '@/systems/camera'
 import { worldFor, ROOM_ART, CAPTIONS, DECOR } from '@/data/world'
 import { loadImage } from '@/systems/assets'
 import { depthOf, occludersFor } from '@/data/occlusion'
-import { BITS, LIGHTS, SKY, STARS, STEAM, TV_SCREEN } from '@/data/ambience'
+import { BITS, LIGHTS, LIGHTS_PORTRAIT, SKY, STARS, STEAM, STEAM_PORTRAIT, TV_SCREEN, TV_SCREEN_PORTRAIT } from '@/data/ambience'
 import { ATTENTION, Ambient } from '@/systems/ambient'
 import { OUTLINE_PATHS, HIT_PADDING, OUTLINE_OFFSET } from '@/data/outlines'
 import { ticker } from '@/systems/tick'
@@ -166,6 +166,11 @@ export interface GarageOptions {
   readonly onExit?: () => void
   /** A thing was touched; the host decides what panel that means. */
   readonly onObject?: (object: WorldObject) => void
+  /**
+   * Something in the room moved by itself. The room says what, and whoever
+   * is listening decides whether it is worth anybody walking over to look.
+   */
+  readonly onAmbient?: (eventId: string) => void
 }
 
 /** World units per second under the keyboard. */
@@ -256,9 +261,14 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     }
 
     // ── Light, and what moves in it ──────────────────────────────────────
+    // Both layouts, because a phone held upright used to get a photograph:
+    // every light, every flicker and every wisp of steam was measured off the
+    // landscape plate and skipped entirely on the other one, so the room a
+    // phone visitor saw never moved at all.
+    const wide = world.width > world.height
     const lit = new Map<string, HTMLElement>()
-    if (world.width > world.height) {
-      for (const l of LIGHTS) {
+    {
+      for (const l of (wide ? LIGHTS : LIGHTS_PORTRAIT)) {
         const g = document.createElement('div')
         g.className = 'garage__light'
         g.dataset['light'] = l.id
@@ -270,6 +280,11 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         roomEl.append(g)
         lit.set(l.id, g)
       }
+    }
+    // The sky is the one thing that does not carry over: the window in the
+    // portrait plate is a different window in a different place, and stars
+    // measured off this one would be scattered across the plaster.
+    if (wide) {
       const sky = document.createElement('div')
       sky.className = 'garage__sky'
       sky.style.left = `${SKY.x}px`
@@ -297,7 +312,9 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     // The small movements in the painting itself (src/data/ambience.ts):
     // pieces of the plate over the plate, each with its own little motion.
     const bits = new Map<string, HTMLElement>()
-    if (world.width > world.height) {
+    // The pieces of plate that move — the pencils, the magnet, the note — are
+    // cut out of the landscape plate by rect and have no portrait twin.
+    if (wide) {
       for (const b of BITS) {
         const bit = document.createElement('div')
         bit.className = 'garage__bit'
@@ -313,17 +330,22 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         roomEl.append(bit)
         bits.set(b.id, bit)
       }
+    }
+    {
+      // The mug and the television are in both layouts, so these are too.
+      const kettle = wide ? STEAM : STEAM_PORTRAIT
       const steam = document.createElement('div')
       steam.className = 'garage__steam'
-      steam.style.left = `${STEAM.x - 30}px`
-      steam.style.top = `${STEAM.y - 80}px`
+      steam.style.left = `${kettle.x - 30}px`
+      steam.style.top = `${kettle.y - 80}px`
       steam.innerHTML = '<span></span><span></span><span></span>'
       roomEl.append(steam)
       bits.set('steam', steam)
+      const glass = wide ? TV_SCREEN : TV_SCREEN_PORTRAIT
       const flicker = document.createElement('div')
       flicker.className = 'garage__tvflicker'
       Object.assign(flicker.style, {
-        left: `${TV_SCREEN.x}px`, top: `${TV_SCREEN.y}px`, width: `${TV_SCREEN.w}px`, height: `${TV_SCREEN.h}px`,
+        left: `${glass.x}px`, top: `${glass.y}px`, width: `${glass.w}px`, height: `${glass.h}px`,
       })
       roomEl.append(flicker)
       bits.set('tvflicker', flicker)
@@ -543,7 +565,11 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         const seed = Number(params.get('npcseed'))
         // The room's own small movements. Started after the crew, because the
         // priority floor is set from what they are doing.
-        ambient = new Ambient()
+        // A phone shows a third of the room at a time, so the same number of
+        // events a minute lands in a much smaller picture. Everything waits
+        // longer there rather than the room being busier where there is less
+        // of it to be busy in.
+        ambient = new Ambient({ slow: portrait ? 1.7 : 1 })
         const stars = [...(lights.get('sky')?.querySelectorAll('.garage__star') ?? [])]
         const shooting = lights.get('shooting')
         const toggle = (id: string) => (on: boolean) =>
@@ -580,7 +606,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
           // Whichever star was lit has to be the one put out again, or they
           // accumulate and the window ends up fully lit.
           let twinkling: Element | undefined
-          ambient.add({
+          if (stars.length) ambient.add({
             id: 'starTwinkle', every: { min: 6000, max: 15000 }, duration: 3000,
             priority: ATTENTION.background,
             run: (on) => {
@@ -589,13 +615,27 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
               if (!on) twinkling = undefined
             },
           })
-          ambient.add({
+          if (shooting) ambient.add({
             // Rare on purpose. Two a minute is a screensaver, and one in the
             // first few seconds is an opening title.
-            id: 'shootingStar', every: { min: 60000, max: 180000 }, duration: 1500,
+            id: 'shootingStar', every: { min: 40000, max: 90000 }, duration: 1500,
             priority: ATTENTION.background, restless: true, notBefore: 45000,
             run: (on) => shooting?.classList.toggle('is-falling', on),
           })
+          // The week's parcel, settling. One small knock, no more: a box that
+          // rocks is a box with something alive in it, which is a different
+          // room than this one.
+          const parcel = roomEl.querySelector('.thing--parcel')
+          if (parcel) {
+            ambient.add({
+              id: 'parcelWiggle', every: { min: 24000, max: 60000 }, duration: 900,
+              priority: ATTENTION.object, restless: true, notBefore: 12000,
+              run: (on) => {
+                parcel.classList.toggle('is-knocked', on)
+                if (on) opts.onAmbient?.('parcelWiggle')
+              },
+            })
+          }
           ambient.start()
         }
         // One crowd for the whole room: it holds the things that only make

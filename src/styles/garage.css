@@ -530,3 +530,17 @@
 @media (prefers-reduced-motion:reduce){
   .garage__bit,.garage__steam span,.garage__tvflicker{animation:none}
 }
+
+/* The week's parcel, settling. One knock and done — a box that rocks is a box
+   with something alive in it, and this is a delivery. */
+.thing--parcel.is-knocked .thing__art{animation:knock 620ms cubic-bezier(.3,1.4,.5,1)}
+@keyframes knock{
+  0%{transform:none}
+  22%{transform:translateY(-3px) rotate(-1.4deg)}
+  50%{transform:translateY(0) rotate(.9deg)}
+  74%{transform:translateY(-1px) rotate(-.4deg)}
+  100%{transform:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .thing--parcel.is-knocked .thing__art{animation:none}
+}
