@@ -14,10 +14,18 @@
  */
 import { audio } from '@/systems/audio'
 import { motion } from '@/systems/motion'
-import { save } from '@/systems/storage'
+import { ticker } from '@/systems/tick'
+import { RoundClock } from '@/games/clock'
+import { GameInput } from '@/games/input'
+import { GameStateMachine, type GameState } from '@/games/state'
+import { bestFor, persistent, record } from '@/games/scores'
 import type { GameDef, GameInstance, GameResult } from '@/games/types'
 
-export type RunnerState = 'CLOSED' | 'READY' | 'PLAYING' | 'PAUSED' | 'RESULT'
+export type RunnerState = GameState
+
+/** How long "3, 2, 1" takes, and how long each number is up. */
+const COUNT_FROM = 3
+const COUNT_STEP = 700
 
 export interface RunnerHost {
   /** A game opened or closed: the room should stop or start behind it. */
@@ -28,12 +36,13 @@ const REASON_LABEL: Record<GameResult['reason'], string> = {
   time: '시간 종료',
   caught: '발각',
   quit: '중단',
+  done: '완료',
 }
 
 export class GameRunner {
   #root: HTMLElement
   #host: RunnerHost
-  #state: RunnerState = 'CLOSED'
+  #machine = new GameStateMachine()
   #def: GameDef | null = null
   #game: GameInstance | null = null
   #layer: HTMLElement | null = null
@@ -43,6 +52,13 @@ export class GameRunner {
   #hudTime: HTMLElement | null = null
   #lastFocus: HTMLElement | null = null
   #offs: (() => void)[] = []
+  /** The round clock, for games that let the runner drive them. */
+  #clock: RoundClock | null = null
+  #input: GameInput | null = null
+  /** The one subscription. Everything in a round is stepped from here. */
+  #tick: (() => void) | null = null
+  #countLeft = 0
+  #score = 0
 
   constructor(root: HTMLElement, host: RunnerHost = {}) {
     this.#root = root
@@ -50,7 +66,16 @@ export class GameRunner {
   }
 
   get state(): RunnerState {
-    return this.#state
+    return this.#machine.state
+  }
+
+  /** Seconds on the round clock, or null for a game that keeps its own. */
+  get secondsLeft(): number | null {
+    return this.#clock ? this.#clock.left : null
+  }
+
+  get #state(): RunnerState {
+    return this.#machine.state
   }
 
   get isOpen(): boolean {
@@ -124,7 +149,7 @@ export class GameRunner {
       }
       if ((e.key === 'Enter' || e.key === ' ') && this.#state === 'READY') {
         e.preventDefault()
-        this.#start()
+        this.#countdown()
       }
     }
     // Capture, so the room's own key handling never sees a game key.
@@ -132,7 +157,7 @@ export class GameRunner {
     this.#offs.push(() => document.removeEventListener('keydown', onKey, true))
 
     this.#mount(touch)
-    this.#state = 'READY'
+    this.#machine.to('READY')
     this.#host.onOpenChange?.(true)
     this.#ready(touch)
     layer.querySelector<HTMLElement>('[data-game-shell]')?.focus()
@@ -140,16 +165,85 @@ export class GameRunner {
 
   #mount(touch: boolean): void {
     if (!this.#def || !this.#box) return
+    const def = this.#def
     this.#box.textContent = ''
-    this.#hud(0, this.#def.seconds)
-    this.#game = this.#def.mount({
+    this.#score = 0
+    this.#hud(0, def.seconds)
+    this.#game = def.mount({
       root: this.#box,
       reduced: motion.reduced,
       touch,
       end: (r) => this.#result(r),
       sfx: (name, volume) => audio.play(name, volume),
-      hud: (score, seconds) => this.#hud(score, seconds),
+      hud: (score, seconds) => {
+        this.#score = score
+        this.#hud(score, seconds)
+      },
     })
+    // A game that implements `step` is driven by the runner: it gets the
+    // shared clock and the shared input, and starts no timer and adds no
+    // listener of its own. One that does not is on its own for both, which
+    // is how `build` has always worked.
+    if (this.#game.step) {
+      this.#clock = new RoundClock(def.seconds)
+      this.#input = new GameInput({
+        root: this.#box,
+        ...(def.holdKeys ? { holdKeys: def.holdKeys } : {}),
+        on: (event) => {
+          // Never while paused, counting down or finished. The manager
+          // already stops sending when disabled; this is the second lock,
+          // because an input that reaches a game that is not running is the
+          // bug that makes a paused game scoreable.
+          if (this.#state !== 'PLAYING') return
+          this.#game?.onInput?.(event)
+        },
+      })
+      this.#input.setEnabled(false)
+    }
+  }
+
+  /**
+   * One subscription for the whole round: the countdown, the clock and the
+   * game's own frame, in that order. Started when a round starts and dropped
+   * the moment it is not needed, so nothing is subscribed while a result is
+   * on screen or a game is closed.
+   */
+  #run(): void {
+    if (this.#tick) return
+    this.#tick = ticker.subscribe((info) => this.#frame(info.delta), 40)
+  }
+
+  #stop(): void {
+    this.#tick?.()
+    this.#tick = null
+  }
+
+  #frame(delta: number): void {
+    const dt = Math.min(delta, 64)
+    if (this.#state === 'COUNTDOWN') {
+      this.#countLeft -= dt
+      const n = Math.ceil(this.#countLeft / COUNT_STEP)
+      this.#countdownFace(n)
+      if (this.#countLeft <= 0) this.#begin()
+      return
+    }
+    if (this.#state !== 'PLAYING') return
+    const clock = this.#clock
+    if (clock) {
+      const over = clock.step(dt)
+      this.#hud(this.#score, clock.left)
+      this.#game?.step?.(dt, clock.left)
+      if (over && this.#state === 'PLAYING') {
+        this.#result({
+          score: this.#score,
+          reason: 'time',
+          detail: `${this.#def?.seconds ?? 0}초를 채웠습니다`,
+          success: true,
+        })
+      }
+      return
+    }
+    this.#game?.step?.(dt, 0)
   }
 
   #hud(score: number, seconds: number): void {
@@ -179,7 +273,7 @@ export class GameRunner {
 
   #ready(touch: boolean): void {
     const def = this.#def!
-    const best = save.data.games[def.id]
+    const best = bestFor(def.id) || undefined
     this.#show(`
       <div class="game__card">
         <p class="game__hint">${def.hint}</p>
@@ -192,23 +286,61 @@ export class GameRunner {
           <button class="game__btn" type="button" data-game-exit>차고로</button>
         </div>
       </div>`)
-    this.#overlay!.querySelector('[data-game-start]')!.addEventListener('click', () => this.#start())
+    this.#overlay!.querySelector('[data-game-start]')!.addEventListener('click', () => this.#countdown())
     this.#overlay!.querySelector('[data-game-exit]')!.addEventListener('click', () => this.#quit())
   }
 
-  #start(): void {
-    if (this.#state !== 'READY' || !this.#game) return
+  /**
+   * Three, two, one.
+   *
+   * Not decoration: the round starts on a key or a tap, and starting the
+   * clock on the same gesture means the first second of every round is spent
+   * finding out where everything is. It is also the one place a game can be
+   * safely re-entered from — a retry goes through it, so nothing has to
+   * decide whether a fresh round is "resumed".
+   */
+  #countdown(): void {
+    if (!this.#game) return
+    if (!this.#machine.to('COUNTDOWN')) return
     // A gesture has happened by now; let the site's player know.
     audio.unlock()
     this.#hide()
-    this.#state = 'PLAYING'
-    this.#game.start()
+    this.#countLeft = motion.reduced ? 1 : COUNT_FROM * COUNT_STEP
+    this.#countdownFace(COUNT_FROM)
+    this.#run()
+  }
+
+  #countdownFace(n: number): void {
+    if (!this.#overlay) return
+    if (n <= 0) {
+      this.#hide()
+      return
+    }
+    this.#overlay.hidden = false
+    this.#overlay.innerHTML =
+      `<p class="game__count" aria-live="assertive" data-game-count>${n}</p>`
+  }
+
+  /** The countdown reached zero. */
+  #begin(): void {
+    if (!this.#machine.to('PLAYING')) return
+    this.#hide()
+    this.#clock?.reset()
+    this.#clock?.start()
+    this.#input?.setEnabled(true)
+    this.#game?.start()
   }
 
   pause(): void {
-    if (this.#state !== 'PLAYING' || !this.#game) return
-    this.#state = 'PAUSED'
-    this.#game.pause()
+    if (!this.#machine.is('PLAYING', 'COUNTDOWN')) return
+    if (!this.#machine.to('PAUSED')) return
+    // Let go of everything held first, and say it was not the player who let
+    // go. Somebody who alt-tabs with Space down must not come back still
+    // holding it.
+    this.#input?.setEnabled(false)
+    this.#clock?.pause()
+    this.#stop()
+    this.#game?.pause()
     this.#show(`
       <div class="game__card">
         <p class="game__hint">일시정지</p>
@@ -223,29 +355,32 @@ export class GameRunner {
 
   resume(): void {
     if (this.#state !== 'PAUSED' || !this.#game) return
+    if (!this.#machine.to('PLAYING')) return
     this.#hide()
-    this.#state = 'PLAYING'
+    this.#clock?.resume()
+    this.#input?.setEnabled(true)
+    this.#run()
     this.#game.resume()
   }
 
   #result(r: GameResult): void {
     if (this.#state === 'CLOSED' || !this.#def) return
-    this.#state = 'RESULT'
+    if (!this.#machine.to('RESULT')) return
+    this.#input?.setEnabled(false)
+    this.#clock?.pause()
+    this.#stop()
     this.#game?.pause()
     const def = this.#def
-    const prev = save.data.games[def.id]
-    const record = prev === undefined || r.score > prev
-    if (record && r.reason !== 'quit') {
-      save.update((d) => {
-        d.games[def.id] = r.score
-      })
-    }
-    const best = save.data.games[def.id] ?? r.score
+    const prev = bestFor(def.id)
+    const isRecord = r.score > prev
+    const stars = Math.max(0, Math.min(3, r.stars ?? 0))
+    const best = r.reason === 'quit' ? prev : record(def.id, r.score, stars).best
     this.#show(`
-      <div class="game__card" data-game-result data-reason="${r.reason}">
+      <div class="game__card" data-game-result data-reason="${r.reason}" data-stars="${stars}" data-score="${r.score}" data-best="${best}">
         <p class="game__reason"><b>${REASON_LABEL[r.reason]}</b> · ${r.detail}</p>
         <p class="game__score"><b data-result-score>${r.score}</b><span>점</span></p>
-        <p class="game__meta">${record && r.reason !== 'quit' ? '신기록!' : `최고 ${best}점`}${save.persistent ? '' : ' · 이 브라우저는 기록을 저장하지 않습니다'}</p>
+        ${stars ? `<p class="game__stars" aria-label="별 ${stars}개">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</p>` : ''}
+        <p class="game__meta">${isRecord && r.reason !== 'quit' ? '신기록!' : `최고 ${best}점`}${persistent() ? '' : ' · 이 브라우저는 기록을 저장하지 않습니다'}</p>
         <div class="game__actions">
           <button class="game__btn game__btn--primary" type="button" data-game-retry data-autofocus>재도전</button>
           <button class="game__btn" type="button" data-game-exit>차고로</button>
@@ -258,13 +393,21 @@ export class GameRunner {
   /** Everything from scratch: a new instance, not a reset of the old one. */
   #retry(): void {
     if (!this.#def) return
+    this.#teardownRound()
     this.#game?.destroy()
     this.#game = null
     this.#hide()
     const touch = matchMedia('(hover: none), (pointer: coarse)').matches
     this.#mount(touch)
-    this.#state = 'READY'
-    this.#start()
+    this.#countdown()
+  }
+
+  /** Everything a round owns, let go of. Called before a retry and on close. */
+  #teardownRound(): void {
+    this.#stop()
+    this.#input?.destroy()
+    this.#input = null
+    this.#clock = null
   }
 
   #quit(): void {
@@ -273,7 +416,8 @@ export class GameRunner {
 
   close(): void {
     if (this.#state === 'CLOSED') return
-    this.#state = 'CLOSED'
+    this.#machine.to('CLOSED')
+    this.#teardownRound()
     this.#game?.destroy()
     this.#game = null
     for (const off of this.#offs) off()

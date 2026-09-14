@@ -259,6 +259,13 @@ export function mountWorld(): () => void {
         // Someone arrived on /#pc: open it once the room is up.
         const wanted = location.hash.replace('#', '')
         if (wanted && objectById(wanted)) setTimeout(() => goTo(wanted, { fromHistory: true }), 240)
+        // And /?play=build opens a game straight away. It is how the shell is
+        // walked end to end in a test — the game it opens there is one that
+        // only exists in a dev build (src/games/registry.ts) — and it is a
+        // real deep link for the games the PC lists.
+        const play = new URLSearchParams(location.search).get('play')
+        const def = play ? gameById(play) : undefined
+        if (def) setTimeout(() => games.open(def), 260)
       },
     }),
   )

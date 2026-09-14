@@ -136,3 +136,65 @@ After: greetings every minute or so.
 the head, not of the whole body — so a scene can only ever *add* a face, and
 the floor under `src/systems/faces.ts` cannot be broken by anything here.
 Checked in `e2e/crew.spec.ts` over a hundred seconds of a busy room.
+
+## PHASE 4 — the shell the three games sit in
+
+### 4-1 audit: what was already there
+
+`src/games/runner.ts` was already most of this, and it is kept.
+
+| already there | verdict | why |
+|---|---|---|
+| `GameRunner` — ready screen, HUD, pause on blur/hidden, result, best score, retry-as-fresh-instance, listener cleanup, focus restore | **reuse** | it is the shell, and it works; rewriting it would be churn against a tested thing |
+| adapter contract `GameDef.mount(host) → {start,pause,resume,destroy}`, host gives `end/sfx/hud` | **reuse** | already the separation PHASE 4 asks for: a game never touches shell DOM |
+| Escape policy (PLAYING → pause, otherwise close) | **reuse** | exactly the policy asked for |
+| `build` — the running game with the boss | **keep, do not extend** | it is not one of the three canonical games; PHASE 5 supersedes it |
+| per-game clock inside `build` | **leave alone** | it works and is tested; new games use the shared clock instead |
+| best score in `save.data.games` | **replace** | one object read and rewritten whole; a best score every round rewrote the visitor's whole history |
+
+| added | file |
+|---|---|
+| `COUNTDOWN` + one table of what may happen next | `src/games/state.ts` |
+| round clock that owns no timer | `src/games/clock.ts` |
+| one input manager, semantic events, releases holds on blur | `src/games/input.ts` |
+| namespaced storage with validation | `src/games/scores.ts` |
+| a game that is barely a game, for walking the shell | `src/games/mock.ts` (dev-only) |
+| stars and `success` on the result | `src/games/types.ts` |
+
+### The two leaks this shape makes impossible
+
+**A clock that runs twice.** `RoundClock` cannot start a timer — it is handed
+milliseconds and subtracts them. A game that starts an interval on `start` and
+another on `resume` runs at double speed and the second one outlives the
+first; a clock that cannot start anything cannot leak one. The runner holds
+**one** ticker subscription for the whole round and drives the countdown, the
+clock and the game's frame from it, in that order.
+
+**Listeners that pile up.** `GameInput` remembers every listener it adds and
+`destroy` removes them. A retry destroys the whole thing and mounts a new one
+rather than resetting the old, so "retry five times" cannot mean five copies
+of every handler. There is a test that measures the clock rate after three
+retries, because a stacked subscription shows up there as a round that runs
+four times too fast.
+
+### A hold that outlives the window
+
+Nothing sends `keyup` for a key that was down when the window went. The POKO
+game is built entirely on a hold, and a SLACK that never ends is a player
+caught the instant they come back through no fault of their own. So blur,
+`pointercancel`, `touchcancel` and a hidden tab all release everything held
+and say `forced: true` before the pause happens.
+
+### The mock, and why it is not in the bundle
+`src/games/mock.ts` is behind `import.meta.env.DEV`, so a built bundle does
+not contain it. The lifecycle spec therefore runs against the dev server —
+one extra `webServer` and one extra project in the Playwright config — while
+everything else runs against the built bundle. A mock game somebody can reach
+is a mock game somebody eventually plays.
+
+### Costs
+`?play=<id>` opens a game on arrival. It is how the shell spec gets to the
+mock, and a real deep link for the games the PC lists. The ✕ was 34px and is
+now 44, which is the floor every other hit area in this project is held to.
+`build`'s tests pressed start and waited a second; there is a countdown now,
+so they wait for the countdown to end instead.

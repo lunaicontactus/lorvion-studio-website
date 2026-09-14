@@ -8,6 +8,7 @@
  * never disagree about a game.
  */
 import { GAMES } from '@/games/registry'
+import { bestFor, progressFor } from '@/games/scores'
 import { PROJECTS } from '@/data/projects'
 import { artworkFor, fullSrc, orientationOf } from '@/data/artwork'
 import { SITE_CONFIG, contactRows } from '@/data/site'
@@ -61,6 +62,11 @@ function shape(project: ProjectConfig): string {
   const piece = artworkFor(project.id)
   const ratio = piece ? ` --shot:${piece.width}/${piece.height};` : ''
   return ` style="background-image:url('${project.keyArt}');${ratio}"`
+}
+
+/** The most stars this browser has ever earned at a game. */
+function starsOf(gameId: string): number {
+  return progressFor(gameId).stars
 }
 
 export function todayKey(): string {
@@ -255,7 +261,7 @@ export class Panels {
         <span class="hub__meta">
           <span class="hub__name">${g.title}</span>
           <span class="hub__tag">${g.hint}</span>
-          <span class="hub__facts">${g.seconds}초 · 키보드 · 터치${save.data.games[g.id] !== undefined ? ` · 최고 ${save.data.games[g.id]}점` : ''}</span>
+          <span class="hub__facts">${g.seconds}초 · 키보드 · 터치${bestFor(g.id) ? ` · 최고 ${bestFor(g.id)}점` : ''}${starsOf(g.id) ? ` · ${'★'.repeat(starsOf(g.id))}` : ''}</span>
         </span>
         <span class="hub__right"><span class="hub__more">PLAY <span aria-hidden="true">›</span></span></span>
       </button>`).join('')}</div>

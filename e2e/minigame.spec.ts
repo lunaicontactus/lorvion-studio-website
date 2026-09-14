@@ -27,6 +27,19 @@ async function openGame(page: Page): Promise<void> {
   await expect(page.locator('[data-game-start]')).toBeVisible()
 }
 
+/**
+ * Start a round, and wait for the round rather than for a second.
+ *
+ * The shell counts three, two, one before it hands over, so a press followed
+ * by a fixed wait is a press into a countdown: the keys do nothing yet and
+ * the test finds a game that has not begun. The end of the countdown is a
+ * thing the shell says, so wait for it being said.
+ */
+async function begin(page: Page): Promise<void> {
+  await page.keyboard.press('Enter')
+  await expect(page.locator('[data-game-overlay]')).toBeHidden({ timeout: 8000 })
+}
+
 const boss = (page: Page) => page.evaluate(() => document.querySelector('[data-build-boss]')?.dataset['state'])
 const hidden = (page: Page) => page.evaluate(() => document.querySelector('[data-build-work]')?.hidden === false)
 const score = (page: Page) => page.locator('[data-game-score]').textContent()
@@ -52,7 +65,7 @@ test.describe('desktop', () => {
     test.setTimeout(90_000)
     await enter(page)
     await openGame(page)
-    await page.keyboard.press('Enter')
+    await begin(page)
     let sawWarning = false
     for (let i = 0; i < 300; i++) {
       const s = await boss(page)
@@ -71,7 +84,7 @@ test.describe('desktop', () => {
     test.setTimeout(90_000)
     await enter(page)
     await openGame(page)
-    await page.keyboard.press('Enter')
+    await begin(page)
     await page.waitForTimeout(1000)
     await page.keyboard.press('Shift')
     expect(await hidden(page)).toBe(true)
@@ -91,7 +104,7 @@ test.describe('desktop', () => {
   test('losing the window pauses; only the button resumes; retry starts over', async ({ page }) => {
     await enter(page)
     await openGame(page)
-    await page.keyboard.press('Enter')
+    await begin(page)
     await page.waitForTimeout(2500)
     await page.evaluate(() => window.dispatchEvent(new Event('blur')))
     await expect(page.locator('[data-game-resume]')).toBeVisible()

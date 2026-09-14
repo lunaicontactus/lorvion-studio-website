@@ -15,7 +15,15 @@
 .game__hudItem{display:grid;justify-items:end;gap:2px}
 .game__hudLabel{font:600 .5rem/1 var(--mono);letter-spacing:.14em;opacity:.55}
 .game__hudItem b{font:700 1rem/1 var(--mono);font-variant-numeric:tabular-nums}
-.game__quit{width:34px;height:34px;border:0;border-radius:8px;background:rgba(255,255,255,.08);color:inherit;font-size:1rem;cursor:pointer}
+/* The one control that is always there, so it is the one that has to be
+   reachable with a thumb. 44 is the floor every other hit area in this
+   project is held to, and the ✕ was 34. */
+.game__quit{
+  width:44px;height:44px;min-width:44px;min-height:44px;
+  display:grid;place-items:center;
+  border:0;border-radius:10px;background:rgba(255,255,255,.08);
+  color:inherit;font-size:1.05rem;cursor:pointer;
+}
 .game__quit:hover,.game__quit:focus-visible{background:rgba(255,255,255,.18)}
 .game :focus-visible{outline:2px solid #ffd27a;outline-offset:2px}
 .game__box{position:relative;min-height:320px}
@@ -97,4 +105,29 @@
   .build__glasses.is-glinting::after{animation:none;opacity:1}
   .build__workDot{animation:none}
   .build__poko{transition:none}
+}
+
+/* Three, two, one. Big enough to read without looking for it, and gone
+   before it is in the way. */
+.game__count{
+  margin:0;
+  font:700 clamp(3rem,14vmin,6rem)/1 var(--mono);
+  color:#f4e7cd;
+  text-shadow:0 4px 18px rgba(20,12,6,.6);
+  animation:countPop 360ms ease-out;
+}
+@keyframes countPop{
+  from{transform:scale(.7);opacity:.2}
+  60%{transform:scale(1.06);opacity:1}
+  to{transform:scale(1);opacity:1}
+}
+@media (prefers-reduced-motion:reduce){
+  .game__count{animation:none}
+}
+
+/* What the round was worth, decided by the game and only shown here. */
+.game__stars{
+  margin:6px 0 0;
+  font-size:1.5rem;letter-spacing:.14em;color:#e8c169;
+  text-shadow:0 2px 6px rgba(30,18,6,.4);
 }
