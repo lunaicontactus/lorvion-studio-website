@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CHARACTERS, MAX_ACTIVE_CHARACTERS, getCharacter } from '@/data/characters'
 import { PROJECTS, VISIBLE_PROJECTS, getProject } from '@/data/projects'
+import { ARTWORK, artworkFor, orientationOf } from '@/data/artwork'
 import { EASTER_EGGS } from '@/data/easterEggs'
 import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART, PROP_ART, PROP_NAMES } from '@/data/alley'
 import { DESKTOP_WORLD, MOBILE_WORLD, CAPTIONS } from '@/data/world'
@@ -48,18 +49,38 @@ describe('project data', () => {
     expect(new Set(PROJECTS.map((p) => p.id)).size).toBe(PROJECTS.length)
   })
 
-  it('keeps RUBATO listed but without stand-in art', () => {
+  it('shows RUBATO the game without claiming RUBATO the release', () => {
+    // It has a picture now — one of the game's own backgrounds — and that is
+    // a different fact from having a date. The frame is filled; the status is
+    // unchanged.
     const rubato = getProject('rubato')
     expect(rubato).toBeDefined()
-    expect(rubato?.keyArt).toBeNull()
+    expect(rubato?.keyArt).toBe('/assets/images/artwork/rubato-opera-full.webp')
     expect(rubato?.status).toBe('comingSoon')
-    expect(VISIBLE_PROJECTS.map((p) => p.id)).not.toContain('rubato')
   })
 
-  it('gives every showable project real art', () => {
-    for (const p of VISIBLE_PROJECTS) {
-      expect(p.keyArt).toMatch(/^\/assets\/images\/.+\.(webp|png|jpg)$/)
+  it('gives every project a real picture, and knows the shape of it', () => {
+    // Nothing is listed without art any more, so nothing renders as an empty
+    // frame — and every picture's own proportions are on record, because that
+    // is what every frame in the room is built from.
+    expect(VISIBLE_PROJECTS).toHaveLength(PROJECTS.length)
+    for (const p of PROJECTS) {
+      expect(p.keyArt, p.id).toMatch(/^\/assets\/images\/.+\.(webp|png|jpg)$/)
+      const piece = artworkFor(p.id)
+      expect(piece, p.id).toBeDefined()
+      expect(piece!.width, p.id).toBeGreaterThan(0)
+      expect(piece!.height, p.id).toBeGreaterThan(0)
     }
+  })
+
+  it('hangs each picture at its own proportions, never a house shape', () => {
+    // The bug this replaces: a 1024x1536 key visual shown in a 16:9 frame,
+    // which is seventy per cent of the picture thrown away. If every piece
+    // agreed on one aspect ratio there would be nothing to preserve.
+    const shapes = new Set(ARTWORK.map((a) => (a.width / a.height).toFixed(3)))
+    expect(shapes.size).toBeGreaterThan(1)
+    expect(ARTWORK.some((a) => orientationOf(a) === 'portrait')).toBe(true)
+    expect(ARTWORK.some((a) => orientationOf(a) === 'landscape')).toBe(true)
   })
 })
 

@@ -67,6 +67,16 @@ export interface WorldObject {
   /** Drawn into the room. Only for things the painting does not already show. */
   readonly art?: string
   /**
+   * A real piece of the studio's work, hung here (src/data/artwork.ts).
+   *
+   * The painting has posters in it, but they are painted posters — the room's
+   * decoration, not the studio's work. A piece named here is printed over the
+   * painted one on its own sheet of paper, at the proportions the picture was
+   * actually drawn at. `rect` is the sheet; the picture inside it is never
+   * cropped to fill the sheet.
+   */
+  readonly artwork?: string
+  /**
    * The same thing, opened. Only with a `toggle` action. The two files are
    * cut on one shared canvas, so swapping them moves nothing.
    */

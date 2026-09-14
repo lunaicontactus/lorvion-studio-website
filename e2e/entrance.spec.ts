@@ -95,7 +95,7 @@ test('a visitor who does not want motion is taken straight in', async ({ browser
 
 test('the pages that hold the same content still work on their own', async ({ page }) => {
   await page.goto('/games.html', { waitUntil: 'load' })
-  await expect(page.locator('.fb-game')).toHaveCount(4)
+  await expect(page.locator('.fb-game')).toHaveCount(5)
   await expect(page.locator('body')).toContainText('LUNAI')
   // `.intro` on these pages is a lead paragraph. It must stay one — a bare
   // `.intro` rule once turned it into a full-screen box.

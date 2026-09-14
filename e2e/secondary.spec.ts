@@ -119,17 +119,61 @@ for (const vp of [
       await page.keyboard.press('Escape')
     })
 
-    test('a poster stays a poster', async ({ page }) => {
+    test('a poster stays a poster, and the picture keeps its shape', async ({ page }) => {
       await enter(page)
       await touch(page, 'poster-lunai')
-      await expect(page.locator('.wall__paper')).toBeVisible({ timeout: 6000 })
+      const shot = page.locator('[data-artwork-view] img')
+      await expect(shot).toBeVisible({ timeout: 6000 })
       await expect(page.locator('.panel__title')).toHaveText('LUNAI')
+      // Shown at the size it was drawn, not at the size of a box somebody
+      // picked first. LUNAI's key visual is 1024x1536; a 16:9 frame with the
+      // picture set to cover it — which is what this used to be — leaves a
+      // third of the height on screen and throws the rest away.
+      const fit = await shot.evaluate((img: HTMLImageElement) => {
+        const r = img.getBoundingClientRect()
+        return { drawn: r.width / r.height, natural: img.naturalWidth / img.naturalHeight }
+      })
+      expect(Math.abs(fit.drawn - fit.natural) / fit.natural,
+        'the picture is not the shape it was drawn').toBeLessThan(0.02)
+      expect(fit.natural, 'LUNAI is a tall picture').toBeLessThan(1)
       // No second copy of the project description on the wall.
       await expect(page.locator('[data-panel]')).not.toContainText('Emotion diary')
       await page.locator('[data-poster-go]').click()
       await expect(page.locator('.crtgame__name')).toHaveText('LUNAI', { timeout: 8000 })
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
+    })
+
+    test('a wide picture opens wide, and closes every way it can be closed', async ({ page }) => {
+      // The other half of the same promise. RUBATO's piece is one of the
+      // game's own backgrounds, 1920x1080, and it hangs on a tall sheet of
+      // paper — so if any of this measured the paper instead of the picture,
+      // this is where it would show.
+      await enter(page)
+      await touch(page, 'poster-rubato')
+      const shot = page.locator('[data-artwork-view] img')
+      await expect(shot).toBeVisible({ timeout: 6000 })
+      const fit = await shot.evaluate((img: HTMLImageElement) => {
+        const r = img.getBoundingClientRect()
+        return {
+          drawn: r.width / r.height,
+          natural: img.naturalWidth / img.naturalHeight,
+          w: r.width, h: r.height, vw: innerWidth, vh: innerHeight,
+        }
+      })
+      expect(Math.abs(fit.drawn - fit.natural) / fit.natural).toBeLessThan(0.02)
+      expect(fit.natural, 'RUBATO is a wide picture').toBeGreaterThan(1)
+      expect(fit.w, 'wider than the window').toBeLessThanOrEqual(fit.vw * 0.92)
+      expect(fit.h, 'taller than the window').toBeLessThanOrEqual(fit.vh * 0.86)
+      // The way out of a picture: the backdrop, and Escape.
+      await page.locator('[data-panel-scrim]').click({ force: true })
+      await expect(page.locator(panel)).toBeHidden()
+      await touch(page, 'poster-rubato')
+      await expect(shot).toBeVisible({ timeout: 6000 })
+      await page.keyboard.press('Escape')
+      await expect(page.locator(panel)).toBeHidden()
+      // And the thing it came from has the focus back.
+      await expect(page.locator('[data-object="poster-rubato"]')).toBeFocused()
     })
   })
 }

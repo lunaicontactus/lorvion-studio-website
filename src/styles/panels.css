@@ -92,7 +92,7 @@
   transition:background 180ms ease;
 }
 .hub__row:hover,.hub__row:focus-visible{background:rgba(168,230,184,.18)}
-.hub__thumb{width:52px;height:52px;border-radius:5px;background-size:cover;background-position:center;background-color:rgba(168,230,184,.12)}
+.hub__thumb{width:52px;height:52px;border-radius:5px;background-size:contain;background-repeat:no-repeat;background-position:center;background-color:rgba(168,230,184,.12)}
 .hub__thumb[data-empty]{background:repeating-linear-gradient(135deg,rgba(168,230,184,.16) 0 6px,transparent 6px 12px)}
 .hub__meta{display:grid;gap:3px;min-width:0}
 .hub__name{font:700 .82rem/1 var(--mono);letter-spacing:.1em}
@@ -118,8 +118,14 @@
 
 /* ── Project ───────────────────────────────────────────────────────────── */
 .proj__art{
-  aspect-ratio:16/9;border-radius:10px;
-  background-size:cover;background-position:center;
+  /* Sized by the picture: the scene writes the real ratio in as --shot, so a
+     1024x1536 key visual is shown 1024x1536 and a 1920x1080 background is
+     shown 1920x1080. The box used to be 16:9 with the picture set to cover
+     it, which threw away two thirds of the height of every portrait piece. */
+  aspect-ratio:var(--shot,16/9);
+  max-height:52vh;margin-inline:auto;width:100%;
+  border-radius:10px;
+  background-size:contain;background-repeat:no-repeat;background-position:center;
   background-color:#e3d5bd;
   box-shadow:inset 0 0 0 5px rgba(120,96,66,.24);
   display:grid;place-items:center;
@@ -239,7 +245,11 @@
 .crtgame__back:hover,.crtgame__back:focus-visible{background:rgba(168,230,184,.26)}
 .crtgame__name{margin:2px 0 0;font:700 1rem/1 var(--mono);letter-spacing:.14em}
 .crtgame__art{
-  aspect-ratio:16/9;border-radius:8px;background-size:cover;background-position:center;
+  /* The screen is 16:9 and the pictures are not, so the picture is fitted
+     into it rather than filled across it. `cover` here was cutting the top
+     and bottom off every portrait key visual in the studio. */
+  aspect-ratio:16/9;border-radius:8px;
+  background-size:contain;background-repeat:no-repeat;background-position:center;
   background-color:rgba(168,230,184,.1);
 }
 .crtgame__art[data-empty]{
@@ -421,16 +431,39 @@
 
 /* ── A poster ──────────────────────────────────────────────────────────── */
 .wall{display:grid;justify-items:center;gap:14px}
-.wall__paper{
-  width:min(100%,320px);aspect-ratio:2/3;border-radius:4px;
-  background-size:cover;background-position:center;background-color:#e8dcc5;
+
+/* A piece off the wall, looked at properly.
+   The picture decides the shape. It carries its own width and height, so the
+   browser lays it out at its own ratio before anything here is applied; the
+   two caps below only stop it growing past the window. No aspect-ratio, no
+   cover, no crop — a tall key visual opens tall, a wide background opens
+   wide, and the paper is drawn around whichever it turns out to be. */
+.view{
+  margin:0;display:grid;justify-items:center;gap:12px;
+  padding:12px 12px 14px;border-radius:6px;background:#e8dcc5;
   box-shadow:0 10px 24px rgba(60,44,28,.28), inset 0 0 0 1px rgba(120,96,66,.3);
-  display:grid;place-items:center;
+  max-width:100%;
 }
-.wall__paper[data-empty]{
-  background-image:repeating-linear-gradient(135deg,#e8dcc5 0 12px,#e0d2b8 12px 24px);
+.view__img{
+  display:block;
+  width:auto;height:auto;
+  max-width:min(90vw,100%);
+  /* 85vh is the ceiling the picture may not pass. What it actually gets is
+     what the window has left after the panel's own title, the caption and the
+     way through to the game — otherwise a wide picture takes the whole window
+     and pushes that button off the bottom of it. */
+  max-height:min(85vh,calc(86vh - 214px));
+  border-radius:3px;
+  box-shadow:0 2px 10px rgba(60,44,28,.3);
 }
-.wall__name{font:700 1rem/1 var(--mono);letter-spacing:.16em;color:var(--accent,#8a6f52)}
+.view__none{
+  display:grid;place-items:center;width:min(60vw,240px);aspect-ratio:2/3;
+  background:repeating-linear-gradient(135deg,#e8dcc5 0 12px,#e0d2b8 12px 24px);
+  font:700 1rem/1 var(--mono);letter-spacing:.16em;color:var(--accent,#8a6f52);
+}
+.view__cap{display:grid;justify-items:center;gap:5px;text-align:center}
+.view__cap b{font:700 .72rem/1 var(--mono);letter-spacing:.2em;color:#4a3828}
+.view__cap span{font-size:.82rem;color:#6a533b;opacity:.84}
 .wall__go{
   border:0;border-radius:999px;padding:10px 16px;min-height:40px;cursor:pointer;
   background:rgba(200,160,100,.4);color:#4a3828;
@@ -440,4 +473,28 @@
 
 @media (prefers-reduced-motion:reduce){
   .chill,.relic,.file,.dark,.fridge__say{transition:none;animation:none;opacity:1}
+}
+
+/* The picture is the panel. A fixed 720px column would letterbox a wide
+   background inside a panel that had room for it, and the padding around a
+   picture is space the picture could have had. */
+.panel[data-kind~="poster"]{width:auto;max-width:min(94vw,1180px)}
+.panel[data-kind~="poster"] .panel__inner{padding:18px 18px 20px}
+.panel[data-kind~="poster"] .panel__title{margin-bottom:10px}
+.panel[data-kind~="poster"] .wall{gap:10px}
+
+/* A phone held sideways is 390px tall. A title, a caption and a button take
+   more than half of that, so on a short window the panel gives its chrome
+   back to the picture: the title is already in the caption, and the caption
+   and the way through to the game get smaller rather than the picture. */
+@media (max-height:540px){
+  .panel[data-kind~="poster"] .panel__title{
+    position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);margin:0;
+  }
+  .panel[data-kind~="poster"] .panel__inner{padding:12px 14px 14px}
+  .panel[data-kind~="poster"] .view{padding:8px 8px 10px;gap:7px}
+  .panel[data-kind~="poster"] .wall__go{padding:7px 13px;min-height:32px}
+  .view__cap{gap:2px}
+  .view__cap span{font-size:.72rem}
+  .view__img{max-height:min(85vh,calc(94vh - 128px))}
 }

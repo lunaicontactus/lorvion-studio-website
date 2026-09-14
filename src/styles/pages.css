@@ -28,8 +28,10 @@
   background:rgba(255,255,255,.025);
 }
 .fb-game__art{
-  aspect-ratio:16/10;border-radius:12px;background-size:cover;background-position:center;
+  aspect-ratio:var(--shot,16/10);border-radius:12px;
+  background-size:contain;background-repeat:no-repeat;background-position:center;
   background-color:rgba(255,255,255,.05);
+  max-height:60vh;
 }
 .fb-game__art[data-empty]{
   background-image:repeating-linear-gradient(135deg,

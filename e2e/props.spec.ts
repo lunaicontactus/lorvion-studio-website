@@ -165,7 +165,7 @@ test.describe('desktop', () => {
     await expect(closed).toHaveCSS('opacity', '1')
     await expect(page.locator('[data-bench-note]')).toContainText('닫았다')
     // The projects are still listed under it.
-    await expect(page.locator('.note__row')).toHaveCount(4)
+    await expect(page.locator('.note__row')).toHaveCount(5)
     await page.keyboard.press('Escape')
     await expect(page.locator('[data-panel-root]')).toBeHidden()
 

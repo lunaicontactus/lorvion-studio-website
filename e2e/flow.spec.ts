@@ -26,6 +26,7 @@ const OPENS: Readonly<Record<string, string>> = {
   'poster-liminal': '[data-kind~="poster--liminal"] .wall',
   'poster-wormup': '[data-kind~="poster--wormup"] .wall',
   'poster-rubato': '[data-kind~="poster--rubato"] .wall',
+  'picture-lumiora': '[data-kind~="poster--lumiora"] .wall',
 }
 
 /** Things that open nothing: touching one changes the thing itself. */
@@ -80,13 +81,13 @@ test.describe('desktop', () => {
   test('the games are reachable, through the PC and as a page', async ({ page }) => {
     await enter(page)
     await touch(page, 'pc')
-    await expect(page.locator('[data-game]')).toHaveCount(4, { timeout: 6000 })
+    await expect(page.locator('[data-game]')).toHaveCount(5, { timeout: 6000 })
     // The projects are the second list on the monitor; the mini-games sit
     // above them in a list of their own.
-    for (const title of ['LUNAI', 'LIMINAL', 'WORM UP!', 'RUBATO']) {
+    for (const title of ['LUNAI', 'LIMINAL', 'WORM UP!', 'LUMIORA', 'RUBATO']) {
       await expect(page.locator('.hub').last()).toContainText(title)
     }
     await page.goto('/games.html', { waitUntil: 'load' })
-    await expect(page.locator('.fb-game')).toHaveCount(4)
+    await expect(page.locator('.fb-game')).toHaveCount(5)
   })
 })

@@ -8,9 +8,16 @@
  * never drift apart.
  */
 import { PROJECTS } from '@/data/projects'
+import { artworkFor } from '@/data/artwork'
 import { SITE_CONFIG, contactRows } from '@/data/site'
 import { CHARACTERS } from '@/data/characters'
 import type { ProjectStatus } from '@/types/project'
+
+/** The picture's own proportions, so the frame takes them instead of 16:10. */
+function shot(projectId: string): string {
+  const piece = artworkFor(projectId)
+  return piece ? `${piece.width}/${piece.height}` : '16/10'
+}
 
 const STATUS_LABEL: Record<ProjectStatus, string> = {
   released: 'RELEASED',
@@ -23,7 +30,7 @@ function games(host: HTMLElement): void {
   host.innerHTML = PROJECTS.map(
     (p) => `
     <article class="fb-game">
-      <div class="fb-game__art"${p.keyArt ? ` style="background-image:url('${p.keyArt}')"` : ' data-empty'}></div>
+      <div class="fb-game__art"${p.keyArt ? ` style="background-image:url('${p.keyArt}'); --shot:${shot(p.id)}"` : ' data-empty'}></div>
       <div class="fb-game__body">
         <h2 class="fb-game__name">${p.title}</h2>
         <p class="fb-game__tag">${p.tagline}</p>

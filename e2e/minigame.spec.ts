@@ -40,7 +40,7 @@ test.describe('desktop', () => {
     await page.evaluate(() =>
       document.querySelector('.thing--pc')?.dispatchEvent(new MouseEvent('click', { bubbles: true })))
     await expect(page.locator('[data-minigame="build"]')).toBeVisible()
-    await expect(page.locator('[data-game]')).toHaveCount(4)
+    await expect(page.locator('[data-game]')).toHaveCount(5)
     await page.locator('[data-minigame="build"]').click()
     await expect(page.locator('.game-layer')).toBeVisible()
     await expect(page.locator('.game__controls kbd').nth(0)).toHaveText('Space')

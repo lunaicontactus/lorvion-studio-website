@@ -41,10 +41,15 @@ export const DESKTOP_WORLD: WorldLayout = {
   objects: [
     // Read off the panorama with a rectangle overlay, then checked against it.
     { id: 'shelf', label: 'Collection', zone: 'shelf', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 244, y: 205, w: 171, h: 412 }, outline: 'shelf', sfx: 'drawer' },
-    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lunai' }, rect: { x: 455, y: 335, w: 168, h: 288 }, outline: 'poster' },
-    { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 651, y: 335, w: 168, h: 280 }, outline: 'poster' },
-    { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 848, y: 320, w: 191, h: 302 }, outline: 'poster' },
-    { id: 'poster-rubato', label: 'RUBATO', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'rubato' }, rect: { x: 1068, y: 328, w: 197, h: 300 }, outline: 'poster' },
+    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lunai' }, rect: { x: 455, y: 335, w: 168, h: 288 }, outline: 'poster', artwork: 'lunai-keyart' },
+    { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 651, y: 335, w: 168, h: 280 }, outline: 'poster', artwork: 'liminal-keyart' },
+    { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 848, y: 320, w: 191, h: 302 }, outline: 'poster', artwork: 'wormup-keyart' },
+    { id: 'poster-rubato', label: 'RUBATO', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'rubato' }, rect: { x: 1068, y: 328, w: 197, h: 300 }, outline: 'poster', artwork: 'rubato-opera' },
+    // Not a painted poster: a small print of LUMIORA in the frame that was
+    // already hanging by the fridge. The wall has four big sheets and this,
+    // which is what a studio wall looks like — one size does not fit the
+    // whole of anybody's work.
+    { id: 'picture-lumiora', label: 'LUMIORA', zone: 'fridgeArea', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lumiora' }, rect: { x: 2475, y: 281, w: 96, h: 137 }, outline: 'poster', artwork: 'lumiora-splash' },
     { id: 'cabinet', label: 'Studio file', zone: 'archive', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'cabinet' }, rect: { x: 850, y: 761, w: 143, h: 130 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
     { id: 'pc', label: 'Games', zone: 'mainDesk', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'pc' }, rect: { x: 1462, y: 563, w: 233, h: 200 }, outline: 'monitor', sfx: 'keyboard', inMenu: true },
     { id: 'workbench', label: 'Currently building', zone: 'workbench', kind: 'desk', enabled: true, action: { kind: 'panel', panelId: 'building' }, rect: { x: 2048, y: 256, w: 274, h: 344 }, outline: 'rect', sfx: 'drawer', inMenu: true },
@@ -68,7 +73,7 @@ export const MOBILE_WORLD: WorldLayout = {
   floor: { top: 1547, bottom: 2570 },
   window: { x: 300, y: 1720, w: 300, h: 230 },
   zones: [
-    { id: 'posterWall', label: 'Poster wall', rect: { x: 330, y: 240, w: 610, h: 200 } },
+    { id: 'posterWall', label: 'Poster wall', rect: { x: 330, y: 240, w: 720, h: 200 } },
     { id: 'shelf', label: 'Shelf', rect: { x: 60, y: 110, w: 240, h: 460 } },
     { id: 'archive', label: 'Archive', rect: { x: 350, y: 555, w: 220, h: 160 } },
     { id: 'restArea', label: 'Rest area', rect: { x: 150, y: 1560, w: 500, h: 130 }, blocks: { x: 150, y: 1560, w: 340, h: 90 } },
@@ -83,10 +88,11 @@ export const MOBILE_WORLD: WorldLayout = {
   ],
   objects: [
     { id: 'shelf', label: 'Collection', zone: 'shelf', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 172, y: 345, w: 128, h: 105 }, outline: 'shelf', sfx: 'drawer' },
-    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lunai' }, rect: { x: 324, y: 238, w: 111, h: 202 }, outline: 'poster' },
-    { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 459, y: 238, w: 118, h: 202 }, outline: 'poster' },
-    { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 610, y: 232, w: 155, h: 213 }, outline: 'poster' },
-    { id: 'poster-rubato', label: 'RUBATO', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'rubato' }, rect: { x: 789, y: 238, w: 126, h: 202 }, outline: 'poster' },
+    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lunai' }, rect: { x: 324, y: 238, w: 111, h: 202 }, outline: 'poster', artwork: 'lunai-keyart' },
+    { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 459, y: 238, w: 118, h: 202 }, outline: 'poster', artwork: 'liminal-keyart' },
+    { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 610, y: 232, w: 155, h: 213 }, outline: 'poster', artwork: 'wormup-keyart' },
+    { id: 'poster-rubato', label: 'RUBATO', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'rubato' }, rect: { x: 789, y: 238, w: 126, h: 202 }, outline: 'poster', artwork: 'rubato-opera' },
+    { id: 'picture-lumiora', label: 'LUMIORA', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lumiora' }, rect: { x: 966, y: 286, w: 78, h: 139 }, outline: 'poster', artwork: 'lumiora-splash' },
     { id: 'cabinet', label: 'Studio file', zone: 'archive', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'cabinet' }, rect: { x: 424, y: 522, w: 142, h: 82 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
     { id: 'pc', label: 'Games', zone: 'mainDesk', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'pc' }, rect: { x: 439, y: 1251, w: 158, h: 135 }, outline: 'monitorPortrait', sfx: 'keyboard', inMenu: true },
     { id: 'workbench', label: 'Currently building', zone: 'workbench', kind: 'desk', enabled: true, action: { kind: 'panel', panelId: 'building' }, rect: { x: 831, y: 1152, w: 169, h: 147 }, outline: 'rect', sfx: 'drawer', inMenu: true },
@@ -132,6 +138,7 @@ export const CAPTIONS: Readonly<Record<string, string>> = {
   'poster-liminal': 'LIMINAL',
   'poster-wormup': 'WORM UP!',
   'poster-rubato': 'RUBATO',
+  'picture-lumiora': 'LUMIORA',
 }
 
 /** The painted room behind everything, one plate per orientation. */

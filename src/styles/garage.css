@@ -172,6 +172,45 @@
   pointer-events:none;
 }
 
+/* A real piece of the studio's work, printed on a sheet of paper and pinned
+   over the painted poster underneath.
+
+   The sheet is opaque because it has a painted one to cover. The picture is
+   not stretched into the sheet and is not cropped by it: the scene works out
+   its size from the picture's own proportions and writes both in, so a tall
+   picture stands tall and a wide one lies wide, with paper showing where the
+   two shapes disagree. Every size here is a world unit; the camera scales
+   the room, so these are the same on a phone. */
+.print{
+  position:absolute;pointer-events:none;
+  background:linear-gradient(176deg,#f0e5cd 0%,#e7dabf 62%,#e2d3b6 100%);
+  border-radius:3px;
+  box-shadow:0 3px 8px rgba(58,42,26,.36), inset 0 0 0 1px rgba(120,96,66,.24);
+  transform-origin:50% 8%;
+}
+.print__img{
+  position:absolute;max-width:none;display:block;
+  border-radius:2px;
+  box-shadow:0 0 0 1px rgba(92,72,48,.26);
+}
+.print__cap{
+  position:absolute;display:flex;flex-direction:column;justify-content:center;
+  align-items:center;gap:.28em;text-align:center;overflow:hidden;
+  color:#5b452e;line-height:1.15;
+}
+.print__cap b{
+  font-family:var(--mono);font-weight:700;letter-spacing:.1em;font-size:1em;
+}
+.print__cap i{
+  font-style:normal;font-size:.62em;letter-spacing:.02em;opacity:.72;
+  padding:0 .3em;
+}
+/* Under the pointer the sheet lifts the way paper does, not the way a button
+   does. The lift is on the thing, so it is one movement with the outline. */
+.thing:hover .print,.thing:focus-visible .print{
+  box-shadow:0 5px 12px rgba(58,42,26,.4), inset 0 0 0 1px rgba(120,96,66,.3);
+}
+
 @media (prefers-reduced-motion:reduce){
   .thing__outline,.thing__lift{transition:none}
 }

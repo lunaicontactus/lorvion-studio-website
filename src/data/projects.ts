@@ -1,16 +1,29 @@
 /**
- * The four worlds.
+ * The five worlds.
  *
- * RUBATO has no key art yet, so `keyArt` is null and the hub shows an empty
- * frame marked COMING SOON. That is deliberate: a placeholder image would ship
- * art nobody approved, and removing the entry would hide a real project.
+ * Every one of them now has a real picture behind it — a key visual or, for
+ * RUBATO, one of the game's own backgrounds — so nothing here is a frame
+ * marked COMING SOON any more. `keyArt` is not typed out: it is read from
+ * src/data/artwork.ts, which is where the sizes of the real files live, so the
+ * picture a poster hangs and the picture the PC shows cannot drift apart.
+ *
+ * RUBATO is still `comingSoon` and says so in its facts. Having a picture of
+ * the game and having a release are different things, and only one of them is
+ * true.
  *
  * `genre` describes each project in the plainest words its own build supports:
  * a diary that turns entries into music, an investigation told in documents, a
- * climbing runner, a visual novel. No release dates and no progress figures
- * are modelled here, because there are none to state.
+ * climbing runner, a music storybook for children, a visual novel. No release
+ * dates and no progress figures are modelled here, because there are none to
+ * state.
  */
+import { artworkFor, fullSrc } from '@/data/artwork'
 import type { ProjectConfig } from '@/types/project'
+
+function art(projectId: string): string | null {
+  const piece = artworkFor(projectId)
+  return piece ? fullSrc(piece) : null
+}
 
 export const PROJECTS: readonly ProjectConfig[] = [
   {
@@ -21,7 +34,7 @@ export const PROJECTS: readonly ProjectConfig[] = [
     genre: 'Emotion diary',
     platforms: ['Mobile'],
     status: 'inDevelopment',
-    keyArt: '/assets/images/lunai-keyart.webp',
+    keyArt: art('lunai'),
     accent: '#8c7cff',
     links: [
       { label: 'SUPPORT', href: './support.html' },
@@ -37,7 +50,7 @@ export const PROJECTS: readonly ProjectConfig[] = [
     genre: 'Narrative mystery',
     platforms: ['PC'],
     status: 'inDevelopment',
-    keyArt: '/assets/images/liminal-keyart.webp',
+    keyArt: art('liminal'),
     accent: '#c4a36e',
     links: [],
     world: 'liminal',
@@ -50,10 +63,23 @@ export const PROJECTS: readonly ProjectConfig[] = [
     genre: 'Climbing runner',
     platforms: ['Mobile'],
     status: 'inDevelopment',
-    keyArt: '/assets/images/worm-up-keyart.webp',
+    keyArt: art('wormup'),
     accent: '#dc665f',
     links: [],
     world: 'wormup',
+  },
+  {
+    id: 'lumiora',
+    title: 'LUMIORA',
+    tagline: 'Listen, notice, and tell it back in your own sound.',
+    taglineKo: '듣고, 발견하고, 나만의 소리로 이야기하다.',
+    genre: 'Music storybook',
+    platforms: ['Mobile'],
+    status: 'inDevelopment',
+    keyArt: art('lumiora'),
+    accent: '#6fb6a8',
+    links: [],
+    world: 'lumiora',
   },
   {
     id: 'rubato',
@@ -63,7 +89,7 @@ export const PROJECTS: readonly ProjectConfig[] = [
     genre: 'Visual novel',
     platforms: ['PC'],
     status: 'comingSoon',
-    keyArt: null,
+    keyArt: art('rubato'),
     accent: '#b49a69',
     links: [],
     world: 'rubato',

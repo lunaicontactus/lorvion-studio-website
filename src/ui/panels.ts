@@ -9,6 +9,7 @@
  */
 import { GAMES } from '@/games/registry'
 import { PROJECTS } from '@/data/projects'
+import { artworkFor, fullSrc, orientationOf } from '@/data/artwork'
 import { SITE_CONFIG, contactRows } from '@/data/site'
 import { CHARACTERS } from '@/data/characters'
 import { OBJECT_ART } from '@/data/world'
@@ -46,6 +47,22 @@ const STATUS_LABEL: Record<ProjectStatus, string> = {
   comingSoon: 'COMING SOON',
 }
 
+
+/**
+ * The picture, and the shape of it, in one attribute.
+ *
+ * Every box that shows a project's art reads `--shot` for its own proportions
+ * rather than deciding on 16:9 and filling it. Without this the boxes and the
+ * pictures disagree, and the way CSS settles that disagreement is by cutting
+ * the picture.
+ */
+function shape(project: ProjectConfig): string {
+  if (!project.keyArt) return ' data-empty'
+  const piece = artworkFor(project.id)
+  const ratio = piece ? ` --shot:${piece.width}/${piece.height};` : ''
+  return ` style="background-image:url('${project.keyArt}');${ratio}"`
+}
+
 export function todayKey(): string {
   return new Date().toISOString().slice(0, 10)
 }
@@ -54,17 +71,6 @@ export function todayKey(): string {
 const SECRET_SEEN = 'eungarage:secretTried'
 
 const ART = '/assets/images/garage'
-
-/**
- * The poster cut-outs we actually have. WORM UP! has none, so its frame shows
- * the paper and the name rather than somebody else's picture.
- */
-const POSTER_ART: Readonly<Record<string, string | undefined>> = {
-  lunai: `${ART}/poster_lunai.webp`,
-  liminal: `${ART}/poster_liminal_a.webp`,
-  rubato: `${ART}/poster_rubato.webp`,
-  // wormup: poster_wormup.webp — not drawn yet.
-}
 
 export class Panels {
   #root: HTMLElement
@@ -204,7 +210,7 @@ export class Panels {
     this.#host.onProgress?.()
   }
 
-    // ── The PC: a monitor that boots, not a dialog with a list in it ───────
+  // ── The PC: a monitor that boots, not a dialog with a list in it ───────
   openPc(): void {
     this.#touch('pc')
     this.#show(
@@ -274,7 +280,8 @@ export class Panels {
         const project = PROJECTS.find((p) => p.id === btn.dataset['game'])
         if (project) this.#pcDetail(view, project)
       })
-    }    for (const btn of view.querySelectorAll<HTMLElement>('[data-minigame]')) {
+    }
+    for (const btn of view.querySelectorAll<HTMLElement>('[data-minigame]')) {
       btn.addEventListener('click', () => this.#host.onPlay?.(btn.dataset['minigame']!))
     }
   }
@@ -294,7 +301,7 @@ export class Panels {
           <span aria-hidden="true">←</span> 작품 목록
         </button>
         <h3 class="crtgame__name">${project.title}</h3>
-        <div class="crtgame__art"${project.keyArt ? ` style="background-image:url('${project.keyArt}')"` : ' data-empty'}></div>
+        <div class="crtgame__art"${shape(project)}></div>
         <p class="crtgame__tag">${project.tagline}</p>
         <p class="crtgame__tag crtgame__tag--ko">${project.taglineKo}</p>
         <dl class="crtgame__facts">
@@ -327,7 +334,7 @@ export class Panels {
       `project project--${project.world}`,
       project.title,
       `<div class="proj" style="--accent:${project.accent}">
-         <div class="proj__art"${project.keyArt ? ` style="background-image:url('${project.keyArt}')"` : ' data-empty'}>
+         <div class="proj__art"${shape(project)}>
            ${project.keyArt ? '' : `<span class="proj__soon">${STATUS_LABEL[project.status]}</span>`}
          </div>
          <p class="proj__tag">${project.tagline}</p>
@@ -637,19 +644,38 @@ export class Panels {
     else requestAnimationFrame(() => dark.classList.add('is-ajar'))
   }
 
-  // ── A poster on the wall ───────────────────────────────────────────────
-  // A poster, kept a poster: the paper, its name, and a way to the game.
-  // Nothing about the project is repeated here; the PC holds that.
+  // ── A piece off the wall, looked at properly ───────────────────────────
+  //
+  // Whatever shape the picture is, is the shape it is shown at. It is an
+  // <img> with its own width and height on it, capped against the window and
+  // otherwise left alone — so a 1024x1536 key visual opens tall and a
+  // 1920x1080 background opens wide, and neither loses an edge. The frame it
+  // is in is drawn around the picture after the picture has been sized, not
+  // before, which is the whole difference from what this used to do: a 16:9
+  // box with the picture set to cover it, which threw away two thirds of
+  // every portrait key visual in the studio.
+  //
+  // The name and one line under it, from the project registry. Nothing else:
+  // the PC holds what the project is, and repeating it here would give the
+  // room two places to disagree.
   openPoster(project: ProjectConfig): void {
     this.#touch(`poster-${project.id}`)
-    const art = POSTER_ART[project.id]
+    const piece = artworkFor(project.id)
+    const shot = piece
+      ? `<img class="view__img" src="${fullSrc(piece)}" width="${piece.width}" height="${piece.height}"
+              alt="${project.title}" decoding="async">`
+      : `<span class="view__none">${project.title}</span>`
     this.#show(
       `poster poster--${project.id}`,
       project.title,
       `<div class="wall" style="--accent:${project.accent}">
-         <div class="wall__paper"${art ? ` style="background-image:url('${art}')"` : ' data-empty'}>
-           ${art ? '' : `<span class="wall__name">${project.title}</span>`}
-         </div>
+         <figure class="view" data-artwork-view${piece ? ` data-orientation="${orientationOf(piece)}"` : ''}>
+           ${shot}
+           <figcaption class="view__cap">
+             <b>${project.title}</b>
+             <span>${project.taglineKo}</span>
+           </figcaption>
+         </figure>
          <button class="wall__go" type="button" data-poster-go>
            VIEW ${project.title} <span aria-hidden="true">›</span>
          </button>
