@@ -131,3 +131,140 @@
   font-size:1.5rem;letter-spacing:.14em;color:#e8c169;
   text-shadow:0 2px 6px rgba(30,18,6,.4);
 }
+
+/* ── 무궁화꽃이 피었습니다 — 부장님 감시 편 ─────────────────────────────
+   The room is the board. This layer is transparent and the garage is behind
+   it, still lit and still busy; what is added is two figures and a button. */
+.game-layer[data-game="mugunghwa"]{background:rgba(12,9,6,.26)}
+.game-layer[data-game="mugunghwa"] .game{
+  background:transparent;box-shadow:none;width:min(100vw,1100px);
+}
+.game-layer[data-game="mugunghwa"] .game__bar{
+  background:rgba(24,18,12,.74);border-radius:14px;backdrop-filter:blur(3px);
+  max-width:520px;margin:0 auto;
+}
+.game-layer[data-game="mugunghwa"] .game__box{background:transparent;min-height:0}
+
+.poko{position:relative;height:min(56vh,430px);min-height:260px}
+.poko__room{position:absolute;inset:0}
+
+/* POKO, along the back of the room. `--at` is how far across it is.
+   Deliberately not much bigger than the crew behind it: the boss is one of
+   them, not a billboard. */
+.poko__boss{
+  position:absolute;left:calc(var(--at,.2) * 100%);top:0;
+  width:clamp(64px,11%,118px);aspect-ratio:292/420;
+  transform:translateX(-50%);
+  transition:opacity 260ms ease;
+}
+.poko__bossImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;max-width:none}
+/* Right out of the picture: the long window, and it should look like one. */
+.poko__boss.is-gone{opacity:.18}
+.poko__boss[data-state="WARNING"]{filter:drop-shadow(0 0 10px rgba(255,210,122,.85))}
+.poko__boss[data-state="WATCHING"]{filter:drop-shadow(0 0 12px rgba(255,120,90,.9))}
+.poko__boss[data-state="CAUGHT"]{filter:drop-shadow(0 0 16px rgba(255,82,82,.95))}
+
+/* The glasses: a layer over the face, never a change to the character. Placed
+   on the eyes per pose from measurements of the approved frames
+   (scripts/eye_measure.py). Two lenses and a bridge, drawn big enough to
+   still read as glasses at a hundred pixels tall — a soft gradient at that
+   size is a smudge, which is what the first version of this looked like. */
+.poko__glasses{
+  position:absolute;left:var(--gx,50%);top:var(--gy,45%);
+  width:var(--gw,36%);height:13%;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 21% 50%,rgba(226,244,255,.55) 0 34%,#2f2116 36% 50%,transparent 52%),
+    radial-gradient(circle at 79% 50%,rgba(226,244,255,.55) 0 34%,#2f2116 36% 50%,transparent 52%),
+    linear-gradient(#2f2116,#2f2116) 50% 50%/26% 16% no-repeat;
+}
+.poko__glasses.is-glinting::after{
+  content:"";position:absolute;inset:-14%;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.95) 48%,transparent 62%);
+  animation:pokoGlint .45s ease-in-out infinite alternate;
+}
+@keyframes pokoGlint{from{opacity:.2;transform:translateX(-16%)}to{opacity:1;transform:translateX(16%)}}
+
+.poko__bubble{
+  position:absolute;left:50%;top:-18%;transform:translateX(-50%);
+  padding:4px 10px;border-radius:12px;background:#f4e7cd;color:#3a2a1c;
+  font:700 .78rem/1 var(--mono);white-space:nowrap;
+}
+.poko__bubble[hidden]{display:none}
+
+/* What the boss is doing, said in words under it — and the warning as a bar
+   that runs out. The glint says something is happening; the bar says how
+   long you have. Both sit with the boss rather than across the room. */
+.poko__says{
+  position:absolute;left:50%;top:calc(clamp(64px,11%,118px) * 420 / 292 + 4px);
+  transform:translateX(-50%);margin:0;
+  padding:3px 9px;border-radius:9px;background:rgba(24,18,12,.72);
+  font:700 .64rem/1 var(--mono);letter-spacing:.08em;color:#f4e7cd;
+  white-space:nowrap;
+}
+.poko__warn{
+  position:absolute;left:50%;transform:translateX(-50%);
+  top:calc(clamp(64px,11%,118px) * 420 / 292 + 28px);
+  width:min(46%,220px);height:9px;border-radius:5px;
+  background:rgba(0,0,0,.5);overflow:hidden;
+}
+.poko__warn[hidden]{display:none}
+.poko__warn i{
+  display:block;height:100%;border-radius:5px;background:#ffd27a;
+  transform-origin:left;transform:scaleX(var(--left,1));
+}
+
+/* The player, at a bench at the front. Working is the back of a head at the
+   bench; slacking is turning round with a snack. Nobody could mistake one for
+   the other, which is the whole requirement. */
+.poko__player{
+  position:absolute;left:26%;bottom:6%;
+  width:clamp(76px,13%,140px);aspect-ratio:299/420;
+}
+.poko__playerImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;max-width:none}
+.poko__player[data-slacking="SLACK"]{filter:drop-shadow(0 0 12px rgba(168,230,184,.7))}
+.poko__prop{
+  position:absolute;right:-10%;top:32%;width:30%;aspect-ratio:1;
+  background:url('/assets/images/garage/prop_cup_ramen_open.webp') center/contain no-repeat;
+}
+.poko__prop[hidden]{display:none}
+
+/* One button, thumb-sized, and it says what it does. Never over the player:
+   the one thing you must be able to see is which of the two you are. */
+.poko__hold{
+  position:absolute;right:6%;bottom:4%;
+  min-width:180px;min-height:74px;padding:10px 22px;
+  display:grid;gap:2px;place-items:center;
+  border:2px solid rgba(255,255,255,.3);border-radius:18px;
+  background:rgba(255,210,122,.94);color:#2a2013;
+  font:inherit;cursor:pointer;touch-action:none;user-select:none;
+}
+.poko__hold b{font:700 1.05rem/1 inherit}
+.poko__hold span{font:600 .64rem/1 var(--mono);letter-spacing:.1em;opacity:.72}
+.poko__hold:active{background:#ffc04a;transform:scale(.97)}
+
+@media (prefers-reduced-motion:reduce){
+  .poko__glasses.is-glinting::after{animation:none;opacity:1}
+  .poko__boss{transition:none}
+}
+
+/* A phone held upright is tall and narrow: the player goes above the button
+   rather than behind it, and both are bigger against the smaller width. */
+@media (max-width:560px){
+  .poko{height:min(62vh,520px)}
+  .poko__boss{width:clamp(72px,22%,120px)}
+  .poko__player{left:24%;bottom:23%;width:clamp(84px,26%,140px)}
+  .poko__hold{left:50%;right:auto;transform:translateX(-50%);bottom:2%;min-width:64%}
+  .poko__hold:active{transform:translateX(-50%) scale(.97)}
+}
+
+/* Sideways there is no height to spare at all. */
+@media (max-height:540px){
+  .poko{height:min(76vh,300px)}
+  .poko__boss{width:clamp(52px,9%,92px)}
+  .poko__player{left:20%;bottom:4%;width:clamp(62px,11%,104px)}
+  .poko__hold{right:3%;bottom:4%;left:auto;transform:none;min-width:148px;min-height:62px}
+  .poko__hold:active{transform:scale(.97)}
+  .poko__says{font-size:.58rem}
+}

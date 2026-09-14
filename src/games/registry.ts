@@ -5,11 +5,12 @@
  * point at one of them. A game is added by being listed here and nowhere else.
  */
 import { BUILD_GAME } from '@/games/build/game'
+import { POKO_GAME } from '@/games/poko/game'
 import { MOCK_GAME } from '@/games/mock'
 import type { GameDef } from '@/games/types'
 
 /** What the PC lists, and the only thing a visitor can reach. */
-export const GAMES: readonly GameDef[] = [BUILD_GAME]
+export const GAMES: readonly GameDef[] = [POKO_GAME, BUILD_GAME]
 
 /**
  * The shell is walked end to end against a game that is barely a game

@@ -198,3 +198,69 @@ mock, and a real deep link for the games the PC lists. The ✕ was 34px and is
 now 44, which is the floor every other hit area in this project is held to.
 `build`'s tests pressed start and waited a second; there is a countdown now,
 so they wait for the countdown to end instead.
+
+## PHASE 5 — 무궁화꽃이 피었습니다, 부장님 감시 편
+
+### 5-1 audit of the running game
+
+| from `build` | verdict |
+|---|---|
+| `boss.ts` — the timing: a warning always before a look, a floor under the warning, difficulty in the quiet stretches only | **reused**, as `poko/boss.ts` with the five states the brief names |
+| the glasses — a CSS layer over the face with per-pose eye positions | **reused**; re-measured for the approved crew by `scripts/eye_measure.py` |
+| the shell — HUD, result, best score, sounds, entry from the PC | **reused** (PHASE 4) |
+| its tests' shape — wait on state, not on a clock | **reused** |
+| running, jumping, obstacles, a finish line, the build screen | **discarded**; none of it is in the new game |
+
+`build` is left in place and still listed, untouched, until the new game is
+signed off.
+
+### The five states
+
+`PATROLLING` walks the back wall with its back turned · `AWAY` is right out of
+the picture, the long window · `WARNING` stops and straightens the glasses ·
+`WATCHING` looks, and is the only state anything is judged in · `RECOVER`
+turns back.
+
+Never a look without a warning, and never a warning below `WARN_FLOOR`
+(1000ms — four times a comfortable reaction, and it does not move with
+difficulty). What difficulty changes is the length and variation of the quiet
+stretches, so late in a round counting does not work and watching does.
+Seeded, so `?pokoseed=7` replays a patrol exactly.
+
+### Judged on the button, never on the picture
+`setSlacking` changes the logical state the instant the key comes up, and the
+verdict is read from that on the same tick the boss is read. A sprite that
+takes four frames to turn round cannot catch somebody who let go in time.
+There is a test that holds, lets go, and then walks into a look.
+
+### Balance, measured rather than guessed
+
+`scripts/poko-balance.mjs` plays a thousand rounds each for five policies,
+with 180ms of hand on every decision:
+
+| player | caught | mean score | stars |
+|---|---|---|---|
+| never slacks | 0% | 6 | 0.00 |
+| only while it is out of the picture | 0% | 40 | 0.23 |
+| uses every quiet stretch, lets go at the warning | 0% | 189 | 2.53 |
+| pushes halfway into the warning | 0% | 246 | 3.00 |
+| holds until the warning is nearly over | **100%** | 44 | 0.00 |
+| never lets go | **100%** | 44 | 0.00 |
+
+Which is the shape the game needs: working through the whole round is
+survivable and worth almost nothing; using the quiet is worth thirty times as
+much and is never punished if you react; and holding past the point where
+less of the warning is left than a hand takes is caught every time. Stars at
+45 / 150 / 230.
+
+A round's own shape, seed 7: six looks, warnings 1296–1900ms, quiet stretches
+averaging 2.9s and totalling 20s of a 45s round.
+
+### In the garage, not in front of it
+The layer is transparent and the room is the board: the plate is behind it,
+the rest of the crew are at their benches, and `setCalm` rather than a full
+pause is what the room gets — so they go on working without starting new
+errands. `CrewInteractions` is suspended, strong ambience is suppressed, and
+the room's own POKO walks off the plate for the duration and walks back on
+afterwards, so there is only ever one of him. Nothing about the garage's state
+is changed permanently.

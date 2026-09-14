@@ -28,8 +28,12 @@ const COUNT_FROM = 3
 const COUNT_STEP = 700
 
 export interface RunnerHost {
-  /** A game opened or closed: the room should stop or start behind it. */
-  readonly onOpenChange?: (open: boolean) => void
+  /**
+   * A game opened or closed: the room should stop or start behind it. The id
+   * comes with it because not every game wants the same room — one of them
+   * is played *in* the garage and needs it left alive behind the layer.
+   */
+  readonly onOpenChange?: (open: boolean, gameId: string) => void
 }
 
 const REASON_LABEL: Record<GameResult['reason'], string> = {
@@ -158,7 +162,7 @@ export class GameRunner {
 
     this.#mount(touch)
     this.#machine.to('READY')
-    this.#host.onOpenChange?.(true)
+    this.#host.onOpenChange?.(true, def.id)
     this.#ready(touch)
     layer.querySelector<HTMLElement>('[data-game-shell]')?.focus()
   }
@@ -427,8 +431,9 @@ export class GameRunner {
     this.#box = null
     this.#overlay = null
     this.#root.hidden = true
+    const id = this.#def?.id ?? ''
     this.#def = null
-    this.#host.onOpenChange?.(false)
+    this.#host.onOpenChange?.(false, id)
     this.#lastFocus?.focus()
     this.#lastFocus = null
   }

@@ -61,9 +61,23 @@ export function mountWorld(): () => void {
   })
   const gameRoot = document.querySelector<HTMLElement>('[data-game-root]')!
   const games = new GameRunner(gameRoot, {
-    onOpenChange: (open) => {
-      garage?.setPaused(open)
+    onOpenChange: (open, gameId) => {
+      // 무궁화꽃이 피었습니다 is played in the garage rather than in front of
+      // it: the layer is transparent, the room is the board, and the rest of
+      // the crew have to still be at their benches behind it. So the room is
+      // not stopped for that one — only quietened, which is what `setCalm`
+      // already means: finish what you are doing and stay there.
+      const inTheRoom = gameId === 'mugunghwa'
+      garage?.setPaused(open && !inTheRoom)
       for (const one of garage?.crew ?? []) one.setCalm(open)
+      // And there is only one POKO. The game draws its own, in glasses, so
+      // the room's own goes off the plate for the duration and walks back on
+      // afterwards — the stage's own mechanism, and nothing else changes.
+      if (inTheRoom) {
+        const poko = garage?.crew.find((c) => c.id === 'poko')
+        if (open) poko?.leave()
+        else poko?.comeBack()
+      }
     },
   })
 
