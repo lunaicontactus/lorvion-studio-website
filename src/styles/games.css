@@ -268,3 +268,74 @@
   .poko__hold:active{transform:scale(.97)}
   .poko__says{font-size:.58rem}
 }
+
+/* ── 도깨비 야식 심부름 ─────────────────────────────────────────────────
+   Somebody asks, four things are on the shelf, hand over the right one.
+   Everything on it came out of the fridge the room already has. */
+.snack{
+  display:grid;grid-template-rows:auto auto 1fr;gap:10px;
+  padding:14px 12px 18px;min-height:300px;align-content:start;
+}
+.snack__who{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
+.snack__whoImg{
+  width:clamp(64px,12vw,104px);aspect-ratio:299/420;object-fit:contain;max-width:none;
+  justify-self:start;
+}
+.snack__bubble{
+  grid-column:2;margin:0;padding:12px 16px;border-radius:16px 16px 16px 4px;
+  background:#f4e7cd;color:#2f2116;font:700 clamp(1rem,3.4vw,1.35rem)/1.25 inherit;
+}
+.snack__name{
+  grid-column:2;margin:0;font:600 .62rem/1 var(--mono);letter-spacing:.14em;opacity:.6;
+}
+.snack__run{
+  margin:0;justify-self:center;padding:3px 10px;border-radius:999px;
+  background:rgba(168,230,184,.18);color:#a8e6b8;
+  font:700 .66rem/1 var(--mono);letter-spacing:.1em;
+}
+.snack__run[hidden]{display:none}
+
+.snack__shelf{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-content:start;
+}
+.snack__item{
+  position:relative;display:grid;gap:6px;justify-items:center;
+  min-height:104px;padding:10px 6px 8px;
+  border:2px solid rgba(255,255,255,.16);border-radius:14px;
+  background:rgba(255,255,255,.07);color:inherit;font:inherit;cursor:pointer;
+}
+.snack__item:hover,.snack__item:focus-visible{background:rgba(255,255,255,.15)}
+.snack__item:active{transform:scale(.97)}
+.snack__art{width:min(56px,14vw);aspect-ratio:1;background:center/contain no-repeat}
+.snack__label{font:700 .8rem/1 inherit;text-align:center}
+.snack__key{
+  position:absolute;left:6px;top:6px;
+  width:18px;height:18px;display:grid;place-items:center;border-radius:5px;
+  background:rgba(0,0,0,.35);font:700 .6rem/1 var(--mono);opacity:.7;
+}
+/* Wrong: the shelf says so, and the clock has already taken the cost. */
+.snack__shelf.is-wrong{animation:snackNo 380ms ease}
+@keyframes snackNo{
+  20%{transform:translateX(-6px)}
+  50%{transform:translateX(5px)}
+  75%{transform:translateX(-3px)}
+  100%{transform:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .snack__shelf.is-wrong{animation:none;outline:2px solid #ff8a65;outline-offset:4px}
+}
+
+/* Narrow: two rows of two, and bigger things to hit. */
+@media (max-width:560px){
+  .snack__shelf{grid-template-columns:repeat(2,1fr);gap:12px}
+  .snack__item{min-height:120px}
+  .snack__art{width:min(64px,18vw)}
+}
+/* Sideways: one row, shorter. */
+@media (max-height:540px){
+  .snack{padding:8px 10px 10px;gap:6px;min-height:0}
+  .snack__whoImg{width:clamp(48px,8vw,72px)}
+  .snack__item{min-height:76px;padding:6px 4px}
+  .snack__art{width:min(38px,9vw)}
+  .snack__label{font-size:.7rem}
+}

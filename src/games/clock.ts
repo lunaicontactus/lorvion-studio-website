@@ -63,6 +63,16 @@ export class RoundClock {
   }
 
   /**
+   * Take a penalty off the clock, for a game whose cost of getting something
+   * wrong is time. Never below zero, and never a way to end the round: the
+   * round ends in `step`, once, and nowhere else.
+   */
+  take(ms: number): void {
+    if (!this.#running) return
+    this.#left = Math.max(1, this.#left - Math.max(0, ms))
+  }
+
+  /**
    * Take `dt` milliseconds off the clock, and say whether that ended the
    * round. Returns true exactly once per round: on the step that reached
    * zero, and never again until a reset.

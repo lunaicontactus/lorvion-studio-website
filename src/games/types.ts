@@ -61,6 +61,12 @@ export interface GameHost {
   sfx(name: string, volume?: number): void
   /** Live numbers for the runner's header. */
   hud(score: number, secondsLeft: number): void
+  /**
+   * Take time off the round, for a game whose cost of a mistake is seconds.
+   * The clock is the shell's, so this is how a game asks rather than keeping
+   * a second one of its own. Does nothing for a game that drives itself.
+   */
+  penalty(ms: number): void
 }
 
 export interface GameInstance {

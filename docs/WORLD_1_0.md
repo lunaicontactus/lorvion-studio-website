@@ -264,3 +264,39 @@ errands. `CrewInteractions` is suspended, strong ambience is suppressed, and
 the room's own POKO walks off the plate for the duration and walks back on
 afterwards, so there is only ever one of him. Nothing about the garage's state
 is changed permanently.
+
+## PHASE 6 — 도깨비 야식 심부름
+
+Somebody in the room asks for something out of the fridge; four things are on
+the shelf; hand over the right one. Thirty seconds. A wrong one costs 1.5s off
+the clock and the order stays up — a cost, never a life.
+
+**Everything on the shelf is the fridge's own** (`src/data/fridge.ts`): the
+same week's shopping that is stacked outside the shutter. Nothing was drawn
+for this game. No real-world brand appears; what is in that fridge is what
+this studio drew.
+
+The penalty is spent through the shell (`host.penalty`) rather than out of a
+second clock kept in the game — two clocks is how a round ends twice.
+
+### Balance, measured
+
+`scripts/snack-balance.mjs`, a thousand rounds each:
+
+| player | delivered | wrong | mean | stars |
+|---|---|---|---|---|
+| quick, sure (0.7s, 2% wrong) | 39.7 | 0.8 | 292 | 2.83 |
+| steady (1.1s, 6%) | 23.4 | 1.4 | 158 | 1.61 |
+| slow, careful (1.8s, 4%) | 14.9 | 0.6 | 98 | 0.92 |
+| fast, sloppy (0.55s, 28%) | 22.9 | 8.4 | 121 | 1.14 |
+
+The one worth reading is the last two rows: the sloppy player delivers as many
+as the steady one and scores a quarter less, because a mistake costs the run
+and the run is where the multiplier lives. Speed alone is not enough. Stars at
+70 / 150 / 260.
+
+### Input
+A tap on a thing, or the number key printed on it. Both arrive as the same
+`SELECT` through the shared input manager; the game adds no listener of its
+own. Four across on a desk, two by two on a phone held upright, one row of
+smaller ones sideways — every one of them at least 44px.

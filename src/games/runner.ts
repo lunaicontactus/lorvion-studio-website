@@ -183,6 +183,10 @@ export class GameRunner {
         this.#score = score
         this.#hud(score, seconds)
       },
+      penalty: (ms) => {
+        this.#clock?.take(ms)
+        if (this.#clock) this.#hud(this.#score, this.#clock.left)
+      },
     })
     // A game that implements `step` is driven by the runner: it gets the
     // shared clock and the shared input, and starts no timer and adds no
