@@ -14,7 +14,7 @@ for (const [name, w, h, mobile] of [
   const ctx = await b.newContext({ viewport: { width: w, height: h }, isMobile: mobile, hasTouch: mobile })
   const p = await ctx.newPage()
   p.on('pageerror', (e) => { console.log('  error', String(e)); bad += 1 })
-  await p.addInitScript(() => { try { localStorage.clear(); sessionStorage.clear() } catch {} })
+  await p.addInitScript(() => { try { localStorage.clear(); sessionStorage.clear() } catch { /* private mode */ } })
   await p.goto(`${origin}/?play=snack&snackseed=5`, { waitUntil: 'load' })
   const enter = p.locator('[data-alley-enter]')
   if (mobile) await enter.tap(); else await enter.click()

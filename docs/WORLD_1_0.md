@@ -300,3 +300,45 @@ A tap on a thing, or the number key printed on it. Both arrive as the same
 `SELECT` through the shared input manager; the game adds no listener of its
 own. Four across on a desk, two by two on a phone held upright, one row of
 smaller ones sideways — every one of them at least 44px.
+
+## PHASE 7 — 택배 정리
+
+What came in this week, split between the five things the studio is making. A
+parcel arrives with a project's name and colour on it; put it on that
+project's pile. Thirty seconds, 1.5s for a wrong pile, the parcel stays.
+
+Not a delivery-company game: it is the studio's own sorting, and the piles are
+the five projects.
+
+### Difficulty without shrinking the label
+The easy way to make sorting harder is to make the writing smaller, and a game
+you lose because you could not read something is not a game. So what grows is
+**how many piles are out**: three at the start, five by the end. Every target
+and every label stays the same size. The piles keep the registry's own order,
+so the row does not reshuffle between parcels — a row that moves is a row
+nobody can learn.
+
+Three cues on every pile: the project's colour, its name, and its own key art
+(the same `-wall.webp` print that hangs on the garage wall).
+
+### Three ways to answer
+Drag the parcel onto a pile, tap the pile, or press the number printed on it.
+All three go through the shared input manager — a drag as `DRAG_END` with a
+position to hit-test, the other two as `SELECT` — and the game adds no
+listener of its own. A drag cancelled by a lost window is not an answer and
+costs nothing.
+
+### Balance, measured
+
+`scripts/parcel-balance.mjs`, a thousand rounds each:
+
+| player | sorted | wrong | mean | stars |
+|---|---|---|---|---|
+| quick, sure (0.65s, 2%) | 42.5 | 0.9 | 313 | 2.98 |
+| steady (1.0s, 6%) | 25.5 | 1.5 | 173 | 1.92 |
+| slow, careful (1.7s, 3%) | 16.1 | 0.5 | 109 | 0.99 |
+| fast, sloppy (0.5s, 30%) | 22.9 | 9.3 | 119 | 1.33 |
+
+Same shape as the errand game: the sloppy player sorts as many as the steady
+one and scores a third less. Piles out across a round: 3 → 4 → 4 → 5 → 5.
+Stars at 60 / 130 / 230.
