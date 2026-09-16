@@ -73,38 +73,35 @@ for (const vp of [
     test('the fridge says one thing at a time and keeps no score', async ({ page }) => {
       await enter(page)
       await touch(page, 'fridge')
-      await expect(page.locator('.chill')).toHaveCount(7, { timeout: 6000 })
+      await expect(page.locator('.chill')).toHaveCount(5, { timeout: 6000 })
       await expect(page.locator('[data-fridge-say]')).toHaveText('')
-      await page.locator('[data-item="eggs"]').click()
+      await page.locator('.chill').nth(0).click()
       const first = await page.locator('[data-fridge-say]').textContent()
       expect(first?.length).toBeGreaterThan(2)
-      await page.locator('[data-item="cup-ramen"]').click()
+      await page.locator('.chill').nth(1).click()
       const second = await page.locator('[data-fridge-say]').textContent()
       expect(second).not.toBe(first)
       // One line, not a paragraph, and nothing is counted.
-      expect(second!.length).toBeLessThan(40)
+      expect(second!.length).toBeLessThan(48)
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
     })
 
-    test('the shelf shows the leftovers and hands the game to the PC', async ({ page }) => {
+    test('the shelf is the crew\'s own things, and never a second games menu', async ({ page }) => {
       await enter(page)
       await touch(page, 'shelf')
-      await expect(page.locator('.relic')).toHaveCount(4, { timeout: 6000 })
-      await expect(page.locator('.figure')).toHaveCount(5)
-      await page.locator('[data-relic="liminal-file"]').click()
+      await expect(page.locator('.relic')).toHaveCount(3, { timeout: 6000 })
+      await expect(page.locator('[data-game], [data-shelf-go]')).toHaveCount(0)
+      await page.locator('.relic').first().click()
       await expect(page.locator('.shelf__note')).toBeVisible()
-      // The shelf points at the PC rather than repeating what the PC says.
-      await expect(page.locator('.shelf__note')).not.toContainText('Narrative mystery')
-      await page.locator('[data-shelf-go]').click()
-      await expect(page.locator('.crtgame__name')).toHaveText('LIMINAL', { timeout: 8000 })
+      await expect(page.locator('.shelf__note')).not.toContainText(/LUNAI|LIMINAL|WORM UP|LUMIORA|RUBATO/)
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
     })
 
-    test('the door has nothing behind it, and says so both times', async ({ page }) => {
+    test('the outside door is honest that the playground is not built yet', async ({ page }) => {
       await enter(page)
-      await touch(page, 'secret-door')
+      await touch(page, 'outside-door')
       await expect(page.locator('.dark__line')).toBeVisible({ timeout: 6000 })
       const first = await page.locator('.dark__line').textContent()
       // No invented project, date or teaser.
@@ -112,7 +109,7 @@ for (const vp of [
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
 
-      await touch(page, 'secret-door')
+      await touch(page, 'outside-door')
       await expect(page.locator('.dark__line')).toBeVisible({ timeout: 6000 })
       // It remembers, for this visit, that you already tried it.
       expect(await page.locator('.dark__line').textContent()).not.toBe(first)
@@ -225,7 +222,7 @@ test.describe('desktop', () => {
     await page.keyboard.press('Escape')
     // The room is locked while it is closing; wait, as a visitor would.
     await expect(page.locator(panel)).toBeHidden()
-    await touch(page, 'secret-door')
+    await touch(page, 'outside-door')
     await expect(page.locator('.dark.is-ajar')).toBeVisible({ timeout: 2000 })
     await context.close()
   })

@@ -7,16 +7,25 @@
  * strings typed into a component, which is why the PC and the posters can
  * never disagree about a game.
  */
-import { GAMES } from '@/games/registry'
-import { bestFor, progressFor } from '@/games/scores'
 import { PROJECTS } from '@/data/projects'
 import { artworkFor, fullSrc, orientationOf } from '@/data/artwork'
-import { SITE_CONFIG, contactRows } from '@/data/site'
-import { CHARACTERS } from '@/data/characters'
-import { OBJECT_ART } from '@/data/world'
+import { contactRows } from '@/data/site'
+import { OBJECT_ART, ROOM_ART } from '@/data/world'
 import { DOCUMENTS } from '@/data/documents'
-import { FRIDGE_ITEMS } from '@/data/fridge'
-import { SHELF_ITEMS, shelfCrew } from '@/data/shelf'
+import { SHELF_ENTRIES, SHELF_SHOWN } from '@/data/garage/shelf'
+import { PARCEL_ENTRIES } from '@/data/garage/parcels'
+import { FRIDGE_FOOD, FRIDGE_MEMOS, FRIDGE_SHOWN, fridgeDay } from '@/data/garage/fridge'
+import { CABINET_ENTRIES } from '@/data/garage/cabinet'
+import { CHANNELS, CAM_ANGLES, TV_ENTRIES } from '@/data/garage/tv'
+import type { ChannelId } from '@/data/garage/tv'
+import { RADIO_ENTRIES, STATIONS } from '@/data/garage/radio'
+import { WORKBENCH_ENTRIES } from '@/data/garage/workbench'
+import type { WipPiece } from '@/data/garage/workbench'
+import type { CabinetPaper } from '@/data/garage/cabinet'
+import { GarageDiscoveryPool, hashString } from '@/systems/discovery'
+import type { DiscoveryEntry } from '@/systems/discovery'
+import { seededRandom } from '@/scenes/npc'
+import { sound } from '@/systems/sound'
 import { save } from '@/systems/storage'
 import { audio } from '@/systems/audio'
 import { motion } from '@/systems/motion'
@@ -31,8 +40,8 @@ export interface PanelHost {
   readonly onClose?: () => void
   /** Something worth remembering happened. */
   readonly onProgress?: () => void
-  /** The visitor picked a mini-game on the PC. */
-  readonly onPlay?: (gameId: string) => void
+  /** A two-state thing in the room (the parcel) should be shown open or shut. */
+  readonly onThingOpen?: (id: string, open: boolean) => void
   /**
    * The monitor is showing one game (its `world`), or none again. The room
    * lights itself from this; the panel colours itself from it.
@@ -64,9 +73,36 @@ function shape(project: ProjectConfig): string {
   return ` style="background-image:url('${project.keyArt}');${ratio}"`
 }
 
-/** The most stars this browser has ever earned at a game. */
-function starsOf(gameId: string): number {
-  return progressFor(gameId).stars
+/** The approved crew's own face, for things that belong to one of them. */
+export function ownerPortrait(owner: string | undefined): string | null {
+  return owner ? `/assets/images/dokkaebi-v2/${owner}/idle/front/${owner}_idle_front_01.webp` : null
+}
+
+const OWNER_NAME: Readonly<Record<string, string>> = { momo: 'MOMO', nunu: 'NUNU', ruki: 'RUKI', yomi: 'YOMI', poko: 'POKO' }
+
+/** Ids the pool has spent this visit, kept for the length of the tab. */
+const SPENT_KEY = 'eungarage:discoverySpent'
+
+function readSpent(): string[] {
+  try {
+    const raw = sessionStorage.getItem(SPENT_KEY)
+    const v: unknown = raw ? JSON.parse(raw) : []
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function writeSpent(ids: readonly string[]): void {
+  try {
+    sessionStorage.setItem(SPENT_KEY, JSON.stringify(ids))
+  } catch {
+    /* private mode: once-a-visit becomes once-a-page */
+  }
+}
+
+function esc(t: string): string {
+  return t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 }
 
 export function todayKey(): string {
@@ -74,7 +110,7 @@ export function todayKey(): string {
 }
 
 /** Remembered for this visit only: the door has already been tried. */
-const SECRET_SEEN = 'eungarage:secretTried'
+const DOOR_TRIED = 'eungarage:outsideDoorTried'
 
 const ART = '/assets/images/garage'
 
@@ -88,6 +124,13 @@ export class Panels {
   #host: PanelHost
   /** Anything scheduled by the panel on screen, dropped when it leaves. */
   #timers = new Set<ReturnType<typeof setTimeout>>()
+  /** Everything the room's things can bring out, and what they brought last. */
+  readonly pool = new GarageDiscoveryPool(
+    [...SHELF_ENTRIES, ...PARCEL_ENTRIES, ...CABINET_ENTRIES, ...TV_ENTRIES, ...RADIO_ENTRIES, ...WORKBENCH_ENTRIES],
+    { spent: readSpent() },
+  )
+  #tvChannel = 0
+  #station = -1
 
   constructor(root: HTMLElement, host: PanelHost = {}) {
     this.#root = root
@@ -197,6 +240,7 @@ export class Panels {
     if (!this.#open) return
     this.#clearTimers()
     this.#open = false
+    this.afterClose(this.#shell.dataset['kind'])
     this.#host.onWorldChange?.(null)
     this.#root.classList.remove('is-open')
     const done = (): void => {
@@ -221,10 +265,10 @@ export class Panels {
     this.#touch('pc')
     this.#show(
       'pc',
-      'EUNGARAGE SOFTWARE',
+      'EUNGARAGE OS',
       `${this.#portrait('pc')}<div class="crt" data-crt>
          <div class="crt__screen">
-           <p class="crt__boot" data-crt-boot>EUNGARAGE SOFTWARE<span aria-hidden="true">_</span></p>
+           <p class="crt__boot" data-crt-boot>EUNGARAGE OS<span aria-hidden="true">_</span></p>
            <div data-crt-view></div>
          </div>
        </div>`,
@@ -248,25 +292,12 @@ export class Panels {
     else this.#later(showList, 300)
   }
 
-  /** The catalogue, straight from PROJECTS — and the mini-games above it.
-   *  Above, because they are played here and the projects are only read
-   *  about here; nothing about the projects is behind them. */
+  /** The works library, straight from PROJECTS. The five real games and
+   *  nothing else: the site's own mini-games live outside, not on this
+   *  monitor, and no other object in the room repeats this list. */
   #pcList(view: HTMLElement): void {
     this.#host.onWorldChange?.(null)
-    const games = GAMES.length === 0 ? '' : `
-      <p class="hub__head">미니게임</p>
-      <div class="hub">${GAMES.map((g) => `
-      <button class="hub__row hub__row--game" type="button" data-minigame="${g.id}">
-        <span class="hub__thumb hub__thumb--game" aria-hidden="true">▶</span>
-        <span class="hub__meta">
-          <span class="hub__name">${g.title}</span>
-          <span class="hub__tag">${g.hint}</span>
-          <span class="hub__facts">${g.seconds}초 · 키보드 · 터치${bestFor(g.id) ? ` · 최고 ${bestFor(g.id)}점` : ''}${starsOf(g.id) ? ` · ${'★'.repeat(starsOf(g.id))}` : ''}</span>
-        </span>
-        <span class="hub__right"><span class="hub__more">PLAY <span aria-hidden="true">›</span></span></span>
-      </button>`).join('')}</div>
-      <p class="hub__head">작품</p>`
-    view.innerHTML = `${games}<div class="hub">${PROJECTS.map(
+    view.innerHTML = `<p class="hub__head">EUNGARAGE OS · WORKS</p><div class="hub" data-works>${PROJECTS.map(
       (p) => `
       <button class="hub__row" type="button" data-game="${p.id}">
         <span class="hub__thumb"${p.keyArt ? ` style="background-image:url('${p.keyArt}')"` : ' data-empty'}></span>
@@ -286,9 +317,6 @@ export class Panels {
         const project = PROJECTS.find((p) => p.id === btn.dataset['game'])
         if (project) this.#pcDetail(view, project)
       })
-    }
-    for (const btn of view.querySelectorAll<HTMLElement>('[data-minigame]')) {
-      btn.addEventListener('click', () => this.#host.onPlay?.(btn.dataset['minigame']!))
     }
   }
 
@@ -355,50 +383,50 @@ export class Panels {
     )
   }
 
-  // ── The workbench: the studio, as the notes lying on the desk ──────────
-  // Paper, not a dialog: what the studio is, what is on the bench, who is in
-  // the room. Everything comes from the registries; no copy is written here.
-  openStudioDesk(): void {
+  /** Draw from the pool, and remember what a visit has used up. */
+  #draw(category: Parameters<GarageDiscoveryPool['draw']>[0]): DiscoveryEntry | null {
+    const e = this.pool.draw(category)
+    writeSpent(this.pool.spent)
+    return e
+  }
+
+  /** The owner's face and name, for a thing that belongs to someone. */
+  #owner(owner: string | undefined): string {
+    const face = ownerPortrait(owner)
+    if (!face || !owner) return ''
+    return `<span class="owner"><img class="owner__face" src="${face}" alt="" decoding="async"><span class="owner__name">${OWNER_NAME[owner]}</span></span>`
+  }
+
+  // ── The workbench: work in progress, one piece out at a time ─────────────
+  // Not the game list. Real working material from this site's own crew
+  // rebuild: test captures and sheets, each with its date and commit.
+  openWorkbench(): void {
     this.#touch('workbench')
-    const rows = PROJECTS.map(
-      (p) => `<li class="note__row">
-         <span class="note__name">${p.title}</span>
-         <span class="note__genre">${p.genre}</span>
-         <span class="note__status" data-status="${p.status}">${STATUS_LABEL[p.status]}</span>
-       </li>`,
-    ).join('')
-    const crew = CHARACTERS.map(
-      (c) => `<li><b>${c.name}</b><span>${c.trait}</span></li>`,
-    ).join('')
-    const mail = contactRows().find((r) => r.key === 'email')
+    const piece = this.#draw('workbench') as WipPiece | null
+    const pinned = WORKBENCH_ENTRIES.filter((e) => e.id !== piece?.id).slice(0, 3)
     this.#show(
-      'desk',
-      SITE_CONFIG.companyName,
-      `${this.#portrait('workbench')}<div class="note">
-         <p class="note__lede">Small games.<br>Strange worlds.<br>Made in our garage.</p>
-         <p class="note__sub">An independent game studio in ${SITE_CONFIG.location}.
-            감정과 캐릭터, 그리고 그들이 사는 세계를 중심으로 만듭니다.</p>
-         <section class="note__block">
-           <h3 class="note__label">ON THE BENCH</h3>
-           <div class="bench">
-             <button class="bench__car" type="button" data-bench-car aria-pressed="false"
-                     aria-label="조립 중인 장난감 자동차. 누르면 뚜껑을 닫습니다">
-               <img data-state="open" src="${ART}/prop_toycar_open.webp" alt="" decoding="async">
-               <img data-state="closed" src="${ART}/prop_toycar_closed.webp" alt="" decoding="async">
-             </button>
-             <img class="bench__tray" src="${ART}/prop_parts_tray.webp" alt="" decoding="async">
-             <p class="bench__note" data-bench-note>태엽 자동차. 뚜껑 열고 기어 맞추는 중.</p>
-           </div>
-           <ul class="note__list">${rows}</ul>
-         </section>
-         <section class="note__block">
-           <h3 class="note__label">DOKKA CREW</h3>
-           <ul class="about__crew">${crew}</ul>
-         </section>
-         <p class="note__foot">
-           ${mail ? `<a href="${mail.href}">${mail.value}</a> · ` : ''}
-           <a href="./studio.html">FULL PAGE <span aria-hidden="true">↗</span></a>
-         </p>
+      'bench',
+      '작업대 · WIP',
+      `${this.#portrait('workbench')}<div class="bench2" data-bench data-piece="${piece?.id ?? ''}">
+         <div class="bench" data-bench-props>
+           <button class="bench__car" type="button" data-bench-car aria-pressed="false"
+                   aria-label="조립 중인 장난감 자동차. 누르면 뚜껑을 닫습니다">
+             <img data-state="open" src="${ART}/prop_toycar_open.webp" alt="" decoding="async">
+             <img data-state="closed" src="${ART}/prop_toycar_closed.webp" alt="" decoding="async">
+           </button>
+           <img class="bench__tray" src="${ART}/prop_parts_tray.webp" alt="" decoding="async">
+           <p class="bench__note" data-bench-note>태엽 자동차. 뚜껑 열고 기어 맞추는 중.</p>
+         </div>
+         ${piece ? `<figure class="bench2__top">
+           <img class="bench2__img" src="${piece.asset}" alt="${esc(piece.title)}" decoding="async">
+           <figcaption class="bench2__card">
+             <span class="bench2__kind">${piece.kind.toUpperCase()} · ${piece.date}</span>
+             <b class="bench2__title">${esc(piece.title)}</b>
+             <span class="bench2__note">${esc(piece.description)}</span>
+             <code class="bench2__commit">${piece.commit}</code>
+           </figcaption>
+         </figure>` : ''}
+         <ul class="bench2__under" aria-label="작업대에 깔린 다른 것들">${pinned.map((e) => `<li>${esc(e.title)}</li>`).join('')}</ul>
        </div>`,
     )
     audio.play('drawer', 0.3)
@@ -415,105 +443,214 @@ export class Panels {
     })
   }
 
-  // ── The TV: a set that warms up, and can be switched off again ─────────
-  openContact(): void {
+  /** The next time the TV is opened, open it on this channel. */
+  preferChannel(id: ChannelId): void {
+    this.#tvChannel = Math.max(0, CHANNELS.findIndex((c) => c.id === id))
+  }
+
+  // ── The TV: five channels, none of them the PC ──────────────────────────
+  openTv(channel?: ChannelId): void {
     this.#touch('tv')
+    if (channel) this.#tvChannel = Math.max(0, CHANNELS.findIndex((c) => c.id === channel))
     this.#show(
-      'contact',
-      'CONTACT',
+      'tv',
+      'EUNGARAGE TV',
       `${this.#portrait('tv')}<div class="tvset" data-tv>
          <div class="tvset__screen" data-tv-screen>
            <p class="tvset__static" data-tv-static aria-hidden="true"></p>
+           <p class="tvset__ch" data-tv-ch aria-live="polite"></p>
            <div data-tv-view></div>
          </div>
-         <button class="tvset__power" type="button" data-tv-power aria-pressed="true">
-           <span class="tvset__dot" aria-hidden="true"></span>POWER
+         <div class="tvset__dial">
+           <button class="tvset__btn" type="button" data-tv-prev aria-label="이전 채널">‹</button>
+           ${CHANNELS.map((c, i) => `<button class="tvset__num" type="button" data-tv-go="${i}" aria-label="${c.number} ${c.name}">${c.number.slice(2)}</button>`).join('')}
+           <button class="tvset__btn" type="button" data-tv-next aria-label="다음 채널">›</button>
+         </div>
+       </div>`,
+    )
+    const view = this.#body.querySelector<HTMLElement>('[data-tv-view]')!
+    const set = this.#body.querySelector<HTMLElement>('[data-tv]')!
+    const label = this.#body.querySelector<HTMLElement>('[data-tv-ch]')!
+
+    const render = (): void => {
+      const ch = CHANNELS[this.#tvChannel]!
+      set.dataset['channel'] = ch.id
+      label.textContent = `${ch.number} ${ch.name}`
+      for (const b of this.#body.querySelectorAll<HTMLElement>('[data-tv-go]')) {
+        b.setAttribute('aria-pressed', String(Number(b.dataset['tvGo']) === this.#tvChannel))
+      }
+      if (ch.id === 'news') {
+        const n = this.#draw('tv')
+        view.innerHTML = n ? `<div class="tvnews" data-tv-news="${n.id}">
+            <span class="tvnews__tag">${esc(n.title)}</span>
+            <p class="tvnews__line">${esc(n.description)}</p>
+            <span class="tvnews__ticker" aria-hidden="true">EUNGARAGE NEWS · LIVE FROM THE GARAGE ·</span>
+          </div>` : ''
+      } else if (ch.id === 'cam') {
+        const wide = innerWidth >= innerHeight
+        const angles = CAM_ANGLES[wide ? 'landscape' : 'portrait']
+        const room = ROOM_ART[wide ? 'landscape' : 'portrait']
+        const i = Math.floor(Math.random() * angles.length)
+        const a = angles[i]!
+        const scale = 100 / a.w
+        view.innerHTML = `<div class="tvcam" data-tv-cam="${i}" role="img" aria-label="${esc(a.label)}"
+            style="background-image:url('${room.src}');background-size:${room.w * scale}% auto;background-position:${(a.x / (room.w - a.w)) * 100}% ${(a.y / (room.h - a.h)) * 100}%">
+            <span class="tvcam__rec">● REC</span><span class="tvcam__label">${esc(a.label)}</span>
+            <span class="tvcam__time" data-tv-time></span>
+          </div>`
+        const t = view.querySelector<HTMLElement>('[data-tv-time]')
+        if (t) t.textContent = new Date().toTimeString().slice(0, 8)
+      } else if (ch.id === 'teaser') {
+        const withArt = PROJECTS.filter((p) => p.keyArt)
+        const p = withArt[Math.floor(Math.random() * withArt.length)]
+        view.innerHTML = p ? `<div class="tvteaser" data-tv-teaser="${p.id}" style="--accent:${p.accent}">
+            <span class="tvteaser__art" style="background-image:url('${p.keyArt}')"></span>
+            <span class="tvteaser__name">${esc(p.title)}</span>
+            <span class="tvteaser__tag">${esc(p.taglineKo)}</span>
+            <button class="tvteaser__go" type="button" data-tv-pc="${p.id}">PC에서 자세히 보기 <span aria-hidden="true">›</span></button>
+          </div>` : ''
+        view.querySelector('[data-tv-pc]')?.addEventListener('click', () => {
+          if (!p) return
+          this.queueProject(p.id)
+          this.#host.onGoTo?.('pc')
+        })
+      } else if (ch.id === 'contact') {
+        const rows = contactRows()
+        view.innerHTML = rows.length
+          ? `<p class="tvrow__brand">EUNGARAGE</p>${rows.map((r) => `<div class="tvrow">
+               <span class="tvrow__label">${r.label}</span>
+               <a class="tvrow__value" href="${r.href}">${r.value}</a>
+               <button class="tvrow__copy" type="button" data-copy="${r.value}" aria-label="${r.label} 복사">COPY</button>
+             </div>`).join('')}<a class="tvrow__more" href="./studio.html">STUDIO <span aria-hidden="true">↗</span></a>`
+          : '<p class="tvrow__none">NO SIGNAL</p>'
+        for (const btn of view.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
+          btn.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(btn.dataset['copy'] ?? '')
+              btn.textContent = 'COPIED'
+              btn.classList.add('is-copied')
+              audio.play('click', 0.35)
+              this.#later(() => {
+                btn.textContent = 'COPY'
+                btn.classList.remove('is-copied')
+              }, 1600)
+            } catch {
+              btn.textContent = 'SELECT'
+            }
+          })
+        }
+      } else {
+        view.innerHTML = '<p class="tvrow__none" data-tv-nosignal>NO SIGNAL</p>'
+      }
+    }
+    const tune = (i: number): void => {
+      this.#tvChannel = (i + CHANNELS.length) % CHANNELS.length
+      this.#clearTimers()
+      set.classList.add('is-warming')
+      view.innerHTML = ''
+      audio.play('click', 0.3)
+      const settle = (): void => {
+        set.classList.remove('is-warming')
+        render()
+      }
+      if (motion.reduced) settle()
+      else this.#later(settle, 220)
+    }
+    this.#body.querySelector('[data-tv-prev]')!.addEventListener('click', () => tune(this.#tvChannel - 1))
+    this.#body.querySelector('[data-tv-next]')!.addEventListener('click', () => tune(this.#tvChannel + 1))
+    for (const b of this.#body.querySelectorAll<HTMLElement>('[data-tv-go]')) {
+      b.addEventListener('click', () => tune(Number(b.dataset['tvGo'])))
+    }
+    tune(this.#tvChannel)
+  }
+
+  // ── The radio: the site's audio, and its mute switch ─────────────────────
+  openRadio(): void {
+    this.#touch('radio')
+    this.#show(
+      'radio',
+      'NIGHT RADIO',
+      `${this.#portrait('radio')}<div class="radio" data-radio>
+         <div class="radio__face">
+           <p class="radio__freq" data-radio-freq aria-live="polite">OFF</p>
+           <p class="radio__talk" data-radio-talk></p>
+         </div>
+         <div class="radio__stations" role="radiogroup" aria-label="방송국">
+           ${STATIONS.map((st, i) => `<button class="radio__st" type="button" role="radio" aria-checked="false" data-station="${i}">
+              <b>${st.freq}</b><span>${st.name}</span></button>`).join('')}
+         </div>
+         <button class="radio__power" type="button" data-radio-power aria-pressed="false">
+           <span class="radio__dot" aria-hidden="true"></span><span data-radio-power-label>소리 켜기</span>
          </button>
        </div>`,
     )
-    const view = this.#body.querySelector<HTMLElement>('[data-tv-view]')
-    const set = this.#body.querySelector<HTMLElement>('[data-tv]')
-    const power = this.#body.querySelector<HTMLButtonElement>('[data-tv-power]')
-    if (!view || !set || !power) return
+    const freq = this.#body.querySelector<HTMLElement>('[data-radio-freq]')!
+    const talk = this.#body.querySelector<HTMLElement>('[data-radio-talk]')!
+    const power = this.#body.querySelector<HTMLButtonElement>('[data-radio-power]')!
+    const powerLabel = this.#body.querySelector<HTMLElement>('[data-radio-power-label]')!
+    const radio = this.#body.querySelector<HTMLElement>('[data-radio]')!
 
-    const rows = contactRows()
-    const contact = (): string =>
-      rows.length
-        ? `<p class="tvrow__brand">EUNGARAGE</p>${rows
-            .map(
-              (r) => `<div class="tvrow">
-                 <span class="tvrow__label">${r.label}</span>
-                 <a class="tvrow__value" href="${r.href}">${r.value}</a>
-                 <button class="tvrow__copy" type="button" data-copy="${r.value}" aria-label="${r.label} 복사">COPY</button>
-               </div>`,
-            )
-            .join('')}`
-        : '<p class="tvrow__none">NO SIGNAL</p>'
-
-    const wireCopy = (): void => {
-      for (const btn of view.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
-        btn.addEventListener('click', async () => {
-          const value = btn.dataset['copy'] ?? ''
-          try {
-            await navigator.clipboard.writeText(value)
-            btn.textContent = 'COPIED'
-            btn.classList.add('is-copied')
-            audio.play('click', 0.35)
-            this.#later(() => {
-              btn.textContent = 'COPY'
-              btn.classList.remove('is-copied')
-            }, 1600)
-          } catch {
-            btn.textContent = 'SELECT'
-          }
-        })
+    const paint = (): void => {
+      const on = sound.enabled
+      power.setAttribute('aria-pressed', String(on))
+      powerLabel.textContent = on ? '소리 끄기' : '소리 켜기'
+      radio.dataset['on'] = String(on)
+      const st = STATIONS[this.#station]
+      radio.dataset['station'] = st?.id ?? ''
+      for (const b of this.#body.querySelectorAll<HTMLElement>('[data-station]')) {
+        b.setAttribute('aria-checked', String(Number(b.dataset['station']) === this.#station))
       }
+      freq.textContent = st ? `FM ${st.freq} · ${st.name}` : on ? 'FM · · ·' : 'OFF'
     }
-
-    const on = (): void => {
-      set.classList.remove('is-off')
-      set.classList.add('is-warming')
-      power.setAttribute('aria-pressed', 'true')
-      view.innerHTML = ''
-      const settle = (): void => {
-        set.classList.remove('is-warming')
-        view.innerHTML = contact()
-        wireCopy()
+    const tuneTo = (i: number): void => {
+      this.#station = i
+      const st = STATIONS[i]!
+      audio.play('click', 0.25)
+      audio.tune(st.track, st.volume)
+      if (st.id === 'news') {
+        const seg = this.#draw('radio')
+        talk.textContent = seg ? `${seg.title} — ${seg.description}` : ''
+        talk.dataset['segment'] = seg?.id ?? ''
+      } else {
+        talk.textContent = ''
+        delete talk.dataset['segment']
       }
-      if (motion.reduced) settle()
-      else this.#later(settle, 240)
+      paint()
     }
-    const offScreen = (): void => {
-      this.#clearTimers()
-      set.classList.remove('is-warming')
-      set.classList.add('is-off')
-      power.setAttribute('aria-pressed', 'false')
-      view.innerHTML = ''
+    for (const b of this.#body.querySelectorAll<HTMLElement>('[data-station]')) {
+      b.addEventListener('click', () => {
+        const i = Number(b.dataset['station'])
+        // Choosing a station is also asking to hear it.
+        if (!sound.enabled) void sound.setEnabled(true).then(() => tuneTo(i))
+        else tuneTo(i)
+      })
     }
     power.addEventListener('click', () => {
-      audio.play('click', 0.3)
-      if (set.classList.contains('is-off')) on()
-      else offScreen()
+      void sound.toggle().then(() => {
+        if (sound.enabled && this.#station < 0) tuneTo(0)
+        else paint()
+      })
     })
-    on()
+    paint()
   }
 
-  // ── The fridge: the week's shopping, and nothing to collect ───────────
-  openFridge(): void {
+  // ── The fridge: today's fridge, the same all day ─────────────────────────
+  openFridge(day = fridgeDay()): void {
     this.#touch('fridge')
-    const shelves = FRIDGE_ITEMS.map(
-      (i) => `<li>
-         <button class="chill" type="button" data-item="${i.id}">
-           <span class="chill__art"${i.art ? ` style="background-image:url('${i.art}')"` : ' data-empty'}></span>
-           <span class="chill__label">${i.label}</span>
-         </button>
-       </li>`,
-    ).join('')
+    const rng = seededRandom(hashString(`fridge:${day}`))
+    const todays = new GarageDiscoveryPool([...FRIDGE_FOOD], { random: rng, recent: 0 }).drawMany('fridge', FRIDGE_SHOWN)
+    const memo = new GarageDiscoveryPool([...FRIDGE_MEMOS], { random: seededRandom(hashString(`memo:${day}`)) }).draw('fridge')
     this.#show(
       'fridge',
-      'FRIDGE',
-      `${this.#portrait('fridge')}<div class="fridge" data-fridge>
-         <ul class="fridge__shelves">${shelves}</ul>
+      '오늘의 냉장고',
+      `${this.#portrait('fridge')}<div class="fridge" data-fridge data-day="${day}">
+         ${memo ? `<p class="fridge__memo" data-fridge-memo="${memo.id}">${esc(memo.description)}</p>` : ''}
+         <ul class="fridge__shelves">${todays.map((i) => `<li>
+           <button class="chill" type="button" data-item="${i.id}">
+             <span class="chill__art"${i.asset ? ` style="background-image:url('${i.asset}')"` : ' data-empty'}></span>
+             <span class="chill__label">${esc(i.title)}</span>
+           </button>
+         </li>`).join('')}</ul>
          <p class="fridge__say" data-fridge-say aria-live="polite"></p>
        </div>`,
     )
@@ -521,9 +658,9 @@ export class Panels {
     const say = this.#body.querySelector<HTMLElement>('[data-fridge-say]')
     for (const btn of this.#body.querySelectorAll<HTMLElement>('[data-item]')) {
       btn.addEventListener('click', () => {
-        const item = FRIDGE_ITEMS.find((i) => i.id === btn.dataset['item'])
+        const item = todays.find((i) => i.id === btn.dataset['item'])
         if (!item || !say) return
-        say.textContent = item.note
+        say.textContent = item.description
         say.classList.remove('is-said')
         void say.offsetWidth
         say.classList.add('is-said')
@@ -532,11 +669,36 @@ export class Panels {
     }
   }
 
-  // ── The cabinet: the paperwork, in the open ────────────────────────────
-  // A second way to pages that are also in the top navigation. Legal and
-  // support information is never a puzzle and never behind a discovery.
+  // ── The parcel: one box, one thing in it ─────────────────────────────────
+  openParcel(): void {
+    this.#touch('parcel')
+    const got = this.#draw('parcel')
+    this.#host.onThingOpen?.('parcel', true)
+    this.#show(
+      'parcel',
+      '택배',
+      `<div class="delivery" data-delivery="${got?.id ?? ''}">
+         <img class="delivery__box" src="${ART}/prop_parcel_open.webp" alt="" decoding="async">
+         ${got ? `<div class="delivery__out">
+           ${got.asset ? `<img class="delivery__thing" src="${got.asset}" alt="" decoding="async">` : ''}
+           <b class="delivery__name">${esc(got.title)}</b>
+           <span class="delivery__note">${esc(got.description)}</span>
+           ${this.#owner(got.owner)}
+         </div>` : ''}
+       </div>`,
+    )
+    audio.play('wrapper', 0.4)
+  }
+
+  /** The parcel panel closed: the box in the room closes with it. */
+  afterClose(kind: string | undefined): void {
+    if (kind === 'parcel') this.#host.onThingOpen?.('parcel', false)
+  }
+
+  // ── The cabinet: records and lore; the legal folder always at the back ──
   openCabinet(): void {
     this.#touch('cabinet')
+    const paper = this.#draw('cabinet') as CabinetPaper | null
     const files = DOCUMENTS.map(
       (d) => `<li class="file"><a class="file__tab" href="${d.href}">
          <span class="file__name">${d.label}</span>
@@ -545,8 +707,13 @@ export class Panels {
     ).join('')
     this.#show(
       'cabinet',
-      'FILES',
+      '캐비닛',
       `${this.#portrait('cabinet')}<div class="drawer" data-drawer>
+         ${paper ? `<article class="paper paper--${paper.kind}" data-paper="${paper.id}">
+           <h3 class="paper__title">${esc(paper.title)}</h3>
+           <p class="paper__body">${esc(paper.description)}</p>
+         </article>` : ''}
+         <p class="drawer__label">서류철 · 고객지원과 약관</p>
          <ul class="drawer__files">${files}</ul>
        </div>`,
     )
@@ -557,91 +724,61 @@ export class Panels {
     else requestAnimationFrame(() => drawer.classList.add('is-open'))
   }
 
-  // ── The shelf: the small things left over from making the games ───────
-  // Not a second games menu: one object per project, a line each, and a way
-  // through to the PC's page for that game rather than repeating it here.
+  // ── The shelf: the crew's own things, a few at a time ────────────────────
   openShelf(): void {
     this.#touch('shelf')
-    // No picture of the object yet: the tile is its label plate, which is what
-    // half a workshop shelf is anyway. Nothing is stood in for.
-    const items = SHELF_ITEMS.map((i) => {
-      const accent = PROJECTS.find((p) => p.id === i.projectId)?.accent ?? '#8a6f52'
-      return `<li>
-         <button class="relic" type="button" data-relic="${i.id}" style="--accent:${accent}">
-           ${i.art ? `<span class="relic__art" style="background-image:url('${i.art}')"></span>` : ''}
-           <span class="relic__rule" aria-hidden="true"></span>
-           <span class="relic__label">${i.label}</span>
-         </button>
-       </li>`
-    }).join('')
-    const crew = shelfCrew()
-      .map(
-        (c) => `<li class="figure">
-           <img class="figure__art" src="${c.art.front}" alt="" loading="lazy" decoding="async">
-           <span class="figure__name">${c.name}</span>
-         </li>`,
-      )
-      .join('')
+    const items = this.pool.drawMany('shelf', SHELF_SHOWN)
+    writeSpent(this.pool.spent)
     this.#show(
       'shelf',
-      'ON THE SHELF',
-      `${this.#portrait('shelf')}<div class="shelf">
-         <ul class="shelf__row">${items}</ul>
+      'DOKKA CREW COLLECTION',
+      `${this.#portrait('shelf')}<div class="shelf" data-shelf-items="${items.map((i) => i.id).join(' ')}">
+         <ul class="shelf__row">${items.map((i) => `<li>
+           <button class="relic" type="button" data-relic="${i.id}">
+             ${i.asset ? `<span class="relic__art" style="background-image:url('${i.asset}')"></span>` : ''}
+             ${this.#owner(i.owner)}
+             <span class="relic__label">${esc(i.title)}</span>
+           </button>
+         </li>`).join('')}</ul>
          <div class="shelf__card" data-relic-card hidden></div>
-         <p class="shelf__label">DOKKA CREW</p>
-         <ul class="shelf__figures">${crew}</ul>
        </div>`,
     )
     audio.play('drawer', 0.3)
     const card = this.#body.querySelector<HTMLElement>('[data-relic-card]')
     for (const btn of this.#body.querySelectorAll<HTMLElement>('[data-relic]')) {
       btn.addEventListener('click', () => {
-        const item = SHELF_ITEMS.find((i) => i.id === btn.dataset['relic'])
+        const item = items.find((i) => i.id === btn.dataset['relic'])
         if (!item || !card) return
         for (const other of this.#body.querySelectorAll('[data-relic]')) {
           other.classList.toggle('is-picked', other === btn)
         }
-        const project = item.projectId
-          ? PROJECTS.find((p) => p.id === item.projectId)
-          : undefined
         card.hidden = false
-        card.innerHTML = `
-          <p class="shelf__note">${item.note}</p>
-          ${
-            project
-              ? `<button class="shelf__go" type="button" data-shelf-go="${project.id}">
-                   VIEW ${project.title} <span aria-hidden="true">›</span>
-                 </button>`
-              : ''
-          }`
-        card.querySelector('[data-shelf-go]')?.addEventListener('click', () => {
-          // Straight to that game on the PC: one piece of information, one place.
-          this.queueProject(String(project?.id))
-          this.#host.onGoTo?.('pc')
-        })
+        card.innerHTML = `<b class="shelf__name">${esc(item.title)}</b><p class="shelf__note">${esc(item.description)}</p>`
+        audio.play('click', 0.22)
       })
     }
   }
 
-  // ── The secret door: nothing is behind it, and it says so ─────────────
-  // No invented project, no date, no teaser art. What it has is a handle that
-  // moves, a gap of dark, and one sentence. The room remembers, for this visit
-  // only, that you have already tried it.
-  openSecret(): void {
-    const seen = sessionStorage.getItem(SECRET_SEEN) === '1'
+  // ── The outside door ─────────────────────────────────────────────────────
+  // The garage's own door, which will open onto the Dokkaebi Playground. The
+  // Playground is not built yet, so the door is honest about it: it moves,
+  // light comes through the gap, and it says what is out there.
+  openOutsideDoor(): void {
+    let tried = false
     try {
-      sessionStorage.setItem(SECRET_SEEN, '1')
+      tried = sessionStorage.getItem(DOOR_TRIED) === '1'
+      sessionStorage.setItem(DOOR_TRIED, '1')
     } catch {
       /* private mode: the door simply forgets */
     }
-    this.#touch('secret-door')
-    audio.play('bell', 0.35)
+    this.#touch('outside-door')
+    audio.play('door', 0.35)
     this.#show(
-      'secret',
+      'door',
       '',
-      `<div class="dark" data-dark>
-         <p class="dark__line">${seen ? '아직도 아무것도 없다.' : '아직 아무것도 없다.'}</p>
-         <p class="dark__sub">Nothing is behind it yet.</p>
+      `<div class="dark" data-dark data-outside-door>
+         <p class="dark__line">${tried ? '밖에서 여전히 작은 불빛이 움직인다.' : '문틈으로 밤공기가 들어온다.'}</p>
+         <p class="dark__sub">도깨비 놀이터 · 준비 중</p>
        </div>`,
     )
     const dark = this.#body.querySelector<HTMLElement>('[data-dark]')
@@ -683,7 +820,7 @@ export class Panels {
            </figcaption>
          </figure>
          <button class="wall__go" type="button" data-poster-go>
-           VIEW ${project.title} <span aria-hidden="true">›</span>
+           PC에서 자세히 보기 <span aria-hidden="true">›</span>
          </button>
        </div>`,
     )

@@ -58,7 +58,7 @@ export const LIGHTS_PORTRAIT: readonly LightSource[] = [
   { id: 'pc', x: 518, y: 1318, r: 155, colour: 'rgba(150,205,255,.10)' },
   // tv rect { x: 508, y: 2138, w: 190, h: 147 }
   { id: 'tv', x: 603, y: 2211, r: 140, colour: 'rgba(150,210,255,.09)' },
-  // secret-door rect { x: 862, y: 2149, w: 129, h: 270 }, at its foot
+  // outside-door rect { x: 862, y: 2149, w: 129, h: 270 }, at its foot
   { id: 'secret', x: 926, y: 2390, r: 110, colour: 'rgba(140,255,214,.07)' },
 ]
 

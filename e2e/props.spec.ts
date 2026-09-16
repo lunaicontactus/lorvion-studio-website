@@ -67,7 +67,7 @@ async function bring(page: Page, id: string): Promise<void> {
 test.describe('desktop', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
 
-  test('the parcel opens where it stands, and nothing else opens', async ({ page }) => {
+  test('the parcel opens where it stands, and what was in it comes out', async ({ page }) => {
     await enter(page)
     await bring(page, 'parcel')
     const parcel = page.locator('.thing--parcel')
@@ -80,15 +80,15 @@ test.describe('desktop', () => {
     await expect(open).toHaveCSS('opacity', '0')
 
     await parcel.click()
+    // The box in the room opens, and the delivery is shown beside it.
     await expect(parcel).toHaveClass(/is-open/)
-    await expect(parcel).toHaveAttribute('aria-pressed', 'true')
     await expect(open).toHaveCSS('opacity', '1')
     await expect(closed).toHaveCSS('opacity', '0')
-    // Not a panel. The room is still the room.
-    await expect(page.locator('[data-panel-root]')).toBeHidden()
-    expect(page.url()).not.toContain('#parcel')
+    await expect(page.locator('[data-delivery]')).toBeVisible({ timeout: 6000 })
 
-    await parcel.click()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('[data-panel-root]')).toBeHidden()
+    // Put down again: the box shuts with its panel.
     await expect(parcel).not.toHaveClass(/is-open/)
     await expect(open).toHaveCSS('opacity', '0')
   })
@@ -99,7 +99,7 @@ test.describe('desktop', () => {
     const label = pc.locator('.thing__label')
     await expect(label).toHaveCSS('opacity', '0')
     await pc.hover()
-    await expect(label).toHaveText('PC · 작품과 미니게임')
+    await expect(label).toHaveText('PC · 작품 라이브러리')
     await expect(label).toHaveCSS('opacity', '1')
     await expect(pc.locator('.thing__outline')).toHaveCSS('opacity', '1')
     // Readable: 13px on screen whatever the room's scale.
@@ -164,16 +164,19 @@ test.describe('desktop', () => {
     await expect(car).toHaveAttribute('aria-pressed', 'true')
     await expect(closed).toHaveCSS('opacity', '1')
     await expect(page.locator('[data-bench-note]')).toContainText('닫았다')
-    // The projects are still listed under it.
-    await expect(page.locator('.note__row')).toHaveCount(5)
+    // And the work in progress is out beside it.
+    await expect(page.locator('.bench2__img')).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(page.locator('[data-panel-root]')).toBeHidden()
 
     await page.locator('.thing--fridge').click()
-    await expect(page.locator('.chill')).toHaveCount(7, { timeout: 5000 })
-    await expect(page.locator('.chill[data-item="ramen-open"] .chill__label')).toHaveText('먹던 컵라면')
-    await expect(page.locator('.chill[data-item="drink"] .chill__label')).toHaveText('음료')
-    for (const id of ['ramen-open', 'drink']) {
+    await expect(page.locator('.chill')).toHaveCount(5, { timeout: 5000 })
+    // Every picture on today's shelves is a real cut-out that decodes.
+    const ids = await page.locator('.chill').evaluateAll((els) => els
+      .filter((e) => e.querySelector('.chill__art:not([data-empty])'))
+      .map((e) => (e as HTMLElement).dataset['item']!))
+    expect(ids.length).toBeGreaterThanOrEqual(3)
+    for (const id of ids) {
       const ok = await page.locator(`.chill[data-item="${id}"] .chill__art`).evaluate(async (el) => {
         const url = /url\(["']?([^"')]+)/.exec(getComputedStyle(el).backgroundImage)?.[1]
         if (!url) return false

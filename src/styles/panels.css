@@ -499,3 +499,112 @@
   .view__cap span{font-size:.72rem}
   .view__img{max-height:min(85vh,calc(94vh - 128px))}
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   WORLD 2.0 — one role per object (PHASE 4). Each object's content is its
+   own thing; the object-specific presentation pass (PHASE 5) builds on these.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Whose it is: the approved crew's own face and name. */
+.owner{display:inline-flex;align-items:center;gap:5px;font:700 .56rem/1 var(--mono);letter-spacing:.12em;color:#6a533b}
+.owner__face{width:30px;height:auto;aspect-ratio:292/420;object-fit:contain;object-position:top;margin-block:-4px -8px;
+  clip-path:inset(0 0 42% 0)}
+
+/* Shelf: three of their things come forward. */
+.shelf__row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;list-style:none;margin:0;padding:0}
+.relic{display:grid;justify-items:center;align-content:start;gap:8px;width:100%;min-height:124px;padding:14px 10px 12px;
+  border:0;border-radius:12px;background:rgba(200,160,100,.14);color:#4a3828;cursor:pointer;
+  transition:transform .18s ease,background .18s ease;animation:relicIn .38s cubic-bezier(.2,.9,.3,1) both}
+.shelf__row li:nth-child(2) .relic{animation-delay:.06s}
+.shelf__row li:nth-child(3) .relic{animation-delay:.12s}
+@keyframes relicIn{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
+.relic__art{width:64px;height:54px}
+.relic__label{font-weight:700}
+.shelf__card{margin-top:12px;padding:12px 14px;border-radius:10px;background:#efe3c8}
+.shelf__name{display:block;font:700 .66rem/1 var(--mono);letter-spacing:.12em;margin-bottom:6px}
+.shelf__note{margin:0;font-size:.9rem;line-height:1.55}
+
+/* Fridge: today's memo on the door, today's shelves. */
+.fridge__memo{margin:0 0 12px;padding:9px 12px;border-radius:4px;background:#fff6c9;color:#4a3828;
+  font-size:.86rem;transform:rotate(-1.2deg);box-shadow:0 2px 6px rgba(60,44,28,.18)}
+
+/* Parcel: the box open, and the one thing that was in it. */
+.panel[data-kind="parcel"]{width:min(92vw,460px)}
+.delivery{display:grid;justify-items:center;gap:6px;text-align:center}
+.delivery__box{width:min(46vw,190px);height:auto;margin-bottom:-38px}
+.delivery__out{position:relative;display:grid;justify-items:center;gap:6px;padding:14px 16px;border-radius:12px;background:#efe3c8;
+  animation:popOut .46s cubic-bezier(.2,1.2,.3,1) both}
+@keyframes popOut{from{opacity:0;transform:translateY(36px) scale(.8)}to{opacity:1;transform:none}}
+.delivery__thing{width:96px;height:80px;object-fit:contain}
+.delivery__name{font:700 .74rem/1 var(--mono);letter-spacing:.12em;color:#4a3828}
+.delivery__note{font-size:.9rem;color:#5b452e;line-height:1.5}
+
+/* Cabinet: one paper pulled out, the legal folder behind it. */
+.paper{margin:0 0 14px;padding:16px 18px;border-radius:3px;background:#fbf5e6;color:#3f3024;
+  box-shadow:0 3px 10px rgba(60,44,28,.2);transform:rotate(-.6deg);
+  background-image:repeating-linear-gradient(transparent 0 25px,rgba(120,96,66,.12) 25px 26px)}
+.paper__title{margin:0 0 6px;font:700 .72rem/1.2 var(--mono);letter-spacing:.1em}
+.paper__body{margin:0;font-size:.95rem;line-height:1.7}
+.paper--dev{background-color:#eef3f6}
+.paper--sealed{background:#e3d2ae;text-align:center}
+.drawer__label{margin:4px 0 8px;font:700 .56rem/1 var(--mono);letter-spacing:.16em;color:#7a6149}
+
+/* Workbench: one piece on top, the rest underneath. */
+.panel[data-kind="bench"]{width:min(94vw,860px)}
+.bench2__top{margin:0;display:grid;gap:12px}
+.bench2__img{display:block;width:100%;height:auto;max-height:52vh;object-fit:contain;border-radius:4px;
+  background:#2b231d;box-shadow:0 6px 18px rgba(40,28,16,.3)}
+.bench2__card{display:grid;gap:5px}
+.bench2__kind{font:700 .56rem/1 var(--mono);letter-spacing:.16em;color:#7a6149}
+.bench2__title{font-size:1.05rem}
+.bench2__note{font-size:.9rem;line-height:1.55;color:#5b452e}
+.bench2__commit{justify-self:start;font-size:.64rem;padding:2px 6px;border-radius:4px;background:rgba(120,96,66,.14)}
+.bench2__under{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:12px 0 0;padding:0}
+.bench2__under li{font-size:.72rem;padding:4px 8px;border-radius:4px;background:rgba(200,160,100,.18);color:#6a533b}
+
+/* TV: channels. */
+.tvset__ch{position:absolute;right:10px;top:8px;margin:0;z-index:2;font:700 .6rem/1 var(--mono);letter-spacing:.14em;color:#cfe0ee;text-shadow:0 0 6px rgba(160,210,255,.6)}
+.tvset__dial{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.tvset__btn,.tvset__num{min-width:44px;min-height:44px;border:0;border-radius:10px;background:rgba(207,224,238,.12);color:#e6eef5;
+  font:700 .8rem/1 var(--mono);cursor:pointer}
+.tvset__num[aria-pressed="true"]{background:rgba(207,224,238,.34)}
+.tvnews,.tvteaser,.tvcam{min-height:190px}
+.tvnews{display:grid;align-content:center;gap:10px;padding:18px;color:#e9f1f7}
+.tvnews__tag{justify-self:start;padding:3px 8px;border-radius:3px;background:#c94f3f;font:700 .6rem/1 var(--mono);letter-spacing:.14em}
+.tvnews__line{margin:0;font-size:1.05rem;line-height:1.5}
+.tvnews__ticker{font:600 .56rem/1 var(--mono);letter-spacing:.2em;opacity:.55;white-space:nowrap;overflow:hidden}
+.tvcam{position:relative;background-repeat:no-repeat;filter:saturate(.55) contrast(1.05) brightness(.92)}
+.tvcam::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.18) 2px 3px)}
+.tvcam__rec,.tvcam__label,.tvcam__time{position:absolute;z-index:1;font:700 .58rem/1 var(--mono);letter-spacing:.12em;color:#f2f2f2;text-shadow:0 1px 2px #000}
+.tvcam__rec{left:10px;top:10px;color:#ff6a5a}
+.tvcam__label{left:10px;bottom:10px}
+.tvcam__time{right:10px;bottom:10px}
+.tvteaser{position:relative;display:grid;align-content:end;justify-items:start;gap:4px;padding:16px;color:#fff;overflow:hidden}
+.tvteaser__art{position:absolute;inset:0;background-size:cover;background-position:center 30%;filter:brightness(.62)}
+.tvteaser__name,.tvteaser__tag,.tvteaser__go{position:relative}
+.tvteaser__name{font:700 1.2rem/1 var(--mono);letter-spacing:.16em}
+.tvteaser__tag{font-size:.85rem;opacity:.9}
+.tvteaser__go{margin-top:6px;min-height:36px;padding:8px 12px;border:0;border-radius:999px;background:rgba(255,255,255,.2);color:#fff;font:600 .6rem/1 var(--mono);letter-spacing:.12em;cursor:pointer}
+.tvrow__more{display:inline-block;margin-top:8px;font:600 .6rem/1 var(--mono);letter-spacing:.14em;color:#cfe0ee}
+
+/* Radio. */
+.panel[data-kind="radio"]{width:min(92vw,480px)}
+.radio{display:grid;gap:12px}
+.radio__face{padding:14px 16px;border-radius:12px;background:#2e2620;color:#ffd99a;min-height:74px}
+.radio__freq{margin:0;font:700 1.1rem/1 var(--mono);letter-spacing:.12em}
+.radio__talk{margin:8px 0 0;font-size:.86rem;line-height:1.5;color:#f1e3c8}
+.radio[data-on="false"] .radio__face{color:#8a7a66}
+.radio__stations{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.radio__st{display:grid;gap:3px;min-height:52px;padding:8px;border:0;border-radius:10px;background:rgba(200,160,100,.18);color:#4a3828;cursor:pointer}
+.radio__st b{font:700 .9rem/1 var(--mono)}
+.radio__st span{font:600 .56rem/1 var(--mono);letter-spacing:.14em}
+.radio__st[aria-checked="true"]{background:#e8b766;color:#2a2013}
+.radio__power{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;border:0;border-radius:999px;background:#4a3828;color:#f4e7cd;font:700 .78rem/1 inherit;cursor:pointer}
+.radio__dot{width:8px;height:8px;border-radius:50%;background:#6b6f74}
+.radio__power[aria-pressed="true"] .radio__dot{background:#8ce29a;box-shadow:0 0 6px rgba(140,226,154,.8)}
+
+.hub__head{margin:0 0 8px;font:700 .56rem/1 var(--mono);letter-spacing:.2em;opacity:.7}
+
+@media (prefers-reduced-motion:reduce){
+  .relic,.delivery__out{animation:none}
+}

@@ -14,7 +14,7 @@ Source: `src/data/world.ts` (hit areas), `src/app/world.ts` (dispatch),
 |---|---|---|---|---|---|---|---|
 | PC | Monitor panel listing **4 site mini-games** above the 5 works; work detail | **WORKS LIBRARY** — the 5 real games only, most detailed info | painted monitor + `garage/pc.webp` | same | `panels.openPc` | MODIFY | Mini-game rows leave the PC. They move to the Playground (PHASE 11+); until then reachable only by `?play=` deep link. |
 | Posters ×4 + LUMIORA print | Enlarged artwork + "VIEW X" → PC | **ART GALLERY** — image, title, one line, `[PC에서 자세히 보기]` | `/artwork/*-wall.webp` hung over painted posters | same (white-matte audit PHASE 3) | `panels.openPoster`, `garage.hangPrint` | KEEP (clean up) | Already a gallery, not a menu. |
-| Shelf | 4 "relics", **one per project**, each linking to the PC; crew figures | **DOKKA CREW COLLECTION** — ≥15 personal items, varied on every open | painted shelf, no item art | item art from existing repo cut-outs where they exist; label plates otherwise | `panels.openShelf`, `data/shelf.ts` | MODIFY | Today it is a second game list. |
+| Shelf | 4 "relics", **one per project**, each linking to the PC; crew figures drawn from the **retired v1 crew** (`dokka/*_front.webp`) | **DOKKA CREW COLLECTION** — ≥15 personal items, varied on every open | painted shelf, no item art | item art from existing repo cut-outs where they exist; label plates otherwise | `panels.openShelf`, `data/shelf.ts` | MODIFY | Today it is a second game list. |
 | Workbench | Studio "about" note + toy car + **full project status list** + crew list + email | **WIP** — real work in progress from this repo (crew reboot sheets, sprite masters, dev notes) | painted bench, toy-car + parts-tray cut-outs | real dev assets under `assets/crew-reboot/`, `assets/sprites-v2/` | `panels.openStudioDesk` | MODIFY | Third game list today. |
 | TV | CONTACT only (email + copy) | **EUNGARAGE BROADCAST** — CH01 GARAGE NEWS · CH02 DOKKA CAM · CH03 PROJECT TEASER · CH04 CONTACT · CH05 NO SIGNAL | painted TV + `garage/tv.webp` | same; DOKKA CAM crops the live room | `panels.openContact` | MODIFY | CONTACT keeps `SITE_CONFIG` as the one source. |
 | Fridge | Fixed 7 items, one line each | **CREW LIFE** — 오늘의 냉장고, date-seeded, notes | painted fridge + alley/garage food cut-outs | same | `panels.openFridge`, `data/fridge.ts` | MODIFY | |
@@ -22,7 +22,7 @@ Source: `src/data/world.ts` (hit areas), `src/app/world.ts` (dispatch),
 | Parcel | Open/closed toggle | **RANDOM DELIVERY** — box opens, one of ≥12 contents | `prop_parcel_closed/open.webp` | same | `garage.ts` toggle | MODIFY | Not the parcel mini-game. |
 | Secret door (arched dokkaebi door) | "Nothing is behind it yet" | **OUTSIDE DOOR → Playground** | painted arched door | — | `panels.openSecret` | MODIFY (re-role) | Decision, see §1a. |
 | Secret door (new) | — | **SECRET DOOR → Archive**, unlock at ★1 in all 3 games | — | — | new | ADD (PHASE 15) | Location decision, see §1a. |
-| Radio | **does not exist** — not painted in either plate | **NIGHT RADIO** — audio hub, mute | — | **BLOCKED_ASSET** (§5) | new | ADD when asset exists | No radio cut-out in the repo or the user's folder. |
+| Radio | **does not exist** — not painted in either plate | **NIGHT RADIO** — audio hub, mute | — | `garage/radio.webp` (felt dokkaebi radio, 560×493, committed in `9292c1c` and never placed) | new | ADD | Corrected after the first pass of this audit, which missed the cut-out: not blocked. |
 | Broom | `broom_clean` = BLOCKED_ASSET | ambient sweep | — | `garage_broom_v01` (now FOUND) | `systems/ambient.ts` | ADD (PHASE 7) | Unblocked by the user's asset. |
 | Top nav | Games · Studio · Support · Contact + text wordmark | Function layer only: logo, contact, support, mute | text `EUNGARAGE` span (CSS) | new lockup | `index.html` | MODIFY | |
 | `games.html` / `studio.html` | Standalone pages | Readable "case study" pages reached from the PC / TV | — | — | static | KEEP | Store reviewers and deep links rely on them. |
@@ -103,7 +103,7 @@ maskable icon need a full-bleed square cropped from it, not the black corners.
 | POKO 부장님 몰래 딴짓 | `assets/new/POKO 부장님 몰래 딴짓.wav` | WAV | 119.6 s | 21.9 MB | POKO game BGM | FOUND |
 | 도깨비 야식 심부름 | `assets/new/도깨비 야식 심부름.wav` | WAV | 33.0 s | 6.1 MB | Snack game BGM | FOUND |
 | 택배 정리 | `assets/new/택배 정리.wav` | WAV | 118.8 s | 21.8 MB | Parcel game BGM | FOUND |
-| 밤의 작은 마법 | `assets/new/밤의 작은 마법.m4a` | Opus in M4A (afinfo cannot read duration) | ? | 2.4 MB | unassigned — candidate: Archive music box | FOUND, purpose to confirm by listening |
+| 밤의 작은 마법 | `assets/new/밤의 작은 마법.m4a` | Opus in M4A (decoded via Chromium, `scripts/decode-audio.mjs`) | 146.4 s | 2.4 MB | — | **DUPLICATE** of `Garage 메인.wav`: RMS envelope correlation 0.994 at zero lag, same length |
 | sfx_shutter_open | `assets/new/` | WAV | 2.0 s | 375 KB | entrance shutter | FOUND |
 | sfx_door_open | 〃 | WAV | 2.0 s | 375 KB | outside/secret door | FOUND |
 | sfx_pc_on / sfx_pc_click | 〃 | WAV | 1.0 s each | 188 KB each | PC | FOUND |
@@ -111,7 +111,7 @@ maskable icon need a full-bleed square cropped from it, not the black corners.
 | sfx_fridge_open | 〃 | WAV | 0.6 s | 113 KB | fridge | FOUND |
 | sfx_drawer_open | 〃 | WAV | 2.0 s | 375 KB | cabinet | FOUND |
 | sfx_paper | 〃 | WAV | 3.0 s | 563 KB | cabinet papers / wall | FOUND |
-| sfx_radio_tune | 〃 | WAV | 2.0 s | 375 KB | radio | FOUND (radio object BLOCKED) |
+| sfx_radio_tune | 〃 | WAV | 2.0 s | 375 KB | radio | FOUND — wired to the radio (static station, tuning) |
 | sfx_broom | 〃 | WAV | 2.0 s | 375 KB | broom ambient | FOUND |
 | sfx_crew_step_01 | 〃 | WAV | 0.48 s | 90 KB | crew footsteps | FOUND |
 | sfx_lantern | 〃 | WAV | 2.0 s | 375 KB | Playground / Archive lantern | FOUND |
@@ -139,13 +139,4 @@ exact visual description: a small stack of 4–5 polaroid photos tied with a nav
 one-line generation prompt: "small bundle of polaroid photos tied with navy ribbon and brass star charm, cozy painted storybook game prop, warm lantern light, transparent background, matches starry memory box style"
 ```
 
-```
-BLOCKED_ASSET
-filename: garage_radio_v01.png
-purpose: Garage NIGHT RADIO object (audio hub, channel dial, mute)
-size: 1024×1024
-aspect: 1:1
-alpha/background: transparent PNG
-exact visual description: a small retro wooden table radio with a cream fabric speaker grille, one round brass tuning dial and a short antenna, dokkaebi cloud emblem, felt/plush texture matching the garage furniture, lit by a warm pendant lamp
-one-line generation prompt: "cozy retro wooden table radio with cream speaker grille, brass tuning dial, small antenna and cloud emblem, plush storybook garage prop, warm light, transparent background"
-```
+(The radio BLOCKED_ASSET that was here was withdrawn: `public/assets/images/garage/radio.webp` exists.)

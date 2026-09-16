@@ -4,27 +4,29 @@ import type { Page } from '@playwright/test'
 /**
  * 빌드 중입니다, 부장님 — played rather than inspected.
  *
- * What these hold the game to: it opens from the PC and not instead of it,
- * the controls on the ready screen are the controls that work, getting caught
+ * What these hold the game to: it opens over the room and pauses it, the
+ * controls on the ready screen are the controls that work, getting caught
  * says why, a retry starts from nothing, losing the window pauses and only a
  * button resumes, the build screen earns no points, and leaving puts the
  * garage back exactly as it was.
  */
-async function enter(page: Page): Promise<void> {
+async function enter(page: Page, query = ''): Promise<void> {
   await page.addInitScript(() => {
     try { sessionStorage.clear(); localStorage.clear() } catch { /* private mode */ }
   })
-  await page.goto('/', { waitUntil: 'load' })
+  await page.goto(`/${query}`, { waitUntil: 'load' })
   await page.locator('[data-alley-enter]').click()
   await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
   await page.waitForTimeout(600)
 }
 
+/**
+ * The site's mini-games are not on the PC (that holds the real works only);
+ * until the Playground is built, `?play=<id>` is the way in.
+ */
 async function openGame(page: Page): Promise<void> {
-  await page.evaluate(() =>
-    document.querySelector('.thing--pc')?.dispatchEvent(new MouseEvent('click', { bubbles: true })))
-  await page.locator('[data-minigame="build"]').click()
-  await expect(page.locator('[data-game-start]')).toBeVisible()
+  await enter(page, '?play=build')
+  await expect(page.locator('[data-game-start]')).toBeVisible({ timeout: 8000 })
 }
 
 /**
@@ -48,13 +50,14 @@ const time = (page: Page) => page.locator('[data-game-time]').textContent()
 test.describe('desktop', () => {
   test.use({ viewport: { width: 1280, height: 800 } })
 
-  test('opens from the PC, next to the projects and not instead of them', async ({ page }) => {
+  test('opens over the room, and is not on the PC', async ({ page }) => {
     await enter(page)
     await page.evaluate(() =>
       document.querySelector('.thing--pc')?.dispatchEvent(new MouseEvent('click', { bubbles: true })))
-    await expect(page.locator('[data-minigame="build"]')).toBeVisible()
     await expect(page.locator('[data-game]')).toHaveCount(5)
-    await page.locator('[data-minigame="build"]').click()
+    await expect(page.locator('[data-minigame]')).toHaveCount(0)
+    await page.keyboard.press('Escape')
+    await openGame(page)
     await expect(page.locator('.game-layer')).toBeVisible()
     await expect(page.locator('.game__controls kbd').nth(0)).toHaveText('Space')
     await expect(page.locator('.game__controls kbd').nth(1)).toHaveText('Shift')

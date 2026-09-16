@@ -51,17 +51,22 @@ export const DESKTOP_WORLD: WorldLayout = {
     // frame painted over the television instead (measured: 2788–2962 ×
     // 410–516), which is the shape it already is.
     { id: 'picture-rubato', label: 'RUBATO', zone: 'tvArea', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'rubato' }, rect: { x: 2788, y: 410, w: 174, h: 106 }, outline: 'poster', artwork: 'rubato-opera' },
-    { id: 'cabinet', label: 'Studio file', zone: 'archive', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'cabinet' }, rect: { x: 850, y: 761, w: 143, h: 130 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
-    { id: 'pc', label: 'Games', zone: 'mainDesk', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'pc' }, rect: { x: 1462, y: 563, w: 233, h: 200 }, outline: 'monitor', sfx: 'keyboard', inMenu: true },
-    { id: 'workbench', label: 'Currently building', zone: 'workbench', kind: 'desk', enabled: true, action: { kind: 'panel', panelId: 'building' }, rect: { x: 2048, y: 256, w: 274, h: 344 }, outline: 'rect', sfx: 'drawer', inMenu: true },
-    { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', kind: 'appliance', enabled: true, action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 2362, y: 573, w: 200, h: 397 }, outline: 'fridge', sfx: 'wrapper' },
-    { id: 'tv', label: 'Contact', zone: 'tvArea', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'contact' }, rect: { x: 2680, y: 585, w: 305, h: 203 }, outline: 'tv', sfx: 'click', inMenu: true },
-    { id: 'secret-door', label: 'Locked', zone: 'secretDoor', kind: 'door', enabled: true, action: { kind: 'panel', panelId: 'secret' }, rect: { x: 3212, y: 603, w: 210, h: 372 }, outline: 'arch', sfx: 'bell' },
+    { id: 'cabinet', label: 'Records', zone: 'archive', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'cabinet' }, rect: { x: 850, y: 761, w: 143, h: 130 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
+    { id: 'pc', label: 'Works', zone: 'mainDesk', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'pc' }, rect: { x: 1462, y: 563, w: 233, h: 200 }, outline: 'monitor', sfx: 'keyboard', inMenu: true },
+    { id: 'workbench', label: 'Work in progress', zone: 'workbench', kind: 'desk', enabled: true, action: { kind: 'panel', panelId: 'building' }, rect: { x: 2048, y: 256, w: 274, h: 344 }, outline: 'rect', sfx: 'drawer', inMenu: true },
+    { id: 'fridge', label: 'Fridge', zone: 'fridgeArea', kind: 'appliance', enabled: true, action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 2362, y: 573, w: 200, h: 397 }, outline: 'fridge', sfx: 'wrapper' },
+    { id: 'tv', label: 'EUNGARAGE TV', zone: 'tvArea', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'tv' }, rect: { x: 2680, y: 585, w: 305, h: 203 }, outline: 'tv', sfx: 'click', inMenu: true },
+    { id: 'outside-door', label: 'Outside door', zone: 'secretDoor', kind: 'door', enabled: true, action: { kind: 'panel', panelId: 'outside' }, rect: { x: 3212, y: 603, w: 210, h: 372 }, outline: 'arch', sfx: 'bell' },
+    // Not in the painting: the radio, on the floor at the end of NUNU's rug,
+    // where somebody lying on the cushion can reach the dial. The cut-out is
+    // the garage's own felt radio (garage/radio.webp, 560×493); 116×102 keeps
+    // that shape. Its base line is on the walkway, so passers go in front.
+    { id: 'radio', label: 'Night radio', zone: 'restArea', kind: 'appliance', enabled: true, action: { kind: 'panel', panelId: 'radio' }, rect: { x: 1258, y: 978, w: 116, h: 102 }, art: `${ART}/radio.webp`, sfx: 'click', inMenu: true },
     // Not in the painting: the week's parcel, put down between the television
     // and the door mat. Its base line is below the walkway (the crew's feet
     // stop at 1075), so anyone passing goes behind it. 130 x 108 keeps the
     // cut-out's own 520:431, and both states share that canvas.
-    { id: 'parcel', label: 'Parcel', zone: 'entry', kind: 'storage', enabled: true, action: { kind: 'toggle' }, rect: { x: 3030, y: 1004, w: 130, h: 108 }, art: `${ART}/prop_parcel_closed.webp`, artOpen: `${ART}/prop_parcel_open.webp`, sfx: 'wrapper' },
+    { id: 'parcel', label: 'Parcel', zone: 'entry', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'parcel' }, rect: { x: 3030, y: 1004, w: 130, h: 108 }, art: `${ART}/prop_parcel_closed.webp`, artOpen: `${ART}/prop_parcel_open.webp`, sfx: 'wrapper' },
   ],
 }
 
@@ -97,15 +102,17 @@ export const MOBILE_WORLD: WorldLayout = {
     // taken up to its hanging hook at 2012: the television below limits the
     // hit padding, and 70 units tall is 42px on a 390 phone — short of a finger.
     { id: 'picture-rubato', label: 'RUBATO', zone: 'tvArea', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'rubato' }, rect: { x: 579, y: 2012, w: 120, h: 78 }, outline: 'poster', artwork: 'rubato-opera' },
-    { id: 'cabinet', label: 'Studio file', zone: 'archive', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'cabinet' }, rect: { x: 424, y: 522, w: 142, h: 82 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
-    { id: 'pc', label: 'Games', zone: 'mainDesk', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'pc' }, rect: { x: 439, y: 1251, w: 158, h: 135 }, outline: 'monitorPortrait', sfx: 'keyboard', inMenu: true },
-    { id: 'workbench', label: 'Currently building', zone: 'workbench', kind: 'desk', enabled: true, action: { kind: 'panel', panelId: 'building' }, rect: { x: 831, y: 1152, w: 169, h: 147 }, outline: 'rect', sfx: 'drawer', inMenu: true },
-    { id: 'fridge', label: "Today's snack", zone: 'fridgeArea', kind: 'appliance', enabled: true, action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 276, y: 2121, w: 158, h: 306 }, outline: 'fridge', sfx: 'wrapper' },
-    { id: 'tv', label: 'Contact', zone: 'tvArea', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'contact' }, rect: { x: 508, y: 2138, w: 190, h: 147 }, outline: 'tv', sfx: 'click', inMenu: true },
-    { id: 'secret-door', label: 'Locked', zone: 'secretDoor', kind: 'door', enabled: true, action: { kind: 'panel', panelId: 'secret' }, rect: { x: 862, y: 2149, w: 129, h: 270 }, outline: 'arch', sfx: 'bell' },
+    { id: 'cabinet', label: 'Records', zone: 'archive', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'cabinet' }, rect: { x: 424, y: 522, w: 142, h: 82 }, outline: 'cabinet', sfx: 'drawer', inMenu: true },
+    { id: 'pc', label: 'Works', zone: 'mainDesk', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'pc' }, rect: { x: 439, y: 1251, w: 158, h: 135 }, outline: 'monitorPortrait', sfx: 'keyboard', inMenu: true },
+    { id: 'workbench', label: 'Work in progress', zone: 'workbench', kind: 'desk', enabled: true, action: { kind: 'panel', panelId: 'building' }, rect: { x: 831, y: 1152, w: 169, h: 147 }, outline: 'rect', sfx: 'drawer', inMenu: true },
+    { id: 'fridge', label: 'Fridge', zone: 'fridgeArea', kind: 'appliance', enabled: true, action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 276, y: 2121, w: 158, h: 306 }, outline: 'fridge', sfx: 'wrapper' },
+    { id: 'tv', label: 'EUNGARAGE TV', zone: 'tvArea', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'tv' }, rect: { x: 508, y: 2138, w: 190, h: 147 }, outline: 'tv', sfx: 'click', inMenu: true },
+    { id: 'outside-door', label: 'Outside door', zone: 'secretDoor', kind: 'door', enabled: true, action: { kind: 'panel', panelId: 'outside' }, rect: { x: 862, y: 2149, w: 129, h: 270 }, outline: 'arch', sfx: 'bell' },
+    // The radio beside the rest-area rug on the middle floor.
+    { id: 'radio', label: 'Night radio', zone: 'restArea', kind: 'appliance', enabled: true, action: { kind: 'panel', panelId: 'radio' }, rect: { x: 405, y: 1566, w: 76, h: 67 }, art: `${ART}/radio.webp`, sfx: 'click', inMenu: true },
     // The lower floor has no walkway in portrait, so the parcel only has to
     // clear the television stand and the mat. 150 wide is 53px at 390.
-    { id: 'parcel', label: 'Parcel', zone: 'centreFloor', kind: 'storage', enabled: true, action: { kind: 'toggle' }, rect: { x: 655, y: 2436, w: 150, h: 124 }, art: `${ART}/prop_parcel_closed.webp`, artOpen: `${ART}/prop_parcel_open.webp`, sfx: 'wrapper' },
+    { id: 'parcel', label: 'Parcel', zone: 'centreFloor', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'parcel' }, rect: { x: 655, y: 2436, w: 150, h: 124 }, art: `${ART}/prop_parcel_closed.webp`, artOpen: `${ART}/prop_parcel_open.webp`, sfx: 'wrapper' },
   ],
 }
 
@@ -130,13 +137,14 @@ export const DECOR: Readonly<Record<'landscape' | 'portrait', readonly { readonl
  * that already know them. One line per thing, naming what it opens.
  */
 export const CAPTIONS: Readonly<Record<string, string>> = {
-  pc: 'PC · 작품과 미니게임',
-  workbench: '작업대 · 스튜디오',
-  tv: 'TV · 연락하기',
-  fridge: '냉장고 · 오늘의 간식',
-  cabinet: '캐비닛 · 자료',
-  shelf: '선반 · 컬렉션',
-  'secret-door': '잠긴 문',
+  pc: 'PC · 작품 라이브러리',
+  workbench: '작업대 · 만드는 중',
+  tv: 'TV · 채널 돌리기',
+  radio: '라디오 · 소리',
+  fridge: '냉장고 · 오늘의 냉장고',
+  cabinet: '캐비닛 · 기록',
+  shelf: '선반 · 크루 컬렉션',
+  'outside-door': '바깥문',
   parcel: '택배 · 열어 보기',
   'poster-lunai': 'LUNAI',
   'poster-liminal': 'LIMINAL',
@@ -157,7 +165,8 @@ export const OBJECT_ART: Record<string, string> = {
   workbench: `${ART}/workbench.webp`,
   cabinet: `${ART}/cabinet.webp`,
   tv: `${ART}/tv.webp`,
-  'secret-door': `${ART}/secret_door.webp`,
+  'outside-door': `${ART}/secret_door.webp`,
+  radio: `${ART}/radio.webp`,
   fridge: `${ART}/fridge.webp`,
   shelf: `${ART}/shelf.webp`,
 }

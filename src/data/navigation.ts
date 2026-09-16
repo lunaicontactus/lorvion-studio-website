@@ -122,7 +122,7 @@ const LANDSCAPE: NavGraph = {
     // The locked door. Nothing opens here, which is the point: YOMI's whole
     // character is being interested in it, and without somewhere to stand
     // that preference did nothing at all for fifteen minutes of watching.
-    { id: 'secret-front', x: 3306, y: 1016, objectId: 'secret-door', facing: 'back', kind: 'watch' },
+    { id: 'secret-front', x: 3306, y: 1016, objectId: 'outside-door', facing: 'back', kind: 'watch' },
     // Beside the parcel. Not a place anybody wanders to: only somebody
     // summoned when the box is opened stands here, looking at it.
     { id: 'parcel-side', x: 3062, y: 1060, objectId: 'parcel', facing: 'right', kind: 'watch' },

@@ -12,7 +12,7 @@ const origin = process.argv[2] ?? 'http://localhost:4173'
 const browser = await chromium.launch()
 mkdirSync('e2e/shots', { recursive: true })
 
-const objects = ['pc', 'tv', 'fridge', 'cabinet', 'workbench', 'shelf', 'secret-door', 'poster-lunai']
+const objects = ['pc', 'tv', 'fridge', 'cabinet', 'workbench', 'shelf', 'outside-door', 'poster-lunai']
 
 for (const vp of [{ w: 1440, h: 900 }, { w: 390, h: 844 }]) {
   const page = await browser.newPage({

@@ -51,6 +51,23 @@ async function when(page, want, then) {
   return undefined
 }
 
+/** A head crop the first time POKO is seen walking each way. */
+async function sides(page, tag) {
+  const want = new Set(['left', 'right'])
+  const until = Date.now() + 60000
+  while (want.size && Date.now() < until) {
+    const src = (await page.getAttribute('[data-poko-bossimg]', 'src')) ?? ''
+    const state = await page.getAttribute('[data-poko-boss]', 'data-state')
+    const m = /_walk_(left|right)_/.exec(src)
+    if (state === 'PATROLLING' && m && want.has(m[1])) {
+      want.delete(m[1])
+      await head(page, `${tag}_side_${m[1]}`)
+    }
+    await page.waitForTimeout(30)
+  }
+  if (want.size) { console.log(`  never saw walking ${[...want].join(', ')}`); bad += 1 }
+}
+
 {
   const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 4 })
   const page = await ctx.newPage()
@@ -58,11 +75,12 @@ async function when(page, want, then) {
   await enterGame(page, false)
   await when(page, 'WATCHING', async () => {
     const tag = await page.addStyleTag({ content: '.poko__glasses{display:none!important}' })
-    await head(page, '1_plain')
+    await head(page, 'desktop_1_plain')
     await tag.evaluate((el) => el.remove())
-    await head(page, '2_front')
+    await head(page, 'desktop_2_front')
   })
-  await when(page, 'PATROLLING', () => head(page, '3_side'))
+  await when(page, 'PATROLLING', () => head(page, 'desktop_3_patrol'))
+  await sides(page, 'desktop_4')
   // The warning plays the head-turn: one crop per distinct frame.
   await when(page, 'WARNING', async () => {
     const done = new Set()
@@ -71,11 +89,22 @@ async function when(page, want, then) {
       const src = await page.getAttribute('[data-poko-bossimg]', 'src')
       if (src && !done.has(src) && await page.getAttribute('[data-poko-boss]', 'data-state') === 'WARNING') {
         done.add(src)
-        await head(page, `4_warning_${done.size}`)
+        await head(page, `desktop_5_warning_${done.size}`)
       }
       await page.waitForTimeout(20)
     }
   })
+  await when(page, 'WATCHING', () => head(page, 'desktop_6_watching'))
+  await ctx.close()
+}
+
+// The phone, both ways up: the warning and the look, at the size they are.
+for (const [name, w, h] of [['portrait', 390, 844], ['landscape', 844, 390]]) {
+  const ctx = await b.newContext({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true, deviceScaleFactor: 4 })
+  const page = await ctx.newPage()
+  await enterGame(page, true)
+  await when(page, 'WARNING', async () => { await page.waitForTimeout(150); await head(page, `${name}_warning`) })
+  await when(page, 'WATCHING', () => head(page, `${name}_watching`))
   await ctx.close()
 }
 
@@ -94,5 +123,5 @@ for (const [file, w, h, mobile] of [
 }
 
 await b.close()
-console.log(bad ? `${bad} problem(s)` : 'all six taken')
+console.log(bad ? `${bad} problem(s)` : 'all taken')
 process.exitCode = bad ? 1 : 0

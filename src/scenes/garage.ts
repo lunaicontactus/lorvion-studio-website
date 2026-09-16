@@ -150,6 +150,8 @@ export interface GarageHandle {
    * glow under the locked door. Nothing moves; only the light changes.
    */
   setWorld(world: string | null): void
+  /** Open or shut a two-state thing (the parcel) from outside the room. */
+  setThingOpen(id: string, open: boolean): void
   readonly world: WorldLayout
   destroy(): void
 }
@@ -211,6 +213,32 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   let parked: { x: number; y: number } | null = null
   /** Things with two states that have been opened. Kept across a rebuild on rotation. */
   const opened = new Set<string>()
+  /**
+   * A thing with two states (the parcel), set open or shut — from its own
+   * toggle, or from the panel that shows what is in it. Opening the parcel
+   * brings whoever is nearest and free over to see.
+   */
+  const setOpen = (id: string, now: boolean): void => {
+    const obj = world.objects.find((o) => o.id === id)
+    if (!obj) return
+    if (now) opened.add(id)
+    else opened.delete(id)
+    const el = roomEl.querySelector<HTMLElement>(`[data-object="${id}"]`)
+    el?.classList.toggle('is-open', now)
+    // A pressed state only where the thing is a switch; the parcel opens a
+    // panel now, and a dialog button is not a toggle.
+    if (obj.action.kind === 'toggle') el?.setAttribute('aria-pressed', String(now))
+    if (now && id === 'parcel') {
+      const spot = navFor(world.height > world.width).points.find((p) => p.objectId === 'parcel')
+      if (spot) {
+        const cx = obj.rect.x + obj.rect.w / 2
+        const free = crew
+          .filter((c) => !c.away && (c.state === 'IDLE' || c.state === 'LOOK' || c.state === 'CHOOSE_TARGET' || c.state === 'INTERACT'))
+          .sort((a, b) => Math.abs(a.at.x - cx) - Math.abs(b.at.x - cx))
+        for (const one of free) if (Math.abs(one.at.x - cx) < 1100 && one.summon(spot)) break
+      }
+    }
+  }
   let world: WorldLayout = worldFor(false)
   let scale = 1
   /** The visible window, in world units. Kept so the crew can be culled. */
@@ -370,7 +398,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     wash.className = 'garage__wash'
     wash.setAttribute('aria-hidden', 'true')
     roomEl.append(wash)
-    const door = world.objects.find((o) => o.id === 'secret-door')
+    const door = world.objects.find((o) => o.id === 'outside-door')
     if (door) {
       const spill = document.createElement('div')
       spill.className = 'garage__doorlight'
@@ -477,7 +505,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
           open.decoding = 'async'
           fit(open)
           el.append(open)
-          el.setAttribute('aria-pressed', String(opened.has(obj.id)))
+          if (obj.action.kind === 'toggle') el.setAttribute('aria-pressed', String(opened.has(obj.id)))
           el.classList.toggle('is-open', opened.has(obj.id))
         }
       }
@@ -488,22 +516,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         if (obj.action.kind === 'toggle') {
           // Nothing opens. The thing itself changes, and stays changed —
           // through a rebuild on rotation as well.
-          const now = !opened.has(obj.id)
-          if (now) opened.add(obj.id)
-          else opened.delete(obj.id)
-          el.classList.toggle('is-open', now)
-          el.setAttribute('aria-pressed', String(now))
-          // Opened: whoever is nearest and free comes over to see what is in it.
-          if (now && obj.id === 'parcel') {
-            const spot = navFor(world.height > world.width).points.find((p) => p.objectId === 'parcel')
-            if (spot) {
-              const cx = obj.rect.x + obj.rect.w / 2
-              const free = crew
-                .filter((c) => !c.away && (c.state === 'IDLE' || c.state === 'LOOK' || c.state === 'CHOOSE_TARGET' || c.state === 'INTERACT'))
-                .sort((a, b) => Math.abs(a.at.x - cx) - Math.abs(b.at.x - cx))
-              for (const one of free) if (Math.abs(one.at.x - cx) < 1100 && one.summon(spot)) break
-            }
-          }
+          setOpen(obj.id, !opened.has(obj.id))
           return
         }
         opts.onObject?.(obj)
@@ -1065,6 +1078,9 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       // leaves the PC itself in the half that stays visible.
       const aside = id === 'pc' && scene.clientWidth >= 1000 ? viewW * 0.24 : 0
       camera.moveTo(obj.rect.x + obj.rect.w / 2 + aside, obj.rect.y + obj.rect.h / 2)
+    },
+    setThingOpen(id: string, open: boolean): void {
+      setOpen(id, open)
     },
     setWorld(w: string | null): void {
       if (w) scene.dataset['world'] = w

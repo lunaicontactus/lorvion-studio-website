@@ -16,12 +16,14 @@ import type { Page } from '@playwright/test'
  */
 const OPENS: Readonly<Record<string, string>> = {
   pc: '.crt',
-  workbench: '.note',
+  workbench: '.bench2',
   tv: '.tvset',
+  radio: '.radio',
+  parcel: '.delivery',
   cabinet: '.drawer',
   fridge: '.fridge',
   shelf: '.shelf',
-  'secret-door': '.dark',
+  'outside-door': '.dark',
   'poster-lunai': '[data-kind~="poster--lunai"] .wall',
   'poster-liminal': '[data-kind~="poster--liminal"] .wall',
   'poster-wormup': '[data-kind~="poster--wormup"] .wall',
@@ -29,8 +31,10 @@ const OPENS: Readonly<Record<string, string>> = {
   'picture-rubato': '[data-kind~="poster--rubato"] .wall',
 }
 
-/** Things that open nothing: touching one changes the thing itself. */
-const TOGGLES: readonly string[] = ['parcel']
+/** Things that open nothing: touching one changes the thing itself. The
+ *  parcel used to be one; it opens a delivery now, and the box in the room
+ *  opens with it. */
+const TOGGLES: readonly string[] = []
 
 async function enter(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -82,8 +86,8 @@ test.describe('desktop', () => {
     await enter(page)
     await touch(page, 'pc')
     await expect(page.locator('[data-game]')).toHaveCount(5, { timeout: 6000 })
-    // The projects are the second list on the monitor; the mini-games sit
-    // above them in a list of their own.
+    // The works are the only list on the monitor: the site's mini-games are
+    // not on the PC.
     for (const title of ['LUNAI', 'LIMINAL', 'WORM UP!', 'LUMIORA', 'RUBATO']) {
       await expect(page.locator('.hub').last()).toContainText(title)
     }

@@ -63,9 +63,7 @@ class AudioManager {
 
   /**
    * Looping room tone. Fetches the track the first time it is switched on.
-   * Nothing turns it on today: the radio was taken out of the garage, and this
-   * stayed because it is the audio system's own capability, not that fixture's
-   * wiring.
+   * The radio's 91.7 NIGHT station plays the same file through `tune`.
    */
   toggleAmbient(on: boolean, volume = 0.32): void {
     this.ambientOn = on
@@ -87,15 +85,72 @@ class AudioManager {
     return this.ambientOn && !!this.ambient && !this.ambient.paused
   }
 
+  // ── The radio: one station at a time ───────────────────────────────────
+  private station: HTMLAudioElement | null = null
+  private stationSrc: string | null = null
+  private stationVolume = 0.3
+
+  /**
+   * Tune the one station stream to a looping track, or to nothing. There is
+   * only ever one element: tuning replaces its source rather than starting a
+   * second player, so switching stations quickly cannot stack audio.
+   */
+  tune(src: string | null, volume = 0.3): void {
+    this.stationSrc = src
+    this.stationVolume = volume
+    if (!src) {
+      this.station?.pause()
+      return
+    }
+    if (!this.unlocked || !pref.enabled) return
+    if (!this.station) {
+      this.station = new Audio()
+      this.station.loop = true
+      this.station.preload = 'none'
+    }
+    const abs = new URL(src, location.href).href
+    if (this.station.src !== abs) this.station.src = src
+    this.station.volume = volume
+    void this.station.play().catch((err: unknown) => log.debug('audio: station', err))
+  }
+
+  /** What the radio is tuned to, and whether anything is actually coming out. */
+  get stationPlaying(): boolean {
+    return !!this.stationSrc && !!this.station && !this.station.paused
+  }
+
+  get tunedTo(): string | null {
+    return this.stationSrc
+  }
+
   /** Called when the mute preference changes. */
   syncPreference(): void {
     if (!pref.enabled) {
       this.ambient?.pause()
+      this.station?.pause()
       for (const el of this.cache.values()) el.pause()
-    } else if (this.ambientOn) {
-      this.toggleAmbient(true)
+      return
+    }
+    this.unlocked = true
+    if (this.ambientOn) this.toggleAmbient(true)
+    if (this.stationSrc) this.tune(this.stationSrc, this.stationVolume)
+  }
+
+  /** The tab went away: nothing keeps playing to an empty room. */
+  onHidden(hidden: boolean): void {
+    if (hidden) {
+      this.station?.pause()
+      this.ambient?.pause()
+    } else if (pref.enabled && this.unlocked) {
+      if (this.stationSrc) this.tune(this.stationSrc, this.stationVolume)
+      if (this.ambientOn) this.toggleAmbient(true)
     }
   }
 }
 
 export const audio = new AudioManager()
+// One subscription for the life of the page: the preference is the switch.
+pref.subscribe(() => audio.syncPreference())
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => audio.onHidden(document.hidden))
+}

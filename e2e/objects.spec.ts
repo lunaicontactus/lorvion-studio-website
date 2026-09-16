@@ -69,7 +69,7 @@ for (const vp of [
       await expect(page.locator('[data-game]')).toHaveCount(5, { timeout: 5000 })
       // The camera went to the object rather than the panel simply appearing.
       expect(samePlace(await roomAt(page), before)).toBe(false)
-      await expect(page.locator('[data-panel]')).toContainText('EUNGARAGE SOFTWARE')
+      await expect(page.locator('[data-panel]')).toContainText('EUNGARAGE OS')
 
       await page.locator('[data-game="liminal"]').click()
       await expect(page.locator('.crtgame__name')).toHaveText('LIMINAL')
@@ -87,26 +87,25 @@ for (const vp of [
       expect(samePlace(await roomAt(page), before)).toBe(true)
     })
 
-    test('the bench holds the studio, and the television can be switched off', async ({ page }) => {
+    test('the bench holds work in progress, and the television changes channel', async ({ page }) => {
       await enter(page)
 
       await touch(page, 'workbench')
-      await expect(page.locator('.note__lede')).toBeVisible({ timeout: 5000 })
-      await expect(page.locator('[data-panel]')).toContainText('Made in our garage.')
-      await expect(page.locator('.note__row')).toHaveCount(5)
+      await expect(page.locator('.bench2__img')).toBeVisible({ timeout: 5000 })
+      await expect(page.locator('.bench2__commit')).toHaveText(/^[0-9a-f]{7}$/)
+      // Not the list of works: that is the PC's.
+      await expect(page.locator('[data-game], .note__row')).toHaveCount(0)
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
 
       await touch(page, 'tv')
-      await expect(page.locator('.tvrow__value')).toHaveText('eungarage@gmail.com', {
-        timeout: 5000,
-      })
+      await expect(page.locator('[data-tv]')).toHaveAttribute('data-channel', 'news', { timeout: 5000 })
+      await page.locator('[data-tv-go="3"]').click()
+      await expect(page.locator('.tvrow__value')).toHaveText('eungarage@gmail.com', { timeout: 5000 })
       await expect(page.locator('.tvrow__value')).toHaveAttribute('href', /^mailto:/)
-      await page.locator('[data-tv-power]').click()
-      await expect(page.locator('[data-tv]')).toHaveClass(/is-off/)
+      await page.locator('[data-tv-go="4"]').click()
+      await expect(page.locator('[data-tv-nosignal]')).toBeVisible({ timeout: 5000 })
       await expect(page.locator('.tvrow__value')).toHaveCount(0)
-      await page.locator('[data-tv-power]').click()
-      await expect(page.locator('.tvrow__value')).toHaveCount(1)
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
     })
@@ -133,7 +132,7 @@ test.describe('desktop', () => {
     await expect(page.locator(panel)).toBeHidden()
     // And the room takes input again.
     await touch(page, 'workbench')
-    await expect(page.locator('.note__lede')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('.bench2')).toBeVisible({ timeout: 5000 })
   })
 
   test('back closes what is open instead of leaving the site', async ({ page }) => {
@@ -155,10 +154,9 @@ test.describe('desktop', () => {
     await page.keyboard.press('Escape')
     await expect(page.locator(panel)).toBeHidden()
 
-    await page.locator('.nav-links a', { hasText: 'Studio' }).click()
-    await expect(page.locator('.note__lede')).toBeVisible({ timeout: 5000 })
-    await page.keyboard.press('Escape')
-    await expect(page.locator(panel)).toBeHidden()
+    // Studio is a page of its own: the workbench is work in progress, not
+    // the studio's introduction.
+    await expect(page.locator('.nav-links a', { hasText: 'Studio' })).toHaveAttribute('href', './studio.html')
 
     await page.locator('.nav-links a', { hasText: 'Contact' }).click()
     await expect(page.locator('.tvrow__value')).toHaveCount(1, { timeout: 5000 })
@@ -239,6 +237,7 @@ test('a visitor who does not want motion still gets the whole thing', async ({ b
   await page.keyboard.press('Escape')
   await expect(page.locator(panel)).toBeHidden()
   await touch(page, 'tv')
-  await expect(page.locator('.tvrow__value')).toHaveCount(1, { timeout: 2000 })
+  // No warm-up: the first channel is simply on.
+  await expect(page.locator('[data-tv-news]')).toBeVisible({ timeout: 2000 })
   await context.close()
 })

@@ -47,7 +47,7 @@ const PROFILES: Readonly<Record<string, BehaviourProfile>> = {
   // Trouble. Short trips, changes its mind, hangs about near the locked door.
   yomi: {
     idle: 2, wander: 6, work: 1, sit: 1, look: 5,
-    favours: ['secret-door'], pace: 1.15, idleFor: [1800, 6000], waveChance: 0.55,
+    favours: ['outside-door'], pace: 1.15, idleFor: [1800, 6000], waveChance: 0.55,
     workFor: [3000, 7000], sitFor: [5000, 11000],
     // Approaches first, every time, and is delighted to be interrupted.
     social: 0.9, stubborn: 0.05, talkative: 5, home: 'fridge-front',

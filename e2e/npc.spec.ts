@@ -265,7 +265,12 @@ test.describe('desktop', () => {
     const hit = page.locator(`${MOMO} .npc__hit`)
     await expect(hit).toHaveCount(1)
     // Big enough to hit on a phone, and the same floor the room's things use.
-    const box = await hit.boundingBox()
+    // Both boxes from one frame: MOMO may be walking, and two round trips
+    // read the hit area and the art half a pixel apart from each other.
+    const { box, art } = await page.evaluate((sel) => {
+      const r = (el: Element | null) => { const b = el!.getBoundingClientRect(); return { x: b.x, y: b.y, width: b.width, height: b.height } }
+      return { box: r(document.querySelector(`${sel} .npc__hit`)), art: r(document.querySelector(`${sel} img`)) }
+    }, MOMO)
     expect(box!.width).toBeGreaterThanOrEqual(44)
     expect(box!.height).toBeGreaterThanOrEqual(44)
     // Over the dokkaebi, which sounds too obvious to test until it is not.
@@ -273,7 +278,6 @@ test.describe('desktop', () => {
     // feet, so for a while it sat entirely on the floor underneath the
     // character and a visitor clicking one hit nothing at all. Every test
     // here passed, because they all clicked with { force: true }.
-    const art = (await page.locator(`${MOMO} img`).boundingBox())!
     expect(box!.y).toBeGreaterThan(art.y)
     expect(box!.y + box!.height).toBeLessThanOrEqual(art.y + art.height + 2)
     // So: a real click, at the middle of the sprite, with nothing forced.
@@ -535,6 +539,6 @@ test('a visitor who does not want motion gets somebody standing still', async ({
   expect(settled.frames).toBe(1)
   expect(settled.places).toBe(1)
   // And the room is otherwise complete.
-  await expect(page.locator('.thing')).toHaveCount(13)
+  await expect(page.locator('.thing')).toHaveCount(14) // 12 painted things, the parcel, and the radio
   await context.close()
 })

@@ -48,3 +48,15 @@
 }
 
 
+
+/* The site's mute switch: the same preference the garage radio uses. Function
+   layer, always in the nav, never hidden behind hover. */
+.sound-toggle{display:inline-grid;place-items:center;width:44px;height:44px;margin-left:auto;margin-right:4px;
+  border:0;border-radius:999px;background:transparent;color:inherit;cursor:pointer}
+.nav-inner .sound-toggle{order:2}
+.sound-toggle:hover,.sound-toggle:focus-visible{background:rgba(127,127,127,.14)}
+.sound-toggle .sound-toggle__on{display:none}
+.sound-toggle[data-state="on"] .sound-toggle__on{display:inline}
+.sound-toggle[data-state="on"] .sound-toggle__off{display:none}
+.site-nav{color:#d7d9e2}
+.page-cozy .sound-toggle{color:var(--cozy-ink)}

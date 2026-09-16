@@ -26,7 +26,8 @@ import type { WorldObject } from '@/types/world'
 /** Which nav link stands for which thing in the room. */
 const NAV_TARGETS: Readonly<Record<string, string>> = {
   games: 'pc',
-  studio: 'workbench',
+  // STUDIO keeps its own page: the workbench is work in progress now, not
+  // the studio's introduction.
   contact: 'tv',
 }
 
@@ -50,14 +51,8 @@ export function mountWorld(): () => void {
       if (world) panelRoot.dataset['world'] = world
       else delete panelRoot.dataset['world']
     },
-    // A game is not a panel: the monitor closes, the room stops behind the
-    // game, and the game has the whole screen and the whole keyboard.
-    onPlay: (gameId) => {
-      const def = gameById(gameId)
-      if (!def) return
-      interaction.dismiss({ instant: true })
-      games.open(def)
-    },
+    // The parcel in the room opens with its panel and shuts after it.
+    onThingOpen: (id, open) => garage?.setThingOpen(id, open),
   })
   const gameRoot = document.querySelector<HTMLElement>('[data-game-root]')!
   const games = new GameRunner(gameRoot, {
@@ -103,10 +98,16 @@ export function mountWorld(): () => void {
         panels.openPc()
         break
       case 'building':
-        panels.openStudioDesk()
+        panels.openWorkbench()
         break
-      case 'contact':
-        panels.openContact()
+      case 'tv':
+        panels.openTv()
+        break
+      case 'radio':
+        panels.openRadio()
+        break
+      case 'parcel':
+        panels.openParcel()
         break
       case 'fridge':
         panels.openFridge()
@@ -117,8 +118,8 @@ export function mountWorld(): () => void {
       case 'shelf':
         panels.openShelf()
         break
-      case 'secret':
-        panels.openSecret()
+      case 'outside':
+        panels.openOutsideDoor()
         break
       default:
         log.debug('world: no interface for', action.panelId)
@@ -240,10 +241,12 @@ export function mountWorld(): () => void {
   for (const link of document.querySelectorAll<HTMLAnchorElement>('.nav-links a')) {
     const key = (link.textContent ?? '').trim().toLowerCase()
     const target = NAV_TARGETS[key]
-    if (!target) continue // SUPPORT keeps its own page.
+    if (!target) continue // STUDIO and SUPPORT keep their own pages.
     const onClick = (e: MouseEvent): void => {
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
       e.preventDefault()
+      // CONTACT is a channel on the television, not the television's first one.
+      if (key === 'contact') panels.preferChannel('contact')
       goTo(target)
     }
     link.addEventListener('click', onClick)
@@ -273,10 +276,10 @@ export function mountWorld(): () => void {
         // Someone arrived on /#pc: open it once the room is up.
         const wanted = location.hash.replace('#', '')
         if (wanted && objectById(wanted)) setTimeout(() => goTo(wanted, { fromHistory: true }), 240)
-        // And /?play=build opens a game straight away. It is how the shell is
-        // walked end to end in a test — the game it opens there is one that
-        // only exists in a dev build (src/games/registry.ts) — and it is a
-        // real deep link for the games the PC lists.
+        // And /?play=<id> opens a game straight away. It is how the shell is
+        // walked end to end in a test, and until the Dokkaebi Playground is
+        // built it is the only way into the site's mini-games: they are not
+        // on the PC, which holds the real works only.
         const play = new URLSearchParams(location.search).get('play')
         const def = play ? gameById(play) : undefined
         if (def) setTimeout(() => games.open(def), 260)
