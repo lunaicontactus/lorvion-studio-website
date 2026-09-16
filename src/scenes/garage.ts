@@ -24,6 +24,7 @@ import { audio } from '@/systems/audio'
 import { save } from '@/systems/storage'
 import { log } from '@/systems/log'
 import { artworkById, wallSrc, aspectOf } from '@/data/artwork'
+import type { Mount } from '@/data/artwork'
 import { getProject } from '@/data/projects'
 import { mountNpc, npcAllowed, seededRandom, type NpcHandle } from '@/scenes/npc'
 import { Crowd } from '@/systems/crowd'
@@ -32,97 +33,88 @@ import { Faces } from '@/systems/faces'
 import { CrewInteractions } from '@/systems/interactions'
 import { pointNamed, navFor } from '@/data/navigation'
 
-/**
- * How crooked this sheet is, in degrees. Small, and the same every time: a
- * tilt that changed between two renders would look like the wall shivering.
- */
-function tiltOf(id: string): number {
-  let n = 0
-  for (let i = 0; i < id.length; i++) n = (n * 31 + id.charCodeAt(i)) % 1000
-  return ((n % 17) - 8) / 10
-}
+/** The frame's own edge, in world units, by how the piece is mounted. */
+const MOUNT_EDGE: Record<Mount, number> = { poster: 0, print: 3, wood: 6 }
 
 /**
- * Print a real piece of the studio's work onto the sheet of paper a painted
- * poster is occupying.
+ * Hang a real piece of the studio's work over the painted thing in its place.
  *
- * The sheet is the object's rect, because that is the painted paper it has to
- * cover. The picture is not: it is laid into the sheet at the proportions it
- * was drawn at and nothing is cut off, so a 9:16 key visual stands tall with
- * paper showing either side of it and a 16:9 background lies wide with the
- * project's name set underneath. Which is what a printed sheet looks like.
+ * The frame is the picture's shape, full stop: there is no sheet of paper
+ * around it for a mismatched shape to show through. It is sized to *cover*
+ * the painted poster or frame underneath — the smallest box at the picture's
+ * own aspect that is at least as big as the painted one in both directions —
+ * so nothing painted peeks out and nothing of the picture is cut off.
  *
- * Everything is in world units. The camera scales the room, so this is the
- * same on a phone and on a desk.
+ * The name goes on a small memo pinned over the bottom corner, not on a strip
+ * of paper under the picture; that strip was most of what made the wall read
+ * as four identical cards.
+ *
+ * Everything is in world units; the camera scales the room.
  */
 function hangPrint(obj: { rect: { w: number; h: number }; artwork?: string }, pad: number): HTMLElement | null {
   const piece = obj.artwork ? artworkById(obj.artwork) : undefined
   if (!piece) return null
   const project = getProject(piece.projectId)
-  // A few units bigger than the painted poster all round, because the sheet
-  // is tilted and a tilted rectangle reaches past its own corners. Four is
-  // enough for the angle below and well inside the gap to the next sheet.
+  const edge = MOUNT_EDGE[piece.mount]
+  // Past the painted thing by a few units all round: the sheet is tilted, and
+  // a tilted rectangle's corners fall inside its own bounding box.
   const bleed = 4
-  const w = obj.rect.w + bleed * 2
-  const h = obj.rect.h + bleed * 2
-  const margin = Math.max(4, Math.round(Math.min(w, h) * 0.05))
-  // The name always gets a line. Anything the picture does not use is given
-  // to that line rather than left as an accidental gap at the bottom.
-  const floor = Math.max(18, Math.round(h * 0.09))
-  const boxW = w - margin * 2
-  const boxH = h - margin * 2 - floor
-  const scale = Math.min(boxW / piece.width, boxH / piece.height)
-  const imgW = Math.round(piece.width * scale)
-  const imgH = Math.round(piece.height * scale)
-  // Paper left over goes above the picture as well as below it, a little more
-  // below than above: a print mounted dead centre looks low, and a wide
-  // picture pinned to the top of a tall sheet looks like it slipped.
-  const slack = boxH - imgH
-  const imgTop = margin + Math.round(slack * 0.42)
+  const needW = obj.rect.w + bleed * 2
+  const needH = obj.rect.h + bleed * 2
+  const aspect = aspectOf(piece)
+  // Cover: the picture (inside its frame edge) at its own shape, big enough
+  // for both directions.
+  let imgH = needH - edge * 2
+  let imgW = imgH * aspect
+  if (imgW + edge * 2 < needW) {
+    imgW = needW - edge * 2
+    imgH = imgW / aspect
+  }
+  imgW = Math.round(imgW)
+  imgH = Math.round(imgH)
+  const w = imgW + edge * 2
+  const h = imgH + edge * 2
 
   const sheet = document.createElement('span')
-  sheet.className = 'print'
+  sheet.className = `print print--${piece.mount}`
   sheet.dataset['artwork'] = piece.id
+  sheet.dataset['mount'] = piece.mount
   sheet.dataset['aspect'] = aspectOf(piece).toFixed(4)
   sheet.setAttribute('aria-hidden', 'true')
   Object.assign(sheet.style, {
-    left: `${pad - bleed}px`, top: `${pad - bleed}px`, width: `${w}px`, height: `${h}px`,
+    left: `${pad + Math.round((obj.rect.w - w) / 2)}px`,
+    top: `${pad + Math.round((obj.rect.h - h) / 2)}px`,
+    width: `${w}px`, height: `${h}px`,
     // Pinned by hand, one at a time. Fixed per piece so it never twitches.
-    transform: `rotate(${tiltOf(piece.id)}deg)`,
+    transform: `rotate(${piece.tilt}deg)`,
   })
+  // A custom property: Object.assign on style silently drops these.
+  sheet.style.setProperty('--edge', `${edge}px`)
 
   const img = document.createElement('img')
   img.className = 'print__img'
   img.src = wallSrc(piece)
   img.alt = ''
   img.decoding = 'async'
-  Object.assign(img.style, {
-    left: `${margin + Math.round((boxW - imgW) / 2)}px`,
-    top: `${imgTop}px`,
-    width: `${imgW}px`,
-    height: `${imgH}px`,
-  })
+  Object.assign(img.style, { left: `${edge}px`, top: `${edge}px`, width: `${imgW}px`, height: `${imgH}px` })
   sheet.append(img)
 
-  const cap = document.createElement('span')
-  cap.className = 'print__cap'
-  const capTop = imgTop + imgH
-  const capH = h - margin - capTop
-  Object.assign(cap.style, {
-    left: `${margin}px`, top: `${capTop}px`, width: `${boxW}px`, height: `${capH}px`,
-    fontSize: `${Math.max(9, Math.min(20, Math.round(w * 0.085)))}px`,
-  })
-  const name = document.createElement('b')
-  name.textContent = project?.title ?? ''
-  cap.append(name)
-  // A second line only where there is room for one. A tagline squeezed into
-  // eight pixels is a smudge, not a sentence.
-  if (capH >= 54 && project) {
-    const sub = document.createElement('i')
-    sub.textContent = project.taglineKo
-    cap.append(sub)
+  if (piece.mount === 'poster') {
+    for (const side of ['l', 'r']) {
+      const tape = document.createElement('i')
+      tape.className = `print__tape print__tape--${side}`
+      sheet.append(tape)
+    }
   }
-  sheet.append(cap)
+
+  // The name, on a scrap of paper pinned over the lower corner.
+  const memo = document.createElement('span')
+  memo.className = 'print__memo'
+  memo.textContent = project?.title ?? ''
+  Object.assign(memo.style, {
+    fontSize: `${Math.max(8, Math.min(15, Math.round(Math.min(w, h * 0.7) * 0.075)))}px`,
+  })
+  sheet.append(memo)
   return sheet
 }
 

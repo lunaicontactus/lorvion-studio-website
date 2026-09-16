@@ -172,44 +172,45 @@
   pointer-events:none;
 }
 
-/* A real piece of the studio's work, printed on a sheet of paper and pinned
-   over the painted poster underneath.
-
-   The sheet is opaque because it has a painted one to cover. The picture is
-   not stretched into the sheet and is not cropped by it: the scene works out
-   its size from the picture's own proportions and writes both in, so a tall
-   picture stands tall and a wide one lies wide, with paper showing where the
-   two shapes disagree. Every size here is a world unit; the camera scales
-   the room, so these are the same on a phone. */
+/* A real piece of the studio's work, hung over the painted poster or frame in
+   its place (garage.ts hangPrint). The box is the picture's own shape plus the
+   frame's edge — there is no paper around it, so no shape can show through as
+   a white or cream margin. Three ways of hanging, so the wall reads as a wall
+   and not as a grid of identical cards. Every size is a world unit. */
 .print{
   position:absolute;pointer-events:none;
-  background:linear-gradient(176deg,#f0e5cd 0%,#e7dabf 62%,#e2d3b6 100%);
-  border-radius:3px;
-  box-shadow:0 3px 8px rgba(58,42,26,.36), inset 0 0 0 1px rgba(120,96,66,.24);
-  transform-origin:50% 8%;
+  transform-origin:50% 6%;
+  box-shadow:0 3px 8px rgba(58,42,26,.38);
 }
-.print__img{
-  position:absolute;max-width:none;display:block;
-  border-radius:2px;
-  box-shadow:0 0 0 1px rgba(92,72,48,.26);
+.print__img{position:absolute;max-width:none;display:block}
+/* A poster: the picture is the sheet, held up by two strips of tape. */
+.print--poster{border-radius:1px}
+.print__tape{
+  position:absolute;top:-5px;width:26%;height:11px;
+  background:rgba(236,224,196,.78);
+  box-shadow:0 1px 2px rgba(58,42,26,.18);
 }
-.print__cap{
-  position:absolute;display:flex;flex-direction:column;justify-content:center;
-  align-items:center;gap:.28em;text-align:center;overflow:hidden;
-  color:#5b452e;line-height:1.15;
+.print__tape--l{left:-6%;transform:rotate(-24deg)}
+.print__tape--r{right:-6%;transform:rotate(22deg)}
+/* A print: a thin dark frame. */
+.print--print{background:#2f241b;border-radius:2px;
+  box-shadow:0 3px 9px rgba(40,28,16,.45), inset 0 0 0 1px rgba(255,236,200,.12)}
+/* In a wooden frame: the painted one it hangs in, carried on. */
+.print--wood{background:linear-gradient(135deg,#9a6a3a,#6e4724 55%,#8a5b30);border-radius:2px;
+  box-shadow:0 2px 6px rgba(40,28,16,.4), inset 0 0 0 1px rgba(40,24,10,.5)}
+/* Its name, on a scrap of paper pinned over the lower corner. */
+.print__memo{
+  position:absolute;right:-4%;bottom:-3%;
+  padding:.28em .55em .3em;
+  background:#efe3c8;color:#4d3a27;
+  font-family:var(--mono);font-weight:700;letter-spacing:.08em;line-height:1;white-space:nowrap;
+  box-shadow:0 1px 3px rgba(58,42,26,.35);
+  transform:rotate(-4deg);
 }
-.print__cap b{
-  font-family:var(--mono);font-weight:700;letter-spacing:.1em;font-size:1em;
-}
-.print__cap i{
-  font-style:normal;font-size:.62em;letter-spacing:.02em;opacity:.72;
-  padding:0 .3em;
-}
+.print--wood .print__memo{right:auto;left:-3%;bottom:-14%;transform:rotate(3deg)}
 /* Under the pointer the sheet lifts the way paper does, not the way a button
    does. The lift is on the thing, so it is one movement with the outline. */
-.thing:hover .print,.thing:focus-visible .print{
-  box-shadow:0 5px 12px rgba(58,42,26,.4), inset 0 0 0 1px rgba(120,96,66,.3);
-}
+.thing:hover .print,.thing:focus-visible .print{box-shadow:0 6px 14px rgba(58,42,26,.44)}
 
 @media (prefers-reduced-motion:reduce){
   .thing__outline,.thing__lift{transition:none}

@@ -17,6 +17,17 @@
  */
 
 export type ArtworkKind = 'keyart' | 'still'
+
+/**
+ * How a piece hangs. A wall where everything is the same sheet of paper is a
+ * portfolio grid; a studio wall is a taped-up poster next to a framed print
+ * next to a picture in a wooden frame.
+ *
+ *   poster  full bleed, taped at the top corners
+ *   print   full bleed in a thin dark frame
+ *   wood    full bleed in a wooden picture frame (hung in a painted one)
+ */
+export type Mount = 'poster' | 'print' | 'wood'
 export type Orientation = 'portrait' | 'landscape' | 'square'
 
 export interface Artwork {
@@ -26,16 +37,23 @@ export interface Artwork {
   /** The source's own size, in its own pixels. */
   readonly width: number
   readonly height: number
+  readonly mount: Mount
+  /**
+   * Degrees, set by hand. Neighbouring posters have to cover painted ones a
+   * few units apart, so they touch; opposite small tilts are what let the eye
+   * read two sheets rather than one dark block.
+   */
+  readonly tilt: number
 }
 
 const ART = '/assets/images/artwork'
 
 const PIECES: readonly Artwork[] = [
-  { id: 'lunai-keyart', projectId: 'lunai', kind: 'keyart', width: 1024, height: 1536 },
-  { id: 'liminal-keyart', projectId: 'liminal', kind: 'keyart', width: 1024, height: 1536 },
-  { id: 'wormup-keyart', projectId: 'wormup', kind: 'keyart', width: 941, height: 1672 },
-  { id: 'rubato-opera', projectId: 'rubato', kind: 'still', width: 1920, height: 1080 },
-  { id: 'lumiora-splash', projectId: 'lumiora', kind: 'keyart', width: 900, height: 1599 },
+  { id: 'lunai-keyart', projectId: 'lunai', kind: 'keyart', width: 1024, height: 1536, mount: 'poster', tilt: -2.2 },
+  { id: 'liminal-keyart', projectId: 'liminal', kind: 'keyart', width: 1024, height: 1536, mount: 'print', tilt: 1.6 },
+  { id: 'wormup-keyart', projectId: 'wormup', kind: 'keyart', width: 941, height: 1672, mount: 'poster', tilt: -0.9 },
+  { id: 'rubato-opera', projectId: 'rubato', kind: 'still', width: 1920, height: 1080, mount: 'wood', tilt: 0 },
+  { id: 'lumiora-splash', projectId: 'lumiora', kind: 'keyart', width: 900, height: 1599, mount: 'print', tilt: 1.3 },
 ] as const
 
 export const ARTWORK: readonly Artwork[] = PIECES

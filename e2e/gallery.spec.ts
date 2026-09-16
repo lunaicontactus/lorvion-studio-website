@@ -8,8 +8,8 @@ import type { Page } from '@playwright/test'
  * felt-and-thread illustrations of the studio's games, not the games' own art
  * — and for a studio site that is the wrong thing on the wall. What hangs
  * there now is the real work: LUNAI's and LIMINAL's and WORM UP!'s key
- * visuals, one of RUBATO's own backgrounds, and LUMIORA's splash in the small
- * frame by the fridge.
+ * visuals, LUMIORA's splash, and one of RUBATO's own backgrounds in the painted
+ * wooden landscape frame over the television.
  *
  * What these check is the thing that was broken: every one of those pictures
  * is a different shape, and the room used to have one shape for all of them.
@@ -23,8 +23,8 @@ const PIECES = [
   { thing: 'poster-lunai', art: 'lunai-keyart', tall: true },
   { thing: 'poster-liminal', art: 'liminal-keyart', tall: true },
   { thing: 'poster-wormup', art: 'wormup-keyart', tall: true },
-  { thing: 'poster-rubato', art: 'rubato-opera', tall: false },
-  { thing: 'picture-lumiora', art: 'lumiora-splash', tall: true },
+  { thing: 'poster-lumiora', art: 'lumiora-splash', tall: true },
+  { thing: 'picture-rubato', art: 'rubato-opera', tall: false },
 ] as const
 
 async function enter(page: Page): Promise<void> {
@@ -55,16 +55,18 @@ async function prints(page: Page): Promise<{
 }[]> {
   return page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.print')].map((sheet) => {
     const img = sheet.querySelector('img')!
-    const r = img.getBoundingClientRect()
-    const q = sheet.getBoundingClientRect()
+    // Layout boxes, not bounding rects: the sheets are tilted by hand, and a
+    // rotated rectangle's bounding box is a different shape from the
+    // rectangle. What is being judged is the box the picture was laid into.
     return {
       id: sheet.dataset['artwork'] ?? '',
-      drawn: r.height ? r.width / r.height : 0,
+      drawn: img.offsetHeight ? img.offsetWidth / img.offsetHeight : 0,
       natural: img.naturalHeight ? img.naturalWidth / img.naturalHeight : 0,
-      // Inside its own sheet: a picture that reaches past the paper is a
-      // picture the paper is not big enough for.
-      inside: r.left >= q.left - 1 && r.right <= q.right + 1
-        && r.top >= q.top - 1 && r.bottom <= q.bottom + 1,
+      // Inside its own sheet: a picture that reaches past the frame is a
+      // picture the frame is not big enough for.
+      inside: img.offsetLeft >= -1 && img.offsetTop >= -1
+        && img.offsetLeft + img.offsetWidth <= sheet.offsetWidth + 1
+        && img.offsetTop + img.offsetHeight <= sheet.offsetHeight + 1,
       src: img.getAttribute('src') ?? '',
     }
   }))
@@ -94,6 +96,57 @@ for (const view of [
         expect(Math.abs(p.drawn - p.natural) / p.natural, `${p.id} is not its own shape`)
           .toBeLessThan(0.03)
         expect(p.inside, `${p.id} hangs off its own paper`).toBe(true)
+      }
+    })
+
+    test('no white or cream matte: every frame is the picture\'s own shape', async ({ page }) => {
+      // The wall used to put every piece on a cream sheet shaped like the
+      // painted poster, so a wide picture floated in paper. The frame is now
+      // the picture plus an even edge, and that edge is never paper.
+      await enter(page)
+      const frames = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.print')].map((sheet) => {
+        const img = sheet.querySelector('img')!
+        const edge = parseFloat(getComputedStyle(sheet).getPropertyValue('--edge')) || 0
+        const s = { w: sheet.offsetWidth, h: sheet.offsetHeight }
+        const i = { w: img.offsetWidth, h: img.offsetHeight, l: img.offsetLeft, t: img.offsetTop }
+        const bg = getComputedStyle(sheet).backgroundColor
+        return { id: sheet.dataset['artwork'], mount: sheet.dataset['mount'], s, i, edge, bg,
+          hasCaptionStrip: !!sheet.querySelector('.print__cap') }
+      }))
+      expect(frames).toHaveLength(5)
+      for (const f of frames) {
+        expect(f.hasCaptionStrip, `${f.id} still has a paper caption strip`).toBe(false)
+        // Even edge all round: sheet = picture + 2×edge, picture at (edge, edge).
+        expect(Math.abs(f.s.w - (f.i.w + 2 * f.edge)), `${f.id} width matte`).toBeLessThanOrEqual(1)
+        expect(Math.abs(f.s.h - (f.i.h + 2 * f.edge)), `${f.id} height matte`).toBeLessThanOrEqual(1)
+        expect(f.i.l).toBeCloseTo(f.edge, 0)
+        expect(f.i.t).toBeCloseTo(f.edge, 0)
+        expect(f.edge, `${f.id} edge is a frame, not a mat`).toBeLessThanOrEqual(6)
+        // Whatever the edge is painted, it is not paper-white.
+        const [r, g, b] = (f.bg.match(/\d+/g) ?? ['0', '0', '0']).map(Number)
+        const alpha = /rgba\(.*,\s*0\)$/.test(f.bg) ? 0 : 1
+        if (alpha) expect(Math.min(r!, g!, b!), `${f.id} frame is ${f.bg}`).toBeLessThan(200)
+      }
+      expect(new Set(frames.map((f) => f.mount)).size, 'one mount for everything is a grid').toBeGreaterThanOrEqual(2)
+    })
+
+    test('each print covers the painted thing it hangs over', async ({ page }) => {
+      await enter(page)
+      const cover = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.thing')]
+        .filter((t) => t.querySelector('.print')).map((t) => {
+          const sheet = t.querySelector<HTMLElement>('.print')!
+          const lift = t.querySelector<HTMLElement>('.thing__lift')
+          // The painted rect is the thing minus its hit padding, which is
+          // where the lift layer is laid.
+          const paintW = lift ? lift.offsetWidth : 0
+          const paintH = lift ? lift.offsetHeight : 0
+          return { id: t.dataset['object'], w: sheet.offsetWidth, h: sheet.offsetHeight, paintW, paintH }
+        }))
+      expect(cover.length).toBe(5)
+      for (const c of cover) {
+        expect(c.paintW, `${c.id}: no painted rect measured`).toBeGreaterThan(0)
+        expect(c.w, `${c.id} narrower than the painted one`).toBeGreaterThanOrEqual(c.paintW)
+        expect(c.h, `${c.id} shorter than the painted one`).toBeGreaterThanOrEqual(c.paintH)
       }
     })
 
@@ -131,6 +184,13 @@ for (const view of [
           }
         })
         expect(fit.src, piece.art).toContain(`/artwork/${piece.art}-full.webp`)
+        // Opened on the panel itself: no cream mat drawn around the picture.
+        const mat = await page.locator('[data-artwork-view]').evaluate((el) => {
+          const cs = getComputedStyle(el)
+          return { pad: [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft], bg: cs.backgroundColor }
+        })
+        expect(mat.pad, `${piece.art} viewer has a mat`).toEqual(['0px', '0px', '0px', '0px'])
+        expect(mat.bg, `${piece.art} viewer mat colour`).toBe('rgba(0, 0, 0, 0)')
         expect(Math.abs(fit.drawn - fit.natural) / fit.natural, piece.art).toBeLessThan(0.02)
         // Big, but never bigger than the window it opened in.
         expect(fit.w, `${piece.art} wider than the window`).toBeLessThanOrEqual(fit.vw * 0.92)

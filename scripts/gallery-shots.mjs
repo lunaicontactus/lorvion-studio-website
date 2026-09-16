@@ -43,7 +43,7 @@ for (const [name, w, h, mobile] of [
 
   await focus(p, 'poster-lunai')
   await p.screenshot({ path: `${out}/${name}_wall.png` })
-  await focus(p, 'picture-lumiora')
+  await focus(p, 'picture-rubato')
   await p.screenshot({ path: `${out}/${name}_lumiora.png` })
 
   // Every print, measured: the frame the scene drew against the picture the
@@ -75,7 +75,7 @@ for (const [name, w, h, mobile] of [
   if (prints.length !== 5) { console.log(`  only ${prints.length} prints hung`); bad += 1 }
 
   // The viewer, on a tall picture and on a wide one.
-  for (const [thing, shot] of [['poster-lunai', 'viewer_portrait'], ['poster-rubato', 'viewer_landscape']]) {
+  for (const [thing, shot] of [['poster-lunai', 'viewer_portrait'], ['picture-rubato', 'viewer_landscape']]) {
     await focus(p, thing)
     const el = p.locator(`[data-object="${thing}"]`)
     if (mobile) await el.tap(); else await el.click()

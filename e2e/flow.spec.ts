@@ -25,8 +25,8 @@ const OPENS: Readonly<Record<string, string>> = {
   'poster-lunai': '[data-kind~="poster--lunai"] .wall',
   'poster-liminal': '[data-kind~="poster--liminal"] .wall',
   'poster-wormup': '[data-kind~="poster--wormup"] .wall',
-  'poster-rubato': '[data-kind~="poster--rubato"] .wall',
-  'picture-lumiora': '[data-kind~="poster--lumiora"] .wall',
+  'poster-lumiora': '[data-kind~="poster--lumiora"] .wall',
+  'picture-rubato': '[data-kind~="poster--rubato"] .wall',
 }
 
 /** Things that open nothing: touching one changes the thing itself. */

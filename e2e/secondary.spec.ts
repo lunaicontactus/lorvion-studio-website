@@ -146,11 +146,10 @@ for (const vp of [
 
     test('a wide picture opens wide, and closes every way it can be closed', async ({ page }) => {
       // The other half of the same promise. RUBATO's piece is one of the
-      // game's own backgrounds, 1920x1080, and it hangs on a tall sheet of
-      // paper — so if any of this measured the paper instead of the picture,
+      // game's own backgrounds, 1920x1080, hung in a small wooden frame — so if any of this measured the paper instead of the picture,
       // this is where it would show.
       await enter(page)
-      await touch(page, 'poster-rubato')
+      await touch(page, 'picture-rubato')
       const shot = page.locator('[data-artwork-view] img')
       await expect(shot).toBeVisible({ timeout: 6000 })
       const fit = await shot.evaluate((img: HTMLImageElement) => {
@@ -178,7 +177,7 @@ for (const vp of [
       // line is where the focus goes back to. `touch` above dispatches an
       // event at the button without focusing it, so there would be nothing
       // to go back to.
-      const poster = page.locator('[data-object="poster-rubato"]')
+      const poster = page.locator('[data-object="picture-rubato"]')
       await poster.focus()
       await poster.press('Enter')
       await expect(shot).toBeVisible({ timeout: 6000 })

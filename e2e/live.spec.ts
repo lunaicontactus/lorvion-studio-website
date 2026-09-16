@@ -82,7 +82,7 @@ for (const vp of [{ w: 1440, h: 900 }, { w: 1920, h: 1080 }]) {
       if (seen.size === total) break
     }
     expect([...seen].sort()).toEqual(
-      ['cabinet','fridge','pc','picture-lumiora','poster-liminal','poster-lunai','poster-rubato',
+      ['cabinet','fridge','pc','picture-rubato','poster-liminal','poster-lumiora','poster-lunai',
        'poster-wormup','secret-door','shelf','tv','workbench'])
     await page.mouse.move(vp.w / 2, vp.h - 30)
     await page.waitForTimeout(300)
