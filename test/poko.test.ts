@@ -283,3 +283,28 @@ describe('pausing', () => {
     expect(round.slacking, 'still slacking after the window went').toBe('WORK')
   })
 })
+
+describe('the glasses', () => {
+  it('have a measured anchor for every frame the boss can show', async () => {
+    const { readdirSync } = await import('node:fs')
+    const { EYE_ANCHORS } = await import('@/games/poko/eyes')
+    const root = 'public/assets/images/dokkaebi-v2/poko'
+    // The poses POKO takes in the game, and one it could fall back to.
+    for (const [action, dir] of [['idle', 'front'], ['look', 'front'], ['walk', 'front'],
+      ['walk', 'left'], ['walk', 'right']] as const) {
+      const frames = readdirSync(`${root}/${action}/${dir}`).filter((f) => f.endsWith('.webp'))
+      expect(frames.length).toBeGreaterThan(0)
+      for (const f of frames) {
+        const key = `/assets/images/dokkaebi-v2/poko/${action}/${dir}/${f}`
+        expect(EYE_ANCHORS[key], `${key} has no eyes measured`).toBeDefined()
+      }
+    }
+  })
+
+  it('knows the head turns: look is not one anchor', async () => {
+    const { EYE_ANCHORS } = await import('@/games/poko/eyes')
+    const xs = Object.entries(EYE_ANCHORS)
+      .filter(([k]) => k.includes('/look/front/')).map(([, a]) => a[0])
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(20)
+  })
+})

@@ -15,16 +15,17 @@
  *
  * What is reused rather than rebuilt: the boss's timing, which was already
  * the careful part of the older game (src/games/build/boss.ts → poko/boss.ts);
- * the glasses, which are a CSS layer over the face rather than a new drawing,
- * re-measured for the approved crew; the shell's clock, input, countdown,
- * result, stars and best score (PHASE 4). Nothing here starts a timer or adds
- * a listener.
+ * and the shell's clock, input, countdown, result, stars and best score
+ * (PHASE 4). The old game's glasses are *not* reused — see poko/glasses.ts.
+ * Nothing here starts a timer or adds a listener.
  *
  * What is *not* reused: everything about running. No jumping, no obstacles,
  * no finish line. The tension is a held button and a decision about when to
  * let go of it.
  */
 import { PokoRound, starsFor } from '@/games/poko/round'
+import { Glasses, poseFor } from '@/games/poko/glasses'
+import { EYE_ANCHORS } from '@/games/poko/eyes'
 import { spritesFor } from '@/data/sprites'
 import { seededRandom } from '@/scenes/npc'
 import type { GameDef, GameHost, GameInstance } from '@/games/types'
@@ -32,21 +33,6 @@ import type { GameInputEvent } from '@/games/input'
 import type { SpriteSet } from '@/types/character'
 
 const ROUND = 45
-
-/**
- * Where POKO's eyes are in each pose, as fractions of the frame, measured off
- * the approved frames by scripts/eye_measure.py. Glasses at one guessed spot
- * are glasses on the forehead in half the poses.
- */
-const EYES: Readonly<Record<string, readonly [number, number, number]>> = {
-  'idle:front': [0.500, 0.452, 0.36],
-  'look:front': [0.500, 0.452, 0.36],
-  'work:front': [0.500, 0.452, 0.36],
-  'walk:left': [0.824, 0.451, 0.17],
-  'walk:right': [0.189, 0.446, 0.17],
-  'walk:back': [0.500, 0.452, 0.0],
-  'walk:front': [0.500, 0.452, 0.36],
-}
 
 /** What POKO is doing to look at, for each of its five states. */
 const POSE: Readonly<Record<string, { action: string; dir: string; says: string }>> = {
@@ -80,7 +66,7 @@ class PokoGame implements GameInstance {
   #round: PokoRound
   #poko: HTMLElement
   #pokoImg: HTMLImageElement
-  #glasses: HTMLElement
+  #glasses: Glasses
   #says: HTMLElement
   #warnBar: HTMLElement
   #player: HTMLElement
@@ -114,7 +100,6 @@ class PokoGame implements GameInstance {
       <div class="poko__room" data-poko-room>
         <div class="poko__boss" data-poko-boss data-state="PATROLLING">
           <img class="poko__bossImg" alt="" decoding="async" data-poko-bossimg>
-          <span class="poko__glasses" data-poko-glasses aria-hidden="true"></span>
           <span class="poko__bubble" data-poko-bubble hidden>…음?</span>
         </div>
         <p class="poko__says" data-poko-says aria-live="polite">순찰 중</p>
@@ -126,7 +111,8 @@ class PokoGame implements GameInstance {
       </div>`
     this.#poko = this.#root.querySelector('[data-poko-boss]')!
     this.#pokoImg = this.#root.querySelector('[data-poko-bossimg]')!
-    this.#glasses = this.#root.querySelector('[data-poko-glasses]')!
+    this.#glasses = new Glasses()
+    this.#poko.insertBefore(this.#glasses.el, this.#root.querySelector('[data-poko-bubble]'))
     this.#says = this.#root.querySelector('[data-poko-says]')!
     this.#warnBar = this.#root.querySelector('[data-poko-warn]')!
     this.#player = this.#root.querySelector('[data-poko-player]')!
@@ -247,14 +233,12 @@ class PokoGame implements GameInstance {
         if (this.#pokoImg.getAttribute('src') !== src) this.#pokoImg.src = src
       }
     }
-    const eyes = EYES[`${pose.action}:${pose.dir}`] ?? EYES['idle:front']!
-    this.#glasses.style.setProperty('--gx', `${eyes[0] * 100}%`)
-    this.#glasses.style.setProperty('--gy', `${eyes[1] * 100}%`)
-    this.#glasses.style.setProperty('--gw', `${eyes[2] * 100}%`)
+    // On the eyes of the frame actually showing, not the pose's first frame.
+    this.#glasses.show(poseFor(pose.dir), EYE_ANCHORS[this.#pokoImg.getAttribute('src') ?? ''])
     // Out of the picture altogether: the long window, and it should look like
     // one rather than like a character standing still.
     this.#poko.classList.toggle('is-gone', look.state === 'AWAY')
-    this.#glasses.classList.toggle('is-glinting', look.state === 'WARNING')
+    this.#glasses.warn(look.state === 'WARNING')
 
     // The warning, as a bar that runs out. The glint says "something is
     // happening"; the bar says "this much longer".

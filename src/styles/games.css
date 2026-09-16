@@ -164,27 +164,20 @@
 .poko__boss[data-state="WATCHING"]{filter:drop-shadow(0 0 12px rgba(255,120,90,.9))}
 .poko__boss[data-state="CAUGHT"]{filter:drop-shadow(0 0 16px rgba(255,82,82,.95))}
 
-/* The glasses: a layer over the face, never a change to the character. Placed
-   on the eyes per pose from measurements of the approved frames
-   (scripts/eye_measure.py). Two lenses and a bridge, drawn big enough to
-   still read as glasses at a hundred pixels tall — a soft gradient at that
-   size is a smudge, which is what the first version of this looked like. */
+/* The glasses: an SVG in the frame's own 292x420 coordinates, laid exactly
+   over the drawing (src/games/poko/glasses.ts). Lenses are empty: the eyes
+   show through them. The rim is non-scaling-stroke so it is the same thin
+   line whether POKO is 64px wide or 120px. */
 .poko__glasses{
-  position:absolute;left:var(--gx,50%);top:var(--gy,45%);
-  width:var(--gw,36%);height:13%;
-  transform:translate(-50%,-50%);
-  pointer-events:none;
-  background:
-    radial-gradient(circle at 21% 50%,rgba(226,244,255,.55) 0 34%,#2f2116 36% 50%,transparent 52%),
-    radial-gradient(circle at 79% 50%,rgba(226,244,255,.55) 0 34%,#2f2116 36% 50%,transparent 52%),
-    linear-gradient(#2f2116,#2f2116) 50% 50%/26% 16% no-repeat;
+  position:absolute;inset:0;width:100%;height:100%;
+  overflow:visible;pointer-events:none;
+  transition:transform 140ms ease-out;
 }
-.poko__glasses.is-glinting::after{
-  content:"";position:absolute;inset:-14%;
-  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.95) 48%,transparent 62%);
-  animation:pokoGlint .45s ease-in-out infinite alternate;
-}
-@keyframes pokoGlint{from{opacity:.2;transform:translateX(-16%)}to{opacity:1;transform:translateX(16%)}}
+/* Straightening them: up a couple of pixels, and the catch of light on the
+   rim comes up once. Never a flash, never a white lens. */
+.poko__glassHint{opacity:.34;transition:opacity 140ms ease-out}
+.poko__glasses.is-adjusting{transform:translateY(-2px)}
+.poko__glasses.is-adjusting .poko__glassHint{opacity:.92}
 
 .poko__bubble{
   position:absolute;left:50%;top:-18%;transform:translateX(-50%);
@@ -245,7 +238,7 @@
 .poko__hold:active{background:#ffc04a;transform:scale(.97)}
 
 @media (prefers-reduced-motion:reduce){
-  .poko__glasses.is-glinting::after{animation:none;opacity:1}
+  .poko__glasses,.poko__glassHint{transition:none}
   .poko__boss{transition:none}
 }
 

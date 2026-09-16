@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { EYE_ANCHORS } from '../src/games/poko/eyes'
 
 /**
  * 무궁화꽃이 피었습니다, in a real browser.
@@ -66,9 +67,11 @@ test.describe('desktop', () => {
     const behind = await page.evaluate(() => [...document.querySelectorAll('.npc:not(.is-away)')]
       .filter((e) => (e.querySelector('img') as HTMLImageElement | null)?.naturalWidth).length)
     expect(behind, 'the room behind the game was empty').toBeGreaterThanOrEqual(2)
-    // The glasses are on, and on the face rather than beside it.
+    // The glasses are on, and on the face rather than beside it. Measured off
+    // the drawn rims, not the layer, which is the whole frame.
     const fit = await page.evaluate(() => {
-      const g = document.querySelector<HTMLElement>('[data-poko-glasses]')!.getBoundingClientRect()
+      const rim = document.querySelector<SVGGElement>('[data-poko-glasses] .poko__glassRim')!
+      const g = rim.getBoundingClientRect()
       const b = document.querySelector<HTMLElement>('[data-poko-boss]')!.getBoundingClientRect()
       return {
         inside: g.left >= b.left - 1 && g.right <= b.right + 1
@@ -76,11 +79,82 @@ test.describe('desktop', () => {
         // On the head, which is the top half of the frame.
         onTheHead: (g.top + g.bottom) / 2 < b.top + b.height * 0.6,
         wide: g.width / b.width,
+        tall: g.height / b.height,
       }
     })
     expect(fit.inside, 'the glasses are off the face').toBe(true)
     expect(fit.onTheHead, 'the glasses are round its middle').toBe(true)
     expect(fit.wide).toBeGreaterThan(0.1)
+    // A pair of small round glasses, not a plate across the face: no wider
+    // than the two eyes and a little, no taller than a lens.
+    expect(fit.wide, 'the glasses are wider than the face').toBeLessThan(0.5)
+    expect(fit.tall, 'the glasses cover half the face').toBeLessThan(0.14)
+  })
+
+  test('the lenses are empty: nothing white, nothing filled, eyes showing', async ({ page }) => {
+    await open(page)
+    await begin(page)
+    await boss(page, 'WATCHING')
+    const look = await page.evaluate(() => {
+      const svg = document.querySelector<SVGSVGElement>('[data-poko-glasses]')!
+      const shapes = [...svg.querySelectorAll<SVGGraphicsElement>('circle, ellipse, path, rect')]
+      return {
+        pose: svg.dataset['pose'],
+        filled: shapes.map((el) => getComputedStyle(el).fill).filter((f) => f !== 'none'),
+        rects: svg.querySelectorAll('rect').length,
+        // The layer itself paints nothing: no background, no gradient.
+        background: getComputedStyle(svg).backgroundImage + getComputedStyle(svg).backgroundColor,
+        rim: getComputedStyle(svg.querySelector('.poko__glassRim')!).stroke,
+      }
+    })
+    expect(look.pose).toBe('front')
+    expect(look.filled, 'a lens is filled in').toEqual([])
+    expect(look.rects, 'a plate').toBe(0)
+    expect(look.background).toMatch(/^none(rgba\(0, 0, 0, 0\)|transparent)$/)
+    // Dark rim: every channel low.
+    const [r, g, b] = look.rim.match(/\d+/g)!.map(Number)
+    expect(Math.max(r!, g!, b!), `the rim is ${look.rim}`).toBeLessThan(90)
+  })
+
+  test('the glasses stay on the eyes of whatever frame is showing', async ({ page }) => {
+    await open(page)
+    await begin(page)
+    // Through a warning, where the head turns, sampling frames as they come.
+    await boss(page, 'WARNING')
+    const seen = new Set<string>()
+    for (let i = 0; i < 40; i++) {
+      const got = await page.evaluate(() => {
+        const img = document.querySelector<HTMLImageElement>('[data-poko-bossimg]')!
+        const svg = document.querySelector<SVGSVGElement>('[data-poko-glasses]')!
+        const lens = svg.querySelector<SVGGraphicsElement>('.poko__glassRim circle, .poko__glassRim ellipse')
+        return { src: img.getAttribute('src') ?? '', cx: lens ? Number(lens.getAttribute('cx')) : null, pose: svg.dataset['pose'] }
+      })
+      if (got.pose === 'none' || got.cx === null) continue
+      const want = EYE_ANCHORS[got.src]
+      expect(want, `${got.src} has no measured eyes`).toBeDefined()
+      seen.add(got.src)
+      expect(got.cx, `lens off the eye on ${got.src}`).toBeCloseTo(want![0], 0)
+      await page.waitForTimeout(60)
+    }
+    expect(seen.size, 'only one frame was ever on screen').toBeGreaterThan(1)
+  })
+
+  test('straightening them is a nudge, not a flash', async ({ page }) => {
+    await open(page)
+    await begin(page)
+    await boss(page, 'WARNING')
+    const warn = await page.evaluate(() => {
+      const svg = document.querySelector<SVGSVGElement>('[data-poko-glasses]')!
+      const m = new DOMMatrix(getComputedStyle(svg).transform)
+      return {
+        adjusting: svg.classList.contains('is-adjusting'),
+        dy: m.m42,
+        pseudo: getComputedStyle(svg, '::after').content,
+      }
+    })
+    expect(warn.adjusting).toBe(true)
+    expect(Math.abs(warn.dy), 'the glasses jumped').toBeLessThanOrEqual(2)
+    expect(warn.pseudo === 'none' || warn.pseudo === 'normal', 'an overlay flash').toBe(true)
   })
 
   test('holding pays, letting go does not, and neither costs a wrong verdict', async ({ page }) => {
