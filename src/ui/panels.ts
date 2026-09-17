@@ -672,6 +672,11 @@ export class Panels {
     const needle = this.#body.querySelector<HTMLElement>('[data-radio-needle]')!
     const power = this.#body.querySelector<HTMLButtonElement>('[data-radio-power]')!
 
+    // The set is already on if the room turned it on (src/systems/audio.ts
+    // tunes the garage's own station when sound comes on inside), so the
+    // dial shows what is actually playing rather than OFF.
+    const playing = STATIONS.findIndex((s) => s.id === audio.station)
+    if (playing >= 0) this.#station = playing
     const paint = (): void => {
       const on = sound.enabled
       power.setAttribute('aria-pressed', String(on))
@@ -689,7 +694,7 @@ export class Panels {
       this.#station = (i + STATIONS.length) % STATIONS.length
       const st = STATIONS[this.#station]!
       audio.play('radio_tune', 0.2)
-      audio.tune(st.track, st.volume)
+      audio.tuneStation(st.id)
       if (st.id === 'news') {
         const seg = this.#draw('radio')
         talk.textContent = seg ? `${seg.title} — ${seg.description}` : ''

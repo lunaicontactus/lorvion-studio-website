@@ -20,44 +20,49 @@ const DEFAULT: BehaviourProfile = {
 }
 
 const PROFILES: Readonly<Record<string, BehaviourProfile>> = {
-  // Curious. Goes to look at what everyone else is doing, and at the visitor.
+  // Curious. The screen, the box that arrived, whatever machine is new. Goes
+  // to look at what everyone else is doing, and at the visitor.
   momo: {
     idle: 3, wander: 5, work: 3, sit: 1, look: 4,
-    favours: ['pc', 'workbench'], pace: 1, idleFor: [2600, 8000], waveChance: 0.45,
+    favours: ['pc', 'parcel'], pace: 1, idleFor: [2600, 8000], waveChance: 0.45,
     workFor: [5000, 12000], sitFor: [7000, 15000],
     // Goes over to see what somebody else is doing. Usually says something.
-    social: 0.8, stubborn: 0.1, talkative: 4, home: 'workbench-a',
+    social: 0.8, stubborn: 0.1, talkative: 4, home: 'pc-front',
   },
-  // Unhurried. Near the food, sitting more than standing, in no rush anywhere.
+  // Unhurried. The rug, the fridge, a rest: sitting more than standing, in
+  // no rush anywhere, and found on the rug by the fridge to begin with.
   nunu: {
     idle: 6, wander: 2, work: 1, sit: 4, look: 2,
     favours: ['fridge'], pace: 0.78, idleFor: [5000, 14000], waveChance: 0.18,
     workFor: [4000, 9000], sitFor: [14000, 32000],
     // Notices you eventually. Answers in one syllable.
-    social: 0.3, stubborn: 0.4, talkative: 2, home: 'big-cushion',
+    social: 0.3, stubborn: 0.4, talkative: 2, home: 'rug',
   },
-  // The one who actually builds things. At the bench, then the desk, then back.
+  // The one who actually builds things. The bench, the tools, the repair;
+  // the desk when the bench is taken.
   ruki: {
     idle: 2, wander: 3, work: 7, sit: 1, look: 2,
-    favours: ['workbench', 'pc', 'cabinet'], pace: 1, idleFor: [2200, 7000], waveChance: 0.25,
+    favours: ['workbench', 'pc'], pace: 1, idleFor: [2200, 7000], waveChance: 0.25,
     workFor: [12000, 26000], sitFor: [6000, 12000],
     // Mid-job, and it shows. Looks up, but not straight away.
-    social: 0.25, stubborn: 0.7, talkative: 3, home: 'cushions',
+    social: 0.25, stubborn: 0.7, talkative: 3, home: 'workbench-a',
   },
-  // Trouble. Short trips, changes its mind, hangs about near the locked door.
+  // Trouble. Short trips, changes its mind, and is drawn to whatever is
+  // unusual: the collection on the shelf, the box that arrived, the door
+  // nobody opens. Comes in from the edge rather than starting in the room;
+  // its home is only where it goes back to.
   yomi: {
     idle: 2, wander: 6, work: 1, sit: 1, look: 5,
-    favours: ['outside-door'], pace: 1.15, idleFor: [1800, 6000], waveChance: 0.55,
+    favours: ['shelf', 'parcel', 'outside-door'], pace: 1.15, idleFor: [1800, 6000], waveChance: 0.55,
     workFor: [3000, 7000], sitFor: [5000, 11000],
     // Approaches first, every time, and is delighted to be interrupted.
     social: 0.9, stubborn: 0.05, talkative: 5, home: 'fridge-front',
   },
-  // Watches. Stays put a long time, mostly by the television or the shelf.
+  // Watches. The television, the records in the cabinet, and a slow round of
+  // the room in between — stays put a long time wherever it stops.
   poko: {
-    idle: 6, wander: 2, work: 2, sit: 3, look: 3,
-    // Not the shelf: it is on the wall above the rest area, out of reach of
-    // any floor, so listing it only diluted the preference that can be acted on.
-    favours: ['tv'], pace: 0.88, idleFor: [6000, 16000], waveChance: 0.22,
+    idle: 6, wander: 3, work: 2, sit: 3, look: 3,
+    favours: ['tv', 'cabinet'], pace: 0.88, idleFor: [6000, 16000], waveChance: 0.22,
     workFor: [6000, 13000], sitFor: [12000, 28000],
     // Will look over. Rarely crosses the room to do it.
     social: 0.35, stubborn: 0.3, talkative: 2, home: 'tv-left',

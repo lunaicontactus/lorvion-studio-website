@@ -109,8 +109,21 @@ const LANDSCAPE: NavGraph = {
     // The rest end. Without these the crew lived in the right two thirds of
     // the room and the whole cushion corner stood empty, which the camera
     // does not show at once but a picture of the whole room does.
-    { id: 'rest-floor', x: 1058, y: 1044 },
-    { id: 'left-floor', x: 1180, y: 1030 },
+    // The far left, in front of the bookcase: the boards run right up to it
+    // (measured: the rug's front edge is at 960, the stool base at 900).
+    // YOMI's shelf, and the far end of everybody's floor.
+    { id: 'shelf-front', x: 330, y: 1012, objectId: 'shelf', facing: 'back', kind: 'watch' },
+    // In front of the cabinet, standing before the big cushion (its base is
+    // at 1000). 980, not the cabinet's own centre at 921: the cushion's seat
+    // is at 862, and a body width keeps the two of them from shuffling.
+    { id: 'cabinet-front', x: 980, y: 1012, objectId: 'cabinet', facing: 'back', kind: 'watch' },
+    // No plain 'rest-floor' point any more: the shelf and the cabinet give
+    // the rest end its reasons to be visited, and a bare point between the
+    // cabinet and the radio was a body width from both.
+    // Beside the radio, which sits on the boards at 1258–1374 with its base
+    // on the walkway. 1176 puts the figure's right edge (about 55 units from
+    // its feet) clear of the set; it looks down and across at the dial.
+    { id: 'radio-side', x: 1176, y: 1040, objectId: 'radio', facing: 'right', kind: 'watch' },
     { id: 'pc-front', x: 1578, y: 1012, objectId: 'pc', facing: 'back', kind: 'work' },
     { id: 'mid-floor', x: 1860, y: 1042 },
     { id: 'workbench-a', x: 2116, y: 1006, objectId: 'workbench', facing: 'front', kind: 'work' },
@@ -135,7 +148,11 @@ const LANDSCAPE: NavGraph = {
   sits: [
     { id: 'big-cushion', x: 862, y: 1048, facing: 'right', weight: 3 },
     { id: 'rug', x: 2360, y: 1046, facing: 'front', weight: 3 },
-    { id: 'cushions', x: 1330, y: 1040, facing: 'right', weight: 3 },
+    // Not 1330. That was the end of the rug before the radio was put down on
+    // it (PHASE 4, frozen), and a dokkaebi sitting there sat inside the set.
+    // The cup of noodles on the floor at 1384 is beside this seat now, which
+    // is what it was put there for.
+    { id: 'cushions', x: 1452, y: 1046, facing: 'left', weight: 3 },
     { id: 'by-the-bench', x: 1740, y: 1036, facing: 'front', weight: 2 },
     { id: 'right-boards', x: 2740, y: 1042, facing: 'left', weight: 1 },
   ],
@@ -161,14 +178,19 @@ const PORTRAIT: NavGraph = {
   height: 150,
   speed: 76,
   points: [
-    { id: 'left-floor', x: 330, y: 1630 },
+    // Beside the radio (405–481 on this plate), looking across at it. The
+    // only thing on this floor that is not a bench, so the one non-work
+    // errand here.
+    { id: 'radio-side', x: 330, y: 1630, objectId: 'radio', facing: 'right', kind: 'watch' },
     { id: 'pc-front', x: 518, y: 1612, objectId: 'pc', facing: 'back', kind: 'work' },
     { id: 'mid-floor', x: 700, y: 1638 },
     { id: 'workbench-a', x: 858, y: 1606, objectId: 'workbench', facing: 'front', kind: 'work' },
     { id: 'workbench-b', x: 972, y: 1606, objectId: 'workbench', facing: 'back', kind: 'work' },
   ],
   sits: [
-    { id: 'floor', x: 424, y: 1640, facing: 'front', weight: 2 },
+    // Between the stool and the rug. Not 424: that is the radio, and a
+    // dokkaebi sitting there sat on top of it.
+    { id: 'floor', x: 610, y: 1642, facing: 'front', weight: 2 },
     // Not 'left-floor'. That is the name of the standing point six units
     // away, and two different places with one name are one place as far as
     // the booking is concerned: claiming the seat locked the floor beside it,

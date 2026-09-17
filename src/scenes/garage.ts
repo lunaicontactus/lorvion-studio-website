@@ -15,8 +15,10 @@ import { Camera } from '@/systems/camera'
 import { worldFor, ROOM_ART, CAPTIONS, DECOR } from '@/data/world'
 import { loadImage } from '@/systems/assets'
 import { depthOf, occludersFor } from '@/data/occlusion'
-import { BITS, LIGHTS, LIGHTS_PORTRAIT, SKY, STARS, STEAM, STEAM_PORTRAIT, TV_SCREEN, TV_SCREEN_PORTRAIT } from '@/data/ambience'
+import { BITS, BROOM_ZONES, BROOM_ZONES_PORTRAIT, LIGHTS, LIGHTS_PORTRAIT, SKY, STARS, STEAM, STEAM_PORTRAIT, TV_SCREEN, TV_SCREEN_PORTRAIT } from '@/data/ambience'
 import { ATTENTION, Ambient } from '@/systems/ambient'
+import { Broom, BROOM_MS } from '@/systems/broom'
+import { Footsteps } from '@/systems/footsteps'
 import { OUTLINE_PATHS, HIT_PADDING, OUTLINE_OFFSET } from '@/data/outlines'
 import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
@@ -27,7 +29,7 @@ import { artworkById, wallSrc, aspectOf } from '@/data/artwork'
 import type { Mount } from '@/data/artwork'
 import { getProject } from '@/data/projects'
 import { mountNpc, npcAllowed, seededRandom, type NpcHandle } from '@/scenes/npc'
-import { Crowd } from '@/systems/crowd'
+import { Crowd, type CrowdMember } from '@/systems/crowd'
 import { Stage, OPENING_CAST } from '@/systems/stage'
 import { Faces } from '@/systems/faces'
 import { CrewInteractions } from '@/systems/interactions'
@@ -131,8 +133,23 @@ const ON_STAGE = { landscape: 3, portrait: 2 }
 
 /** Which light comes on in the room while the visitor has a thing open. */
 const REACT_LIGHT: Readonly<Record<string, string>> = {
-  pc: 'pc', tv: 'tv', fridge: 'fridge', radio: 'radio', 'outside-door': 'secret',
+  pc: 'pc', tv: 'tv', fridge: 'fridge', radio: 'radio', cabinet: 'cabinet', 'outside-door': 'moon',
 }
+
+/**
+ * Depth (PHASE 6). The plate is the middle distance and moves with the
+ * camera; the sky through the window is behind it and moves a little less,
+ * the things standing on the boards are in front and move a little more.
+ * Fractions of the camera's distance from the middle of the room, so at
+ * the far wall of a desk-sized view they come to about a dozen pixels and
+ * nowhere near a lurch. Halved on a phone held upright, where the room is
+ * a strip; nearly off on one held sideways, where the view is already most
+ * of the room; off entirely for anyone who asked for less motion.
+ */
+const PARALLAX = { bg: 0.022, fg: 0.012 }
+
+/** How tall the broom stands, in world units: a little over a dokkaebi. */
+const BROOM_HEIGHT = { landscape: 172, portrait: 160 }
 import { CHARACTERS } from '@/data/characters'
 import { spritesFor } from '@/data/sprites'
 import type { WorldLayout, WorldObject } from '@/types/world'
@@ -262,6 +279,12 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   /** The moving pieces of the plate, by id, for the handle. */
   let roomBits = new Map<string, HTMLElement>()
   let ambient: Ambient | null = null
+  let broom: Broom | null = null
+  let footsteps: Footsteps | null = null
+  /** The thing the visitor has lit up, so the broom keeps away from it. */
+  let activeObject: string | null = null
+  /** How much depth the room gets, by layout. See PARALLAX. */
+  let parallax = 1
   let built = false
   let paused = false
   const keys = new Set<string>()
@@ -571,6 +594,9 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     cast = null
     ambient?.destroy()
     ambient = null
+    broom?.stop()
+    broom = null
+    footsteps = null
     if (npcAllowed()) {
       // Whoever has rendered frames walks; the rest are still turnarounds and
       // would stand about instead. As their frames land they join the crew
@@ -611,15 +637,44 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
             run: (on) => {
               toggle('tv')(on)
               bits.get('tvflicker')?.classList.toggle('is-live', on)
+              // POKO, mostly, glances at it (src/systems/interactions.ts).
+              if (on) scenes?.notice('tvStatic')
             },
           })
           for (const b of BITS) {
             ambient.add({
               id: b.id, every: b.every, duration: b.duration,
               priority: ATTENTION.background, restless: true,
-              run: (on) => bits.get(b.id)?.classList.toggle('is-live', on),
+              run: (on) => {
+                bits.get(b.id)?.classList.toggle('is-live', on)
+                // The lantern on the shelf swinging is worth going to see.
+                if (on && b.id === 'shelfLantern') scenes?.notice('shelfLantern')
+              },
             })
           }
+          // The fridge's compressor kicks in: its light lifts for a moment
+          // and whoever is near hears it. No sound of its own — none was
+          // delivered, and nothing here is invented.
+          if (lights.has('fridge')) ambient.add({
+            id: 'fridgeClick', every: { min: 50000, max: 120000 }, duration: 700,
+            priority: ATTENTION.object, notBefore: 20000,
+            run: (on) => {
+              toggle('fridge')(on)
+              if (on) scenes?.notice('fridgeClick')
+            },
+          })
+          // The monitor beeps: a short lift of its light, the small click the
+          // user delivered for it, and MOMO looks round.
+          ambient.add({
+            id: 'pcBeep', every: { min: 45000, max: 110000 }, duration: 500,
+            priority: ATTENTION.object, notBefore: 16000,
+            run: (on) => {
+              lights.get('pc')?.classList.toggle('is-beep', on)
+              if (!on) return
+              audio.play('pc_click', 0.12)
+              scenes?.notice('pcBeep')
+            },
+          })
           ambient.add({
             id: 'steam', every: { min: 16000, max: 40000 }, duration: 6500,
             priority: ATTENTION.background, restless: true,
@@ -673,6 +728,10 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         // door, how close two may stand, who may speak.
         crowd = new Crowd({ narrow: portrait })
         const onStage = portrait ? ON_STAGE.portrait : ON_STAGE.landscape
+        // Feet on boards. One gate for the whole crew, so two of them
+        // walking is a little more sound than one and never a drum roll.
+        footsteps = new Footsteps({ play: (v) => audio.play('crew_step', v) })
+        const steps = footsteps
         crew = here.map((c, i) =>
           mountNpc(roomEl, c, portrait, {
             debug: params.get('npc') === 'debug',
@@ -685,6 +744,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
             // Spread round the cycle so five of them do not breathe in unison.
             phase: i / Math.max(here.length, 1),
             order: i,
+            onStep: (on) => steps.stride(on),
             // Touching one stops it and makes it look up; the room's part is
             // to acknowledge that quietly. No bubble, no name tag, no panel —
             // the dokkaebi are not another menu.
@@ -725,7 +785,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
             return { at, objectId, ...(spot ? { spot } : {}) }
           }
           const places: Record<string, ReturnType<typeof place>> = {}
-          for (const key of ['parcel', 'fridge', 'pc', 'tv']) {
+          for (const key of ['parcel', 'fridge', 'pc', 'tv', 'shelf', 'cabinet', 'radio']) {
             const p = place(key)
             if (p) places[key] = p
           }
@@ -748,6 +808,75 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
           .filter((c) => !c.away)
           .sort((a, b) => Math.abs(a.at.x - centre) - Math.abs(b.at.x - centre))[0]
         if (welcome) later(() => welcome.greetVisitor(), 700)
+        // The broom that sweeps on its own (PHASE 6, src/systems/broom.ts).
+        // One of the room's events, on the same schedule as the rest; where
+        // it sweeps is chosen when it fires, from where the crew are, and if
+        // nowhere is clear it stays put. While it is out it is a body in the
+        // crowd, so anyone walking that way goes round it.
+        if (ambient) {
+          const h = portrait ? BROOM_HEIGHT.portrait : BROOM_HEIGHT.landscape
+          const w = Math.round(h * (260 / 622))
+          const el = document.createElement('img')
+          el.className = 'garage__broom'
+          el.src = '/assets/images/garage/prop_broom.webp'
+          el.alt = ''
+          el.decoding = 'async'
+          el.setAttribute('aria-hidden', 'true')
+          el.style.height = `${h}px`
+          el.style.width = `${w}px`
+          roomEl.append(el)
+          let at = { x: 0, y: 0 }
+          const body: CrowdMember = {
+            id: 'broom', social: 0, radius: 0.9, seated: false, passing: false, busy: true,
+            get at() { return at },
+            greet() { /* a broom does not */ },
+          }
+          const sweeper = new Broom({
+            zones: portrait ? BROOM_ZONES_PORTRAIT : BROOM_ZONES,
+            onSweep: () => audio.play('broom', 0.2),
+            paint: (s) => {
+              if (!s) {
+                el.classList.remove('is-live')
+                delete el.dataset['phase']
+                el.style.opacity = '0'
+                crowd?.leave('broom')
+                return
+              }
+              at = { x: s.x, y: s.y }
+              if (!el.classList.contains('is-live')) {
+                el.classList.add('is-live')
+                crowd?.join(body)
+              }
+              if (el.dataset['phase'] !== s.phase) el.dataset['phase'] = s.phase
+              el.style.transform = `translate3d(${Math.round(s.x - w / 2)}px, ${Math.round(s.y - h)}px, 0)`
+              el.style.opacity = s.opacity.toFixed(2)
+              el.style.zIndex = String(depthOf(s.y))
+            },
+          })
+          broom = sweeper
+          const bodies = (): { x: number; y: number; headingX: number | null }[] =>
+            crew.filter((c) => !c.away).map((c) => ({
+              x: c.at.x, y: c.at.y,
+              headingX: c.target ? (pointNamed(navFor(portrait), c.target)?.x ?? null) : null,
+            }))
+          const avoidRect = (): { x: number; y: number; w: number; h: number } | null => {
+            const o = activeObject ? world.objects.find((q) => q.id === activeObject) : undefined
+            return o ? o.rect : null
+          }
+          let zone = sweeper.pickZone([], null)
+          ambient.add({
+            id: 'broom', every: { min: 45000, max: 110000 }, duration: BROOM_MS,
+            priority: ATTENTION.object, restless: true, notBefore: 18000,
+            ready: () => {
+              zone = sweeper.pickZone(bodies(), avoidRect(), h)
+              return zone !== null
+            },
+            run: (on) => {
+              if (on && zone) sweeper.start(zone)
+              else sweeper.stop()
+            },
+          })
+        }
         // The bench drops something now and then, and whoever is near jumps.
         if (!portrait && ambient) {
           const bench = pointNamed(navFor(false), 'workbench-a') ?? { x: 2116, y: 1006 }
@@ -825,6 +954,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     viewW = r.width / scale
     viewH = r.height / scale
     stage.style.setProperty('--scale', String(scale))
+    parallax = portrait ? 0.5 : r.height < 500 ? 0.35 : 1
 
     if (changed) {
       build()
@@ -850,6 +980,16 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     const x = -camera.viewX * scale
     const y = -camera.viewY * scale
     roomEl.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`
+    // Depth: the sky hangs back a little, the things on the boards come
+    // forward a little, both from how far the camera is from the middle.
+    const wide = world.width > world.height
+    const k = motion.reduced ? 0 : parallax
+    const along = wide ? camera.x - world.width / 2 : camera.y - world.height / 2
+    const fg = (-along * PARALLAX.fg * k).toFixed(1)
+    roomEl.style.setProperty('--fgx', wide ? `${fg}px` : '0px')
+    roomEl.style.setProperty('--fgy', wide ? '0px' : `${fg}px`)
+    const sky = lights.get('sky')
+    if (sky) sky.style.transform = `translate3d(${(along * PARALLAX.bg * k).toFixed(1)}px, 0, 0)`
   }
 
   /**
@@ -1000,10 +1140,12 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
           scenes?.attention ?? 0,
         ))
       crowd?.step(Math.min(info.delta, 64))
+      footsteps?.step(Math.min(info.delta, 64))
       if (!paused) {
         cast?.step(Math.min(info.delta, 64))
         scenes?.step(Math.min(info.delta, 64))
         faces?.step(Math.min(info.delta, 64))
+        broom?.step(Math.min(info.delta, 64))
       }
       // What is going on between them, said out loud on the room. Written
       // only when it changes: the room is not a log. A test watches this
@@ -1096,6 +1238,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       setOpen(id, open)
     },
     reactObject(id: string, on: boolean): void {
+      if (on) activeObject = id
+      else if (activeObject === id) activeObject = null
       roomEl.querySelector(`[data-object="${id}"]`)?.classList.toggle('is-active', on)
       const light = REACT_LIGHT[id]
       if (light) lights.get(light)?.classList.toggle('is-on', on)
@@ -1125,6 +1269,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     destroy(): void {
       for (const one of crew) one.destroy()
       ambient?.destroy()
+      broom?.stop()
+      broom = null
       crew = []
       crowd = null
       scenes = null

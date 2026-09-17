@@ -44,6 +44,11 @@ export interface SaveDataV3 extends Omit<SaveDataV2, 'v'> {
   readonly v: 3
   /** Best score per mini-game id. Absent means never finished a round. */
   games: Record<string, number>
+  /**
+   * Which station the radio was left on (PHASE 6), or null for the garage's
+   * own. Still v3: a save without it reads as null, and nothing else moved.
+   */
+  radioStation: string | null
 }
 
 /** The current schema. */

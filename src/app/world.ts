@@ -228,6 +228,8 @@ export function mountWorld(): () => void {
     document.body.classList.add('is-inside')
     // A visitor cannot have interacted without a gesture reaching us first.
     audio.unlock()
+    // The room's own sound, if sound is on: its tone, and its station.
+    audio.enterRoom()
     if (!garage) {
       garage = mountGarage(document, {
         onObject: (obj) => goTo(obj.id),
@@ -245,6 +247,7 @@ export function mountWorld(): () => void {
     document.body.classList.remove('is-inside')
     inside = false
     alleyEl?.classList.remove('alley--inside', 'alley--push')
+    audio.leaveRoom()
     audio.play('door', 0.4)
   }
 

@@ -15,11 +15,13 @@
 import type { NpcHandle } from '@/scenes/npc'
 
 /**
- * Who is in when the visitor arrives, in the wide room: MOMO at the bench,
- * RUKI on the cushions, YOMI at the fridge — the three the first view shows.
- * POKO and NUNU are out, and walk in as the others walk out.
+ * Who is in when the visitor arrives, in the wide room: MOMO at the
+ * monitor, RUKI at the bench, NUNU on the rug — somebody working, somebody
+ * making, somebody resting, all three in the first view. POKO and YOMI are
+ * out, and walk in as the others walk out (YOMI's places, the shelf and the
+ * door, are at the two ends of the room anyway).
  */
-export const OPENING_CAST: readonly string[] = ['momo', 'ruki', 'yomi']
+export const OPENING_CAST: readonly string[] = ['momo', 'ruki', 'nunu']
 
 /** Between one departure and the next. */
 const LEAVE_EVERY = { min: 24_000, max: 50_000 }

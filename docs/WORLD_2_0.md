@@ -144,3 +144,134 @@ zoom into the surface by construction.
 **Answered by eye, per object** ("패널이 아니라 실제 물건을 만지는 느낌인가?"):
 yes for all ten; the shelf is the least distinct (small item badges on real
 shelves) and gets the first attention in the polish phase.
+
+## Checkpoint 3 — PHASE 6, the garage living
+
+Nothing new to touch: no object, no game, no panel. What changed is what the
+room does by itself, built on the managers that were already there
+(`Ambient`, `CrewInteractions`, `Crowd`, `behaviour.ts`), with no second
+scheduler.
+
+**6.1 Residents.** Preferences are pulls on the same state machine, not
+posts: MOMO → pc, parcel; RUKI → workbench, pc; NUNU → fridge (home: the
+rug); YOMI → shelf, parcel, outside door; POKO → tv, cabinet (a little more
+wandering, for the round of the room). Three standing places were missing
+and were measured off the plate with a grid (`docs/shots/…`, `inv/p6/`):
+`shelf-front` (330,1012) in front of the bookcase, `cabinet-front` (980,1012)
+before the big cushion, `radio-side` (1176,1040) beside the radio looking
+across at it; portrait gets `radio-side` (330,1630). Two seats were found
+sitting *inside* the radio — landscape `cushions` (1330,1040) and portrait
+`floor` (424,1640) — and moved (1452,1046 by the noodle cup; 610,1642 between
+the stool and the rug). The radio itself did not move. A bare `rest-floor`
+point a body width from both new places was removed. Every favourite has a
+standing place (asserted), every place is clear of the placed props
+(asserted), no two places are within a body width (the existing crowd test).
+
+**6.3 Cause and effect.** `CrewInteractions.notice()` now reads a table
+(`CAUSES`): parcel wiggle → YOMI, then MOMO (walks over if close); shelf
+lantern swing (new plate bit, measured 260,296 86×124) → YOMI checks; TV
+static → POKO glances; fridge click (new: its light lifts 700 ms, no sound
+because none was delivered) → RUKI or NUNU; PC beep (new: light lift +
+`sfx_pc_click` at 0.12) → MOMO. The one it belongs to takes it 80% of the
+time, whoever is nearest otherwise; one reaction at a time; nothing while
+another scene runs. The attention order is the existing one — interaction 40
+> scene 34 > crew 30 > object 20 > background 10 — and the thing the visitor
+has touched is *held* from the touch (yieldTo) until the panel closes, so no
+scene goes near it in the 220 ms before the panel either.
+
+**6.4 Broom.** `garage_broom_v01` (1024×1536 alpha → `prop_broom.webp`
+260×622), 172 world units tall. `src/systems/broom.ts`: enter 1.5 s → sweep
+2 s → move 3 s → sweep 2 s → pause 0.9 s → leave 1.5 s (10.9 s), one of the
+ambient events at the `object` priority, so it counts against the two-strong
+limit and never runs under a panel. Where: three stretches of bare boards
+(rest 1090–1215, desk 1700–1840, right 2570–2720; portrait 566–636,
+760–836), chosen when it fires by which has nobody within 130 units and
+nobody walking there, and never one over the thing the visitor has open;
+none clear → it waits (new `ready` hook on `AmbientEvent`). While out it is
+a body in the crowd, so walkers steer round it. Fastest moment 96 u/s
+against the crew's 76 (measured in the browser: no overlap with anybody
+across repeated appearances). `sfx_broom` (2.0 s) plays at each sweep's start —
+the phase change is what triggers it, so it is on the bristles.
+
+**6.5 Footsteps.** `sfx_crew_step_01` at 0.12/0.10 alternating, once per
+stride measured in ground covered (33.8 units, from the rendered cycle), only
+for feet in view, and one gate for the whole room (260 ms), so two walkers
+are a little more than one and never a drum roll.
+
+**6.6 Light.** Added: cabinet (warm, faint, while open) and the moon on the
+mat while the outside door stands open (cool; the green under the door stays
+LIMINAL's). The rest were already there from PHASE 5.
+
+**6.7 Depth.** Three planes from what exists: the sky through the window
+hangs back (×0.022 of the camera's distance from the room's middle), the
+plate is the middle, the things on the boards (cup, gear, broom) come forward
+(×0.012 → `--fgx/--fgy`). At the far wall on a desk that is 12 px; half on a
+phone upright; ×0.35 sideways; 0 under reduced motion.
+
+**6.8–6.9 Sound.** The room tone (`ambient.m4a`, 0.16) and the garage's
+music are on whenever sound is on and the visitor is inside: the music is the
+radio's GARAGE 88.1, tuned by the room when sound comes on, so the radio in
+the corner and the nav switch are the same dial. The station is remembered
+(`radioStation` on the v3 save). NIGHT 91.7 is the same file as the room
+tone, so tuning to it silences the tone underneath (one file, one player;
+asserted in the browser). Effects reuse one element per clip (never over
+itself). Nothing plays before ENTER (asserted with a play spy on a save that
+has sound on). Hidden tab pauses, return resumes, leaving through the
+shutter stops the room's sound.
+
+**6.2 Paths, checked by watching.** A headless probe (`scripts/broom-probe.mjs`,
+`scripts/crew-vanish-probe.mjs`) logged crew positions and states at 844×390
+and 1440×900 for 150 s each. It found two real faults in the walk, both
+older than this phase and both made more likely by three of them favouring
+the door end:
+
+- *Walking on the spot.* The stuck check compared against the last
+  position and reset whenever the figure crept two units, so two of them
+  wanting the same gap at the door creeped for thirty seconds (RUKI, 60–90 s
+  in the first watch). Progress is now measured as getting six units nearer
+  the target than ever before in that walk; anything else for 3.8 s is stuck.
+- *Vanishing in the room.* The walk off the plate sets `exiting`, and nothing
+  cleared it when that walk was abandoned (stuck, poked, summoned, told to
+  yield) — so the next arrival anywhere counted as having left, and RUKI went
+  away in front of the bench at 2252, MOMO at 2652. Every way a walk is
+  replaced now clears it (`stayAfterAll`).
+
+Both are asserted in `e2e/living.spec.ts` over 150 s: nobody in view goes
+away except at the ends of the boards, and nobody in view walks on the spot
+for more than nine seconds. (Off-screen crew are culled and stop writing
+their transform, so only what is in view is judged — the first version of
+the test read stale positions and accused two of them wrongly.)
+
+**Opening cast.** With MOMO at the monitor and RUKI at the bench, the first
+view had nobody resting, and the room's own contract (somebody works,
+somebody sits, somebody looks about, inside three minutes) failed on `sit`.
+NUNU is in the opening cast on the rug now instead of YOMI, whose places are
+at the two ends of the room; YOMI walks in with the first rotation.
+
+**Real product bugs fixed in this phase:** the two walk faults above; two
+seats that sat inside the radio (landscape `cushions`, portrait `floor`);
+the ambient scheduler deferred an event that fell on a raised attention
+floor (a bubble, a scene between two of them) by *half its gap* — nothing
+for a ten-second flicker, half a minute every time for the broom, which
+went whole visits without coming out; the retry is capped at 3 s (the
+floor still blocks, it just does not also punish);
+the radio's tuned readout ("FM 88.1 · GARAGE") ran into the station buttons
+hanging over the dial — "OFF" had been short enough to miss them — so the
+readout sits at the top of the grille now (`props.css`, one rule); the room
+tone (`toggleAmbient`) was never called by anything, so the garage had no
+ambience at all.
+
+**PHASE 6 gate (2026-09-17).** Unit 233 / 233 (24 new in `test/living.test.ts`:
+favourites reachable, places clear of props, broom zones, broom order and
+speed, strong limit with the broom, the `ready` hook, visitor beats ambient,
+held object, cause → who, footstep cap). Lint clean. Full Playwright
+`--retries=0`: **263 passed · 0 failed · 0 skipped** (46.1 min; 213 before +
+50 new/regrouped, 12 of them in `e2e/living.spec.ts`: waypoints present,
+broom comes out and goes round the crew, nobody vanishes or walks on the
+spot in view, lights on/off, depth a few px and 0 under reduced motion,
+nothing plays before a gesture, nav ↔ radio one switch across a reload, no
+file plays over itself, footsteps only while walking). Captures in
+`docs/shots/checkpoint3/` (1440×900 / 390×844 / 844×390: waypoints, cabinet
+and moon lights in the room, broom mid-sweep and close, depth at the wall,
+the radio after the nav switch). Two intermediate full runs (255/263 and a
+stopped one) found the eight things fixed above; the third is the clean one.

@@ -551,3 +551,49 @@
 @media (prefers-reduced-motion:reduce){
   .thing--parcel.is-knocked .thing__art{animation:none}
 }
+
+/* ── PHASE 6: the room living ──────────────────────────────────────────── */
+/* Lights that only come on while the visitor has the thing open. */
+.garage__light[data-light="cabinet"],
+.garage__light[data-light="moon"]{opacity:0}
+.garage__light[data-light="cabinet"].is-on{transition:opacity 320ms ease}
+.garage__light[data-light="moon"].is-on{transition:opacity 700ms ease}
+/* The monitor's small beep: a short lift, not the breathing glow. */
+.garage__light[data-light="pc"].is-beep{opacity:1.3;transition:opacity 120ms ease}
+
+/* The broom that sweeps by itself. Positioned by its bristles, in world
+   units, like the crew; drawn in the y-sort with them. Takes no pointer. */
+.garage__broom{
+  position:absolute;
+  left:0;top:0;
+  max-width:none;
+  pointer-events:none;
+  opacity:0;
+  transform-origin:50% 100%;
+  will-change:transform;
+}
+.garage__broom.is-live{opacity:1}
+.garage__broom[data-phase="sweep"]{animation:broom-sweep 1000ms ease-in-out 2}
+.garage__broom[data-phase="move"]{animation:broom-shuffle 600ms ease-in-out infinite}
+.garage__broom[data-phase="enter"],.garage__broom[data-phase="leave"]{animation:broom-shuffle 700ms ease-in-out infinite}
+@keyframes broom-sweep{
+  0%{rotate:0deg;translate:0 0}
+  30%{rotate:-9deg;translate:-8px 0}
+  70%{rotate:8deg;translate:9px 0}
+  100%{rotate:0deg;translate:0 0}
+}
+@keyframes broom-shuffle{
+  0%{rotate:-2deg;translate:0 0}
+  50%{rotate:2deg;translate:0 -3px}
+  100%{rotate:-2deg;translate:0 0}
+}
+
+/* Depth. The plate is the middle; the sky through the window is behind it
+   and moves a little less, the few things standing on the boards are in
+   front and move a little more. Both are set by the scene as the camera
+   moves, in world units, and are a few pixels at the most. */
+.garage__decor,.garage__gear,.garage__broom{margin-left:var(--fgx,0px);margin-top:var(--fgy,0px)}
+@media (prefers-reduced-motion:reduce){
+  .garage__broom{display:none}
+  .garage__decor,.garage__gear{margin:0}
+}

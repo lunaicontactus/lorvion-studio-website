@@ -15,4 +15,8 @@ OUT="public/assets/audio"
 mkdir -p "$OUT/music" "$OUT/sfx"
 afconvert -f m4af -d aac -b 96000 "$SRC/Garage 메인.wav" "$OUT/music/garage.m4a"
 afconvert -f m4af -d aac -b 128000 "$SRC/sfx_radio_tune.wav" "$OUT/sfx/radio_static.m4a"
+# Object sounds, played at the moment the object reacts (PHASE 5).
+for f in pc_on pc_click tv_channel fridge_open drawer_open paper radio_tune door_open shutter_open broom crew_step_01 game_start game_fail star_get secret_unlock lantern stall_bell; do
+  afconvert -f m4af -d aac -b 96000 "$SRC/sfx_$f.wav" "$OUT/sfx/$f.m4a"
+done
 echo "audio written"

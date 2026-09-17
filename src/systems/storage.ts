@@ -27,6 +27,7 @@ export function createDefaultSave(): SaveData {
     fridgeOpens: 0,
     collection: [],
     games: {},
+    radioStation: null,
   }
 }
 
@@ -89,6 +90,7 @@ export function migrate(raw: unknown): SaveData {
     // v3: best scores. Only sane numbers survive, keyed by whatever ids were
     // written — a game that no longer exists just carries a harmless entry.
     games: scores(o['games']),
+    radioStation: str(o['radioStation']) ? o['radioStation'] : null,
   }
 }
 

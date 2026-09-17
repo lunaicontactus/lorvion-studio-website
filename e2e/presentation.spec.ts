@@ -18,11 +18,14 @@ const THINGS = [
   { id: 'pc', prop: 'pc', surface: '.prop--pc .crt', content: '.prop--pc .hub__row', sfx: 'pc_on', light: 'pc' },
   { id: 'tv', prop: 'tv', surface: '.prop--tv .tvset__screen', content: '.prop--tv .tvnews__line', sfx: 'tv_channel', light: 'tv' },
   { id: 'fridge', prop: 'fridge', surface: '.prop--fridge .fridge__inside', content: '.prop--fridge .fridge__shelves--low', sfx: 'fridge_open', light: 'fridge' },
-  { id: 'cabinet', prop: 'cabinet', surface: '.prop--cabinet .drawer__lift', content: '.prop--cabinet .paper', sfx: 'drawer_open', light: null },
+  // PHASE 6: the open drawer gets a faint warm light of its own.
+  { id: 'cabinet', prop: 'cabinet', surface: '.prop--cabinet .drawer__lift', content: '.prop--cabinet .paper', sfx: 'drawer_open', light: 'cabinet' },
   { id: 'shelf', prop: 'shelf', surface: '.prop--shelf', content: '.prop--shelf .relic', sfx: 'drawer', light: null },
   { id: 'workbench', prop: 'workbench', surface: '.prop--workbench', content: '.prop--workbench .bench2__img', sfx: 'paper', light: null },
   { id: 'radio', prop: 'radio', surface: '.prop--radio', content: '.prop--radio [data-radio-freq]', sfx: 'radio_tune', light: 'radio' },
-  { id: 'outside-door', prop: 'outside-door', surface: '.prop--outside-door .dark', content: '.prop--outside-door .dark__line', sfx: 'door_open', light: 'secret' },
+  // PHASE 6: moonlight on the mat while the door stands open; the green
+  // under the door stays LIMINAL's own.
+  { id: 'outside-door', prop: 'outside-door', surface: '.prop--outside-door .dark', content: '.prop--outside-door .dark__line', sfx: 'door_open', light: 'moon' },
 ] as const
 
 async function enter(page: Page): Promise<void> {
