@@ -346,8 +346,14 @@
   transition:opacity 900ms ease;
 }
 .garage__light[data-light="tv"],
-.garage__light[data-light="secret"]{opacity:0}
-.garage__light.is-lit{opacity:1}
+.garage__light[data-light="secret"],
+.garage__light[data-light="fridge"],
+.garage__light[data-light="radio"]{opacity:0}
+.garage__light.is-lit,.garage__light.is-on{opacity:1}
+/* While the visitor has the thing open it stays lit whatever the room's own
+   flicker is doing; the interaction's light and the ambient's are two classes. */
+.garage__light[data-light="fridge"].is-on{transition:opacity 260ms ease}
+.garage__light[data-light="radio"].is-on{transition:opacity 260ms ease}
 /* The monitor breathes, very slightly, and only when asked. */
 .garage__light[data-light="pc"]{transition:opacity 2200ms ease}
 .garage__light[data-light="pc"].is-lit{opacity:1.6}

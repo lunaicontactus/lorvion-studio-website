@@ -98,3 +98,49 @@ LUMIORA project art). Not present. Stays BLOCKED_ASSET.
 | Workbench | card with car + capture | camera looks down at the bench |
 | Outside door | plain dark box | handle, door swings, light, transition |
 | Landscape phone (844×390) | PC/TV/radio panels taller than the window; channel and station buttons below the fold | every object's presentation must fit 390px tall |
+
+## Checkpoint 2 — PHASE 5, object-specific presentation
+
+Frozen and untouched: glasses, radio position, Garage IA, discovery pools,
+PC works list, TV channels, content pools, MiniGameShell/RoundClock/game logic.
+
+**Mechanism** (`src/data/props.ts`, `src/ui/panels.ts`, `src/styles/props.css`).
+The accessible shell is unchanged (dialog, focus trap, Escape, close, focus
+restore); it now paints nothing. What opens is the thing's own cut-out — the
+same felt furniture painted into the plate — growing out of the thing's place
+on screen, with the content laid into the part of it that would hold it. Each
+surface region was measured off the cut-out with a 5% grid. When the whole
+cut-out cannot be shown with its surface readable (`min` px), the layer zooms
+into the surface: a phone gets the monitor's screen filling the window with
+the bezel round it, not a shrunken monitor.
+
+**Sequence**, every object: click → camera to the thing (FOCUS_MS 220) + the
+thing lights in the room (`reactObject`: monitor spill, tube flicker, fridge
+inside, radio dial, door glow) + its own sound at that same moment → its
+cut-out grows (380 ms) → doors/drawer/leaf move (240–260 ms later, 520–640 ms)
+→ content. Escape: content and cut-out shrink back (260 ms) → thing unlit →
+camera returns (CLOSE_MS 200). Sounds are the user's delivered effects
+(`sfx_pc_on`, `sfx_tv_channel`, `sfx_fridge_open`, `sfx_drawer_open`,
+`sfx_paper`, `sfx_radio_tune`, `sfx_door_open`), played at the reaction, not at
+the panel; channel and station changes play the set's own click.
+
+| Object | Old (PHASE 4) | New (PHASE 5) | "Could this be pasted on another object?" |
+|---|---|---|---|
+| PC | cream card, cut-out on top, dark list | the monitor; EUNGARAGE OS inside the screen; a work's detail inside the same screen | No — a screen list |
+| TV | card, cut-out, dark screen, buttons below | the set; tube shows the channel; the two knobs are prev/next, the bezel holds 01–05 | No — knobs and tube |
+| Fridge | card with a tile row and a yellow memo | both doors swing (3D) on the fridge, the inside lights, today's things on two shelves, the memo on the inside wall | No — doors |
+| Parcel | card with box image | the box in the room opens; a tag rises above the box with the thing in it; no card, faint scrim | No — anchored to the room object |
+| Shelf | three cream tiles | the shelf; the three things stand on its three shelves; the picked one comes forward with its note | No — on shelves |
+| Cabinet | card, paper, file list | the right drawer pulls out, the paper rises out of it and stands over the doors; the legal folder tabs hang on the lower doors | No — drawer and paper |
+| Workbench | card with car + capture | the bench: the capture propped on the pegboard with a pin, the note pinned on the drawer block, the car and tray on the mats | No — pinboard |
+| Radio | card with station tiles | the radio: stations along the dial strip, the red needle moves to the frequency, left knob = power (turns), right knob = next, the news segment as a bubble over the set | No — a tuner |
+| Wall | picture on a cream card | the picture alone, grown out of the poster, caption below | No — a picture |
+| Outside door | dark box | the arch; the leaf swings open on a night sky with stars; the line about the Playground | No — a door |
+
+**844×390:** document overflow 0 on every object (asserted), close always on
+screen (asserted), content within its surface (asserted); the PC, TV and radio
+zoom into the surface by construction.
+
+**Answered by eye, per object** ("패널이 아니라 실제 물건을 만지는 느낌인가?"):
+yes for all ten; the shelf is the least distinct (small item badges on real
+shelves) and gets the first attention in the polish phase.

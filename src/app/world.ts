@@ -23,6 +23,20 @@ import { motion } from '@/systems/motion'
 import { log } from '@/systems/log'
 import type { WorldObject } from '@/types/world'
 
+/** What each thing sounds like when it answers a touch. */
+const REACT_SFX: Readonly<Record<string, { readonly name: string; readonly volume: number }>> = {
+  pc: { name: 'pc_on', volume: 0.3 },
+  tv: { name: 'tv_channel', volume: 0.28 },
+  fridge: { name: 'fridge_open', volume: 0.36 },
+  cabinet: { name: 'drawer_open', volume: 0.3 },
+  radio: { name: 'radio_tune', volume: 0.26 },
+  'outside-door': { name: 'door_open', volume: 0.3 },
+  parcel: { name: 'wrapper', volume: 0.4 },
+  shelf: { name: 'drawer', volume: 0.26 },
+  workbench: { name: 'paper', volume: 0.24 },
+  wall: { name: 'paper', volume: 0.18 },
+}
+
 /** Which nav link stands for which thing in the room. */
 const NAV_TARGETS: Readonly<Record<string, string>> = {
   games: 'pc',
@@ -53,6 +67,8 @@ export function mountWorld(): () => void {
     },
     // The parcel in the room opens with its panel and shuts after it.
     onThingOpen: (id, open) => garage?.setThingOpen(id, open),
+    // Where the thing is on screen, so its cut-out can grow out of it.
+    rectOf: (id) => garage?.screenRectOf(id) ?? null,
   })
   const gameRoot = document.querySelector<HTMLElement>('[data-game-root]')!
   const games = new GameRunner(gameRoot, {
@@ -129,6 +145,11 @@ export function mountWorld(): () => void {
   const interaction = new Interaction({
     focus: (id) => {
       garage?.focusObject(id)
+      // The thing answers first — its light comes on and it makes its sound
+      // — and its content follows once the camera has arrived (FOCUS_MS).
+      garage?.reactObject(id, true)
+      const sfx = REACT_SFX[id.replace(/^(poster|picture)-.*/, 'wall')]
+      if (sfx) audio.play(sfx.name, sfx.volume)
       // The visitor comes first: whoever is standing at that thing moves off,
       // and nobody starts a new errand while it is open.
       for (const one of garage?.crew ?? []) {
@@ -137,6 +158,9 @@ export function mountWorld(): () => void {
       }
     },
     restore: () => {
+      // Content is already gone (close); now the thing goes back to how it
+      // was and the camera returns.
+      for (const obj of [...worldFor(false).objects]) garage?.reactObject(obj.id, false)
       garage?.restoreCamera()
       for (const one of garage?.crew ?? []) one.setCalm(false)
     },

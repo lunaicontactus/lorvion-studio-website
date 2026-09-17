@@ -88,25 +88,13 @@
 .thing:focus-visible .thing__art,
 .thing.is-pressed .thing__art{filter:brightness(1.07)}
 
-/* ── The monitor's panel, beside the room ───────────────────────────────── */
-/* On a wide screen the PC's panel stands to the right and the camera leaves
-   the PC itself in the half that stays visible (garage.ts focusObject). The
-   panel keeps the felt; the monitor cut-out is dropped, because the real one
-   is on screen next to it. */
+/* The monitor's colour follows the work it is showing. */
 .panel-layer[data-kind="pc"]{--world-accent:#a8e6b8}
 .panel-layer[data-world="liminal"]{--world-accent:#a4dacc}
 .panel-layer[data-world="lunai"]{--world-accent:#c9b8ff}
 .panel-layer[data-world="wormup"]{--world-accent:#ffd189}
 .panel-layer[data-world="rubato"]{--world-accent:#e3c68f}
 .panel-layer[data-world] .crt__screen{color:var(--world-accent);transition:color 500ms ease}
-@media (min-width:1000px){
-  .panel-layer[data-kind="pc"]{justify-items:end;padding-right:4vw}
-  .panel-layer[data-kind="pc"] .panel{width:min(46vw,640px);max-height:84dvh}
-  .panel-layer[data-kind="pc"] .panel__portrait{display:none}
-  .panel-layer[data-kind="pc"] .panel-layer__scrim{
-    background:linear-gradient(90deg,rgba(38,26,16,.06) 0%,rgba(38,26,16,.16) 45%,rgba(38,26,16,.58) 100%);
-  }
-}
 
 /* ── The bench, in the studio's note ────────────────────────────────────── */
 .bench{

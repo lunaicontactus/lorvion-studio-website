@@ -1,0 +1,339 @@
+/* ── Props ─────────────────────────────────────────────────────────────────
+   PHASE 5. What opens is the thing itself: its cut-out grows out of where it
+   stands in the room and the content is laid into the part of it that would
+   hold it (src/data/props.ts). The accessible shell (dialog, focus, Escape,
+   close) is the same for all of them; the picture is not.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* The shell steps back: no card, no stitching, the whole layer is the dialog. */
+.panel-layer[data-prop] .panel{
+  position:absolute;inset:0;width:auto;max-width:none;max-height:none;
+  overflow:hidden;border-radius:0;background:none;box-shadow:none;
+  transform:none;opacity:1;transition:none;
+}
+.panel-layer[data-prop] .panel__inner{padding:0;height:100%}
+.panel-layer[data-prop] .panel__body{position:absolute;inset:0}
+/* The dialog covers the layer but is not a wall: clicks on the room around
+   the thing reach the scrim and close it, as they always did. Only the thing
+   itself and the close button take the pointer. */
+.panel-layer[data-prop] .panel,.panel-layer[data-prop] .panel__inner,.panel-layer[data-prop] .panel__body{pointer-events:none}
+.panel-layer[data-prop] .prop,.panel-layer[data-prop] .panel__close{pointer-events:auto}
+.panel-layer[data-prop] .panel__inner::after{display:none}
+.panel-layer[data-prop] .panel__title{
+  position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);margin:0;
+}
+.panel-layer[data-prop] .panel__close{
+  position:fixed;top:calc(var(--nav-h) + 10px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));
+  width:44px;height:44px;background:rgba(48,34,22,.72);color:#f4e7cd;
+  box-shadow:0 2px 10px rgba(20,12,6,.4);z-index:6;
+}
+.panel-layer[data-prop] .panel__close:hover{background:rgba(48,34,22,.92)}
+/* The room stays the room: dimmed a little, never buried. */
+.panel-layer[data-prop] .panel-layer__scrim{background:rgba(40,28,18,.34)}
+
+/* The thing, on its way from where it stands to where it is looked at. */
+.prop{
+  position:absolute;left:50%;top:50%;
+  width:var(--w,520px);aspect-ratio:var(--ratio,1);
+  transform:translate(calc(-50% + var(--fx,0px)),calc(-50% + var(--fy,0px))) scale(var(--fs,.32));
+  opacity:0;
+  transition:transform 380ms cubic-bezier(.2,.9,.3,1),opacity 220ms ease;
+  will-change:transform;
+  filter:drop-shadow(0 18px 30px rgba(20,12,6,.45));
+}
+.panel-layer.is-open .prop{
+  transform:translate(calc(-50% + var(--tx,0px)),calc(-50% + var(--ty,0px))) scale(1);
+  opacity:1;
+}
+.panel-layer:not(.is-open) .prop{transition-duration:260ms,200ms}
+.prop__art{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;max-width:none;pointer-events:none;user-select:none}
+.prop > *{position:absolute;box-sizing:border-box}
+/* Two props are not furniture: the picture and the parcel's tag flow. */
+.prop--wall > *,.prop--parcel > *{position:relative}
+.prop__surface,.prop__part{position:absolute;box-sizing:border-box}
+.prop__surface{container-type:inline-size}
+.prop__part{background-repeat:no-repeat;pointer-events:none}
+
+/* ── PC: the screen is the OS ─────────────────────────────────────────── */
+.prop--pc .crt{
+  padding:0;border-radius:6% / 8%;background:#101512;box-shadow:inset 0 0 0 2px #0a0d0b,inset 0 0 30px rgba(0,0,0,.6);
+  overflow:hidden;
+}
+.prop--pc .crt__screen{
+  position:absolute;inset:0;min-height:0;aspect-ratio:auto;border-radius:0;padding:5cqi 5.5cqi;overflow:auto;overscroll-behavior:contain;
+  color:#a8e6b8;font-size:3.1cqi;line-height:1.35;
+  background:radial-gradient(ellipse at center,rgba(168,230,184,.06),transparent 70%);
+}
+.prop--pc .crt__screen::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.14) 2px 3px);
+}
+.prop--pc .crt__boot{margin:0 0 2cqi;font-size:2.4cqi;letter-spacing:.2em}
+.prop--pc .hub__head{font-size:2.1cqi;margin:0 0 1.6cqi;opacity:.6;letter-spacing:.24em}
+.prop--pc .hub{gap:1.2cqi}
+.prop--pc .hub__row{
+  display:grid;grid-template-columns:8cqi 1fr auto;gap:2.4cqi;align-items:center;
+  width:100%;padding:1.6cqi 2cqi;border:0;border-radius:1.2cqi;background:rgba(168,230,184,.06);
+  color:inherit;text-align:left;cursor:pointer;min-height:44px;
+}
+.prop--pc .hub__row:hover,.prop--pc .hub__row:focus-visible{background:rgba(168,230,184,.16)}
+.prop--pc .hub__thumb{width:8cqi;height:10cqi;border-radius:.8cqi;background-size:cover;background-position:center;background-color:#1a2420}
+.prop--pc .hub__meta{display:grid;gap:.3cqi;min-width:0}
+.prop--pc .hub__name{font:700 3.2cqi/1.1 var(--mono);letter-spacing:.14em}
+.prop--pc .hub__tag{font-size:2.6cqi;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prop--pc .hub__facts{font:500 2.1cqi/1.3 var(--mono);opacity:.55}
+.prop--pc .hub__right{display:grid;justify-items:end;gap:.6cqi}
+.prop--pc .hub__status{font:700 1.9cqi/1 var(--mono);letter-spacing:.14em;padding:.6cqi 1cqi;border-radius:.6cqi;border:1px solid rgba(168,230,184,.4)}
+.prop--pc .hub__more{font:700 2cqi/1 var(--mono);letter-spacing:.12em;opacity:.55}
+.prop--pc .crtgame{display:grid;gap:2cqi}
+.prop--pc .crtgame__back{justify-self:start;padding:1cqi 2cqi;min-height:36px;border:0;border-radius:.8cqi;background:rgba(168,230,184,.14);color:inherit;font:700 2.3cqi/1 var(--mono);letter-spacing:.14em;cursor:pointer}
+.prop--pc .crtgame__body{display:grid;grid-template-columns:34% 1fr;gap:3cqi;align-items:start}
+.prop--pc .crtgame__art{width:100%;aspect-ratio:var(--shot,2/3);border-radius:1cqi;background-size:cover;background-position:center;background-color:#1a2420}
+.prop--pc .crtgame__text{display:grid;gap:1.4cqi;min-width:0}
+.prop--pc .crtgame__name{margin:0;font:700 4.2cqi/1 var(--mono);letter-spacing:.16em}
+.prop--pc .crtgame__tag{margin:0;font-size:2.8cqi;line-height:1.4}
+.prop--pc .crtgame__tag--ko{opacity:.7;font-size:2.5cqi}
+.prop--pc .crtgame__facts{margin:0;display:grid;gap:.8cqi;font-size:2.3cqi}
+.prop--pc .crtgame__facts div{display:grid;grid-template-columns:9cqi 1fr;gap:1cqi}
+.prop--pc .crtgame__facts dt{font:700 1.9cqi/1.5 var(--mono);letter-spacing:.16em;opacity:.55}
+.prop--pc .crtgame__facts dd{margin:0}
+.prop--pc .crtgame__links{display:flex;flex-wrap:wrap;gap:1.2cqi;margin-top:.6cqi}
+.prop--pc .crtgame__link,.prop--pc .crtgame__full{padding:1cqi 1.8cqi;min-height:36px;display:inline-flex;align-items:center;border-radius:.8cqi;background:rgba(168,230,184,.14);color:inherit;font:700 2.1cqi/1 var(--mono);letter-spacing:.12em;text-decoration:none}
+
+/* ── TV: the tube, and the knobs ──────────────────────────────────────── */
+.prop--tv .tvset__screen{
+  border-radius:8% / 10%;background:#0d1117;overflow:hidden;
+  box-shadow:inset 0 0 0 2px #06090c,inset 0 0 40px rgba(0,0,0,.7);
+  color:#e9f1f7;
+}
+.prop--tv .tvset__screen::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.16) 2px 3px)}
+.prop--tv .tvset__static{position:absolute;inset:0;margin:0;opacity:0;transition:opacity 160ms;
+  background:repeating-radial-gradient(circle at 30% 40%,#333 0 1px,#111 1px 3px),repeating-linear-gradient(90deg,rgba(255,255,255,.08) 0 2px,transparent 2px 5px);z-index:2}
+.prop--tv.is-warming .tvset__static{opacity:1}
+.prop--tv .tvset__ch{position:absolute;right:4cqi;top:3cqi;margin:0;z-index:3;font:700 2.6cqi/1 var(--mono);letter-spacing:.14em;color:#cfe0ee;text-shadow:0 0 6px rgba(160,210,255,.6)}
+.prop--tv .tvset__view{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain;font-size:3cqi}
+.prop--tv .tvnews{display:grid;align-content:center;gap:2.4cqi;height:100%;padding:6cqi 5cqi;box-sizing:border-box}
+.prop--tv .tvnews__tag{justify-self:start;padding:.8cqi 1.6cqi;border-radius:.6cqi;background:#c94f3f;font:700 2.2cqi/1 var(--mono);letter-spacing:.14em}
+.prop--tv .tvnews__line{margin:0;font-size:3.6cqi;line-height:1.5}
+.prop--tv .tvnews__ticker{font:600 2cqi/1 var(--mono);letter-spacing:.2em;opacity:.55;white-space:nowrap;overflow:hidden}
+.prop--tv .tvcam{position:absolute;inset:0;background-repeat:no-repeat;filter:saturate(.55) contrast(1.05) brightness(.92)}
+.prop--tv .tvcam::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.18) 2px 3px)}
+.prop--tv .tvcam__rec,.prop--tv .tvcam__label,.prop--tv .tvcam__time{position:absolute;z-index:1;font:700 2.2cqi/1 var(--mono);letter-spacing:.12em;color:#f2f2f2;text-shadow:0 1px 2px #000}
+.prop--tv .tvcam__rec{left:4cqi;top:4cqi;color:#ff6a5a}
+.prop--tv .tvcam__label{left:4cqi;bottom:4cqi}
+.prop--tv .tvcam__time{right:4cqi;bottom:4cqi}
+.prop--tv .tvteaser{position:absolute;inset:0;display:grid;align-content:end;justify-items:start;gap:1.2cqi;padding:5cqi;color:#fff;overflow:hidden}
+.prop--tv .tvteaser__art{position:absolute;inset:0;background-size:cover;background-position:center 30%;filter:brightness(.62)}
+.prop--tv .tvteaser__name,.prop--tv .tvteaser__tag,.prop--tv .tvteaser__go{position:relative}
+.prop--tv .tvteaser__name{font:700 5cqi/1 var(--mono);letter-spacing:.16em}
+.prop--tv .tvteaser__tag{font-size:3cqi;opacity:.9}
+.prop--tv .tvteaser__go{margin-top:1cqi;min-height:36px;padding:1.4cqi 2.6cqi;border:0;border-radius:999px;background:rgba(255,255,255,.22);color:#fff;font:600 2.2cqi/1 var(--mono);letter-spacing:.12em;cursor:pointer}
+.prop--tv .tvcontact{display:grid;align-content:center;gap:2cqi;height:100%;padding:5cqi 6cqi;box-sizing:border-box}
+.prop--tv .tvrow__brand{margin:0;font:700 2.4cqi/1 var(--mono);letter-spacing:.3em;opacity:.6}
+.prop--tv .tvrow{display:grid;grid-template-columns:auto 1fr auto;gap:2cqi;align-items:center;font-size:3cqi}
+.prop--tv .tvrow__label{font:700 2cqi/1 var(--mono);letter-spacing:.16em;opacity:.6}
+.prop--tv .tvrow__value{color:#fff;font-size:3.2cqi;overflow:hidden;text-overflow:ellipsis}
+.prop--tv .tvrow__copy{min-height:36px;padding:.8cqi 1.6cqi;border:1px solid rgba(255,255,255,.35);border-radius:.6cqi;background:none;color:#fff;font:700 2cqi/1 var(--mono);letter-spacing:.12em;cursor:pointer}
+.prop--tv .tvrow__copy.is-copied{background:rgba(140,226,154,.3)}
+.prop--tv .tvrow__more{font:600 2.2cqi/1 var(--mono);letter-spacing:.14em;color:#cfe0ee}
+.prop--tv .tvrow__none{position:absolute;inset:0;display:grid;place-items:center;margin:0;font:700 4cqi/1 var(--mono);letter-spacing:.3em;color:#7d8895;
+  background:repeating-radial-gradient(circle at 60% 30%,#2a2f36 0 1px,#141920 1px 3px)}
+.prop--tv .tvset__knobs{display:grid;grid-template-rows:1fr 1fr;gap:6%}
+.prop--tv .tvset__knob{border:0;border-radius:50%;background:rgba(255,255,255,0);color:transparent;cursor:pointer;min-width:44px;min-height:44px;
+  transition:background 140ms}
+.prop--tv .tvset__knob:hover,.prop--tv .tvset__knob:focus-visible{background:rgba(255,236,190,.28);color:#2a2013}
+.prop--tv .tvset__knob:active{transform:rotate(22deg)}
+.prop--tv .tvset__dial{display:flex;gap:3%;align-items:center;justify-content:center}
+.prop--tv .tvset__num{flex:1;height:100%;min-height:28px;border:0;border-radius:.5em;background:rgba(255,236,190,.28);color:#3a2a1e;font:700 clamp(9px,2cqi,13px)/1 var(--mono);cursor:pointer}
+.prop--tv .tvset__num[aria-pressed="true"]{background:#e8b766;color:#2a2013}
+.prop--tv .tvset__num:focus-visible{outline:2px solid #ffd27a}
+
+/* ── Fridge: the doors swing, the inside is lit ───────────────────────── */
+.prop--fridge{perspective:1400px}
+.prop--fridge .fridge__inside{
+  background:linear-gradient(180deg,#3b2f26,#2c231c);border-radius:4% / 3%;overflow:hidden;
+  box-shadow:inset 0 0 0 2px #1f1813,inset 0 0 40px rgba(0,0,0,.6);
+}
+.prop--fridge .fridge__light{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 20%,rgba(255,240,200,.55),transparent 65%);opacity:0;transition:opacity 320ms ease 120ms}
+.prop--fridge.is-open .fridge__light{opacity:1}
+.prop--fridge .fridge__shelves{position:absolute;left:4%;right:4%;display:flex;gap:2%;justify-content:center;align-items:flex-end;list-style:none;margin:0;padding:0 0 1.5%;
+  border-bottom:1.2cqi solid #d9cbb0;box-shadow:0 .6cqi 0 rgba(0,0,0,.35)}
+.prop--fridge .fridge__shelves--top{top:9%;height:26%}
+.prop--fridge .fridge__shelves--low{top:47%;height:34%}
+.prop--fridge .fridge__shelves li{flex:1 1 0;max-width:34%;min-width:0}
+.prop--fridge .chill{display:grid;justify-items:center;gap:.6cqi;width:100%;padding:.8cqi .4cqi;border:0;border-radius:1cqi;background:rgba(255,246,220,.08);color:#f6ecd8;cursor:pointer;min-height:44px}
+.prop--fridge .chill:hover,.prop--fridge .chill:focus-visible{background:rgba(255,246,220,.2)}
+.prop--fridge .chill__art{width:100%;aspect-ratio:1;max-height:22cqi;background-size:contain;background-repeat:no-repeat;background-position:center bottom}
+.prop--fridge .chill__art[data-empty]{background:repeating-linear-gradient(135deg,rgba(255,255,255,.08) 0 3px,transparent 3px 8px);border-radius:.6cqi}
+.prop--fridge .chill__label{font-size:3.2cqi;line-height:1.2;text-align:center}
+.prop--fridge .fridge__say{position:absolute;left:5%;right:5%;bottom:3%;margin:0;padding:1.2cqi 1.6cqi;border-radius:.8cqi;background:rgba(255,246,220,.14);color:#f6ecd8;font-size:2.8cqi;line-height:1.4;text-align:center;min-height:1.4em;opacity:0}
+.prop--fridge .fridge__say.is-said{opacity:1;animation:said .2s}
+@keyframes said{from{transform:translateY(4px)}}
+.prop--fridge .fridge__door{transform-origin:100% 50%;transform:rotateY(0);transition:transform 520ms cubic-bezier(.3,.8,.3,1);backface-visibility:hidden;z-index:2}
+.prop--fridge .fridge__door--lower{transition-delay:70ms}
+.prop--fridge.is-open .fridge__door{transform:rotateY(-72deg)}
+.prop--fridge .fridge__memo{position:absolute;left:6%;right:6%;top:37%;z-index:1;margin:0;padding:1.4cqi 1.8cqi;border-radius:.4cqi;background:#fff6c9;color:#4a3828;font-size:2.6cqi;line-height:1.4;
+  transform:rotate(-1.5deg);box-shadow:0 2px 6px rgba(60,44,28,.25)}
+/* The memo is stuck on the inside wall, between the shelves, and reads once the doors are open. */
+
+/* ── Parcel: what was in it, above the box in the room ────────────────── */
+.panel-layer[data-prop="parcel"] .panel-layer__scrim{background:rgba(40,28,18,.14)}
+.prop--parcel{width:min(78vw,300px);aspect-ratio:auto;filter:drop-shadow(0 8px 16px rgba(20,12,6,.35))}
+.prop--parcel .delivery__out{position:relative;display:grid;justify-items:center;gap:.5em;padding:12px 14px 12px;border-radius:12px;background:#efe3c8;text-align:center}
+.prop--parcel .delivery__thing{width:84px;height:70px;object-fit:contain;margin-top:-30px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3));animation:popUp .5s cubic-bezier(.2,1.2,.3,1) both}
+@keyframes popUp{from{opacity:0;transform:translateY(30px) scale(.7)}to{opacity:1;transform:none}}
+.prop--parcel .delivery__name{font:700 .72rem/1 var(--mono);letter-spacing:.12em;color:#4a3828}
+.prop--parcel .delivery__note{font-size:.86rem;color:#5b452e;line-height:1.45}
+.prop--parcel .delivery__tail{position:absolute;left:50%;bottom:-9px;width:18px;height:18px;background:#efe3c8;transform:translateX(-50%) rotate(45deg);border-radius:2px}
+
+/* ── Cabinet: the drawer pulls, the paper rises ───────────────────────── */
+.prop--cabinet .drawer__pull{transition:transform 360ms cubic-bezier(.2,.9,.3,1);z-index:2;filter:drop-shadow(0 6px 8px rgba(20,12,6,.4))}
+.prop--cabinet.is-open .drawer__pull{transform:translateY(22%) scale(1.06)}
+.prop--cabinet .drawer__lift{z-index:3;display:grid;align-items:start;justify-items:center;pointer-events:none}
+.prop--cabinet .paper{
+  pointer-events:auto;width:88%;margin:0;padding:5cqi 6cqi;border-radius:.4cqi;background:#fbf5e6;color:#3f3024;
+  box-shadow:0 6px 18px rgba(30,20,12,.4);transform:translateY(46%) rotate(-.6deg);opacity:0;
+  transition:transform 460ms cubic-bezier(.2,.9,.3,1) 120ms,opacity 300ms ease 120ms;
+  background-image:repeating-linear-gradient(transparent 0 5cqi,rgba(120,96,66,.14) 5cqi calc(5cqi + 1px));
+  font-size:3cqi;
+}
+.prop--cabinet.is-open .paper{transform:translateY(0) rotate(-.6deg);opacity:1}
+.prop--cabinet .paper__title{margin:0 0 1.2em;font:700 .85em/1.2 var(--mono);letter-spacing:.1em}
+.prop--cabinet .paper__body{margin:0;font-size:1.1em;line-height:1.7}
+.prop--cabinet .paper--dev{background-color:#eef3f6}
+.prop--cabinet .paper--sealed{background:#e3d2ae;text-align:center}
+.prop--cabinet .drawer__folder{display:grid;align-content:end;gap:1cqi;padding:0 6% 6%;container-type:inline-size;opacity:0;transition:opacity 300ms ease 300ms}
+.prop--cabinet.is-open .drawer__folder{opacity:1}
+.prop--cabinet .drawer__label{margin:0 0 .4em;font:700 clamp(8px,2.6cqi,11px)/1 var(--mono);letter-spacing:.16em;color:#f4e7cd;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.prop--cabinet .drawer__files{display:flex;flex-wrap:wrap;gap:.5em;list-style:none;margin:0;padding:0}
+.prop--cabinet .file{opacity:1;transform:none}
+.prop--cabinet .file__tab{display:inline-flex;align-items:center;gap:.4em;min-height:32px;padding:.5em .9em;border-radius:.4em .4em 0 0;background:#d9c6a2;color:#3f3024;font:700 clamp(8px,2.4cqi,11px)/1 var(--mono);letter-spacing:.1em;text-decoration:none;box-shadow:0 -2px 0 rgba(0,0,0,.15) inset}
+.prop--cabinet .file__tab:hover,.prop--cabinet .file__tab:focus-visible{background:#ebd9b3}
+
+/* ── Shelf: their things on the shelves; the picked one comes forward ──── */
+.prop--shelf .shelf{position:absolute;inset:0}
+.prop--shelf .relic{
+  position:absolute;transform:translate(-50%,-100%);display:grid;justify-items:center;gap:.3em;
+  width:22%;padding:.4em .3em;border:0;border-radius:.6em;background:rgba(255,246,220,.2);color:#3f3024;cursor:pointer;
+  font-size:clamp(9px,2.2cqi,13px);min-height:44px;
+  transition:transform 260ms cubic-bezier(.2,.9,.3,1),background 200ms,box-shadow 200ms;
+  box-shadow:0 2px 4px rgba(20,12,6,.25);animation:relicIn .38s cubic-bezier(.2,.9,.3,1) both;
+}
+.prop--shelf .relic:nth-of-type(2){animation-delay:.06s}
+.prop--shelf .relic:nth-of-type(3){animation-delay:.12s}
+.prop--shelf .relic:hover,.prop--shelf .relic:focus-visible{background:rgba(255,246,220,.55)}
+.prop--shelf .relic.is-picked{transform:translate(-50%,-100%) scale(1.28) translateY(-6%);background:#f4e7cd;box-shadow:0 10px 18px rgba(20,12,6,.45);z-index:3}
+.prop--shelf .relic__art{width:70%;aspect-ratio:1;background-size:contain;background-repeat:no-repeat;background-position:center bottom}
+.prop--shelf .relic .owner{flex-direction:column;gap:0}
+.prop--shelf .relic .owner__face{width:60%}
+.prop--shelf .relic .owner__name{font-size:.75em}
+.prop--shelf .relic__label{font-weight:700;text-align:center;line-height:1.2}
+.prop--shelf .shelf__card{
+  position:absolute;z-index:4;width:44%;transform:translate(-50%,8%);padding:.7em .9em;border-radius:.6em;background:#fbf5e6;color:#3f3024;
+  box-shadow:0 8px 18px rgba(20,12,6,.4);font-size:clamp(10px,2.4cqi,14px);pointer-events:none;
+}
+.prop--shelf .shelf__card[hidden]{display:none}
+.prop--shelf .shelf__name{display:block;font:700 .8em/1 var(--mono);letter-spacing:.1em;margin-bottom:.4em}
+.prop--shelf .shelf__note{margin:0;line-height:1.45}
+
+/* ── Workbench: a capture propped on the board, the note on the drawers ── */
+.prop--workbench .bench2{position:absolute;inset:0;container-type:inline-size}
+.prop--workbench .bench2 > *{position:absolute;box-sizing:border-box}
+.prop--workbench .bench2__photo{display:grid;place-items:center;padding:1%}
+.prop--workbench .bench2__img{max-width:100%;max-height:100%;width:auto;height:auto;border:.6cqi solid #fbf5e6;border-bottom-width:2cqi;box-shadow:0 6px 14px rgba(20,12,6,.45);transform:rotate(-1.4deg);background:#2b231d}
+.prop--workbench .bench2__pin{position:absolute;top:2%;left:50%;width:2.2cqi;height:2.2cqi;border-radius:50%;background:#c94f3f;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.prop--workbench .bench2__card{display:grid;align-content:start;gap:.4em;padding:1.4em 1.4em;border-radius:.3em;background:#fff6c9;color:#3f3024;
+  font-size:clamp(9px,2.3cqi,13px);transform:rotate(1.2deg);box-shadow:0 4px 10px rgba(20,12,6,.35);overflow:hidden}
+.prop--workbench .bench2__kind{font:700 .72em/1 var(--mono);letter-spacing:.16em;color:#7a6149}
+.prop--workbench .bench2__title{font-size:1.15em}
+.prop--workbench .bench2__note{line-height:1.45}
+.prop--workbench .bench2__commit{justify-self:start;font-size:.75em;padding:.15em .5em;border-radius:.3em;background:rgba(120,96,66,.16)}
+.prop--workbench .bench{position:absolute;display:grid;place-items:end center;grid-template-columns:none;gap:0;padding:0;background:none;border-radius:0}
+.prop--workbench .bench__car{position:relative;width:70%;aspect-ratio:1.3;border:0;background:none;cursor:pointer;padding:0;min-width:44px;min-height:44px}
+.prop--workbench .bench__car img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:opacity 180ms}
+.prop--workbench .bench__tray{width:60%;display:block;margin:0}
+.prop--workbench .bench__note{position:absolute;left:0;right:0;bottom:-2.6em;margin:0;font-size:clamp(9px,2cqi,12px);color:#f4e7cd;text-shadow:0 1px 2px rgba(0,0,0,.5);text-align:center}
+
+/* ── Radio: the dial is the tuner ─────────────────────────────────────── */
+.prop--radio .radio__face{display:grid;place-items:end center;padding:0 0 3%;background:none;border-radius:0;min-height:0}
+.prop--radio .radio__freq{margin:0;padding:.4em 1em;border-radius:.4em;background:rgba(30,22,16,.78);color:#ffd99a;font:700 clamp(10px,3cqi,16px)/1 var(--mono);letter-spacing:.12em;box-shadow:0 0 12px rgba(255,200,120,0);transition:box-shadow 260ms}
+.prop--radio[data-on="true"] .radio__freq{box-shadow:0 0 14px rgba(255,200,120,.45)}
+.prop--radio[data-on="false"] .radio__freq{color:#8a7a66}
+.prop--radio .radio__dial{pointer-events:none}
+.prop--radio .radio__needle{position:absolute;top:-8%;bottom:-8%;left:var(--at,0%);width:3px;margin-left:-1.5px;background:#c94f3f;border-radius:2px;box-shadow:0 0 6px rgba(201,79,63,.8);
+  transition:left 420ms cubic-bezier(.2,.9,.3,1)}
+.prop--radio .radio__glow{position:absolute;inset:-30% -4%;background:radial-gradient(ellipse,rgba(255,200,120,.45),transparent 70%);opacity:0;transition:opacity 260ms}
+.prop--radio[data-on="true"] .radio__glow{opacity:1}
+.prop--radio .radio__stations{position:absolute;height:6%}
+.prop--radio .radio__st{position:absolute;left:var(--at,0%);top:0;transform:translate(-50%,-100%);display:grid;justify-items:center;gap:.1em;
+  padding:.3em .5em;border:0;border-radius:.4em;background:rgba(30,22,16,.62);color:#f4e7cd;cursor:pointer;font-size:clamp(8px,2cqi,12px);min-width:44px;min-height:34px}
+.prop--radio .radio__st b{font:700 1.1em/1 var(--mono)}
+.prop--radio .radio__st span{font:600 .7em/1 var(--mono);letter-spacing:.12em;opacity:.8}
+.prop--radio .radio__st[aria-checked="true"]{background:#e8b766;color:#2a2013}
+.prop--radio .radio__st:focus-visible{outline:2px solid #ffd27a}
+.prop--radio .radio__knob{display:grid;place-items:center}
+.prop--radio .radio__power,.prop--radio .radio__next{width:100%;height:100%;min-width:44px;min-height:44px;border:0;border-radius:50%;background:rgba(255,255,255,0);cursor:pointer;
+  transition:transform 260ms cubic-bezier(.2,.9,.3,1),background 160ms;position:relative}
+.prop--radio .radio__power:hover,.prop--radio .radio__power:focus-visible,.prop--radio .radio__next:hover,.prop--radio .radio__next:focus-visible{background:rgba(255,236,190,.25)}
+.prop--radio .radio__power[aria-pressed="true"]{transform:rotate(90deg)}
+.prop--radio .radio__next:active{transform:rotate(30deg)}
+.prop--radio .radio__mark{position:absolute;left:50%;top:8%;width:8%;height:26%;margin-left:-4%;border-radius:2px;background:#2a2013;opacity:.75}
+.prop--radio .radio__talk{position:absolute;left:8%;right:8%;top:-1%;transform:translateY(-100%);margin:0;padding:.7em 1em;border-radius:.6em;background:#fbf5e6;color:#3f3024;
+  font-size:clamp(10px,2.6cqi,14px);line-height:1.45;box-shadow:0 6px 14px rgba(20,12,6,.4);opacity:0;transition:opacity 220ms}
+.prop--radio .radio__talk:not(:empty){opacity:1}
+.prop--radio .radio__talk:not(:empty)::after{content:"";position:absolute;left:14%;bottom:-8px;width:16px;height:16px;background:#fbf5e6;transform:rotate(45deg)}
+
+/* ── Wall: the picture, and only the picture ──────────────────────────── */
+.panel-layer[data-prop="wall"] .panel-layer__scrim{background:rgba(40,28,18,.5)}
+.prop--wall{aspect-ratio:auto;display:grid;justify-items:center;gap:10px;filter:none}
+.prop--wall .view{margin:0;display:grid;justify-items:center;gap:10px;padding:0;background:none;box-shadow:none;width:100%}
+.prop--wall .view__img{display:block;width:100%;height:auto;max-width:none;max-height:none;border-radius:3px;box-shadow:0 18px 40px rgba(20,12,6,.55)}
+.prop--wall .view__cap{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 14px;text-align:center;color:#f4e7cd;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.prop--wall .view__cap b{font:700 .72rem/1 var(--mono);letter-spacing:.2em;color:#f4e7cd}
+.prop--wall .view__cap span{font-size:.82rem;color:#f4e7cd;opacity:.85}
+.prop--wall .wall__go{border:0;border-radius:999px;padding:8px 14px;min-height:36px;cursor:pointer;background:rgba(244,231,205,.18);color:#f4e7cd;font:600 .58rem/1 var(--mono);letter-spacing:.14em}
+.prop--wall .wall__go:hover,.prop--wall .wall__go:focus-visible{background:rgba(244,231,205,.36)}
+
+/* ── Outside door: the leaf swings on the night ───────────────────────── */
+.prop--outside-door{perspective:1200px}
+.prop--outside-door .dark{
+  display:grid;align-content:center;justify-items:center;gap:.6em;padding:8% 10%;text-align:center;
+  border-radius:40% 40% 4% 4% / 30% 30% 3% 3%;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 30%,#2b3a6b,#0d1530 70%);color:#f4e7cd;
+  box-shadow:inset 0 0 40px rgba(0,0,0,.6);opacity:1;
+}
+.prop--outside-door .dark::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(circle at 20% 25%,#fff 0 1px,transparent 2px),radial-gradient(circle at 70% 15%,#fff 0 1px,transparent 2px),
+  radial-gradient(circle at 55% 45%,#fff 0 1px,transparent 2px),radial-gradient(circle at 30% 60%,rgba(255,255,255,.7) 0 1px,transparent 2px),
+  radial-gradient(circle at 80% 50%,rgba(255,255,255,.8) 0 1px,transparent 2px);opacity:0;transition:opacity 600ms ease 200ms}
+.prop--outside-door .dark.is-ajar::before{opacity:1}
+.prop--outside-door .dark__line{margin:0;font-size:clamp(11px,4cqi,18px);line-height:1.5;position:relative}
+.prop--outside-door .dark__sub{margin:0;font:600 clamp(8px,2.4cqi,11px)/1 var(--mono);letter-spacing:.16em;opacity:.6;position:relative}
+.prop--outside-door .door__leaf{transform-origin:0 50%;transform:rotateY(0);transition:transform 640ms cubic-bezier(.3,.8,.3,1);z-index:2;backface-visibility:hidden;
+  border-radius:45% 45% 3% 3% / 32% 32% 2% 2%}
+.prop--outside-door.is-open .door__leaf{transform:rotateY(-62deg)}
+
+/* Under the pointer nothing lifts twice: the thing in the room is the thing. */
+.thing.is-active .thing__outline{opacity:1}
+
+/* ── Sizes: the tag over the parcel and the wall get their own widths ──── */
+@media (max-height:520px){
+  .panel-layer[data-prop] .panel__close{top:calc(var(--nav-h) + 2px)}
+  /* A phone on its side: the caption stands beside the picture, so the
+     picture keeps the height the window has. */
+  .prop--wall .view{position:relative}
+  .prop--wall .view__cap{position:absolute;left:calc(100% + 14px);top:50%;width:170px;transform:translateY(-50%);
+    flex-direction:column;align-items:flex-start;text-align:left}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .prop,.prop--fridge .fridge__door,.prop--fridge .fridge__memo,.prop--cabinet .drawer__pull,.prop--cabinet .paper,
+  .prop--radio .radio__needle,.prop--outside-door .door__leaf,.prop--shelf .relic,.prop--parcel .delivery__thing{transition:none;animation:none}
+}
+
+/* Shared bits that used to live in panels.css. */
+.owner{display:inline-flex;align-items:center;gap:5px;font:700 .56rem/1 var(--mono);letter-spacing:.12em;color:#6a533b}
+.owner__face{width:30px;height:auto;aspect-ratio:292/420;object-fit:contain;object-position:top;margin-block:-4px -8px;clip-path:inset(0 0 42% 0)}
+.hub__head{margin:0 0 8px;font:700 .56rem/1 var(--mono);letter-spacing:.2em;opacity:.7}
+.view__none{display:grid;place-items:center;width:min(60vw,240px);aspect-ratio:2/3;background:repeating-linear-gradient(135deg,#e8dcc5 0 12px,#e0d2b8 12px 24px);font:700 1rem/1 var(--mono);letter-spacing:.16em;color:var(--accent,#8a6f52)}
+.prop--fridge .chill,.prop--fridge .fridge__say{transition:background .18s ease,opacity .2s ease}

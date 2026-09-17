@@ -128,6 +128,11 @@ const PHONE_CREW = 3
  * on a phone held upright, where the whole strip is in view.
  */
 const ON_STAGE = { landscape: 3, portrait: 2 }
+
+/** Which light comes on in the room while the visitor has a thing open. */
+const REACT_LIGHT: Readonly<Record<string, string>> = {
+  pc: 'pc', tv: 'tv', fridge: 'fridge', radio: 'radio', 'outside-door': 'secret',
+}
 import { CHARACTERS } from '@/data/characters'
 import { spritesFor } from '@/data/sprites'
 import type { WorldLayout, WorldObject } from '@/types/world'
@@ -152,6 +157,15 @@ export interface GarageHandle {
   setWorld(world: string | null): void
   /** Open or shut a two-state thing (the parcel) from outside the room. */
   setThingOpen(id: string, open: boolean): void
+  /**
+   * The thing is being used by the visitor: it lights up in the room (the
+   * monitor's spill, the tube's flicker, the fridge's inside, the radio's
+   * dial) and stays lit until they are done. Separate from the room's own
+   * ambient flickers, which may come and go underneath.
+   */
+  reactObject(id: string, on: boolean): void
+  /** Where a thing is on screen right now, for whatever grows out of it. */
+  screenRectOf(id: string): DOMRect | null
   readonly world: WorldLayout
   destroy(): void
 }
@@ -245,6 +259,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   let viewW = 0
   let viewH = 0
   let lights = new Map<string, HTMLElement>()
+  /** The moving pieces of the plate, by id, for the handle. */
+  let roomBits = new Map<string, HTMLElement>()
   let ambient: Ambient | null = null
   let built = false
   let paused = false
@@ -336,6 +352,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     // The small movements in the painting itself (src/data/ambience.ts):
     // pieces of the plate over the plate, each with its own little motion.
     const bits = new Map<string, HTMLElement>()
+    roomBits = bits
     // The pieces of plate that move — the pencils, the magnet, the note — are
     // cut out of the landscape plate by rect and have no portrait twin.
     if (wide) {
@@ -1073,14 +1090,19 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       scenes?.yieldTo(id)
       // Remember where the visitor was looking before we moved them.
       if (parked === null) parked = { x: camera.x, y: camera.y }
-      // On a wide screen the monitor's panel stands to the right of the room
-      // (immersive.css), so the camera aims a little right of the PC and
-      // leaves the PC itself in the half that stays visible.
-      const aside = id === 'pc' && scene.clientWidth >= 1000 ? viewW * 0.24 : 0
-      camera.moveTo(obj.rect.x + obj.rect.w / 2 + aside, obj.rect.y + obj.rect.h / 2)
+      camera.moveTo(obj.rect.x + obj.rect.w / 2, obj.rect.y + obj.rect.h / 2)
     },
     setThingOpen(id: string, open: boolean): void {
       setOpen(id, open)
+    },
+    reactObject(id: string, on: boolean): void {
+      roomEl.querySelector(`[data-object="${id}"]`)?.classList.toggle('is-active', on)
+      const light = REACT_LIGHT[id]
+      if (light) lights.get(light)?.classList.toggle('is-on', on)
+      if (id === 'tv') roomBits.get('tvflicker')?.classList.toggle('is-live', on)
+    },
+    screenRectOf(id: string): DOMRect | null {
+      return roomEl.querySelector(`[data-object="${id}"]`)?.getBoundingClientRect() ?? null
     },
     setWorld(w: string | null): void {
       if (w) scene.dataset['world'] = w

@@ -110,21 +110,31 @@ test.describe('desktop', () => {
     await expect(label).toHaveCSS('opacity', '0')
   })
 
-  test('the monitor panel stands beside the room and leaves the PC in view', async ({ page }) => {
+  test('the monitor grows out of the PC, and the works are inside its screen', async ({ page }) => {
     await enter(page)
     await page.locator('.thing--pc').click()
     await expect(page.locator('.panel-layer.is-open')).toBeVisible()
+    // The from-point is the PC's place on screen at the moment the monitor
+    // opened — the camera has been moving toward it since the click, and is
+    // still easing, so both are read on the same frame, as soon as it opens.
+    const { from, pc } = await page.evaluate(() => {
+      const el = document.querySelector<HTMLElement>('.prop--pc')!
+      const r = document.querySelector('.thing--pc')!.getBoundingClientRect()
+      return { from: { fx: parseFloat(el.style.getPropertyValue('--fx')), fy: parseFloat(el.style.getPropertyValue('--fy')) },
+        pc: { x: r.x, y: r.y, width: r.width, height: r.height } }
+    })
     await expect(page.locator('.hub__row').first()).toBeVisible({ timeout: 5000 })
-    await page.waitForTimeout(600) // the camera settles
-    const panel = (await page.locator('.panel').boundingBox())!
-    const pc = (await page.locator('.thing--pc').boundingBox())!
+    await page.waitForTimeout(600) // the prop arrives
     const vp = page.viewportSize()!
-    // Right-hand side, and the PC entirely to its left and on screen.
-    expect(panel.x).toBeGreaterThan(vp.width / 2)
-    expect(pc.x).toBeGreaterThanOrEqual(0)
-    expect(pc.x + pc.width).toBeLessThan(panel.x)
-    // The cut-out of the monitor is not shown: the real one is beside it.
-    await expect(page.locator('.panel__portrait')).toBeHidden()
+    expect(Math.abs(vp.width / 2 + from.fx - (pc.x + pc.width / 2))).toBeLessThan(80)
+    expect(Math.abs(vp.height / 2 + from.fy - (pc.y + pc.height / 2))).toBeLessThan(80)
+    // And the list is inside the screen, not on a card next to it.
+    const screen = (await page.locator('.prop--pc .crt').boundingBox())!
+    const list = (await page.locator('.prop--pc .hub').boundingBox())!
+    expect(list.x).toBeGreaterThanOrEqual(screen.x - 1)
+    expect(list.x + list.width).toBeLessThanOrEqual(screen.x + screen.width + 1)
+    expect(list.y).toBeGreaterThanOrEqual(screen.y - 1)
+    await expect(page.locator('.panel__portrait')).toHaveCount(0)
   })
 
   test('one game lights the room while the monitor shows it', async ({ page }) => {

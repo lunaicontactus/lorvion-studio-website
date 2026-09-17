@@ -23,6 +23,16 @@ const CLIPS = {
   keyboard: `${SFX}/keyboard.m4a`,
   surprise: `${SFX}/surprise.m4a`,
   wrapper: `${SFX}/wrapper.m4a`,
+  // The objects, at the moment they react (the user's own effects, PHASE 5).
+  pc_on: `${SFX}/sfx/pc_on.m4a`,
+  pc_click: `${SFX}/sfx/pc_click.m4a`,
+  tv_channel: `${SFX}/sfx/tv_channel.m4a`,
+  fridge_open: `${SFX}/sfx/fridge_open.m4a`,
+  drawer_open: `${SFX}/sfx/drawer_open.m4a`,
+  paper: `${SFX}/sfx/paper.m4a`,
+  radio_tune: `${SFX}/sfx/radio_tune.m4a`,
+  door_open: `${SFX}/sfx/door_open.m4a`,
+  shutter_open: `${SFX}/sfx/shutter_open.m4a`,
 } as const
 
 export type ClipName = keyof typeof CLIPS

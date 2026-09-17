@@ -121,6 +121,10 @@ for (const vp of [
       await touch(page, 'poster-lunai')
       const shot = page.locator('[data-artwork-view] img')
       await expect(shot).toBeVisible({ timeout: 6000 })
+      // Decoded, not merely laid out: the picture opens at once now, and the
+      // shape is judged against the file, which arrives a moment later.
+      await expect(shot).toHaveJSProperty('complete', true)
+      await expect.poll(() => shot.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0)
       await expect(page.locator('.panel__title')).toHaveText('LUNAI')
       // Shown at the size it was drawn, not at the size of a box somebody
       // picked first. LUNAI's key visual is 1024x1536; a 16:9 frame with the
@@ -149,6 +153,8 @@ for (const vp of [
       await touch(page, 'picture-rubato')
       const shot = page.locator('[data-artwork-view] img')
       await expect(shot).toBeVisible({ timeout: 6000 })
+      await expect(shot).toHaveJSProperty('complete', true)
+      await expect.poll(() => shot.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0)
       const fit = await shot.evaluate((img: HTMLImageElement) => {
         const r = img.getBoundingClientRect()
         return {

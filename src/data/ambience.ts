@@ -35,6 +35,10 @@ export const LIGHTS: readonly LightSource[] = [
   { id: 'tv', x: 2832, y: 686, r: 260, colour: 'rgba(150,210,255,.09)' },
   // The door at the end. Almost nothing, almost never.
   { id: 'secret', x: 3317, y: 789, r: 200, colour: 'rgba(140,255,214,.07)' },
+  // Inside the fridge, seen only while its door is open (PHASE 5).
+  { id: 'fridge', x: 2462, y: 760, r: 250, colour: 'rgba(255,236,190,.18)' },
+  // The radio's dial, while it is being tuned.
+  { id: 'radio', x: 1316, y: 1030, r: 110, colour: 'rgba(255,200,120,.16)' },
 ]
 
 /**
@@ -60,6 +64,10 @@ export const LIGHTS_PORTRAIT: readonly LightSource[] = [
   { id: 'tv', x: 603, y: 2211, r: 140, colour: 'rgba(150,210,255,.09)' },
   // outside-door rect { x: 862, y: 2149, w: 129, h: 270 }, at its foot
   { id: 'secret', x: 926, y: 2390, r: 110, colour: 'rgba(140,255,214,.07)' },
+  // fridge rect { x: 276, y: 2121, w: 158, h: 306 }
+  { id: 'fridge', x: 355, y: 2270, r: 180, colour: 'rgba(255,236,190,.18)' },
+  // radio rect { x: 405, y: 1566, w: 76, h: 67 }
+  { id: 'radio', x: 443, y: 1600, r: 70, colour: 'rgba(255,200,120,.16)' },
 ]
 
 /** The cup of noodles the portrait layout puts beside the rug (DECOR). */
