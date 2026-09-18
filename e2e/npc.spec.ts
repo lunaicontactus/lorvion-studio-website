@@ -353,7 +353,10 @@ test.describe('desktop', () => {
     // window — so this watches for a while and asserts the shape of it
     // rather than a count.
     test.setTimeout(180_000)
-    await enter(page)
+    // Whether anyone speaks in a given two minutes is the room's own dice
+    // (a greeting at the character's social chance, idle lines at a few
+    // percent), so the dice are pinned the way the walks above pin them.
+    await enter(page, '?npcseed=7')
     const result = await page.evaluate(async () => {
       const bubbles = [...document.querySelectorAll('.npc__bubble')]
       const lines = new Set<string>()

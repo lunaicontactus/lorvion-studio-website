@@ -49,3 +49,14 @@ asserts the direct signals — the scene not paused, no crew in PAUSED — and
 then keeps the twelve-second window for a step *or* a change of state. No
 timeout was raised, nothing skipped; the assertion that was wrong about the
 world was replaced by the one that is not.
+
+## The gate on the fix (d0de2c9): 306/307, one different failure
+
+`[chromium]` npc.spec "somebody says something, and never two of them at
+once": "nobody said anything in two minutes". Whether anyone speaks in a
+given two minutes is the room's own dice — MOMO greets at the character's
+social chance, idle lines fire at a few percent per idle — so a silent two
+minutes is rare and real, not a fault (speech keys on the internal state,
+not on the attribute the previous fix touched). The spec already pins the
+crew's dice with the product's `?npcseed` hook for every walk it asserts;
+this test now uses the same hook. Verified three runs in a row locally.
