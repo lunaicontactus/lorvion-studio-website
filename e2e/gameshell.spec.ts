@@ -186,11 +186,18 @@ test.describe('the mini-game shell', () => {
     await page.locator('[data-game-quit]').click({ timeout: 5000 })
     await expect(page.locator(SHELL)).toHaveCount(0, { timeout: 5000 })
     await expect(page.locator('[data-garage]')).toBeVisible()
-    // The room is running again: somebody moves, and the scene manager is
-    // arranging things rather than sitting paused for ever.
+    // The room is running again. The scene says so itself (it is paused
+    // while a game is up, and not afterwards), and so does every dokkaebi
+    // (each reads PAUSED while held, and its own state again after) —
+    // asserted directly, because the movement below is only a proxy: crew
+    // out of the view are not drawn, and one mid-work stays put on purpose.
+    await expect(page.locator('[data-garage]')).not.toHaveClass(/is-paused/)
+    await expect(page.locator('.npc[data-state="PAUSED"]')).toHaveCount(0)
+    // And then somebody does something: a step, or a change of what they
+    // are doing, within twelve seconds.
     const moved = await page.evaluate(async () => {
       const where = (): string => [...document.querySelectorAll<HTMLElement>('.npc:not(.is-away)')]
-        .map((e) => e.style.transform).join('|')
+        .map((e) => `${e.dataset['state']}@${e.style.transform}`).join('|')
       const before = where()
       const t0 = performance.now()
       while (performance.now() - t0 < 12_000) {

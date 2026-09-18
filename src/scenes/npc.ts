@@ -1430,11 +1430,15 @@ export function mountNpc(
         if (state === 'PAUSED') return
         held = state
         state = 'PAUSED'
+        // The attribute mirrors the state, this one included: a paused
+        // dokkaebi reads as paused, not as whatever it was doing.
+        el.dataset['state'] = state
         crowd?.endWalk(id)
       } else if (state === 'PAUSED') {
         // Come back doing what it was doing, not somewhere new.
         state = held ?? 'IDLE'
         held = null
+        el.dataset['state'] = state
         if (state === 'WALK') crowd?.startWalk(id)
       }
     },

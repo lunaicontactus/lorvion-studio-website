@@ -111,9 +111,13 @@ for (const [name, w, h, mobile] of [['desktop', 1440, 900, false], ['portrait', 
     await page.waitForFunction(() => !document.querySelector('[data-game-shell]'), null, { timeout: 5000 }).catch(() => note('game did not close', id))
     await page.waitForTimeout(700)
   }
-  // Back and Forward, between the worlds, several times.
+  // Back and Forward, between the worlds, several times. Each place opened
+  // in a world leaves one history entry (as the room's things do), so Back
+  // is pressed until the room shows — bounded, and the count is reported.
+  const backHome = async (from) => { for (let k = 1; k <= 6; k++) { await page.goBack(); if (await shown('[data-garage]', 2500).then(() => true, () => false)) return k } note(`Back never left ${from}`, ''); return -1 }
   for (let i = 0; i < 3; i++) {
-    await page.goBack(); await shown('[data-garage]', 8000).catch(() => note('Back from the playground', `round ${i}`)); await page.waitForTimeout(900)
+    const k = await backHome('the playground'); if (i === 0) ok(`${name}: Back to the room from the playground after ${k} press(es)`)
+    await page.waitForTimeout(900)
     await page.goForward(); await shown('[data-playground]', 8000).catch(() => note('Forward to the playground', `round ${i}`)); await page.waitForTimeout(900)
   }
   await page.locator('[data-place="garage-door"]').click()
@@ -142,7 +146,8 @@ for (const [name, w, h, mobile] of [['desktop', 1440, 900, false], ['portrait', 
   p = await playing(); if (p.filter((s) => /music\//.test(s)).length !== 1) note('archive music count', p.join(','))
   await shot('archive')
   for (let i = 0; i < 2; i++) {
-    await page.goBack(); await shown('[data-garage]', 8000).catch(() => note('Back from the archive', `round ${i}`)); await page.waitForTimeout(900)
+    const k = await backHome('the archive'); if (i === 0) ok(`${name}: Back to the room from the archive after ${k} press(es)`)
+    await page.waitForTimeout(900)
     await page.goForward(); await shown('[data-archive]', 8000).catch(() => note('Forward to the archive', `round ${i}`)); await page.waitForTimeout(900)
   }
   await press('[data-place="cushion"]', 500)

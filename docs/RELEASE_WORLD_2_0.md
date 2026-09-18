@@ -25,3 +25,27 @@
 ## Known BLOCKED_ASSET (release does not wait for them)
 
 archive_polaroid_bundle_v01 · alley/playground ambience · POKO-specific SFX · music-box audio. None is referenced at runtime; no placeholder stands in.
+
+## The first push to main (6953e99): CI verify failed, deploy skipped
+
+Run 35353748244: lint, typecheck, unit, build and the brand scan passed;
+`npm run e2e` finished 306/307 — one failure, `[shell]`
+gameshell.spec "leaving puts the room back, with nobody left waiting in it":
+"the crew were still frozen after the game closed". The deploy job was
+skipped, so production stayed on `511c30b`.
+
+Root cause: the assertion was a proxy — it waited for a transform to change
+on a crew member in twelve seconds — and the proxy has two blind spots the
+room has by design: crew outside the view are not drawn (culled), and one
+mid-work or seated stays put for as long as its work takes. On the slower
+runner nobody happened to cross the view in the window. Reproduced the
+check locally at 1×, 6× and 12× CPU throttling: the room was unpaused every
+time (the scene's `is-paused` class gone, every crew state restored), and
+the proxy still passed here, which is what a timing proxy does.
+
+Fix (commit below): each crew member's `data-state` now mirrors the pause
+(it read the held state while paused — the mirror was stale), and the test
+asserts the direct signals — the scene not paused, no crew in PAUSED — and
+then keeps the twelve-second window for a step *or* a change of state. No
+timeout was raised, nothing skipped; the assertion that was wrong about the
+world was replaced by the one that is not.
