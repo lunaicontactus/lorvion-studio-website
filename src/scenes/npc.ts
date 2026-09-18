@@ -212,17 +212,22 @@ export function mountNpc(
   const el = document.createElement('div')
   el.className = 'npc'
   el.dataset['npc'] = id
-  el.setAttribute('aria-hidden', 'true')
+  // The picture and its shadow are decoration; the box over the body (below)
+  // is the one thing a reader or a keyboard meets, named after the character.
+  // The container itself is not hidden, or a focusable button would sit
+  // inside a hidden subtree — a stop with no name.
   const art = document.createElement('img')
   art.className = 'npc__art'
   art.alt = ''
   art.decoding = 'async'
+  art.setAttribute('aria-hidden', 'true')
   el.append(art)
 
   // Joins the render to the painted boards. Sits under the art, at the
   // standing point, so it does not rise and fall with the walk.
   const shadow = document.createElement('span')
   shadow.className = 'npc__shadow'
+  shadow.setAttribute('aria-hidden', 'true')
   el.prepend(shadow)
 
   // What it is saying, if anything. Empty and hidden nearly all the time, and

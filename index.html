@@ -148,7 +148,36 @@
       <span class="alley__enter-dot" aria-hidden="true"></span>
       ENTER
     </button>
+    <!-- While the door is opening: a way to be inside now. Shown only
+         during the sequence; any click, tap, Enter or Escape does the same. -->
+    <button class="alley__skip" type="button" data-alley-skip hidden>건너뛰기</button>
+    <!-- Only if the room is honestly still on its way when the camera is
+         through the door. No bar, no percentage: it is not a measurement. -->
+    <p class="alley__loading" data-alley-loading hidden aria-live="polite">MOMO가 차고 문을 여는 중…</p>
   </section>
+
+  <!-- Outside the garage's door: the Dokkaebi Playground (PHASE 9). Built by
+       src/scenes/playground.ts the way the garage is; this is the frame. -->
+  <section class="playground" id="playground" data-playground hidden aria-label="도깨비 놀이터">
+    <div class="playground__stage" data-playground-stage>
+      <div class="playground__world" data-playground-world></div>
+    </div>
+  </section>
+  <!-- The Secret Archive (PHASE 12): behind the door in the bookcase. -->
+  <section class="archive" id="archive" data-archive hidden aria-label="비밀 보관소">
+    <div class="archive__stage" data-archive-stage>
+      <div class="archive__world" data-archive-world></div>
+    </div>
+    <!-- Looking up through the telescope: the glass fills the window. -->
+    <div class="archive__sky" data-archive-sky hidden role="dialog" aria-label="별 보기">
+      <img class="archive__shooting" src="/assets/images/archive/shooting_star.webp" alt="" decoding="async" loading="lazy">
+      <p class="archive__skyHint">아무 곳이나 누르면 돌아옵니다</p>
+      <button class="archive__skyClose" type="button" data-archive-sky-close aria-label="돌아가기">✕</button>
+    </div>
+    <p class="archive__rest" data-archive-rest hidden aria-live="polite">조용히 쉬는 중 · 아무 키나 누르면 돌아옵니다</p>
+  </section>
+  <!-- Night, between one place and the next (PHASE 8). -->
+  <div class="crossing" data-crossing hidden aria-hidden="true"></div>
 
   <!-- The garage: a room larger than the window. Furniture, hit areas and the
        crew all live in one world coordinate space (src/data/world.ts); the

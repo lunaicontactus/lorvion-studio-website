@@ -181,7 +181,12 @@
   position:absolute;pointer-events:none;
   transform-origin:50% 6%;
   box-shadow:0 3px 8px rgba(58,42,26,.38);
+  /* Over the painted poster only once its picture has arrived: the frame
+     on its own was a dark box on the wall while the picture loaded. */
+  opacity:0;
+  transition:opacity 420ms ease;
 }
+.print.is-in{opacity:1}
 .print__img{position:absolute;max-width:none;display:block}
 /* A poster: the picture is the sheet, held up by two strips of tape. */
 .print--poster{border-radius:1px}
@@ -213,7 +218,7 @@
 .thing:hover .print,.thing:focus-visible .print{box-shadow:0 6px 14px rgba(58,42,26,.44)}
 
 @media (prefers-reduced-motion:reduce){
-  .thing__outline,.thing__lift{transition:none}
+  .thing__outline,.thing__lift,.print{transition:none}
 }
 
 /* Touched, but there is nothing behind it yet: the thing shifts a couple of
@@ -596,4 +601,31 @@
 @media (prefers-reduced-motion:reduce){
   .garage__broom{display:none}
   .garage__decor,.garage__gear{margin:0}
+}
+
+/* ── PHASE 11: the door in the bookcase ─────────────────────────────────── */
+/* Locked, it is the cabinet it is painted as: nothing at rest, the usual
+   outline under the pointer. Touched, the seam shows for a moment — a
+   little starlight along the edges, and no message. Open, the seam stays,
+   faintly. The moment it opens: the seam bright, the face giving a little. */
+.garage__light[data-light="bookcase"]{opacity:0}
+.garage__light[data-light="bookcase"].is-on{opacity:1;transition:opacity 500ms ease}
+.thing--secret-door .thing__lift{transition:opacity 260ms ease, box-shadow 400ms ease}
+.thing--secret-door.is-hinting .thing__lift{opacity:1;animation:secret-hint 900ms ease}
+@keyframes secret-hint{
+  0%,100%{box-shadow:inset 0 0 0 0 rgba(196,214,255,0)}
+  35%{box-shadow:inset 0 0 22px 3px rgba(196,214,255,.5)}
+}
+.thing--secret-door.is-unlocked .thing__lift{opacity:.6;box-shadow:inset 0 0 26px 3px rgba(196,214,255,.3)}
+.thing--secret-door.is-unlocking .thing__lift{opacity:1;animation:secret-open 2600ms ease}
+.thing--secret-door.is-unlocking .thing__outline{opacity:1}
+@keyframes secret-open{
+  0%{box-shadow:inset 0 0 0 0 rgba(196,214,255,0);translate:0 0}
+  18%{box-shadow:inset 0 0 34px 6px rgba(210,224,255,.75);translate:-2px 0}
+  32%{translate:2px 0}
+  46%{translate:-1px 0}
+  100%{box-shadow:inset 0 0 26px 3px rgba(196,214,255,.3);translate:0 0}
+}
+@media (prefers-reduced-motion:reduce){
+  .thing--secret-door.is-hinting .thing__lift,.thing--secret-door.is-unlocking .thing__lift{animation:none;opacity:1}
 }

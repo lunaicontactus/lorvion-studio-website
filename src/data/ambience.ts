@@ -44,6 +44,9 @@ export const LIGHTS: readonly LightSource[] = [
   { id: 'radio', x: 1316, y: 1030, r: 110, colour: 'rgba(255,200,120,.16)' },
   // The cabinet's open drawer: paper under a lamp, very faintly (PHASE 6).
   { id: 'cabinet', x: 921, y: 830, r: 150, colour: 'rgba(255,214,150,.11)' },
+  // Starlight through the seam of the door in the bookcase, the moment it
+  // unlocks and while it is open (PHASE 11).
+  { id: 'bookcase', x: 330, y: 735, r: 190, colour: 'rgba(196,214,255,.16)' },
 ]
 
 /**
@@ -76,6 +79,8 @@ export const LIGHTS_PORTRAIT: readonly LightSource[] = [
   { id: 'radio', x: 443, y: 1600, r: 70, colour: 'rgba(255,200,120,.16)' },
   // cabinet rect { x: 424, y: 522, w: 142, h: 82 }
   { id: 'cabinet', x: 495, y: 563, r: 95, colour: 'rgba(255,214,150,.11)' },
+  // secret-door rect { x: 142, y: 456, w: 148, h: 118 }
+  { id: 'bookcase', x: 216, y: 515, r: 120, colour: 'rgba(196,214,255,.16)' },
 ]
 
 /** The cup of noodles the portrait layout puts beside the rug (DECOR). */

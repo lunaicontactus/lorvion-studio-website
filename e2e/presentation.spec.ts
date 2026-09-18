@@ -23,9 +23,9 @@ const THINGS = [
   { id: 'shelf', prop: 'shelf', surface: '.prop--shelf', content: '.prop--shelf .relic', sfx: 'drawer', light: null },
   { id: 'workbench', prop: 'workbench', surface: '.prop--workbench', content: '.prop--workbench .bench2__img', sfx: 'paper', light: null },
   { id: 'radio', prop: 'radio', surface: '.prop--radio', content: '.prop--radio [data-radio-freq]', sfx: 'radio_tune', light: 'radio' },
-  // PHASE 6: moonlight on the mat while the door stands open; the green
-  // under the door stays LIMINAL's own.
-  { id: 'outside-door', prop: 'outside-door', surface: '.prop--outside-door .dark', content: '.prop--outside-door .dark__line', sfx: 'door_open', light: 'moon' },
+  // The outside door is not here: since PHASE 8 it is a crossing, not a
+  // thing that stays open, and e2e/outside.spec.ts holds it to the same
+  // "reacts first, opens as itself" contract on its way out.
 ] as const
 
 async function enter(page: Page): Promise<void> {
@@ -229,7 +229,9 @@ test.describe('the fridge, the cabinet and the door move as things', () => {
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
     }
-    expect(await page.locator('[role="dialog"]').count()).toBe(1)
+    // The panel's own dialog, once (the archive's sky is another, static
+    // and hidden, in the page from the start).
+    expect(await page.locator('.panel[role="dialog"]').count()).toBe(1)
     expect(await page.locator('.prop').count()).toBeLessThanOrEqual(1)
     // The sound switch still flips exactly once per press.
     const before = await page.locator('[data-sound-toggle]').getAttribute('aria-pressed')

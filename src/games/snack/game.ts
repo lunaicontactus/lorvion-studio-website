@@ -118,7 +118,8 @@ class SnackGame implements GameInstance {
   #give(itemId: string): void {
     const right = this.#round.give(itemId)
     if (right) {
-      this.#host.sfx('wrapper', 0.3)
+      // The stall's own bell for a right order (the user's `sfx_stall_bell`).
+      this.#host.sfx('stall_bell', 0.26)
       this.#show()
     } else {
       // Time, not a life. A wrong answer is a cost and never the end.

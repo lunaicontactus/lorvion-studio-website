@@ -293,3 +293,54 @@
   .alley__dust i{animation:none}
   .alley__peek{transition:none;transform:none;opacity:0}
 }
+
+/* ── PHASE 7: the way through, for people who have seen it ─────────────── */
+/* Skip: small, low, out of the picture. Appears with the sequence, goes with
+   it. Focus lands on it when ENTER is pressed, so Enter again is "skip". */
+.alley__skip{
+  position:absolute;
+  right:max(18px,env(safe-area-inset-right,0px));
+  bottom:max(18px,env(safe-area-inset-bottom,0px));
+  z-index:12;
+  min-height:44px;
+  padding:10px 16px;
+  border:1px solid rgba(255,246,232,.28);
+  border-radius:999px;
+  background:rgba(38,26,16,.42);
+  color:rgba(255,246,232,.9);
+  font-size:.74rem;
+  letter-spacing:.14em;
+  cursor:pointer;
+  opacity:0;
+  transition:opacity 260ms ease;
+}
+.alley[data-phase="entering"] .alley__skip{opacity:1}
+.alley__skip:focus-visible{outline:2px solid #ffd27a;outline-offset:2px}
+.alley[data-phase="inside"] .alley__skip{display:none}
+
+/* The room is honestly still on its way: one line on the warm wash. */
+.alley__loading{
+  position:absolute;
+  left:50%;
+  bottom:max(28px,env(safe-area-inset-bottom,0px));
+  transform:translateX(-50%);
+  z-index:12;
+  margin:0;
+  padding:10px 18px;
+  border-radius:999px;
+  background:rgba(38,26,16,.5);
+  color:rgba(255,246,232,.94);
+  font-size:.8rem;
+  letter-spacing:.04em;
+  white-space:nowrap;
+  opacity:0;
+  transition:opacity 300ms ease;
+}
+.alley--loading .alley__loading{opacity:1}
+
+/* The short version: the same door, a second rather than two and a bit. */
+.alley--quick .alley__slats{transition-duration:640ms}
+.alley--quick .alley__plate{transition-duration:520ms}
+.alley--quick .alley__glow{transition-duration:320ms}
+.alley--quick .alley__inside{transition-duration:420ms}
+.alley--quick .alley__peek{transition-duration:320ms}

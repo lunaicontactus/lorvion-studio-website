@@ -196,7 +196,11 @@ test.describe('desktop', () => {
     await enter(page)
     await touch(page, 'outside-door')
     await expect(page.locator('[data-outside-door]')).toBeVisible({ timeout: 6000 })
-    await close(page)
+    // …and outside is a place (PHASE 8/9). Back is the way home.
+    await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 6000 })
+    await page.goBack()
+    await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 6000 })
+    await expect(page.locator('[data-panel-root]')).toBeHidden()
     await touch(page, 'poster-lumiora')
     await page.locator('[data-poster-go]').click()
     await expect(page.locator('.crtgame__name')).toHaveText('LUMIORA', { timeout: 8000 })

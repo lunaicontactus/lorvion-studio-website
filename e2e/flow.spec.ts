@@ -34,7 +34,9 @@ const OPENS: Readonly<Record<string, string>> = {
 /** Things that open nothing: touching one changes the thing itself. The
  *  parcel used to be one; it opens a delivery now, and the box in the room
  *  opens with it. */
-const TOGGLES: readonly string[] = []
+// The door in the bookcase (PHASE 11) opens nothing until the three games
+// each have a star; touched before that, the thing itself answers.
+const TOGGLES: readonly string[] = ['secret-door']
 
 async function enter(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -67,6 +69,17 @@ test.describe('desktop', () => {
     for (const [id, proof] of Object.entries(OPENS)) {
       await touch(page, id)
       await expect(page.locator(proof), id).toBeVisible({ timeout: 6000 })
+      if (id === 'outside-door') {
+        // The door is a door (PHASE 8): a moment after it opens, the night
+        // comes in and the playground is on the other side. Back is the
+        // way home, and the room is as it was.
+        await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 6000 })
+        await page.goBack()
+        await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 6000 })
+        await expect(page.locator('[data-panel-root]')).toBeHidden()
+        await expect(page.locator(proof)).toBeHidden()
+        continue
+      }
       await page.keyboard.press('Escape')
       await expect(page.locator('[data-panel-root]')).toBeHidden()
       // The markup stays until the next thing replaces it; it must not show.

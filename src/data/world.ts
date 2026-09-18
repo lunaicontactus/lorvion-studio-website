@@ -67,6 +67,11 @@ export const DESKTOP_WORLD: WorldLayout = {
     // stop at 1075), so anyone passing goes behind it. 130 x 108 keeps the
     // cut-out's own 520:431, and both states share that canvas.
     { id: 'parcel', label: 'Parcel', zone: 'entry', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'parcel' }, rect: { x: 3030, y: 1004, w: 130, h: 108 }, art: `${ART}/prop_parcel_closed.webp`, artOpen: `${ART}/prop_parcel_open.webp`, sfx: 'wrapper' },
+    // The secret door (PHASE 11): the lower cabinet of the bookcase, under
+    // the shelf. Painted as a cabinet, and it stays one until the three games
+    // each have a star; then it is a door (src/systems/secret.ts). Nothing
+    // new is drawn — the plate's own pixels move.
+    { id: 'secret-door', label: '비밀문', zone: 'shelf', kind: 'door', enabled: true, action: { kind: 'panel', panelId: 'archive' }, rect: { x: 246, y: 628, w: 168, h: 214 }, outline: 'rect', sfx: 'click' },
   ],
 }
 
@@ -113,6 +118,8 @@ export const MOBILE_WORLD: WorldLayout = {
     // The lower floor has no walkway in portrait, so the parcel only has to
     // clear the television stand and the mat. 150 wide is 53px at 390.
     { id: 'parcel', label: 'Parcel', zone: 'centreFloor', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'parcel' }, rect: { x: 655, y: 2436, w: 150, h: 124 }, art: `${ART}/prop_parcel_closed.webp`, artOpen: `${ART}/prop_parcel_open.webp`, sfx: 'wrapper' },
+    // The bookcase's lower cabinet, as above.
+    { id: 'secret-door', label: '비밀문', zone: 'shelf', kind: 'door', enabled: true, action: { kind: 'panel', panelId: 'archive' }, rect: { x: 142, y: 474, w: 148, h: 118 }, outline: 'rect', sfx: 'click' },
   ],
 }
 
@@ -145,6 +152,7 @@ export const CAPTIONS: Readonly<Record<string, string>> = {
   cabinet: '캐비닛 · 기록',
   shelf: '선반 · 크루 컬렉션',
   'outside-door': '바깥문',
+  'secret-door': '비밀문',
   parcel: '택배 · 열어 보기',
   'poster-lunai': 'LUNAI',
   'poster-liminal': 'LIMINAL',

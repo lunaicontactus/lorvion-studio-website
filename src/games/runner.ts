@@ -34,6 +34,12 @@ export interface RunnerHost {
    * is played *in* the garage and needs it left alive behind the layer.
    */
   readonly onOpenChange?: (open: boolean, gameId: string) => void
+  /**
+   * Where leaving the game goes back to, as the button says it (PHASE 10):
+   * the garage when the game was opened from the room, the playground when
+   * it was opened from one of its buildings.
+   */
+  readonly exitLabel?: () => string
 }
 
 const REASON_LABEL: Record<GameResult['reason'], string> = {
@@ -178,7 +184,12 @@ export class GameRunner {
       reduced: motion.reduced,
       touch,
       end: (r) => this.#result(r),
-      sfx: (name, volume) => audio.play(name, volume),
+      sfx: (name, volume) => {
+        audio.play(name, volume)
+        // POKO turning round is the cue that matters; the world's music
+        // steps back for a moment so it is never lost under it (PHASE 10).
+        if (name === 'bell' && def.id === 'mugunghwa') audio.duck(1400)
+      },
       hud: (score, seconds) => {
         this.#score = score
         this.#hud(score, seconds)
@@ -291,7 +302,7 @@ export class GameRunner {
         <p class="game__meta">${def.seconds}초 한 판${best !== undefined ? ` · 최고 ${best}점` : ''}</p>
         <div class="game__actions">
           <button class="game__btn game__btn--primary" type="button" data-game-start data-autofocus>시작</button>
-          <button class="game__btn" type="button" data-game-exit>차고로</button>
+          <button class="game__btn" type="button" data-game-exit>${this.#exitLabel()}</button>
         </div>
       </div>`)
     this.#overlay!.querySelector('[data-game-start]')!.addEventListener('click', () => this.#countdown())
@@ -333,6 +344,7 @@ export class GameRunner {
   #begin(): void {
     if (!this.#machine.to('PLAYING')) return
     this.#hide()
+    audio.play('game_start', 0.3)
     this.#clock?.reset()
     this.#clock?.start()
     this.#input?.setEnabled(true)
@@ -383,6 +395,13 @@ export class GameRunner {
     const isRecord = r.score > prev
     const stars = Math.max(0, Math.min(3, r.stars ?? 0))
     const best = r.reason === 'quit' ? prev : record(def.id, r.score, stars).best
+    // The round's own verdict, in the user's delivered sounds (PHASE 10):
+    // a star for a round worth one, the fail for being caught or for
+    // nothing at all. A quit is neither.
+    if (r.reason !== 'quit') {
+      if (stars > 0) audio.play('star_get', 0.36)
+      else if (r.reason === 'caught' || r.score === 0) audio.play('game_fail', 0.3)
+    }
     this.#show(`
       <div class="game__card" data-game-result data-reason="${r.reason}" data-stars="${stars}" data-score="${r.score}" data-best="${best}">
         <p class="game__reason"><b>${REASON_LABEL[r.reason]}</b> · ${r.detail}</p>
@@ -391,7 +410,7 @@ export class GameRunner {
         <p class="game__meta">${isRecord && r.reason !== 'quit' ? '신기록!' : `최고 ${best}점`}${persistent() ? '' : ' · 이 브라우저는 기록을 저장하지 않습니다'}</p>
         <div class="game__actions">
           <button class="game__btn game__btn--primary" type="button" data-game-retry data-autofocus>재도전</button>
-          <button class="game__btn" type="button" data-game-exit>차고로</button>
+          <button class="game__btn" type="button" data-game-exit>${this.#exitLabel()}</button>
         </div>
       </div>`)
     this.#overlay!.querySelector('[data-game-retry]')!.addEventListener('click', () => this.#retry())
@@ -420,6 +439,10 @@ export class GameRunner {
 
   #quit(): void {
     this.close()
+  }
+
+  #exitLabel(): string {
+    return this.#host.exitLabel?.() ?? '차고로'
   }
 
   close(): void {

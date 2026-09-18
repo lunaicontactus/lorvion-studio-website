@@ -239,8 +239,14 @@
 /* ── Workbench: a capture propped on the board, the note on the drawers ── */
 .prop--workbench .bench2{position:absolute;inset:0;container-type:inline-size}
 .prop--workbench .bench2 > *{position:absolute;box-sizing:border-box}
-.prop--workbench .bench2__photo{display:grid;place-items:center;padding:1%}
-.prop--workbench .bench2__img{max-width:100%;max-height:100%;width:auto;height:auto;border:.6cqi solid #fbf5e6;border-bottom-width:2cqi;box-shadow:0 6px 14px rgba(20,12,6,.45);transform:rotate(-1.4deg);background:#2b231d}
+/* One definite row: with the row left `auto`, the photo's max-height:100%
+   was a cyclic percentage and did nothing, and a tall capture ran out of
+   the bottom of the bench on a phone held sideways (PHASE 7 gate). */
+.prop--workbench .bench2__photo{display:grid;grid-template-rows:100%;grid-template-columns:100%;place-items:center;padding:1%}
+/* border-box, so the photo's own white border counts against the space it
+   is given: without it a tall capture sat its border's height below the
+   bench on a phone held sideways (PHASE 7 gate). */
+.prop--workbench .bench2__img{box-sizing:border-box;max-width:100%;max-height:100%;width:auto;height:auto;border:.6cqi solid #fbf5e6;border-bottom-width:2cqi;box-shadow:0 6px 14px rgba(20,12,6,.45);transform:rotate(-1.4deg);background:#2b231d}
 .prop--workbench .bench2__pin{position:absolute;top:2%;left:50%;width:2.2cqi;height:2.2cqi;border-radius:50%;background:#c94f3f;box-shadow:0 1px 2px rgba(0,0,0,.4)}
 .prop--workbench .bench2__card{display:grid;align-content:start;gap:.4em;padding:1.4em 1.4em;border-radius:.3em;background:#fff6c9;color:#3f3024;
   font-size:clamp(9px,2.3cqi,13px);transform:rotate(1.2deg);box-shadow:0 4px 10px rgba(20,12,6,.35);overflow:hidden}

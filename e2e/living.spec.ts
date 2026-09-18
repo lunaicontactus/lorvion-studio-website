@@ -161,7 +161,8 @@ test.describe('desktop', () => {
 
   test('the things the visitor opens light up, and go dark again', async ({ page }) => {
     await enter(page)
-    for (const [id, light] of [['cabinet', 'cabinet'], ['outside-door', 'moon'], ['fridge', 'fridge']] as const) {
+    // The door's moonlight is in e2e/outside.spec.ts, with the crossing.
+    for (const [id, light] of [['cabinet', 'cabinet'], ['fridge', 'fridge']] as const) {
       // Focus, then Enter: the room pans to a focused thing, where a click
       // on one outside the view has nothing to scroll.
       const thing = page.locator(`[data-object="${id}"]`)

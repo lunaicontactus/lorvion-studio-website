@@ -99,21 +99,26 @@ for (const vp of [
       await expect(page.locator(panel)).toBeHidden()
     })
 
-    test('the outside door is honest that the playground is not built yet', async ({ page }) => {
+    test('the outside door remembers, for this visit, that you have been out', async ({ page }) => {
       await enter(page)
       await touch(page, 'outside-door')
       await expect(page.locator('.dark__line')).toBeVisible({ timeout: 6000 })
       const first = await page.locator('.dark__line').textContent()
       // No invented project, date or teaser.
       await expect(page.locator('[data-panel]')).not.toContainText(/20\d\d/)
-      await page.keyboard.press('Escape')
+      // Then it is a door (PHASE 8): outside, and Back.
+      await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 6000 })
+      await page.goBack()
+      await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 6000 })
       await expect(page.locator(panel)).toBeHidden()
 
       await touch(page, 'outside-door')
       await expect(page.locator('.dark__line')).toBeVisible({ timeout: 6000 })
-      // It remembers, for this visit, that you already tried it.
+      // A different line the second time.
       expect(await page.locator('.dark__line').textContent()).not.toBe(first)
-      await page.keyboard.press('Escape')
+      await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 6000 })
+      await page.goBack()
+      await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 6000 })
     })
 
     test('a poster stays a poster, and the picture keeps its shape', async ({ page }) => {
@@ -229,7 +234,8 @@ test.describe('desktop', () => {
     // The room is locked while it is closing; wait, as a visitor would.
     await expect(page.locator(panel)).toBeHidden()
     await touch(page, 'outside-door')
-    await expect(page.locator('.dark.is-ajar')).toBeVisible({ timeout: 2000 })
+    // No journey: the door is open and the playground is there.
+    await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 2500 })
     await context.close()
   })
 })

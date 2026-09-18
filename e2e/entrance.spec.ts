@@ -70,7 +70,7 @@ for (const vp of [
       // Twelve hit areas over the painting — the eleven that were always
       // there plus LUMIORA's print by the fridge — and the parcel placed on
       // it. e2e/flow.spec.ts is the one that checks *which* twelve.
-      await expect(page.locator('.thing')).toHaveCount(14) // 12 painted things, the parcel, and the radio
+      await expect(page.locator('.thing')).toHaveCount(15) // 13 painted things (the bookcase door among them), the parcel, and the radio
     })
   })
 }

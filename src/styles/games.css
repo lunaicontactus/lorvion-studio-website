@@ -410,3 +410,14 @@
   .parcel__pileArt{width:min(30px,6vw)}
   .parcel__pileName{font-size:.56rem}
 }
+
+/* ── Played outside (PHASE 10) ──────────────────────────────────────────── */
+/* POKO's game is played in POKO's office: the layer that is transparent over
+   the garage shows the office behind the two figures out here. */
+[data-game-root].is-outside .game-layer[data-game="mugunghwa"]{
+  background:#1a1626 url('/assets/images/playground/poko_office.webp') center 58% / auto 92% no-repeat;
+}
+[data-game-root].is-outside .game-layer[data-game="mugunghwa"]::before{
+  content:'';position:absolute;inset:0;background:rgba(14,10,20,.42);pointer-events:none;
+}
+[data-game-root].is-outside .game-layer[data-game="mugunghwa"] .game{position:relative}

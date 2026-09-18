@@ -26,6 +26,8 @@ import { CABINET_ENTRIES } from '@/data/garage/cabinet'
 import { CHANNELS, CAM_ANGLES, TV_ENTRIES } from '@/data/garage/tv'
 import type { ChannelId } from '@/data/garage/tv'
 import { RADIO_ENTRIES, STATIONS } from '@/data/garage/radio'
+import { PLACE_PROPS, SIGNPOST_ARMS, type Place, type PlaceId } from '@/data/playground'
+import type { ArchivePlace } from '@/data/archive'
 import { WORKBENCH_ENTRIES } from '@/data/garage/workbench'
 import type { WipPiece } from '@/data/garage/workbench'
 import type { CabinetPaper } from '@/data/garage/cabinet'
@@ -951,7 +953,7 @@ export class Panels {
       Panels.#furniture('outside-door', def, `
         ${Panels.#region(def.surface, 'prop__surface dark', `
            <p class="dark__line">${tried ? '밖에서 여전히 작은 불빛이 움직인다.' : '문틈으로 밤공기가 들어온다.'}</p>
-           <p class="dark__sub">도깨비 놀이터 · 준비 중</p>`, 'data-dark data-outside-door')}
+           <p class="dark__sub">도깨비 놀이터로</p>`, 'data-dark data-outside-door')}
         ${Panels.#slice(def, parts['leaf']!, 'door__leaf', 'data-door-leaf')}`,
       ),
       { id: 'outside-door', def },
@@ -964,6 +966,94 @@ export class Panels {
     }
     if (motion.reduced) swing()
     else this.#later(swing, 260)
+  }
+
+  // ── A place outside (PHASE 9): the building grows out of its spot ────────
+  /**
+   * One of the three buildings in the playground. The delivered cut-out
+   * grows out of the painted building, exactly as the furniture does in the
+   * garage; inside its doorway, its name, one line, and the way in.
+   */
+  openPlace(place: Place, onEnter: () => void): void {
+    const def = PLACE_PROPS[place.id]
+    if (!def) return
+    const LINES: Partial<Record<PlaceId, string>> = {
+      'poko-office': '부장님이 자리를 비운 사이에만.',
+      'snack-stall': '누가 뭘 시켰는지, 30초 안에.',
+      'parcel-office': '이번 주 택배를 작품별로.',
+    }
+    this.#show(
+      'place',
+      place.label,
+      Panels.#furniture(place.id, def, `
+        ${Panels.#region(def.surface, 'prop__surface place', `
+           <p class="place__name">${esc(place.label)}</p>
+           <p class="place__line">${esc(LINES[place.id] ?? '')}</p>
+           <button class="place__enter" type="button" data-place-enter>들어가기</button>`, `data-place-surface="${place.id}"`)}`,
+        'prop--place'),
+      { id: place.id, def },
+    )
+    this.#body.querySelector('[data-place-enter]')?.addEventListener('click', () => onEnter())
+  }
+
+  /**
+   * The signpost: not a menu, a hint. The delivered post grows out of the
+   * painted one, and its three arms are the three places, each a way to be
+   * taken to look at it.
+   */
+  openSignpost(place: Place, onArm: (target: PlaceId) => void): void {
+    const def = PLACE_PROPS[place.id]
+    if (!def) return
+    this.#show(
+      'place',
+      place.label,
+      Panels.#furniture(place.id, def, `
+        ${Panels.#region(def.surface, 'prop__surface sign', SIGNPOST_ARMS.map((a) =>
+          `<button class="sign__arm" type="button" data-sign-arm="${a.place}" aria-label="${esc(a.text)} 쪽"><span aria-hidden="true">${esc(a.text)} →</span></button>`).join(''), 'data-signpost')}`,
+        'prop--place'),
+      { id: place.id, def },
+    )
+    for (const b of this.#body.querySelectorAll<HTMLElement>('[data-sign-arm]')) {
+      b.addEventListener('click', () => onArm(b.dataset['signArm'] as PlaceId))
+    }
+  }
+
+  // ── In the archive (PHASE 12): the two boxes ─────────────────────────────
+  /** The music box: open, swaying a little with its own small sound. */
+  openMusicBox(place: ArchivePlace, def: PropDef): void {
+    this.#show(
+      'archive',
+      place.label,
+      Panels.#furniture(place.id, def, `
+        ${Panels.#region(def.surface, 'prop__surface musicbox', `
+           <p class="musicbox__line">태엽은 감겨 있다. 아주 작게 돈다.</p>`, 'data-musicbox')}`,
+        'prop--archive'),
+      { id: place.id, def },
+    )
+    const prop = this.#body.querySelector<HTMLElement>(`[data-prop="${place.id}"]`)
+    this.#later(() => prop?.classList.add('is-playing'), motion.reduced ? 0 : 420)
+  }
+
+  /**
+   * The memory box: what the box held is one real day of making — a
+   * capture, a sheet, a fix, from the same record the workbench keeps
+   * (src/data/garage/workbench.ts), with its date and its commit. Nothing
+   * invented.
+   */
+  openMemoryBox(place: ArchivePlace, def: PropDef): void {
+    const piece = this.#draw('workbench') as WipPiece | null
+    this.#show(
+      'archive',
+      place.label,
+      Panels.#furniture(place.id, def, `
+        ${Panels.#region(def.surface, 'prop__surface memory', piece ? `
+           <img class="memory__img" src="${piece.asset}" alt="${esc(piece.title)}" decoding="async">
+           <p class="memory__note" data-memory="${piece.id}">${esc(piece.description)}
+             <span class="memory__when">${esc(piece.date)} · ${esc(piece.commit)}</span></p>` : `
+           <p class="memory__note">상자는 비어 있다.</p>`, 'data-memorybox')}`,
+        'prop--archive'),
+      { id: place.id, def },
+    )
   }
 
   // ── A piece off the wall: the picture comes forward, and it is the whole thing

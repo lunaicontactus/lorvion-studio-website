@@ -275,3 +275,306 @@ file plays over itself, footsteps only while walking). Captures in
 and moon lights in the room, broom mid-sweep and close, depth at the wall,
 the radio after the nav switch). Two intermediate full runs (255/263 and a
 stopped one) found the eight things fixed above; the third is the clean one.
+
+## Checkpoint 4 — PHASE 7, the entrance
+
+The door was already a door (PHASE 3 of WORLD 1.0: knock, flicker,
+hesitate, rise, light, peek, push, 2.3 s). What was added:
+
+- **First vs returning.** `visitCount` on the save (written once a session
+  at boot) decides at ENTER: a second visit gets the same door in 1.1 s
+  (`alley--quick`: no knock or hesitation, shutter straight up, shorter
+  transitions), and so does a second pass through the alley in one page.
+  Reduced motion stays instant.
+- **Skip.** A `건너뛰기` button appears with the sequence (focus lands on it,
+  so Enter twice is in); any click or tap on the lane, Enter, Space or
+  Escape does the same. Skipping adds every class the beats would have, so
+  the room takes over from the same picture.
+- **MOMO notices you.** The greeting on arrival is MOMO's when MOMO is in
+  (it is, at the monitor), whoever is nearest the middle otherwise.
+- **Loading, honest.** When the camera is through and the room's plate is
+  still on its way, one line — "MOMO가 차고 문을 여는 중…" — and the door
+  finishes the moment the plate lands (8 s cap so nobody is kept at the
+  door). With the plate already here (the warm-up starts 0.9 s after boot)
+  the line is never shown; asserted both ways, with the plate held back by a
+  route delay for the positive case.
+- **Sound on the picture.** The one gesture unlocks audio; the shutter's
+  own sound plays on `rise`; on `light` the room's air comes up over 1.4 s
+  and its song 0.7 s later over 2.2 s (new ramps in `AudioManager`, one fade
+  per entrance; retuning the radio afterwards is immediate). Nothing plays
+  before the gesture even for a visitor who left sound on. **BLOCKED_ASSET
+  exterior night ambience:** no outdoor ambience was delivered, and the
+  brief's "night ambience → shutter" first beat cannot play before the
+  gesture in any case, so the sequence is shutter → air → song.
+- Keyboard (focus + Enter) and touch (tap) both open the door; on 844×390
+  the skip is inside the viewport at ≥ 44 px.
+
+## Checkpoint 5 — PHASE 8 · 9 · 10, outside
+
+**8. The door is a door.** Touching the outside door does what PHASE 5 built
+(moonlight on the mat, `sfx_door_open`, the arch grows out of the door, the
+leaf swings onto the night) and then, 1.15 s after the leaf, the night comes
+in over everything (`.crossing`, 660 ms), the room's tone and station fade
+out over 0.7 s, the garage is hidden *and left exactly as it is* (paused,
+crew and camera in place), the playground is shown and its music comes up
+from silence over 1.4 s, and the night goes out. About two seconds from the
+touch; Escape before the night comes in is a change of mind and nothing
+crosses. `#playground` is pushed; Back is the crossing in reverse (music
+down, garage un-paused, room tone and station back up under the door
+fade); the arch outside does the same and consumes the entry; Forward goes
+out again; arriving on `/#playground` goes straight out once the shutter is
+up; reload outside comes back outside. Reduced motion: a 170 ms cut both
+ways. **BLOCKED_ASSET playground ambience:** no outdoor night-air track was
+delivered; the only outdoor audio is the playground's music, so the
+crossing is music ↔ music (plus the room tone on the garage side).
+
+**9. The playground.** The user's masters (`playground_world_landscape_v01`
+1672×941, `playground_world_portrait_v01` 941×1672, opaque) already paint
+the POKO office (top left), the snack stall (top centre), the parcel office
+(top right), the arch back into the garage and a small signpost by it. So,
+as in the garage, the places are hit areas over what is painted — measured
+off the plates with a 100-unit grid — and **nothing is painted twice**: the
+delivered building cut-outs (`playground_poko_office/snack_stall/
+parcel_office_v01`, trimmed and scaled to ~770 px, real alpha) are used only
+as the thing that grows out of its place when it is touched, the garage's
+own mechanism (`Panels.openPlace`). `playground_foreground_v01` is the
+foreground layer, bottom-anchored over everything, `pointer-events: none`
+(asserted: the middle of every place hits the place). `playground_dokkaebi_
+fire_v01` is three fires — over the water on the left, by the bridge, low by
+the pond — each its own size, period and phase (6.2/7.4/5.6 s, floats of a
+few px, breathing 1→1.04, opacity .86→.98), none under reduced motion.
+`playground_signpost_v01` grows out of the painted post; its three arms are
+buttons that take the camera to look at that place and open nothing. The
+camera fits the short axis and covers the long one, starts on the arch, and
+on 844×390 sits high enough that the three buildings and the arch are all in
+the first view (asserted, along with ≥ 44 px per place). Portrait uses the
+portrait master, not a crop. Depth: plate → places/fires → foreground.
+
+**10. The games are in their buildings.** Touching a building shows its
+cut-out with its name, one line and 들어가기; that opens the existing game
+through the existing runner (MiniGameShell, RoundClock, GameInput, scores —
+nothing new), with the playground paused behind it and the way out
+labelled 놀이터로; closing puts the playground back, unringed, camera
+restored. POKO's game keeps its logic, its glasses and its transparent
+layer; outside, the layer shows POKO's office behind the two figures
+instead of the garage (`[data-game-root].is-outside`). The parcel game
+(`src/games/parcel`, built earlier: 30 s, the five works as piles, drag /
+tap / 1–5, −1.5 s and a broken combo on a wrong pile, stars) is the parcel
+office's. Audio added, all delivered clips: `game_start` at the end of the
+countdown, `star_get` for a round worth a star, `game_fail` when caught or
+for nothing, `stall_bell` for a right order at the stall, and the music
+ducks −4 dB for 1.4 s on POKO's turn so the warning is never under it.
+POKO's own walking/turning/caught/glasses sounds were not delivered and are
+not invented (BLOCKED_ASSET).
+
+## Checkpoint 6 — PHASE 11 · 12 · 13, the door in the bookcase
+
+**11. The lock.** The garage's one painted door is the outside door, so the
+secret door is where the WORLD 2.0 audit said it would go: the lower
+cabinet of the tall bookcase (landscape 246,628 168×214; portrait 142,456
+148×118, below the shelf's own hit area), a fifteenth thing over the plate's
+own pixels, nothing new drawn.
+It is a cabinet until POKO, Snack and Parcel each have a star
+(`src/systems/secret.ts`, from what the games recorded). Locked: its label
+says `비밀문 · ★ n/3`, touching it rattles and shows a moment of starlight
+along the seam — no popup, no LOCKED. The first time all three have a star
+the room shows it opening, once, when the room is in front of the visitor
+(on entering, on coming back from the playground, after a round): the seam
+bright, the face giving a little, the bookcase light, `sfx_secret_unlock` —
+and seen: the room opens on the desk, and at 1440 × 900 and 844 × 390 the
+bookcase is off to the left, so the camera goes to the door first (the
+three-size journey caught it playing out of view); the save's
+`secretProgress` remembers, so a reload finds it open quietly
+(asserted both ways). Then it is a door: the same night crossing as the
+outside door, `#archive` in history, Back and the arch home.
+
+**12. The archive.** The user's masters (`secret_archive_landscape/
+portrait_v01`, 1672×941 / 941×1672) paint the room — the glass dome of
+stars, the telescope, the jar of stars, the dome on the table, the chest,
+the lantern, the cushions — so, as in the playground, the six things are
+hit areas over what is painted (grid-measured) and the delivered cut-outs
+grow out of them when touched. `secret_archive_foreground_v01` is the
+foreground layer, pointer-events off. What each does: the **star jar** —
+a handful of tiny stars up and gone in 1.6 s, the ring glows, `star_get`
+small; the **music box** — its cut-out (open, as delivered) grows out of
+the dome and sways a little; no music-box track was delivered, so
+`discovery` at 0.24 and the sway are the whole of it (BLOCKED_ASSET
+music-box audio); the **telescope** — the glass fills the window, the
+plate's own sky brought close, a star goes over, any click or Escape
+returns; the **memory box** — its cut-out grows out of the chest with one
+real day of making laid on the lid (a capture, sheet or fix from the
+workbench's record, with its date and commit; nothing invented); the
+**lantern** — its own warm wash, a few percent, on and off, `sfx_lantern`;
+the **cushions** — Healing Mode. Six stars in the glass breathe on their
+own beats; a star falls on its own every 60–120 s and never otherwise
+except through the telescope and in Healing Mode. Music: `Secret
+Archive.wav` ends in a fade, so a loop derivative (cut 159.5 s, 2.5 s
+crossfade, 157 s) plays; the room tone under it at 0.1. **BLOCKED_ASSET
+archive_polaroid_bundle_v01:** searched again (name, Spotlight, recent
+images, `*bundle*`): the only "bundle" on the machine is LIMINAL's passport
+prop. No polaroid interaction, nothing invented in its place.
+
+**13. Healing Mode.** Touch the cushions: the nav and the labels fade, the
+rings go, the stars stay and breathe faster, a star falls 2.5 s in and then
+every 12–25 s, the camera drifts ±26 × ±12 units on a 26 s ellipse, one line
+says how to come back. Any click, tap or key (not Tab) ends it at once, and
+Back or the door end it too — and the touch that ends it is spent: Space on
+the cushion's own button (whose click follows on keyup) or a click that
+lands on a place does not open anything in the same breath. Reduced
+motion: no drift, twinkles still, the star fades in place.
+
+Captures: `docs/shots/checkpoint6` (the door locked with its label and hint,
+opening, the archive, each thing, the sky, Healing Mode, home; three
+sizes). Gate: `e2e/archive.spec.ts` 13, plus the room's specs with the
+fifteenth thing.
+
+## Checkpoint 7 — PHASE 14 (first pass), the music as loops
+
+Every delivered BGM was measured at its end (RMS of the last seconds,
+`scripts/loop_derivative.py` reports it): all six end in a fade or a
+cadence to silence, so none may loop raw. Each has a web loop derivative —
+the original is never touched — cut before its ending and crossfaded (equal
+power) into its own opening, so the seam sits on music:
+
+| Track | Delivered | Cut | Crossfade | Loop |
+|---|---|---|---|---|
+| Garage 메인 | 146.4 s, fades from ~137 s | 136.0 s | 2.5 s | 133.5 s |
+| Dokkaebi Playground | 118.8 s, silent from ~117 s | 115.4 s | 2.0 s | 113.4 s |
+| Secret Archive | 164.2 s, fades over the last 3 s | 159.5 s | 2.5 s | 157.0 s |
+| POKO 부장님 몰래 딴짓 | 119.6 s, silent from ~118 s | 117.0 s | 2.0 s | 115.0 s |
+| 도깨비 야식 심부름 | 33.0 s, fades over the last second | 32.0 s | 1.5 s | 30.5 s |
+| 택배 정리 | 118.8 s, silent from ~117 s | 116.4 s | 2.0 s | 114.4 s |
+
+The garage's track had looped raw since PHASE 4; it is the derivative now.
+Each game plays its own track while it is up (0.24, up over 0.9 s): in the
+garage the room's tone and station go down first and come back after, in
+the playground the playground's music gives way and returns — one music at
+a time, never a second under it. Preload is on intent only: the playground
+track when the outside door opens, the archive track's on the secret door,
+a game's when its building is open (on a warming element, never the
+player's own). **Second pass.** Where one track follows another on the world player
+(a building's game over the playground's music, and back) the change was a
+source swap — a cut. It is a crossfade now: the track playing goes down on
+its own element (≤ 700 ms) while the next comes up on a fresh one, the
+warmed element when the file was fetched ahead, so nothing is ever cut and
+nothing is ever doubled for longer than the fade. Unmuting, or coming back
+to the tab, now restores whatever the state says is on wherever the visitor
+is: in the room the tone and the station, elsewhere the world's music and —
+in the archive — the same tone at its lower level, which before came back
+only in the room.
+
+The levels, as one table (the preference is the one switch; there is no
+mixer, by design — the audio preference system is frozen):
+
+| Layer | Level | Where |
+|---|---|---|
+| Room tone | 0.16 / 0.10 | the garage / the archive |
+| Station (the garage's music) | per station (`src/data/garage/radio.ts`) | the garage |
+| World music | 0.30 / 0.26 | the playground / the archive |
+| Game music | 0.24 | any game, over a duck of the music under it |
+| Effects | 0.12 – 0.50 | per cue, at the call |
+
+Not delivered, so not built: the alley's own ambience, a playground
+ambience, POKO's own effects, the music box's own tune (BLOCKED_ASSET, each).
+
+## Checkpoint 8 — PHASE 15 · 24, the audits
+
+**15. Brand.** The only marks on the site are EUNGARAGE's own (nav and
+lockup, v02; `og-image.jpg` 1200 × 630 with the same lockup). No third-party
+logo anywhere: the social fields in `src/data/site.ts` are null, so no
+Instagram or YouTube mark is drawn; the metadata (Open Graph, Twitter card,
+JSON-LD Organization, `manifest.webmanifest` with its three icons) names
+EUNGARAGE alone. The user's playground and archive plates carry no brand
+text. Nothing to purge.
+
+**16. Copy.** Every caption, label, hint and line read through (`src/data`,
+the scenes, the panels, the games): Korean for the visitor, the works'
+own taglines in both languages, the zone names English (data only, never
+shown). The one English UI word left is the alley's ENTER. The mock game's
+line ("셸을 확인하기 위한 것입니다") ships only in DEV builds.
+
+**17. Responsive.** The full journey captured at 1440 × 900, 390 × 844 and
+844 × 390 (`scripts/journey.mjs`; `docs/shots/checkpoint8`, all twenty beats at
+1440 × 900 and the key beats at the two phone sizes): the alley, the room and four of its things, the door and the
+playground, each game's board, home, the ceremony, the archive and each of
+its things, Healing Mode, home again. The one layout fault found on the way
+(the workbench at 844 × 390, PHASE 7) had been fixed already; nothing new.
+
+**18. Accessibility.** Every interactive element in the room, outside and in
+the archive has a name (the things by their captions, the places by their
+labels, the crew by their names); the crew's boxes used to sit inside an
+`aria-hidden` container — a focusable stop with no name — and now only the
+picture and its shadow are hidden. Decorative images are `alt=""`. Panels
+are `role="dialog"` with `aria-modal`; the archive's sky is a dialog of its
+own. Escape closes everything in order (sky → panel → healing → world).
+Reduced motion is honoured in every world (asserted in `archive.spec`,
+`outside.spec`, `cinematic.spec`, `living.spec`). Phone targets are at least
+44 px (the fingertip padding grows a hit area but never into a neighbour —
+which is why the portrait door moved 18 units down from the shelf).
+
+**19. Performance** (`vite preview`, Chromium, DPR 1):
+
+| | 1440 × 900 | 390 × 844 |
+|---|---|---|
+| First contentful paint (alley) | 112 ms | 64 ms |
+| Transferred to the alley | 1.8 MB (the alley's plates and props, and the room's plate behind the shutter) | 1.8 MB |
+| Transferred after entering | 4.6 MB | 3.9 MB |
+| Frames in the room | 61 fps | 61 fps |
+| Long tasks in the room's first seconds | one, 83 ms | one, 82 ms |
+| Script | 214 KB (71 KB gzip) | |
+
+Nothing outside the current world is fetched: no audio until sound is on,
+no playground or archive plate until its door is touched (their music on
+intent only, on a warming element). The loops are AAC at 1.4–2.0 MB each.
+
+**21. The journey** (`scripts/journey.mjs`): three sizes, 20 beats each,
+0 console errors, 0 page errors, 0 failed responses, no panel left open and
+no world's music left running at the end.
+
+**23. Assets.** Every request the journey made answered (404 = 0). The
+delivered cut-outs keep their own alpha (the archive's six, the playground's
+three, the shooting star; nothing re-cut). The playground's and the
+archive's buildings and things are painted once, in the master plate, and
+the hit areas sit over them (double building = 0).
+
+**24. Errors and leaks** (`scripts/leak-audit.mjs`, 30 round trips: the
+playground with a game every other trip, the archive with its jar and
+lantern, on a page that saw the unlock ceremony first):
+
+| round | DOM nodes | window/document listeners | crew | spots | JS heap |
+|---|---|---|---|---|---|
+| 0 (room only) | 316 | 20 | 5 | 0 | 3.0 MB |
+| 5 | 368 | 32 | 5 | 11 | 3.4 MB |
+| 30 | 368 | 32 | 5 | 11 | 3.7 MB |
+
+The step from 0 to 5 is the two worlds mounting once (11 places, their
+listeners); from then on nothing grows. No error on the way.
+
+**22. Visual QA**, fifteen questions asked of the journey captures
+(three sizes; `docs/shots/checkpoint6` and `docs/shots/checkpoint8`):
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | Are the five crew the approved sprites, untouched, POKO with glasses? | Yes — no sprite, face or body edit in PHASE 7–14; POKO's glasses as frozen. |
+| 2 | Is the radio where it was frozen, its readout above the grille? | Yes, at both sizes. |
+| 3 | Any building or thing drawn twice (plate + cut-out)? | No: the cut-outs appear only inside a panel; the plates carry the world. |
+| 4 | Any broken alpha (halo, hard edge, black box) on a cut-out or overlay? | None seen: the archive's six, the playground's three, the shooting star, the LIMINAL print (fixed in PHASE 7). |
+| 5 | Is every label legible over its art, at every size? | Yes; the music box's line sits on the box front with a shadow, readable at 390 wide. |
+| 6 | Does any text overflow or clip at 844 × 390? | No (the workbench's photo row was the one case, fixed). |
+| 7 | Does the nav stay clear of the safe areas and out of the way in Healing Mode? | Yes; in Healing Mode it fades to nothing and comes back on the touch. |
+| 8 | Is the night crossing a clean dark with no flash of the next world? | Yes: the world is shown only after the crossing is dark. |
+| 9 | Is the unlock ceremony visible when it plays? | Now yes at all three sizes (camera to the door). |
+| 10 | Does the telescope's sky fit the glass at every size? | Yes: the overlay is fitted to the plate's own sky rect per orientation. |
+| 11 | Does Healing Mode read as rest (labels gone, rings gone, one line)? | Yes. |
+| 12 | Are the games' boards inside their buildings outside, and the room the board for POKO inside? | Yes (checkpoint5 and the journey). |
+| 13 | Does Back always land somewhere sensible (never a blank page)? | Yes: each world's things leave one entry each, then the room; a deep link keeps the browser's own Back. |
+| 14 | Does the room look the same coming home as it did leaving? | Yes: camera restored, crew where they were, the print in. |
+| 15 | Anything placeholder, invented, or a real brand? | No. The polaroid bundle, the alley/playground ambience, POKO's effects and the music box's tune are BLOCKED_ASSET, not stand-ins. |
+
+**20. The gate** (2026-09-18, after every fix above, `--retries=0`):
+typecheck clean, lint clean, unit 236/236, Playwright 307/307 —
+chromium 269 (48.7 min), shell 12, webkit 13, firefox 13 — 0 failed,
+0 skipped. No timeout was raised, no assertion removed, nothing skipped
+to get there; the two assertions that changed were wrong about the world
+(a dotted date, Playwright's own blank history entry) and one was scoped
+to what it meant (the panel's dialog, not every dialog on the page).

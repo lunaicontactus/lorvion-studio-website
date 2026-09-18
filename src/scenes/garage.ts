@@ -100,6 +100,16 @@ function hangPrint(obj: { rect: { w: number; h: number }; artwork?: string }, pa
   img.decoding = 'async'
   Object.assign(img.style, { left: `${edge}px`, top: `${edge}px`, width: `${imgW}px`, height: `${imgH}px` })
   sheet.append(img)
+  // The sheet comes in over the painted poster only once its picture is
+  // here. Before that the frame alone showed as a dark box on the wall for
+  // the first half-second of a visit (PHASE 7 capture) — the painted poster
+  // underneath is the right thing to show until the print has arrived.
+  const arrived = (): void => sheet.classList.add('is-in')
+  if (img.complete && img.naturalWidth > 0) arrived()
+  else {
+    img.addEventListener('load', arrived, { once: true })
+    img.addEventListener('error', arrived, { once: true })
+  }
 
   if (piece.mount === 'poster') {
     for (const side of ['l', 'r']) {
@@ -183,6 +193,14 @@ export interface GarageHandle {
   reactObject(id: string, on: boolean): void
   /** Where a thing is on screen right now, for whatever grows out of it. */
   screenRectOf(id: string): DOMRect | null
+  /**
+   * The door in the bookcase (PHASE 11): how far the three games have got,
+   * whether it is open, and — once — the moment it opens: starlight through
+   * the seam, the cabinet's face giving a little, the sound.
+   */
+  setSecret(state: { readonly have: number; readonly need: number; readonly unlocked: boolean }, celebrate: boolean): void
+  /** Touched while locked: the seam shows for a moment. No message. */
+  hintSecret(): void
   readonly world: WorldLayout
   destroy(): void
 }
@@ -801,12 +819,14 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         // lives here, and it is over in a second. Two faces for it, not one,
         // and not left to whichever way the seeded homes happened to point.
         faces.ensure(Math.min(2, onStage))
-        // Somebody notices the visitor coming in: whoever is nearest the
-        // middle of the room, a moment after the door.
+        // Somebody notices the visitor coming in: MOMO, who is the one at
+        // the door in the entrance and the one whose desk faces it (PHASE 7);
+        // failing MOMO, whoever is nearest the middle of the room.
         const centre = world.start.x
-        const welcome = [...crew]
-          .filter((c) => !c.away)
-          .sort((a, b) => Math.abs(a.at.x - centre) - Math.abs(b.at.x - centre))[0]
+        const welcome = crew.find((c) => c.id === 'momo' && !c.away)
+          ?? [...crew]
+            .filter((c) => !c.away)
+            .sort((a, b) => Math.abs(a.at.x - centre) - Math.abs(b.at.x - centre))[0]
         if (welcome) later(() => welcome.greetVisitor(), 700)
         // The broom that sweeps on its own (PHASE 6, src/systems/broom.ts).
         // One of the room's events, on the same schedule as the rest; where
@@ -1083,6 +1103,16 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     keys.delete(e.key.toLowerCase())
   }
 
+  /** Bring the camera to a thing, if it is not already in the view. */
+  const lookAt = (obj: WorldObject): void => {
+    const cx = obj.rect.x + obj.rect.w / 2
+    const cy = obj.rect.y + obj.rect.h / 2
+    const inView =
+      cx >= camera.viewX + 40 && cx <= camera.viewX + viewW - 40 &&
+      cy >= camera.viewY + 40 && cy <= camera.viewY + viewH - 40
+    if (!inView) camera.moveTo(cx, cy)
+  }
+
   // Keyboard: focus landing on a thing outside the view brings the camera to
   // it, since the stage itself can no longer be scrolled there.
   const onFocusIn = (e: FocusEvent): void => {
@@ -1090,13 +1120,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     if (!t?.classList.contains('thing') || paused) return
     const id = t.dataset['object']
     const obj = world.objects.find((o) => o.id === id)
-    if (!obj) return
-    const cx = obj.rect.x + obj.rect.w / 2
-    const cy = obj.rect.y + obj.rect.h / 2
-    const inView =
-      cx >= camera.viewX + 40 && cx <= camera.viewX + viewW - 40 &&
-      cy >= camera.viewY + 40 && cy <= camera.viewY + viewH - 40
-    if (!inView) camera.moveTo(cx, cy)
+    if (obj) lookAt(obj)
   }
   roomEl.addEventListener('focusin', onFocusIn)
   off.push(() => roomEl.removeEventListener('focusin', onFocusIn))
@@ -1247,6 +1271,34 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     },
     screenRectOf(id: string): DOMRect | null {
       return roomEl.querySelector(`[data-object="${id}"]`)?.getBoundingClientRect() ?? null
+    },
+    setSecret(state, celebrate): void {
+      const el = roomEl.querySelector<HTMLElement>('[data-object="secret-door"]')
+      if (!el) return
+      el.dataset['secret'] = state.unlocked ? 'unlocked' : 'locked'
+      el.classList.toggle('is-unlocked', state.unlocked)
+      const cap = el.querySelector('.thing__label')
+      if (cap) cap.textContent = state.unlocked ? '비밀문 · 열림' : `비밀문 · ★ ${state.have}/${state.need}`
+      el.setAttribute('aria-label', state.unlocked ? '비밀문' : `비밀문 · 별 ${state.have}/${state.need}`)
+      if (!celebrate) return
+      // Once, and seen: the room opens on the desk, and on a wide screen the
+      // bookcase is out of the view, so the camera goes to the door first.
+      const obj = world.objects.find((o) => o.id === 'secret-door')
+      if (obj) lookAt(obj)
+      el.classList.add('is-unlocking')
+      lights.get('bookcase')?.classList.add('is-on')
+      later(() => {
+        el.classList.remove('is-unlocking')
+        lights.get('bookcase')?.classList.remove('is-on')
+      }, 2600)
+    },
+    hintSecret(): void {
+      const el = roomEl.querySelector<HTMLElement>('[data-object="secret-door"]')
+      if (!el) return
+      el.classList.remove('is-hinting')
+      void el.offsetWidth
+      el.classList.add('is-hinting')
+      later(() => el.classList.remove('is-hinting'), 900)
     },
     setWorld(w: string | null): void {
       if (w) scene.dataset['world'] = w
