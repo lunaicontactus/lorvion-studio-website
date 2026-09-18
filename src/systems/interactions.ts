@@ -48,7 +48,10 @@ export interface InteractionMember {
 }
 
 /** The kinds of thing that can be going on. */
-export type SceneId = 'watchBench' | 'doze' | 'parcel' | 'fridge' | 'screen'
+export type SceneId = 'watchBench' | 'doze' | 'parcel' | 'fridge' | 'screen' | 'notice'
+
+/** The things in the room a scene can be about. */
+export type PlaceId = 'parcel' | 'fridge' | 'pc' | 'tv' | 'shelf' | 'cabinet' | 'radio'
 
 /** A place in the room a scene can be about. */
 export interface Place {
@@ -74,9 +77,39 @@ export interface CrewInteractionsOptions {
    * other rather than as a workshop.
    */
   readonly slow?: number
-  /** The parcel, the fridge, the monitor, the television. */
-  readonly places?: Partial<Record<'parcel' | 'fridge' | 'pc' | 'tv', Place>>
+  /** The parcel, the fridge, the monitor, the television, and the rest. */
+  readonly places?: Partial<Record<PlaceId, Place>>
 }
+
+/**
+ * Cause and effect (PHASE 6). Something in the room moves by itself, and
+ * one of them — mostly a particular one — notices. `prefer` is who it is
+ * usually, in order; `go` is whether it is worth walking over for when the
+ * one who noticed is already close, as against a look up from where they
+ * are. A cause nobody is near is a cause nobody notices, which is right.
+ */
+interface Cause {
+  readonly about: PlaceId
+  readonly prefer: readonly string[]
+  readonly go: boolean
+}
+
+const CAUSES: Readonly<Record<string, Cause>> = {
+  // The box shifts: YOMI, whose whole character is being interested in
+  // whatever is unusual, and MOMO after that.
+  parcelWiggle: { about: 'parcel', prefer: ['yomi', 'momo'], go: true },
+  // The lantern on the shelf swings: YOMI goes to see what did that.
+  shelfLantern: { about: 'shelf', prefer: ['yomi'], go: true },
+  // The television flickers: POKO, who watches it, glances at it.
+  tvStatic: { about: 'tv', prefer: ['poko'], go: false },
+  // The fridge's compressor kicks: RUKI hears machinery, NUNU hears food.
+  fridgeClick: { about: 'fridge', prefer: ['ruki', 'nunu'], go: false },
+  // The monitor beeps: MOMO's machine.
+  pcBeep: { about: 'pc', prefer: ['momo'], go: false },
+}
+
+/** How often the preferred one takes it over whoever is nearest. */
+const PREFERENCE = 0.8
 
 /** How far apart two of them can be and still be in the same scene. */
 const NEAR = { bench: 700, sitter: 620, parcel: 1500, watcher: 640 }
@@ -90,8 +123,9 @@ const EVERY: Record<SceneId, readonly [number, number]> = {
   doze: [30_000, 70_000],
   fridge: [46_000, 96_000],
   screen: [26_000, 58_000],
-  // Not scheduled: it happens when the parcel does.
+  // Not scheduled: these happen when the room does (`notice`).
   parcel: [0, 0],
+  notice: [0, 0],
 }
 
 /** Nothing at all in the first stretch: the visitor is still arriving. */
@@ -131,6 +165,8 @@ export class CrewInteractions {
   #log: SceneId[] = []
   /** When each kind last actually happened, so no kind is crowded out. */
   #ran = new Map<SceneId, number>()
+  /** The thing the visitor has taken: no scene goes near it until it is given back. */
+  #held: string | null = null
 
   constructor(opts: CrewInteractionsOptions = {}) {
     this.#random = opts.random ?? Math.random
@@ -173,29 +209,57 @@ export class CrewInteractions {
   setPaused(paused: boolean): void {
     this.#paused = paused
     if (paused) this.#running = null
+    // Closing gives the thing back. The camera and the crew are told the
+    // same at the same moment (src/systems/interaction.ts restore).
+    else this.#held = null
   }
 
-  /** The visitor wants that thing. Whatever the room was doing with it, stop. */
+  /**
+   * The visitor wants that thing. Whatever the room was doing with it, stop
+   * — and nothing starts toward it until they are done with it, which
+   * covers the moment between the touch and the panel as well.
+   */
   yieldTo(objectId: string): void {
+    this.#held = objectId
     if (this.#running?.objectId === objectId) this.#running = null
+  }
+
+  /** What the visitor has, if anything. */
+  get held(): string | null {
+    return this.#held
   }
 
   /**
    * Something in the room moved by itself. Exactly one of them is allowed to
-   * care, and only if nothing else is going on.
+   * care — usually the one whose thing it is (CAUSES) — and only if nothing
+   * else is going on and the visitor does not have that thing open.
    */
   notice(eventId: string): void {
-    if (eventId !== 'parcelWiggle') return
-    const parcel = this.#places?.parcel
-    if (!parcel || this.#busy()) return
-    const who = this.#nearestOpen(parcel.at, NEAR.parcel)
-    if (!who) return
-    // A knock is worth a look. Worth crossing the room for only if it is
-    // already close enough that going is not an errand of its own.
-    const close = Math.hypot(who.at.x - parcel.at.x, who.at.y - parcel.at.y) < 760
-    const went = close && parcel.spot ? who.summon(parcel.spot) : false
-    if (!went && !who.glanceAt(parcel.at, 1000 + this.#random() * 600)) return
-    this.#begin('parcel', [who.id], went ? 7000 : 1800, parcel.objectId)
+    const cause = CAUSES[eventId]
+    if (!cause) return
+    const place = this.#places?.[cause.about]
+    if (!place || this.#busy()) return
+    if (place.objectId !== undefined && place.objectId === this.#held) return
+    const reach = cause.go ? NEAR.parcel : NEAR.watcher * 1.6
+    // Measured to where one stands for it when there is such a place: the
+    // shelf is high on the wall, and a walk to it is a walk along the boards.
+    const to = place.spot ?? place.at
+    const near = this.#members
+      .filter((m) => m.openTo && Math.hypot(m.at.x - to.x, m.at.y - to.y) < reach)
+      .sort((a, b) =>
+        Math.hypot(a.at.x - to.x, a.at.y - to.y) - Math.hypot(b.at.x - to.x, b.at.y - to.y))
+    if (!near.length) return
+    // The one it belongs to, mostly; whoever is nearest, sometimes. A
+    // reaction that is always the same one is a rule the visitor can learn,
+    // and a room that follows visible rules is a machine.
+    const favoured = cause.prefer.map((id) => near.find((m) => m.id === id)).find((m) => m !== undefined)
+    const who = favoured && this.#random() < PREFERENCE ? favoured : near[0]!
+    // Worth crossing the room for only if it is already close enough that
+    // going is not an errand of its own.
+    const close = Math.hypot(who.at.x - to.x, who.at.y - to.y) < 760
+    const went = cause.go && close && place.spot ? who.summon(place.spot) : false
+    if (!went && !who.glanceAt(place.at, 1000 + this.#random() * 600)) return
+    this.#begin(eventId === 'parcelWiggle' ? 'parcel' : 'notice', [who.id], went ? 7000 : 1800, place.objectId)
   }
 
   step(dt: number): void {
@@ -285,7 +349,8 @@ export class CrewInteractions {
 
   /** A screen is on. Somebody looks at it for a second, the way you do. */
   #screen(): void {
-    const screens = [this.#places?.pc, this.#places?.tv].filter((p): p is Place => !!p)
+    const screens = [this.#places?.pc, this.#places?.tv]
+      .filter((p): p is Place => !!p && p.objectId !== this.#held)
     if (!screens.length) return
     const where = screens[Math.floor(this.#random() * screens.length) % screens.length]!
     const who = this.#nearestOpen(where.at, NEAR.watcher)
@@ -303,7 +368,7 @@ export class CrewInteractions {
    */
   #fridge(): void {
     const fridge = this.#places?.fridge
-    if (!fridge?.spot) return
+    if (!fridge?.spot || fridge.objectId === this.#held) return
     const goer = this.#pick(this.#members.filter((m) => m.openTo && m.state !== 'WALK'))
     if (!goer || !goer.summon(fridge.spot)) return
     const who = [goer.id]

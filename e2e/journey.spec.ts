@@ -4,8 +4,9 @@ import type { Page } from '@playwright/test'
 /**
  * One visitor, start to finish, with nothing forced.
  *
- * Alley → shutter → the crew living in the room → PC → 빌드 중입니다, 부장님
- * → caught → retry → back to the garage → TV → the email link. Then the
+ * Alley → shutter → the crew living in the room → 빌드 중입니다, 부장님 (by
+ * its deep link: the site's mini-games are not on the PC, which holds the
+ * real works only) → caught → retry → back to the garage → TV → the email link. Then the
  * things that break a page that is really one document: the browser's Back,
  * a reload, a tab that loses focus mid-game, going in a second time.
  *
@@ -71,11 +72,11 @@ for (const w of WINDOWS) {
         return now.some((t, k) => t !== before[k])
       }, { message: 'somebody in the room moved within 40s', timeout: 40_000, intervals: [250] }).toBe(true)
 
-      // PC → the game.
-      await touch(page, '.thing--pc', w.mobile)
-      await expect(page.locator('[data-minigame="build"]')).toBeVisible({ timeout: 6000 })
-      await touch(page, '[data-minigame="build"]', w.mobile)
-      await expect(page.locator('[data-game-start]')).toBeVisible()
+      // The game, by its deep link. It is opened from the alley the way the
+      // link would be followed, through the same door.
+      await page.goto('/?play=build', { waitUntil: 'load' })
+      await touch(page, '[data-alley-enter]', w.mobile)
+      await expect(page.locator('[data-game-start]')).toBeVisible({ timeout: 8000 })
       await expect(page.locator('[data-panel-root]')).toBeHidden()
       await touch(page, '[data-game-start]', w.mobile)
       await expect(page.locator('[data-game-time]')).not.toHaveText('45', { timeout: 5000 })
@@ -146,6 +147,9 @@ for (const w of WINDOWS) {
       // The television → the studio's address, as a real mailto link.
       await page.waitForTimeout(600)
       await touch(page, '.thing--tv', w.mobile)
+      // The set comes on at the news; the address is channel 4.
+      await expect(page.locator('[data-tv-go="3"]')).toBeVisible({ timeout: 6000 })
+      await touch(page, '[data-tv-go="3"]', w.mobile)
       const mail = page.locator('.tvrow__value[href^="mailto:"]')
       await expect(mail).toBeVisible({ timeout: 6000 })
       await expect(mail).toHaveAttribute('href', 'mailto:eungarage@gmail.com')
@@ -192,7 +196,11 @@ for (const w of WINDOWS) {
       expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44)
       await touch(page, '.thing--parcel', w.mobile)
       await expect(parcel).toHaveClass(/is-open/)
+      // What was in it is shown beside the open box.
+      await expect(page.locator('[data-delivery]')).toBeVisible({ timeout: 6000 })
+      await page.keyboard.press('Escape')
       await expect(page.locator('[data-panel-root]')).toBeHidden()
+      await expect(parcel).not.toHaveClass(/is-open/)
     })
   })
 }
@@ -203,7 +211,7 @@ test('a visitor who does not want motion gets the same journey, without the wait
   await fresh(page)
   await enter(page, false)
   await page.locator('.thing--pc').click()
-  await expect(page.locator('[data-minigame="build"]')).toBeVisible({ timeout: 3000 })
+  await expect(page.locator('[data-game="lunai"]')).toBeVisible({ timeout: 3000 })
   await page.locator('[data-game="lunai"]').click()
   await expect(page.locator('[data-garage]')).toHaveAttribute('data-world', 'lunai')
   await page.keyboard.press('Escape')

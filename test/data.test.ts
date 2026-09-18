@@ -134,7 +134,9 @@ describe('what the room can tell you', () => {
 
     it(`keeps the ${name} parcel's two states on one canvas`, () => {
       const parcel = world.objects.find((o) => o.id === 'parcel')!
-      expect(parcel.action.kind).toBe('toggle')
+      // It opens a delivery now (WORLD 2.0), and the box in the room opens
+      // with it: still two states on one canvas.
+      expect(parcel.action).toEqual({ kind: 'panel', panelId: 'parcel' })
       expect(parcel.art).toMatch(/prop_parcel_closed\.webp$/)
       expect(parcel.artOpen).toMatch(/prop_parcel_open\.webp$/)
       // The cut-outs are 520x431; the box must keep that ratio or one state

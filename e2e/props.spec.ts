@@ -67,7 +67,7 @@ async function bring(page: Page, id: string): Promise<void> {
 test.describe('desktop', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
 
-  test('the parcel opens where it stands, and nothing else opens', async ({ page }) => {
+  test('the parcel opens where it stands, and what was in it comes out', async ({ page }) => {
     await enter(page)
     await bring(page, 'parcel')
     const parcel = page.locator('.thing--parcel')
@@ -80,15 +80,15 @@ test.describe('desktop', () => {
     await expect(open).toHaveCSS('opacity', '0')
 
     await parcel.click()
+    // The box in the room opens, and the delivery is shown beside it.
     await expect(parcel).toHaveClass(/is-open/)
-    await expect(parcel).toHaveAttribute('aria-pressed', 'true')
     await expect(open).toHaveCSS('opacity', '1')
     await expect(closed).toHaveCSS('opacity', '0')
-    // Not a panel. The room is still the room.
-    await expect(page.locator('[data-panel-root]')).toBeHidden()
-    expect(page.url()).not.toContain('#parcel')
+    await expect(page.locator('[data-delivery]')).toBeVisible({ timeout: 6000 })
 
-    await parcel.click()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('[data-panel-root]')).toBeHidden()
+    // Put down again: the box shuts with its panel.
     await expect(parcel).not.toHaveClass(/is-open/)
     await expect(open).toHaveCSS('opacity', '0')
   })
@@ -99,7 +99,7 @@ test.describe('desktop', () => {
     const label = pc.locator('.thing__label')
     await expect(label).toHaveCSS('opacity', '0')
     await pc.hover()
-    await expect(label).toHaveText('PC · 작품과 미니게임')
+    await expect(label).toHaveText('PC · 작품 라이브러리')
     await expect(label).toHaveCSS('opacity', '1')
     await expect(pc.locator('.thing__outline')).toHaveCSS('opacity', '1')
     // Readable: 13px on screen whatever the room's scale.
@@ -110,21 +110,31 @@ test.describe('desktop', () => {
     await expect(label).toHaveCSS('opacity', '0')
   })
 
-  test('the monitor panel stands beside the room and leaves the PC in view', async ({ page }) => {
+  test('the monitor grows out of the PC, and the works are inside its screen', async ({ page }) => {
     await enter(page)
     await page.locator('.thing--pc').click()
     await expect(page.locator('.panel-layer.is-open')).toBeVisible()
+    // The from-point is the PC's place on screen at the moment the monitor
+    // opened — the camera has been moving toward it since the click, and is
+    // still easing, so both are read on the same frame, as soon as it opens.
+    const { from, pc } = await page.evaluate(() => {
+      const el = document.querySelector<HTMLElement>('.prop--pc')!
+      const r = document.querySelector('.thing--pc')!.getBoundingClientRect()
+      return { from: { fx: parseFloat(el.style.getPropertyValue('--fx')), fy: parseFloat(el.style.getPropertyValue('--fy')) },
+        pc: { x: r.x, y: r.y, width: r.width, height: r.height } }
+    })
     await expect(page.locator('.hub__row').first()).toBeVisible({ timeout: 5000 })
-    await page.waitForTimeout(600) // the camera settles
-    const panel = (await page.locator('.panel').boundingBox())!
-    const pc = (await page.locator('.thing--pc').boundingBox())!
+    await page.waitForTimeout(600) // the prop arrives
     const vp = page.viewportSize()!
-    // Right-hand side, and the PC entirely to its left and on screen.
-    expect(panel.x).toBeGreaterThan(vp.width / 2)
-    expect(pc.x).toBeGreaterThanOrEqual(0)
-    expect(pc.x + pc.width).toBeLessThan(panel.x)
-    // The cut-out of the monitor is not shown: the real one is beside it.
-    await expect(page.locator('.panel__portrait')).toBeHidden()
+    expect(Math.abs(vp.width / 2 + from.fx - (pc.x + pc.width / 2))).toBeLessThan(80)
+    expect(Math.abs(vp.height / 2 + from.fy - (pc.y + pc.height / 2))).toBeLessThan(80)
+    // And the list is inside the screen, not on a card next to it.
+    const screen = (await page.locator('.prop--pc .crt').boundingBox())!
+    const list = (await page.locator('.prop--pc .hub').boundingBox())!
+    expect(list.x).toBeGreaterThanOrEqual(screen.x - 1)
+    expect(list.x + list.width).toBeLessThanOrEqual(screen.x + screen.width + 1)
+    expect(list.y).toBeGreaterThanOrEqual(screen.y - 1)
+    await expect(page.locator('.panel__portrait')).toHaveCount(0)
   })
 
   test('one game lights the room while the monitor shows it', async ({ page }) => {
@@ -164,16 +174,19 @@ test.describe('desktop', () => {
     await expect(car).toHaveAttribute('aria-pressed', 'true')
     await expect(closed).toHaveCSS('opacity', '1')
     await expect(page.locator('[data-bench-note]')).toContainText('닫았다')
-    // The projects are still listed under it.
-    await expect(page.locator('.note__row')).toHaveCount(5)
+    // And the work in progress is out beside it.
+    await expect(page.locator('.bench2__img')).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(page.locator('[data-panel-root]')).toBeHidden()
 
     await page.locator('.thing--fridge').click()
-    await expect(page.locator('.chill')).toHaveCount(7, { timeout: 5000 })
-    await expect(page.locator('.chill[data-item="ramen-open"] .chill__label')).toHaveText('먹던 컵라면')
-    await expect(page.locator('.chill[data-item="drink"] .chill__label')).toHaveText('음료')
-    for (const id of ['ramen-open', 'drink']) {
+    await expect(page.locator('.chill')).toHaveCount(5, { timeout: 5000 })
+    // Every picture on today's shelves is a real cut-out that decodes.
+    const ids = await page.locator('.chill').evaluateAll((els) => els
+      .filter((e) => e.querySelector('.chill__art:not([data-empty])'))
+      .map((e) => (e as HTMLElement).dataset['item']!))
+    expect(ids.length).toBeGreaterThanOrEqual(3)
+    for (const id of ids) {
       const ok = await page.locator(`.chill[data-item="${id}"] .chill__art`).evaluate(async (el) => {
         const url = /url\(["']?([^"')]+)/.exec(getComputedStyle(el).backgroundImage)?.[1]
         if (!url) return false

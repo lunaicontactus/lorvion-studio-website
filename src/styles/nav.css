@@ -38,7 +38,6 @@
 .page-cozy .nav-links a:hover,
 .page-cozy .nav-links a:focus-visible{color:var(--cozy-ink)}
 .page-cozy .nav-links a:after{background:var(--cozy-ink)}
-.page-cozy .brand-wordmark{color:var(--cozy-ink)}
 .page-cozy .menu-toggle{color:var(--cozy-ink)}
 .page-cozy .menu-toggle span{background:var(--cozy-ink)}
 .page-cozy :where(a,button,[tabindex]):focus-visible{outline-color:var(--cozy-ember)}
@@ -48,10 +47,16 @@
   .page-cozy .nav-links{background:rgba(243,236,226,.97);color:var(--cozy-ink)}
 }
 
-/* The wordmark paints itself with a silver gradient clipped to the glyphs, so
-   `color` alone does nothing to it — on the cream wall it measured about 1.1:1.
-   Inside a cozy page the gradient becomes warm ink instead. */
-.page-cozy .brand-wordmark{
-  background-image:linear-gradient(#5a4a3d,#463a30 58%,#3a2f27);
-  -webkit-text-fill-color:transparent;
-}
+
+
+/* The site's mute switch: the same preference the garage radio uses. Function
+   layer, always in the nav, never hidden behind hover. */
+.sound-toggle{display:inline-grid;place-items:center;width:44px;height:44px;margin-left:auto;margin-right:4px;
+  border:0;border-radius:999px;background:transparent;color:inherit;cursor:pointer}
+.nav-inner .sound-toggle{order:2}
+.sound-toggle:hover,.sound-toggle:focus-visible{background:rgba(127,127,127,.14)}
+.sound-toggle .sound-toggle__on{display:none}
+.sound-toggle[data-state="on"] .sound-toggle__on{display:inline}
+.sound-toggle[data-state="on"] .sound-toggle__off{display:none}
+.site-nav{color:#d7d9e2}
+.page-cozy .sound-toggle{color:var(--cozy-ink)}

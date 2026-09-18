@@ -96,6 +96,12 @@ export interface NpcOptions {
   readonly ready?: Promise<unknown>
   /** Start off the edge of the plate rather than in the room (src/systems/stage.ts). */
   readonly away?: boolean
+  /**
+   * A foot came down (PHASE 6). Once per stride, only while walking, and
+   * told whether the walker is in view; the room decides whether that makes
+   * a sound (src/systems/footsteps.ts).
+   */
+  readonly onStep?: (onscreen: boolean) => void
 }
 
 export interface NpcHandle {
@@ -206,17 +212,22 @@ export function mountNpc(
   const el = document.createElement('div')
   el.className = 'npc'
   el.dataset['npc'] = id
-  el.setAttribute('aria-hidden', 'true')
+  // The picture and its shadow are decoration; the box over the body (below)
+  // is the one thing a reader or a keyboard meets, named after the character.
+  // The container itself is not hidden, or a focusable button would sit
+  // inside a hidden subtree — a stop with no name.
   const art = document.createElement('img')
   art.className = 'npc__art'
   art.alt = ''
   art.decoding = 'async'
+  art.setAttribute('aria-hidden', 'true')
   el.append(art)
 
   // Joins the render to the painted boards. Sits under the art, at the
   // standing point, so it does not rise and fall with the walk.
   const shadow = document.createElement('span')
   shadow.className = 'npc__shadow'
+  shadow.setAttribute('aria-hidden', 'true')
   el.prepend(shadow)
 
   // What it is saying, if anything. Empty and hidden nearly all the time, and
@@ -449,10 +460,25 @@ export function mountNpc(
   let waiting = false
   /** How long it has been walking without getting anywhere. */
   let stuck = 0
-  let lastX = 0
-  let lastY = 0
+  /**
+   * The nearest it has been to its target this walk. Progress is measured
+   * against this, not against where it stood a moment ago: two of them
+   * wanting the same gap creep a unit or two every few seconds, and a
+   * check against the last position saw that creep as progress and reset
+   * the clock every time — RUKI walked on the spot at the door for thirty
+   * seconds in one watch, and the check never once fired.
+   */
+  let nearest = Infinity
   /** How many times running the visitor has poked it. */
   let pokes = 0
+  /**
+   * Ground covered since the last footfall. The rendered stride is the
+   * graph's speed over one cycle (0.889s, see src/data/navigation.ts), and a
+   * cycle is two steps; counting distance rather than time keeps the sound
+   * on the feet when the walk is slowed to shuffle past somebody.
+   */
+  let strideAcc = 0
+  const STEP_UNITS = (graph.speed * 0.889) / 2
 
   const between = (range: { min: number; max: number }): number =>
     range.min + rng() * (range.max - range.min)
@@ -513,10 +539,19 @@ export function mountNpc(
     // stuck check never got four consecutive seconds to notice.
     if (fresh) {
       stuck = 0
-      lastX = x
-      lastY = y
+      nearest = Infinity
     }
     go('WALK')
+  }
+
+  /**
+   * The walk off the plate is over without having got there: the visitor
+   * touched it, the room summoned it, or it gave up. It is in the room, so
+   * it stays in the room — arriving at the next place must not count as
+   * having left, which is how a dokkaebi vanished in front of the bench.
+   */
+  const stayAfterAll = (): void => {
+    exiting = false
   }
 
   /**
@@ -987,21 +1022,22 @@ export function mountNpc(
         }
         // Two of them wanting the same gap is not worth modelling as a
         // negotiation. Give up on the errand and find another; from outside
-        // that is indistinguishable from changing your mind.
-        if (Math.hypot(x - lastX, y - lastY) < 2) {
+        // that is indistinguishable from changing your mind. Progress is
+        // getting nearer the target by a real amount, not moving at all.
+        if (distance < nearest - 6) {
+          nearest = distance
+          stuck = 0
+        } else {
           stuck += dt
           if (stuck > STUCK_MS) {
             unbook()
             target = null
             sitAt = null
+            stayAfterAll()
             crowd?.endWalk(id)
             go('IDLE', 600 + rng() * 1400)
             return
           }
-        } else {
-          stuck = 0
-          lastX = x
-          lastY = y
         }
         if (crowd && !exiting && !entering) {
           // Somebody coming the other way on the same stretch: stand aside a
@@ -1041,6 +1077,11 @@ export function mountNpc(
         facingRight = dx >= 0
         pose('walk', faceFor(dx, dy))
         place()
+        strideAcc += move
+        if (strideAcc >= STEP_UNITS) {
+          strideAcc -= STEP_UNITS
+          if (opts.onStep && !away) opts.onStep(onscreen && !exiting && !entering)
+        }
         return
       }
 
@@ -1198,6 +1239,7 @@ export function mountNpc(
     target = null
     sitAt = null
     partner = null
+    stayAfterAll()
     crowd?.endWalk(id)
     pokes += 1
     if (pokeReset) clearTimeout(pokeReset)
@@ -1359,6 +1401,7 @@ export function mountNpc(
       sitAt = null
       partner = null
       lookAt = null
+      stayAfterAll()
       target = to
       if (crowd) {
         crowd.claim(to.id, id)
@@ -1411,6 +1454,7 @@ export function mountNpc(
       if (target?.objectId !== objectId) return
       // The visitor wants this thing. Step away and leave them to it.
       unbook()
+      stayAfterAll()
       const floors = graph.points.filter((p) => p.objectId === undefined)
       target = floors[Math.floor(rng() * floors.length)] ?? graph.points[0]!
       // Past the budget: the visitor is waiting on this one to move, and

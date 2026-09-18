@@ -4,27 +4,42 @@ import type { Page } from '@playwright/test'
 /**
  * 빌드 중입니다, 부장님 — played rather than inspected.
  *
- * What these hold the game to: it opens from the PC and not instead of it,
- * the controls on the ready screen are the controls that work, getting caught
+ * What these hold the game to: it opens over the room and pauses it, the
+ * controls on the ready screen are the controls that work, getting caught
  * says why, a retry starts from nothing, losing the window pauses and only a
  * button resumes, the build screen earns no points, and leaving puts the
  * garage back exactly as it was.
  */
-async function enter(page: Page): Promise<void> {
+async function enter(page: Page, query = ''): Promise<void> {
   await page.addInitScript(() => {
     try { sessionStorage.clear(); localStorage.clear() } catch { /* private mode */ }
   })
-  await page.goto('/', { waitUntil: 'load' })
+  await page.goto(`/${query}`, { waitUntil: 'load' })
   await page.locator('[data-alley-enter]').click()
   await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
   await page.waitForTimeout(600)
 }
 
+/**
+ * The site's mini-games are not on the PC (that holds the real works only);
+ * until the Playground is built, `?play=<id>` is the way in.
+ */
 async function openGame(page: Page): Promise<void> {
-  await page.evaluate(() =>
-    document.querySelector('.thing--pc')?.dispatchEvent(new MouseEvent('click', { bubbles: true })))
-  await page.locator('[data-minigame="build"]').click()
-  await expect(page.locator('[data-game-start]')).toBeVisible()
+  await enter(page, '?play=build')
+  await expect(page.locator('[data-game-start]')).toBeVisible({ timeout: 8000 })
+}
+
+/**
+ * Start a round, and wait for the round rather than for a second.
+ *
+ * The shell counts three, two, one before it hands over, so a press followed
+ * by a fixed wait is a press into a countdown: the keys do nothing yet and
+ * the test finds a game that has not begun. The end of the countdown is a
+ * thing the shell says, so wait for it being said.
+ */
+async function begin(page: Page): Promise<void> {
+  await page.keyboard.press('Enter')
+  await expect(page.locator('[data-game-overlay]')).toBeHidden({ timeout: 8000 })
 }
 
 const boss = (page: Page) => page.evaluate(() => document.querySelector('[data-build-boss]')?.dataset['state'])
@@ -35,13 +50,14 @@ const time = (page: Page) => page.locator('[data-game-time]').textContent()
 test.describe('desktop', () => {
   test.use({ viewport: { width: 1280, height: 800 } })
 
-  test('opens from the PC, next to the projects and not instead of them', async ({ page }) => {
+  test('opens over the room, and is not on the PC', async ({ page }) => {
     await enter(page)
     await page.evaluate(() =>
       document.querySelector('.thing--pc')?.dispatchEvent(new MouseEvent('click', { bubbles: true })))
-    await expect(page.locator('[data-minigame="build"]')).toBeVisible()
     await expect(page.locator('[data-game]')).toHaveCount(5)
-    await page.locator('[data-minigame="build"]').click()
+    await expect(page.locator('[data-minigame]')).toHaveCount(0)
+    await page.keyboard.press('Escape')
+    await openGame(page)
     await expect(page.locator('.game-layer')).toBeVisible()
     await expect(page.locator('.game__controls kbd').nth(0)).toHaveText('Space')
     await expect(page.locator('.game__controls kbd').nth(1)).toHaveText('Shift')
@@ -52,7 +68,7 @@ test.describe('desktop', () => {
     test.setTimeout(90_000)
     await enter(page)
     await openGame(page)
-    await page.keyboard.press('Enter')
+    await begin(page)
     let sawWarning = false
     for (let i = 0; i < 300; i++) {
       const s = await boss(page)
@@ -71,7 +87,7 @@ test.describe('desktop', () => {
     test.setTimeout(90_000)
     await enter(page)
     await openGame(page)
-    await page.keyboard.press('Enter')
+    await begin(page)
     await page.waitForTimeout(1000)
     await page.keyboard.press('Shift')
     expect(await hidden(page)).toBe(true)
@@ -91,7 +107,7 @@ test.describe('desktop', () => {
   test('losing the window pauses; only the button resumes; retry starts over', async ({ page }) => {
     await enter(page)
     await openGame(page)
-    await page.keyboard.press('Enter')
+    await begin(page)
     await page.waitForTimeout(2500)
     await page.evaluate(() => window.dispatchEvent(new Event('blur')))
     await expect(page.locator('[data-game-resume]')).toBeVisible()

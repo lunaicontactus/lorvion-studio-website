@@ -15,8 +15,10 @@ import { Camera } from '@/systems/camera'
 import { worldFor, ROOM_ART, CAPTIONS, DECOR } from '@/data/world'
 import { loadImage } from '@/systems/assets'
 import { depthOf, occludersFor } from '@/data/occlusion'
-import { BITS, LIGHTS, LIGHTS_PORTRAIT, SKY, STARS, STEAM, STEAM_PORTRAIT, TV_SCREEN, TV_SCREEN_PORTRAIT } from '@/data/ambience'
+import { BITS, BROOM_ZONES, BROOM_ZONES_PORTRAIT, LIGHTS, LIGHTS_PORTRAIT, SKY, STARS, STEAM, STEAM_PORTRAIT, TV_SCREEN, TV_SCREEN_PORTRAIT } from '@/data/ambience'
 import { ATTENTION, Ambient } from '@/systems/ambient'
+import { Broom, BROOM_MS } from '@/systems/broom'
+import { Footsteps } from '@/systems/footsteps'
 import { OUTLINE_PATHS, HIT_PADDING, OUTLINE_OFFSET } from '@/data/outlines'
 import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
@@ -24,105 +26,107 @@ import { audio } from '@/systems/audio'
 import { save } from '@/systems/storage'
 import { log } from '@/systems/log'
 import { artworkById, wallSrc, aspectOf } from '@/data/artwork'
+import type { Mount } from '@/data/artwork'
 import { getProject } from '@/data/projects'
 import { mountNpc, npcAllowed, seededRandom, type NpcHandle } from '@/scenes/npc'
-import { Crowd } from '@/systems/crowd'
+import { Crowd, type CrowdMember } from '@/systems/crowd'
 import { Stage, OPENING_CAST } from '@/systems/stage'
 import { Faces } from '@/systems/faces'
 import { CrewInteractions } from '@/systems/interactions'
 import { pointNamed, navFor } from '@/data/navigation'
 
-/**
- * How crooked this sheet is, in degrees. Small, and the same every time: a
- * tilt that changed between two renders would look like the wall shivering.
- */
-function tiltOf(id: string): number {
-  let n = 0
-  for (let i = 0; i < id.length; i++) n = (n * 31 + id.charCodeAt(i)) % 1000
-  return ((n % 17) - 8) / 10
-}
+/** The frame's own edge, in world units, by how the piece is mounted. */
+const MOUNT_EDGE: Record<Mount, number> = { poster: 0, print: 3, wood: 6 }
 
 /**
- * Print a real piece of the studio's work onto the sheet of paper a painted
- * poster is occupying.
+ * Hang a real piece of the studio's work over the painted thing in its place.
  *
- * The sheet is the object's rect, because that is the painted paper it has to
- * cover. The picture is not: it is laid into the sheet at the proportions it
- * was drawn at and nothing is cut off, so a 9:16 key visual stands tall with
- * paper showing either side of it and a 16:9 background lies wide with the
- * project's name set underneath. Which is what a printed sheet looks like.
+ * The frame is the picture's shape, full stop: there is no sheet of paper
+ * around it for a mismatched shape to show through. It is sized to *cover*
+ * the painted poster or frame underneath — the smallest box at the picture's
+ * own aspect that is at least as big as the painted one in both directions —
+ * so nothing painted peeks out and nothing of the picture is cut off.
  *
- * Everything is in world units. The camera scales the room, so this is the
- * same on a phone and on a desk.
+ * The name goes on a small memo pinned over the bottom corner, not on a strip
+ * of paper under the picture; that strip was most of what made the wall read
+ * as four identical cards.
+ *
+ * Everything is in world units; the camera scales the room.
  */
 function hangPrint(obj: { rect: { w: number; h: number }; artwork?: string }, pad: number): HTMLElement | null {
   const piece = obj.artwork ? artworkById(obj.artwork) : undefined
   if (!piece) return null
   const project = getProject(piece.projectId)
-  // A few units bigger than the painted poster all round, because the sheet
-  // is tilted and a tilted rectangle reaches past its own corners. Four is
-  // enough for the angle below and well inside the gap to the next sheet.
+  const edge = MOUNT_EDGE[piece.mount]
+  // Past the painted thing by a few units all round: the sheet is tilted, and
+  // a tilted rectangle's corners fall inside its own bounding box.
   const bleed = 4
-  const w = obj.rect.w + bleed * 2
-  const h = obj.rect.h + bleed * 2
-  const margin = Math.max(4, Math.round(Math.min(w, h) * 0.05))
-  // The name always gets a line. Anything the picture does not use is given
-  // to that line rather than left as an accidental gap at the bottom.
-  const floor = Math.max(18, Math.round(h * 0.09))
-  const boxW = w - margin * 2
-  const boxH = h - margin * 2 - floor
-  const scale = Math.min(boxW / piece.width, boxH / piece.height)
-  const imgW = Math.round(piece.width * scale)
-  const imgH = Math.round(piece.height * scale)
-  // Paper left over goes above the picture as well as below it, a little more
-  // below than above: a print mounted dead centre looks low, and a wide
-  // picture pinned to the top of a tall sheet looks like it slipped.
-  const slack = boxH - imgH
-  const imgTop = margin + Math.round(slack * 0.42)
+  const needW = obj.rect.w + bleed * 2
+  const needH = obj.rect.h + bleed * 2
+  const aspect = aspectOf(piece)
+  // Cover: the picture (inside its frame edge) at its own shape, big enough
+  // for both directions.
+  let imgH = needH - edge * 2
+  let imgW = imgH * aspect
+  if (imgW + edge * 2 < needW) {
+    imgW = needW - edge * 2
+    imgH = imgW / aspect
+  }
+  imgW = Math.round(imgW)
+  imgH = Math.round(imgH)
+  const w = imgW + edge * 2
+  const h = imgH + edge * 2
 
   const sheet = document.createElement('span')
-  sheet.className = 'print'
+  sheet.className = `print print--${piece.mount}`
   sheet.dataset['artwork'] = piece.id
+  sheet.dataset['mount'] = piece.mount
   sheet.dataset['aspect'] = aspectOf(piece).toFixed(4)
   sheet.setAttribute('aria-hidden', 'true')
   Object.assign(sheet.style, {
-    left: `${pad - bleed}px`, top: `${pad - bleed}px`, width: `${w}px`, height: `${h}px`,
+    left: `${pad + Math.round((obj.rect.w - w) / 2)}px`,
+    top: `${pad + Math.round((obj.rect.h - h) / 2)}px`,
+    width: `${w}px`, height: `${h}px`,
     // Pinned by hand, one at a time. Fixed per piece so it never twitches.
-    transform: `rotate(${tiltOf(piece.id)}deg)`,
+    transform: `rotate(${piece.tilt}deg)`,
   })
+  // A custom property: Object.assign on style silently drops these.
+  sheet.style.setProperty('--edge', `${edge}px`)
 
   const img = document.createElement('img')
   img.className = 'print__img'
   img.src = wallSrc(piece)
   img.alt = ''
   img.decoding = 'async'
-  Object.assign(img.style, {
-    left: `${margin + Math.round((boxW - imgW) / 2)}px`,
-    top: `${imgTop}px`,
-    width: `${imgW}px`,
-    height: `${imgH}px`,
-  })
+  Object.assign(img.style, { left: `${edge}px`, top: `${edge}px`, width: `${imgW}px`, height: `${imgH}px` })
   sheet.append(img)
-
-  const cap = document.createElement('span')
-  cap.className = 'print__cap'
-  const capTop = imgTop + imgH
-  const capH = h - margin - capTop
-  Object.assign(cap.style, {
-    left: `${margin}px`, top: `${capTop}px`, width: `${boxW}px`, height: `${capH}px`,
-    fontSize: `${Math.max(9, Math.min(20, Math.round(w * 0.085)))}px`,
-  })
-  const name = document.createElement('b')
-  name.textContent = project?.title ?? ''
-  cap.append(name)
-  // A second line only where there is room for one. A tagline squeezed into
-  // eight pixels is a smudge, not a sentence.
-  if (capH >= 54 && project) {
-    const sub = document.createElement('i')
-    sub.textContent = project.taglineKo
-    cap.append(sub)
+  // The sheet comes in over the painted poster only once its picture is
+  // here. Before that the frame alone showed as a dark box on the wall for
+  // the first half-second of a visit (PHASE 7 capture) — the painted poster
+  // underneath is the right thing to show until the print has arrived.
+  const arrived = (): void => sheet.classList.add('is-in')
+  if (img.complete && img.naturalWidth > 0) arrived()
+  else {
+    img.addEventListener('load', arrived, { once: true })
+    img.addEventListener('error', arrived, { once: true })
   }
-  sheet.append(cap)
+
+  if (piece.mount === 'poster') {
+    for (const side of ['l', 'r']) {
+      const tape = document.createElement('i')
+      tape.className = `print__tape print__tape--${side}`
+      sheet.append(tape)
+    }
+  }
+
+  // The name, on a scrap of paper pinned over the lower corner.
+  const memo = document.createElement('span')
+  memo.className = 'print__memo'
+  memo.textContent = project?.title ?? ''
+  Object.assign(memo.style, {
+    fontSize: `${Math.max(8, Math.min(15, Math.round(Math.min(w, h * 0.7) * 0.075)))}px`,
+  })
+  sheet.append(memo)
   return sheet
 }
 
@@ -136,6 +140,26 @@ const PHONE_CREW = 3
  * on a phone held upright, where the whole strip is in view.
  */
 const ON_STAGE = { landscape: 3, portrait: 2 }
+
+/** Which light comes on in the room while the visitor has a thing open. */
+const REACT_LIGHT: Readonly<Record<string, string>> = {
+  pc: 'pc', tv: 'tv', fridge: 'fridge', radio: 'radio', cabinet: 'cabinet', 'outside-door': 'moon',
+}
+
+/**
+ * Depth (PHASE 6). The plate is the middle distance and moves with the
+ * camera; the sky through the window is behind it and moves a little less,
+ * the things standing on the boards are in front and move a little more.
+ * Fractions of the camera's distance from the middle of the room, so at
+ * the far wall of a desk-sized view they come to about a dozen pixels and
+ * nowhere near a lurch. Halved on a phone held upright, where the room is
+ * a strip; nearly off on one held sideways, where the view is already most
+ * of the room; off entirely for anyone who asked for less motion.
+ */
+const PARALLAX = { bg: 0.022, fg: 0.012 }
+
+/** How tall the broom stands, in world units: a little over a dokkaebi. */
+const BROOM_HEIGHT = { landscape: 172, portrait: 160 }
 import { CHARACTERS } from '@/data/characters'
 import { spritesFor } from '@/data/sprites'
 import type { WorldLayout, WorldObject } from '@/types/world'
@@ -158,6 +182,25 @@ export interface GarageHandle {
    * glow under the locked door. Nothing moves; only the light changes.
    */
   setWorld(world: string | null): void
+  /** Open or shut a two-state thing (the parcel) from outside the room. */
+  setThingOpen(id: string, open: boolean): void
+  /**
+   * The thing is being used by the visitor: it lights up in the room (the
+   * monitor's spill, the tube's flicker, the fridge's inside, the radio's
+   * dial) and stays lit until they are done. Separate from the room's own
+   * ambient flickers, which may come and go underneath.
+   */
+  reactObject(id: string, on: boolean): void
+  /** Where a thing is on screen right now, for whatever grows out of it. */
+  screenRectOf(id: string): DOMRect | null
+  /**
+   * The door in the bookcase (PHASE 11): how far the three games have got,
+   * whether it is open, and — once — the moment it opens: starlight through
+   * the seam, the cabinet's face giving a little, the sound.
+   */
+  setSecret(state: { readonly have: number; readonly need: number; readonly unlocked: boolean }, celebrate: boolean): void
+  /** Touched while locked: the seam shows for a moment. No message. */
+  hintSecret(): void
   readonly world: WorldLayout
   destroy(): void
 }
@@ -219,13 +262,47 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   let parked: { x: number; y: number } | null = null
   /** Things with two states that have been opened. Kept across a rebuild on rotation. */
   const opened = new Set<string>()
+  /**
+   * A thing with two states (the parcel), set open or shut — from its own
+   * toggle, or from the panel that shows what is in it. Opening the parcel
+   * brings whoever is nearest and free over to see.
+   */
+  const setOpen = (id: string, now: boolean): void => {
+    const obj = world.objects.find((o) => o.id === id)
+    if (!obj) return
+    if (now) opened.add(id)
+    else opened.delete(id)
+    const el = roomEl.querySelector<HTMLElement>(`[data-object="${id}"]`)
+    el?.classList.toggle('is-open', now)
+    // A pressed state only where the thing is a switch; the parcel opens a
+    // panel now, and a dialog button is not a toggle.
+    if (obj.action.kind === 'toggle') el?.setAttribute('aria-pressed', String(now))
+    if (now && id === 'parcel') {
+      const spot = navFor(world.height > world.width).points.find((p) => p.objectId === 'parcel')
+      if (spot) {
+        const cx = obj.rect.x + obj.rect.w / 2
+        const free = crew
+          .filter((c) => !c.away && (c.state === 'IDLE' || c.state === 'LOOK' || c.state === 'CHOOSE_TARGET' || c.state === 'INTERACT'))
+          .sort((a, b) => Math.abs(a.at.x - cx) - Math.abs(b.at.x - cx))
+        for (const one of free) if (Math.abs(one.at.x - cx) < 1100 && one.summon(spot)) break
+      }
+    }
+  }
   let world: WorldLayout = worldFor(false)
   let scale = 1
   /** The visible window, in world units. Kept so the crew can be culled. */
   let viewW = 0
   let viewH = 0
   let lights = new Map<string, HTMLElement>()
+  /** The moving pieces of the plate, by id, for the handle. */
+  let roomBits = new Map<string, HTMLElement>()
   let ambient: Ambient | null = null
+  let broom: Broom | null = null
+  let footsteps: Footsteps | null = null
+  /** The thing the visitor has lit up, so the broom keeps away from it. */
+  let activeObject: string | null = null
+  /** How much depth the room gets, by layout. See PARALLAX. */
+  let parallax = 1
   let built = false
   let paused = false
   const keys = new Set<string>()
@@ -316,6 +393,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     // The small movements in the painting itself (src/data/ambience.ts):
     // pieces of the plate over the plate, each with its own little motion.
     const bits = new Map<string, HTMLElement>()
+    roomBits = bits
     // The pieces of plate that move — the pencils, the magnet, the note — are
     // cut out of the landscape plate by rect and have no portrait twin.
     if (wide) {
@@ -378,7 +456,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     wash.className = 'garage__wash'
     wash.setAttribute('aria-hidden', 'true')
     roomEl.append(wash)
-    const door = world.objects.find((o) => o.id === 'secret-door')
+    const door = world.objects.find((o) => o.id === 'outside-door')
     if (door) {
       const spill = document.createElement('div')
       spill.className = 'garage__doorlight'
@@ -485,7 +563,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
           open.decoding = 'async'
           fit(open)
           el.append(open)
-          el.setAttribute('aria-pressed', String(opened.has(obj.id)))
+          if (obj.action.kind === 'toggle') el.setAttribute('aria-pressed', String(opened.has(obj.id)))
           el.classList.toggle('is-open', opened.has(obj.id))
         }
       }
@@ -496,22 +574,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         if (obj.action.kind === 'toggle') {
           // Nothing opens. The thing itself changes, and stays changed —
           // through a rebuild on rotation as well.
-          const now = !opened.has(obj.id)
-          if (now) opened.add(obj.id)
-          else opened.delete(obj.id)
-          el.classList.toggle('is-open', now)
-          el.setAttribute('aria-pressed', String(now))
-          // Opened: whoever is nearest and free comes over to see what is in it.
-          if (now && obj.id === 'parcel') {
-            const spot = navFor(world.height > world.width).points.find((p) => p.objectId === 'parcel')
-            if (spot) {
-              const cx = obj.rect.x + obj.rect.w / 2
-              const free = crew
-                .filter((c) => !c.away && (c.state === 'IDLE' || c.state === 'LOOK' || c.state === 'CHOOSE_TARGET' || c.state === 'INTERACT'))
-                .sort((a, b) => Math.abs(a.at.x - cx) - Math.abs(b.at.x - cx))
-              for (const one of free) if (Math.abs(one.at.x - cx) < 1100 && one.summon(spot)) break
-            }
-          }
+          setOpen(obj.id, !opened.has(obj.id))
           return
         }
         opts.onObject?.(obj)
@@ -549,6 +612,9 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     cast = null
     ambient?.destroy()
     ambient = null
+    broom?.stop()
+    broom = null
+    footsteps = null
     if (npcAllowed()) {
       // Whoever has rendered frames walks; the rest are still turnarounds and
       // would stand about instead. As their frames land they join the crew
@@ -589,15 +655,44 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
             run: (on) => {
               toggle('tv')(on)
               bits.get('tvflicker')?.classList.toggle('is-live', on)
+              // POKO, mostly, glances at it (src/systems/interactions.ts).
+              if (on) scenes?.notice('tvStatic')
             },
           })
           for (const b of BITS) {
             ambient.add({
               id: b.id, every: b.every, duration: b.duration,
               priority: ATTENTION.background, restless: true,
-              run: (on) => bits.get(b.id)?.classList.toggle('is-live', on),
+              run: (on) => {
+                bits.get(b.id)?.classList.toggle('is-live', on)
+                // The lantern on the shelf swinging is worth going to see.
+                if (on && b.id === 'shelfLantern') scenes?.notice('shelfLantern')
+              },
             })
           }
+          // The fridge's compressor kicks in: its light lifts for a moment
+          // and whoever is near hears it. No sound of its own — none was
+          // delivered, and nothing here is invented.
+          if (lights.has('fridge')) ambient.add({
+            id: 'fridgeClick', every: { min: 50000, max: 120000 }, duration: 700,
+            priority: ATTENTION.object, notBefore: 20000,
+            run: (on) => {
+              toggle('fridge')(on)
+              if (on) scenes?.notice('fridgeClick')
+            },
+          })
+          // The monitor beeps: a short lift of its light, the small click the
+          // user delivered for it, and MOMO looks round.
+          ambient.add({
+            id: 'pcBeep', every: { min: 45000, max: 110000 }, duration: 500,
+            priority: ATTENTION.object, notBefore: 16000,
+            run: (on) => {
+              lights.get('pc')?.classList.toggle('is-beep', on)
+              if (!on) return
+              audio.play('pc_click', 0.12)
+              scenes?.notice('pcBeep')
+            },
+          })
           ambient.add({
             id: 'steam', every: { min: 16000, max: 40000 }, duration: 6500,
             priority: ATTENTION.background, restless: true,
@@ -651,6 +746,10 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         // door, how close two may stand, who may speak.
         crowd = new Crowd({ narrow: portrait })
         const onStage = portrait ? ON_STAGE.portrait : ON_STAGE.landscape
+        // Feet on boards. One gate for the whole crew, so two of them
+        // walking is a little more sound than one and never a drum roll.
+        footsteps = new Footsteps({ play: (v) => audio.play('crew_step', v) })
+        const steps = footsteps
         crew = here.map((c, i) =>
           mountNpc(roomEl, c, portrait, {
             debug: params.get('npc') === 'debug',
@@ -663,6 +762,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
             // Spread round the cycle so five of them do not breathe in unison.
             phase: i / Math.max(here.length, 1),
             order: i,
+            onStep: (on) => steps.stride(on),
             // Touching one stops it and makes it look up; the room's part is
             // to acknowledge that quietly. No bubble, no name tag, no panel —
             // the dokkaebi are not another menu.
@@ -703,7 +803,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
             return { at, objectId, ...(spot ? { spot } : {}) }
           }
           const places: Record<string, ReturnType<typeof place>> = {}
-          for (const key of ['parcel', 'fridge', 'pc', 'tv']) {
+          for (const key of ['parcel', 'fridge', 'pc', 'tv', 'shelf', 'cabinet', 'radio']) {
             const p = place(key)
             if (p) places[key] = p
           }
@@ -719,13 +819,84 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         // lives here, and it is over in a second. Two faces for it, not one,
         // and not left to whichever way the seeded homes happened to point.
         faces.ensure(Math.min(2, onStage))
-        // Somebody notices the visitor coming in: whoever is nearest the
-        // middle of the room, a moment after the door.
+        // Somebody notices the visitor coming in: MOMO, who is the one at
+        // the door in the entrance and the one whose desk faces it (PHASE 7);
+        // failing MOMO, whoever is nearest the middle of the room.
         const centre = world.start.x
-        const welcome = [...crew]
-          .filter((c) => !c.away)
-          .sort((a, b) => Math.abs(a.at.x - centre) - Math.abs(b.at.x - centre))[0]
+        const welcome = crew.find((c) => c.id === 'momo' && !c.away)
+          ?? [...crew]
+            .filter((c) => !c.away)
+            .sort((a, b) => Math.abs(a.at.x - centre) - Math.abs(b.at.x - centre))[0]
         if (welcome) later(() => welcome.greetVisitor(), 700)
+        // The broom that sweeps on its own (PHASE 6, src/systems/broom.ts).
+        // One of the room's events, on the same schedule as the rest; where
+        // it sweeps is chosen when it fires, from where the crew are, and if
+        // nowhere is clear it stays put. While it is out it is a body in the
+        // crowd, so anyone walking that way goes round it.
+        if (ambient) {
+          const h = portrait ? BROOM_HEIGHT.portrait : BROOM_HEIGHT.landscape
+          const w = Math.round(h * (260 / 622))
+          const el = document.createElement('img')
+          el.className = 'garage__broom'
+          el.src = '/assets/images/garage/prop_broom.webp'
+          el.alt = ''
+          el.decoding = 'async'
+          el.setAttribute('aria-hidden', 'true')
+          el.style.height = `${h}px`
+          el.style.width = `${w}px`
+          roomEl.append(el)
+          let at = { x: 0, y: 0 }
+          const body: CrowdMember = {
+            id: 'broom', social: 0, radius: 0.9, seated: false, passing: false, busy: true,
+            get at() { return at },
+            greet() { /* a broom does not */ },
+          }
+          const sweeper = new Broom({
+            zones: portrait ? BROOM_ZONES_PORTRAIT : BROOM_ZONES,
+            onSweep: () => audio.play('broom', 0.2),
+            paint: (s) => {
+              if (!s) {
+                el.classList.remove('is-live')
+                delete el.dataset['phase']
+                el.style.opacity = '0'
+                crowd?.leave('broom')
+                return
+              }
+              at = { x: s.x, y: s.y }
+              if (!el.classList.contains('is-live')) {
+                el.classList.add('is-live')
+                crowd?.join(body)
+              }
+              if (el.dataset['phase'] !== s.phase) el.dataset['phase'] = s.phase
+              el.style.transform = `translate3d(${Math.round(s.x - w / 2)}px, ${Math.round(s.y - h)}px, 0)`
+              el.style.opacity = s.opacity.toFixed(2)
+              el.style.zIndex = String(depthOf(s.y))
+            },
+          })
+          broom = sweeper
+          const bodies = (): { x: number; y: number; headingX: number | null }[] =>
+            crew.filter((c) => !c.away).map((c) => ({
+              x: c.at.x, y: c.at.y,
+              headingX: c.target ? (pointNamed(navFor(portrait), c.target)?.x ?? null) : null,
+            }))
+          const avoidRect = (): { x: number; y: number; w: number; h: number } | null => {
+            const o = activeObject ? world.objects.find((q) => q.id === activeObject) : undefined
+            return o ? o.rect : null
+          }
+          let zone = sweeper.pickZone([], null)
+          ambient.add({
+            id: 'broom', every: { min: 45000, max: 110000 }, duration: BROOM_MS,
+            priority: ATTENTION.object, restless: true, notBefore: 18000,
+            ready: () => {
+              zone = sweeper.pickZone(bodies(), avoidRect(), h)
+              return zone !== null
+            },
+            run: (on) => {
+              if (on && zone) sweeper.start(zone)
+              else sweeper.stop()
+            },
+          })
+        }
         // The bench drops something now and then, and whoever is near jumps.
         if (!portrait && ambient) {
           const bench = pointNamed(navFor(false), 'workbench-a') ?? { x: 2116, y: 1006 }
@@ -803,6 +974,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     viewW = r.width / scale
     viewH = r.height / scale
     stage.style.setProperty('--scale', String(scale))
+    parallax = portrait ? 0.5 : r.height < 500 ? 0.35 : 1
 
     if (changed) {
       build()
@@ -828,6 +1000,16 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     const x = -camera.viewX * scale
     const y = -camera.viewY * scale
     roomEl.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`
+    // Depth: the sky hangs back a little, the things on the boards come
+    // forward a little, both from how far the camera is from the middle.
+    const wide = world.width > world.height
+    const k = motion.reduced ? 0 : parallax
+    const along = wide ? camera.x - world.width / 2 : camera.y - world.height / 2
+    const fg = (-along * PARALLAX.fg * k).toFixed(1)
+    roomEl.style.setProperty('--fgx', wide ? `${fg}px` : '0px')
+    roomEl.style.setProperty('--fgy', wide ? '0px' : `${fg}px`)
+    const sky = lights.get('sky')
+    if (sky) sky.style.transform = `translate3d(${(along * PARALLAX.bg * k).toFixed(1)}px, 0, 0)`
   }
 
   /**
@@ -921,6 +1103,16 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     keys.delete(e.key.toLowerCase())
   }
 
+  /** Bring the camera to a thing, if it is not already in the view. */
+  const lookAt = (obj: WorldObject): void => {
+    const cx = obj.rect.x + obj.rect.w / 2
+    const cy = obj.rect.y + obj.rect.h / 2
+    const inView =
+      cx >= camera.viewX + 40 && cx <= camera.viewX + viewW - 40 &&
+      cy >= camera.viewY + 40 && cy <= camera.viewY + viewH - 40
+    if (!inView) camera.moveTo(cx, cy)
+  }
+
   // Keyboard: focus landing on a thing outside the view brings the camera to
   // it, since the stage itself can no longer be scrolled there.
   const onFocusIn = (e: FocusEvent): void => {
@@ -928,13 +1120,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     if (!t?.classList.contains('thing') || paused) return
     const id = t.dataset['object']
     const obj = world.objects.find((o) => o.id === id)
-    if (!obj) return
-    const cx = obj.rect.x + obj.rect.w / 2
-    const cy = obj.rect.y + obj.rect.h / 2
-    const inView =
-      cx >= camera.viewX + 40 && cx <= camera.viewX + viewW - 40 &&
-      cy >= camera.viewY + 40 && cy <= camera.viewY + viewH - 40
-    if (!inView) camera.moveTo(cx, cy)
+    if (obj) lookAt(obj)
   }
   roomEl.addEventListener('focusin', onFocusIn)
   off.push(() => roomEl.removeEventListener('focusin', onFocusIn))
@@ -978,10 +1164,12 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
           scenes?.attention ?? 0,
         ))
       crowd?.step(Math.min(info.delta, 64))
+      footsteps?.step(Math.min(info.delta, 64))
       if (!paused) {
         cast?.step(Math.min(info.delta, 64))
         scenes?.step(Math.min(info.delta, 64))
         faces?.step(Math.min(info.delta, 64))
+        broom?.step(Math.min(info.delta, 64))
       }
       // What is going on between them, said out loud on the room. Written
       // only when it changes: the room is not a log. A test watches this
@@ -1068,11 +1256,49 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       scenes?.yieldTo(id)
       // Remember where the visitor was looking before we moved them.
       if (parked === null) parked = { x: camera.x, y: camera.y }
-      // On a wide screen the monitor's panel stands to the right of the room
-      // (immersive.css), so the camera aims a little right of the PC and
-      // leaves the PC itself in the half that stays visible.
-      const aside = id === 'pc' && scene.clientWidth >= 1000 ? viewW * 0.24 : 0
-      camera.moveTo(obj.rect.x + obj.rect.w / 2 + aside, obj.rect.y + obj.rect.h / 2)
+      camera.moveTo(obj.rect.x + obj.rect.w / 2, obj.rect.y + obj.rect.h / 2)
+    },
+    setThingOpen(id: string, open: boolean): void {
+      setOpen(id, open)
+    },
+    reactObject(id: string, on: boolean): void {
+      if (on) activeObject = id
+      else if (activeObject === id) activeObject = null
+      roomEl.querySelector(`[data-object="${id}"]`)?.classList.toggle('is-active', on)
+      const light = REACT_LIGHT[id]
+      if (light) lights.get(light)?.classList.toggle('is-on', on)
+      if (id === 'tv') roomBits.get('tvflicker')?.classList.toggle('is-live', on)
+    },
+    screenRectOf(id: string): DOMRect | null {
+      return roomEl.querySelector(`[data-object="${id}"]`)?.getBoundingClientRect() ?? null
+    },
+    setSecret(state, celebrate): void {
+      const el = roomEl.querySelector<HTMLElement>('[data-object="secret-door"]')
+      if (!el) return
+      el.dataset['secret'] = state.unlocked ? 'unlocked' : 'locked'
+      el.classList.toggle('is-unlocked', state.unlocked)
+      const cap = el.querySelector('.thing__label')
+      if (cap) cap.textContent = state.unlocked ? '비밀문 · 열림' : `비밀문 · ★ ${state.have}/${state.need}`
+      el.setAttribute('aria-label', state.unlocked ? '비밀문' : `비밀문 · 별 ${state.have}/${state.need}`)
+      if (!celebrate) return
+      // Once, and seen: the room opens on the desk, and on a wide screen the
+      // bookcase is out of the view, so the camera goes to the door first.
+      const obj = world.objects.find((o) => o.id === 'secret-door')
+      if (obj) lookAt(obj)
+      el.classList.add('is-unlocking')
+      lights.get('bookcase')?.classList.add('is-on')
+      later(() => {
+        el.classList.remove('is-unlocking')
+        lights.get('bookcase')?.classList.remove('is-on')
+      }, 2600)
+    },
+    hintSecret(): void {
+      const el = roomEl.querySelector<HTMLElement>('[data-object="secret-door"]')
+      if (!el) return
+      el.classList.remove('is-hinting')
+      void el.offsetWidth
+      el.classList.add('is-hinting')
+      later(() => el.classList.remove('is-hinting'), 900)
     },
     setWorld(w: string | null): void {
       if (w) scene.dataset['world'] = w
@@ -1095,6 +1321,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     destroy(): void {
       for (const one of crew) one.destroy()
       ambient?.destroy()
+      broom?.stop()
+      broom = null
       crew = []
       crowd = null
       scenes = null

@@ -1,0 +1,159 @@
+/* ── The Secret Archive ───────────────────────────────────────────────────
+   The dokkaebi's star-lit rest room. The painted plate and its things are
+   the room; what is added is a few stars that breathe, a shooting star now
+   and then, the lantern's own light, and the quiet of Healing Mode.
+   ──────────────────────────────────────────────────────────────────────── */
+.archive{
+  position:fixed;
+  inset:0;
+  overflow:clip;
+  background:#0e1024;
+  touch-action:none;
+  cursor:grab;
+  user-select:none;
+  z-index:1;
+}
+.archive[hidden]{display:none}
+.archive.is-dragging{cursor:grabbing}
+.archive.is-paused{cursor:default}
+.archive__stage{position:absolute;inset:0;overflow:clip}
+.archive__world{
+  position:absolute;left:0;top:0;
+  transform-origin:0 0;
+  will-change:transform;
+  background-repeat:no-repeat;
+  background-size:100% 100%;
+  background-color:#0e1024;
+}
+/* The places share the playground's ring and label (.spot); the ring here
+   is softer and cooler, the way the room's light is. */
+.archive .spot__ring{
+  box-shadow:0 0 0 2px rgba(255,244,214,.85), 0 0 0 6px rgba(20,18,40,.3), 0 0 24px rgba(255,226,170,.35);
+}
+.archive .spot__label{background:rgba(18,16,34,.8)}
+
+/* Stars in the glass that breathe, each on its own beat. */
+.archive__twinkle{
+  position:absolute;
+  width:6px;height:6px;margin:-3px 0 0 -3px;
+  border-radius:50%;
+  background:#fff8e6;
+  box-shadow:0 0 8px 2px rgba(255,244,214,.55);
+  pointer-events:none;
+  z-index:12;
+  opacity:.35;
+  animation:archive-twinkle 4.6s ease-in-out infinite;
+}
+@keyframes archive-twinkle{50%{opacity:.95;scale:1.25}}
+.archive.is-healing .archive__twinkle{animation-duration:3.2s}
+
+/* The shooting star: the user's overlay, whole, over the glass; drawn in
+   from the top left and gone. Never on by itself. */
+.archive__shooting{
+  position:absolute;
+  max-width:none;
+  pointer-events:none;
+  z-index:13;
+  opacity:0;
+  transform-origin:50% 50%;
+}
+.archive__shooting.is-falling{animation:archive-shoot 2600ms cubic-bezier(.25,0,.6,1) 1}
+@keyframes archive-shoot{
+  0%{opacity:0;translate:-10% 6%;scale:.8}
+  18%{opacity:.95}
+  80%{opacity:.85}
+  100%{opacity:0;translate:12% -8%;scale:1.05}
+}
+
+/* The lantern's own light: a warm wash, a few percent, and only when lit. */
+.archive__lamp{
+  position:absolute;
+  pointer-events:none;
+  border-radius:50%;
+  z-index:11;
+  mix-blend-mode:screen;
+  background:radial-gradient(closest-side,rgba(255,206,140,.32),transparent);
+  opacity:0;
+  transition:opacity 700ms ease;
+}
+.archive__lamp.is-on{opacity:1}
+
+/* The jar: a handful of tiny stars, once, and then it settles. */
+.archive__mote{
+  position:absolute;
+  width:5px;height:5px;margin:-2px 0 0 -2px;
+  border-radius:50%;
+  background:#fff3cf;
+  box-shadow:0 0 6px 2px rgba(255,236,190,.7);
+  pointer-events:none;
+  z-index:14;
+  opacity:0;
+  animation:archive-mote 1600ms ease-out var(--delay,0ms) forwards;
+}
+@keyframes archive-mote{
+  0%{opacity:0;translate:0 0;scale:.5}
+  20%{opacity:1}
+  100%{opacity:0;translate:var(--dx,0px) var(--dy,-40px);scale:1.1}
+}
+.archive .spot--star-jar.is-glowing .spot__ring{opacity:1;box-shadow:0 0 0 2px rgba(255,244,214,.6), 0 0 34px 8px rgba(255,236,190,.45)}
+
+/* The foreground, as everywhere: over everything, never a target. */
+.archive__front{position:absolute;left:0;bottom:0;max-width:none;pointer-events:none;z-index:40}
+
+/* ── The telescope: looking up ─────────────────────────────────────────── */
+/* The glass fills the window. The plate itself, cropped to its sky and
+   brought up close; nothing drawn that the painting does not have. */
+.archive__sky{
+  position:fixed;
+  inset:0;
+  z-index:900;
+  background-repeat:no-repeat;
+  opacity:0;
+  transition:opacity 700ms ease;
+  pointer-events:none;
+  overflow:hidden;
+}
+.archive__sky.is-open{opacity:1;pointer-events:auto;cursor:zoom-out}
+.archive__sky .archive__shooting{position:absolute;left:0;top:10%;width:100%}
+.archive__skyHint{
+  position:absolute;left:50%;bottom:max(24px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  margin:0;padding:8px 14px;border-radius:999px;
+  background:rgba(18,16,34,.6);color:rgba(255,246,232,.9);font-size:.76rem;letter-spacing:.06em;white-space:nowrap;
+}
+.archive__skyClose{
+  position:absolute;top:max(14px,env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));
+  width:44px;height:44px;border:0;border-radius:50%;background:rgba(18,16,34,.6);color:#fff6e4;font-size:1.1rem;cursor:pointer;
+}
+.archive__skyClose:focus-visible{outline:2px solid #ffd27a;outline-offset:2px}
+
+/* ── Healing Mode ──────────────────────────────────────────────────────── */
+/* What goes: the nav, the labels, the rings. What stays: the room, the
+   stars, the music. Any touch or key brings the rest back. */
+body.is-healing .site-nav{opacity:0;pointer-events:none;transition:opacity 900ms ease}
+.archive.is-healing .spot__label,.archive.is-healing .spot__ring{opacity:0 !important}
+.archive.is-healing{cursor:default}
+.archive__rest{
+  position:fixed;left:50%;bottom:max(26px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  z-index:905;margin:0;padding:9px 16px;border-radius:999px;
+  background:rgba(18,16,34,.55);color:rgba(255,246,232,.88);font-size:.76rem;letter-spacing:.06em;white-space:nowrap;
+  opacity:0;transition:opacity 900ms ease;pointer-events:none;
+}
+.archive__rest.is-in{opacity:1}
+.archive__rest[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){
+  .archive__twinkle{animation:none;opacity:.6}
+  .archive__shooting.is-falling{animation:archive-shoot-still 1600ms linear 1}
+  @keyframes archive-shoot-still{0%{opacity:0}30%{opacity:.9}100%{opacity:0}}
+  .archive__mote{animation-duration:900ms}
+  .archive__sky,.archive__lamp,.archive__rest{transition:none}
+}
+/* The memory box and the music box, as things that grew out of their place. */
+.prop--archive .memory{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:.4em;padding:3%;container-type:inline-size;align-items:center;justify-items:center}
+.prop--archive .memory__img{max-width:100%;max-height:100%;width:auto;height:auto;border:.5cqi solid #fbf5e6;box-shadow:0 6px 16px rgba(10,8,20,.6);transform:rotate(-1.2deg);background:#2b231d}
+.prop--archive .memory__note{margin:0;text-align:center;color:#fff6e4;text-shadow:0 1px 3px rgba(10,8,20,.8);font:600 clamp(10px,3.6cqi,14px)/1.4 var(--sans)}
+.prop--archive .memory__when{display:block;font:600 clamp(9px,3cqi,12px)/1.3 var(--mono);letter-spacing:.08em;opacity:.8}
+.prop--archive .musicbox{position:absolute;inset:0;display:grid;place-items:center;container-type:inline-size}
+.prop--archive .musicbox__line{margin:0;text-align:center;color:#fff6e4;text-shadow:0 1px 3px rgba(10,8,20,.8);font:600 clamp(10px,4cqi,14px)/1.4 var(--sans)}
+.prop--archive.is-playing .prop__art{animation:musicbox-sway 2400ms ease-in-out infinite}
+@keyframes musicbox-sway{0%,100%{rotate:0deg}50%{rotate:1.2deg}}
+@media (prefers-reduced-motion:reduce){.prop--archive.is-playing .prop__art{animation:none}}

@@ -15,7 +15,15 @@
 .game__hudItem{display:grid;justify-items:end;gap:2px}
 .game__hudLabel{font:600 .5rem/1 var(--mono);letter-spacing:.14em;opacity:.55}
 .game__hudItem b{font:700 1rem/1 var(--mono);font-variant-numeric:tabular-nums}
-.game__quit{width:34px;height:34px;border:0;border-radius:8px;background:rgba(255,255,255,.08);color:inherit;font-size:1rem;cursor:pointer}
+/* The one control that is always there, so it is the one that has to be
+   reachable with a thumb. 44 is the floor every other hit area in this
+   project is held to, and the ✕ was 34. */
+.game__quit{
+  width:44px;height:44px;min-width:44px;min-height:44px;
+  display:grid;place-items:center;
+  border:0;border-radius:10px;background:rgba(255,255,255,.08);
+  color:inherit;font-size:1.05rem;cursor:pointer;
+}
 .game__quit:hover,.game__quit:focus-visible{background:rgba(255,255,255,.18)}
 .game :focus-visible{outline:2px solid #ffd27a;outline-offset:2px}
 .game__box{position:relative;min-height:320px}
@@ -98,3 +106,318 @@
   .build__workDot{animation:none}
   .build__poko{transition:none}
 }
+
+/* Three, two, one. Big enough to read without looking for it, and gone
+   before it is in the way. */
+.game__count{
+  margin:0;
+  font:700 clamp(3rem,14vmin,6rem)/1 var(--mono);
+  color:#f4e7cd;
+  text-shadow:0 4px 18px rgba(20,12,6,.6);
+  animation:countPop 360ms ease-out;
+}
+@keyframes countPop{
+  from{transform:scale(.7);opacity:.2}
+  60%{transform:scale(1.06);opacity:1}
+  to{transform:scale(1);opacity:1}
+}
+@media (prefers-reduced-motion:reduce){
+  .game__count{animation:none}
+}
+
+/* What the round was worth, decided by the game and only shown here. */
+.game__stars{
+  margin:6px 0 0;
+  font-size:1.5rem;letter-spacing:.14em;color:#e8c169;
+  text-shadow:0 2px 6px rgba(30,18,6,.4);
+}
+
+/* ── 무궁화꽃이 피었습니다 — 부장님 감시 편 ─────────────────────────────
+   The room is the board. This layer is transparent and the garage is behind
+   it, still lit and still busy; what is added is two figures and a button. */
+.game-layer[data-game="mugunghwa"]{background:rgba(12,9,6,.26)}
+.game-layer[data-game="mugunghwa"] .game{
+  background:transparent;box-shadow:none;width:min(100vw,1100px);
+}
+.game-layer[data-game="mugunghwa"] .game__bar{
+  background:rgba(24,18,12,.74);border-radius:14px;backdrop-filter:blur(3px);
+  max-width:520px;margin:0 auto;
+}
+.game-layer[data-game="mugunghwa"] .game__box{background:transparent;min-height:0}
+
+.poko{position:relative;height:min(56vh,430px);min-height:260px}
+.poko__room{position:absolute;inset:0}
+
+/* POKO, along the back of the room. `--at` is how far across it is.
+   Deliberately not much bigger than the crew behind it: the boss is one of
+   them, not a billboard. */
+.poko__boss{
+  position:absolute;left:calc(var(--at,.2) * 100%);top:0;
+  width:clamp(64px,11%,118px);aspect-ratio:292/420;
+  transform:translateX(-50%);
+  transition:opacity 260ms ease;
+}
+.poko__bossImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;max-width:none}
+/* Right out of the picture: the long window, and it should look like one. */
+.poko__boss.is-gone{opacity:.18}
+.poko__boss[data-state="WARNING"]{filter:drop-shadow(0 0 10px rgba(255,210,122,.85))}
+.poko__boss[data-state="WATCHING"]{filter:drop-shadow(0 0 12px rgba(255,120,90,.9))}
+.poko__boss[data-state="CAUGHT"]{filter:drop-shadow(0 0 16px rgba(255,82,82,.95))}
+
+/* The glasses: an SVG in the frame's own 292x420 coordinates, laid exactly
+   over the drawing (src/games/poko/glasses.ts). Lenses are empty: the eyes
+   show through them. The rim is non-scaling-stroke so it is the same thin
+   line whether POKO is 64px wide or 120px. */
+.poko__glasses{
+  position:absolute;inset:0;width:100%;height:100%;
+  overflow:visible;pointer-events:none;
+  transition:transform 140ms ease-out;
+}
+/* Straightening them: up a couple of pixels, and the catch of light on the
+   rim comes up once. Never a flash, never a white lens. */
+.poko__glassHint{opacity:.34;transition:opacity 140ms ease-out}
+.poko__glasses.is-adjusting{transform:translateY(-2px)}
+.poko__glasses.is-adjusting .poko__glassHint{opacity:.92}
+
+.poko__bubble{
+  position:absolute;left:50%;top:-18%;transform:translateX(-50%);
+  padding:4px 10px;border-radius:12px;background:#f4e7cd;color:#3a2a1c;
+  font:700 .78rem/1 var(--mono);white-space:nowrap;
+}
+.poko__bubble[hidden]{display:none}
+
+/* What the boss is doing, said in words under it — and the warning as a bar
+   that runs out. The glint says something is happening; the bar says how
+   long you have. Both sit with the boss rather than across the room. */
+.poko__says{
+  position:absolute;left:50%;top:calc(clamp(64px,11%,118px) * 420 / 292 + 4px);
+  transform:translateX(-50%);margin:0;
+  padding:3px 9px;border-radius:9px;background:rgba(24,18,12,.72);
+  font:700 .64rem/1 var(--mono);letter-spacing:.08em;color:#f4e7cd;
+  white-space:nowrap;
+}
+.poko__warn{
+  position:absolute;left:50%;transform:translateX(-50%);
+  top:calc(clamp(64px,11%,118px) * 420 / 292 + 28px);
+  width:min(46%,220px);height:9px;border-radius:5px;
+  background:rgba(0,0,0,.5);overflow:hidden;
+}
+.poko__warn[hidden]{display:none}
+.poko__warn i{
+  display:block;height:100%;border-radius:5px;background:#ffd27a;
+  transform-origin:left;transform:scaleX(var(--left,1));
+}
+
+/* The player, at a bench at the front. Working is the back of a head at the
+   bench; slacking is turning round with a snack. Nobody could mistake one for
+   the other, which is the whole requirement. */
+.poko__player{
+  position:absolute;left:26%;bottom:6%;
+  width:clamp(76px,13%,140px);aspect-ratio:299/420;
+}
+.poko__playerImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;max-width:none}
+.poko__player[data-slacking="SLACK"]{filter:drop-shadow(0 0 12px rgba(168,230,184,.7))}
+.poko__prop{
+  position:absolute;right:-10%;top:32%;width:30%;aspect-ratio:1;
+  background:url('/assets/images/garage/prop_cup_ramen_open.webp') center/contain no-repeat;
+}
+.poko__prop[hidden]{display:none}
+
+/* One button, thumb-sized, and it says what it does. Never over the player:
+   the one thing you must be able to see is which of the two you are. */
+.poko__hold{
+  position:absolute;right:6%;bottom:4%;
+  min-width:180px;min-height:74px;padding:10px 22px;
+  display:grid;gap:2px;place-items:center;
+  border:2px solid rgba(255,255,255,.3);border-radius:18px;
+  background:rgba(255,210,122,.94);color:#2a2013;
+  font:inherit;cursor:pointer;touch-action:none;user-select:none;
+}
+.poko__hold b{font:700 1.05rem/1 inherit}
+.poko__hold span{font:600 .64rem/1 var(--mono);letter-spacing:.1em;opacity:.72}
+.poko__hold:active{background:#ffc04a;transform:scale(.97)}
+
+@media (prefers-reduced-motion:reduce){
+  .poko__glasses,.poko__glassHint{transition:none}
+  .poko__boss{transition:none}
+}
+
+/* A phone held upright is tall and narrow: the player goes above the button
+   rather than behind it, and both are bigger against the smaller width. */
+@media (max-width:560px){
+  .poko{height:min(62vh,520px)}
+  .poko__boss{width:clamp(72px,22%,120px)}
+  .poko__player{left:24%;bottom:23%;width:clamp(84px,26%,140px)}
+  .poko__hold{left:50%;right:auto;transform:translateX(-50%);bottom:2%;min-width:64%}
+  .poko__hold:active{transform:translateX(-50%) scale(.97)}
+}
+
+/* Sideways there is no height to spare at all. */
+@media (max-height:540px){
+  .poko{height:min(76vh,300px)}
+  .poko__boss{width:clamp(52px,9%,92px)}
+  .poko__player{left:20%;bottom:4%;width:clamp(62px,11%,104px)}
+  .poko__hold{right:3%;bottom:4%;left:auto;transform:none;min-width:148px;min-height:62px}
+  .poko__hold:active{transform:scale(.97)}
+  .poko__says{font-size:.58rem}
+}
+
+/* ── 도깨비 야식 심부름 ─────────────────────────────────────────────────
+   Somebody asks, four things are on the shelf, hand over the right one.
+   Everything on it came out of the fridge the room already has. */
+.snack{
+  display:grid;grid-template-rows:auto auto 1fr;gap:10px;
+  padding:14px 12px 18px;min-height:300px;align-content:start;
+}
+.snack__who{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
+.snack__whoImg{
+  width:clamp(64px,12vw,104px);aspect-ratio:299/420;object-fit:contain;max-width:none;
+  justify-self:start;
+}
+.snack__bubble{
+  grid-column:2;margin:0;padding:12px 16px;border-radius:16px 16px 16px 4px;
+  background:#f4e7cd;color:#2f2116;font:700 clamp(1rem,3.4vw,1.35rem)/1.25 inherit;
+}
+.snack__name{
+  grid-column:2;margin:0;font:600 .62rem/1 var(--mono);letter-spacing:.14em;opacity:.6;
+}
+.snack__run{
+  margin:0;justify-self:center;padding:3px 10px;border-radius:999px;
+  background:rgba(168,230,184,.18);color:#a8e6b8;
+  font:700 .66rem/1 var(--mono);letter-spacing:.1em;
+}
+.snack__run[hidden]{display:none}
+
+.snack__shelf{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-content:start;
+}
+.snack__item{
+  position:relative;display:grid;gap:6px;justify-items:center;
+  min-height:104px;padding:10px 6px 8px;
+  border:2px solid rgba(255,255,255,.16);border-radius:14px;
+  background:rgba(255,255,255,.07);color:inherit;font:inherit;cursor:pointer;
+}
+.snack__item:hover,.snack__item:focus-visible{background:rgba(255,255,255,.15)}
+.snack__item:active{transform:scale(.97)}
+.snack__art{width:min(56px,14vw);aspect-ratio:1;background:center/contain no-repeat}
+.snack__label{font:700 .8rem/1 inherit;text-align:center}
+.snack__key{
+  position:absolute;left:6px;top:6px;
+  width:18px;height:18px;display:grid;place-items:center;border-radius:5px;
+  background:rgba(0,0,0,.35);font:700 .6rem/1 var(--mono);opacity:.7;
+}
+/* Wrong: the shelf says so, and the clock has already taken the cost. */
+.snack__shelf.is-wrong{animation:snackNo 380ms ease}
+@keyframes snackNo{
+  20%{transform:translateX(-6px)}
+  50%{transform:translateX(5px)}
+  75%{transform:translateX(-3px)}
+  100%{transform:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .snack__shelf.is-wrong{animation:none;outline:2px solid #ff8a65;outline-offset:4px}
+}
+
+/* Narrow: two rows of two, and bigger things to hit. */
+@media (max-width:560px){
+  .snack__shelf{grid-template-columns:repeat(2,1fr);gap:12px}
+  .snack__item{min-height:120px}
+  .snack__art{width:min(64px,18vw)}
+}
+/* Sideways: one row, shorter. */
+@media (max-height:540px){
+  .snack{padding:8px 10px 10px;gap:6px;min-height:0}
+  .snack__whoImg{width:clamp(48px,8vw,72px)}
+  .snack__item{min-height:76px;padding:6px 4px}
+  .snack__art{width:min(38px,9vw)}
+  .snack__label{font-size:.7rem}
+}
+
+/* ── 택배 정리 ───────────────────────────────────────────────────────────
+   What came in this week, split between the five things being made. Every
+   pile carries the project's colour, its name and its own key art, so none of
+   this is a test of reading small print. */
+.parcel{
+  display:grid;grid-template-rows:1fr auto;gap:12px;
+  padding:14px 12px 16px;min-height:300px;
+}
+.parcel__belt{display:grid;place-items:center;gap:8px;align-content:center}
+.parcel__box{
+  position:relative;width:clamp(96px,18vw,150px);aspect-ratio:520/431;
+  translate:var(--dx,0) var(--dy,0);
+  cursor:grab;touch-action:none;
+}
+.parcel__box.is-held{cursor:grabbing;filter:drop-shadow(0 8px 16px rgba(0,0,0,.45));z-index:2}
+.parcel__boxImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;max-width:none;
+  pointer-events:none}
+/* The label, in the project's own colour, on the box. */
+.parcel__label{
+  position:absolute;left:50%;top:46%;transform:translate(-50%,-50%) rotate(-2deg);
+  padding:4px 10px;border-radius:6px;
+  background:var(--accent,#8a6f52);color:#fff;
+  font:700 clamp(.66rem,2.2vw,.9rem)/1 var(--mono);letter-spacing:.06em;
+  box-shadow:0 2px 5px rgba(0,0,0,.3);white-space:nowrap;pointer-events:none;
+}
+.parcel__run{
+  margin:0;padding:3px 10px;border-radius:999px;
+  background:rgba(168,230,184,.18);color:#a8e6b8;
+  font:700 .66rem/1 var(--mono);letter-spacing:.1em;
+}
+.parcel__run[hidden]{display:none}
+
+.parcel__piles{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
+.parcel__pile{
+  position:relative;display:grid;gap:4px;justify-items:center;align-content:start;
+  min-height:92px;padding:8px 4px 6px;
+  border:2px solid color-mix(in srgb,var(--accent,#8a6f52) 55%,transparent);
+  border-radius:14px;background:color-mix(in srgb,var(--accent,#8a6f52) 14%,transparent);
+  color:inherit;font:inherit;cursor:pointer;
+}
+.parcel__pile:hover,.parcel__pile:focus-visible,.parcel__pile.is-over{
+  background:color-mix(in srgb,var(--accent,#8a6f52) 34%,transparent);
+  border-color:var(--accent,#8a6f52);
+}
+.parcel__pileArt{
+  width:min(44px,10vw);aspect-ratio:2/3;border-radius:3px;
+  background:center/contain no-repeat,rgba(0,0,0,.2);
+}
+.parcel__pileName{font:700 .66rem/1.1 var(--mono);letter-spacing:.04em;text-align:center}
+.parcel__key{
+  position:absolute;left:5px;top:5px;width:17px;height:17px;
+  display:grid;place-items:center;border-radius:5px;
+  background:rgba(0,0,0,.38);font:700 .58rem/1 var(--mono);opacity:.75;
+}
+.parcel__piles.is-wrong{animation:parcelNo 380ms ease}
+@keyframes parcelNo{
+  20%{transform:translateX(-6px)}
+  50%{transform:translateX(5px)}
+  75%{transform:translateX(-3px)}
+  100%{transform:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .parcel__piles.is-wrong{animation:none;outline:2px solid #ff8a65;outline-offset:4px}
+}
+
+/* Narrow: the piles wrap to two rows so each stays wide enough for a thumb. */
+@media (max-width:560px){
+  .parcel__piles{grid-auto-flow:row;grid-template-columns:repeat(3,1fr)}
+  .parcel__pile{min-height:96px}
+}
+@media (max-height:540px){
+  .parcel{padding:8px 10px 10px;gap:8px;min-height:0}
+  .parcel__box{width:clamp(72px,11vw,110px)}
+  .parcel__pile{min-height:70px;padding:5px 3px}
+  .parcel__pileArt{width:min(30px,6vw)}
+  .parcel__pileName{font-size:.56rem}
+}
+
+/* ── Played outside (PHASE 10) ──────────────────────────────────────────── */
+/* POKO's game is played in POKO's office: the layer that is transparent over
+   the garage shows the office behind the two figures out here. */
+[data-game-root].is-outside .game-layer[data-game="mugunghwa"]{
+  background:#1a1626 url('/assets/images/playground/poko_office.webp') center 58% / auto 92% no-repeat;
+}
+[data-game-root].is-outside .game-layer[data-game="mugunghwa"]::before{
+  content:'';position:absolute;inset:0;background:rgba(14,10,20,.42);pointer-events:none;
+}
+[data-game-root].is-outside .game-layer[data-game="mugunghwa"] .game{position:relative}

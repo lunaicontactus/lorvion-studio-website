@@ -5,7 +5,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#04050a">
-<link rel="icon" href="/assets/images/favicon.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/images/favicon-48.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/assets/images/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 
@@ -26,10 +27,18 @@
 <meta property="og:site_name" content="EUNGARAGE">
 <meta name="twitter:card" content="summary_large_image">
 
-<title>EUNGARAGE — Worlds Beyond the Ordinary</title>
-<meta name="description" content="EUNGARAGE는 감정, 캐릭터, 독특한 세계가 오래 기억되는 게임을 만듭니다. LUNAI, LIMINAL, WORM UP!">
-<meta property="og:title" content="EUNGARAGE">
-<meta property="og:description" content="Emotion. Character. Worlds beyond the ordinary.">
+<title>EUNGARAGE — 게임을 만드는 도깨비들의 밤 작업실</title>
+<meta name="description" content="다섯 도깨비가 게임을 만드는 작은 밤 작업실, EUNGARAGE. LUNAI · LIMINAL · WORM UP! · LUMIORA · RUBATO.">
+<meta property="og:title" content="EUNGARAGE — 도깨비들의 밤 작업실">
+<meta property="og:description" content="Characters · Emotions · Worlds. 다섯 도깨비가 게임을 만드는 작은 작업실에 놀러 오세요.">
+<meta name="application-name" content="EUNGARAGE">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="EUNGARAGE — 밤의 차고 앞, 불 켜진 작업실">
+<meta name="twitter:title" content="EUNGARAGE — 도깨비들의 밤 작업실">
+<meta name="twitter:description" content="Characters · Emotions · Worlds. 다섯 도깨비가 게임을 만드는 작은 작업실에 놀러 오세요.">
+<meta name="twitter:image" content="https://eungarage.com/assets/images/og-image.jpg">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Organization", "name": "EUNGARAGE", "url": "https://eungarage.com/", "logo": "https://eungarage.com/assets/images/brand/eungarage_logo_lockup.png", "email": "eungarage@gmail.com", "slogan": "Characters · Emotions · Worlds", "address": {"@type": "PostalAddress", "addressLocality": "Seoul", "addressCountry": "KR"}, "contactPoint": {"@type": "ContactPoint", "contactType": "customer support", "email": "eungarage@gmail.com", "url": "https://eungarage.com/support.html"}}</script>
 </head>
 <body class="loading page-cozy page-garage">
 
@@ -37,7 +46,7 @@
 <nav class="site-nav">
   <div class="container nav-inner">
     <a class="brand" href="./index.html" aria-label="EUNGARAGE home">
-      <span class="brand-wordmark brand-word">EUNGARAGE</span>
+      <img class="brand-logo" src="/assets/images/brand/eungarage_logo_nav.webp" width="671" height="128" alt="EUNGARAGE" decoding="async">
     </a>
     <div class="nav-links">
       <a href="./games.html">Games</a>
@@ -45,6 +54,9 @@
       <a href="./support.html">Support</a>
       <a href="./studio.html#contact">Contact</a>
     </div>
+    <button class="sound-toggle" type="button" data-sound-toggle aria-pressed="false" aria-label="소리 켜기">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path class="sound-toggle__on" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="sound-toggle__off" d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
     <button class="menu-toggle" aria-label="메뉴 열기"><span></span><span></span></button>
   </div>
 </nav>
@@ -136,7 +148,36 @@
       <span class="alley__enter-dot" aria-hidden="true"></span>
       ENTER
     </button>
+    <!-- While the door is opening: a way to be inside now. Shown only
+         during the sequence; any click, tap, Enter or Escape does the same. -->
+    <button class="alley__skip" type="button" data-alley-skip hidden>건너뛰기</button>
+    <!-- Only if the room is honestly still on its way when the camera is
+         through the door. No bar, no percentage: it is not a measurement. -->
+    <p class="alley__loading" data-alley-loading hidden aria-live="polite">MOMO가 차고 문을 여는 중…</p>
   </section>
+
+  <!-- Outside the garage's door: the Dokkaebi Playground (PHASE 9). Built by
+       src/scenes/playground.ts the way the garage is; this is the frame. -->
+  <section class="playground" id="playground" data-playground hidden aria-label="도깨비 놀이터">
+    <div class="playground__stage" data-playground-stage>
+      <div class="playground__world" data-playground-world></div>
+    </div>
+  </section>
+  <!-- The Secret Archive (PHASE 12): behind the door in the bookcase. -->
+  <section class="archive" id="archive" data-archive hidden aria-label="비밀 보관소">
+    <div class="archive__stage" data-archive-stage>
+      <div class="archive__world" data-archive-world></div>
+    </div>
+    <!-- Looking up through the telescope: the glass fills the window. -->
+    <div class="archive__sky" data-archive-sky hidden role="dialog" aria-label="별 보기">
+      <img class="archive__shooting" src="/assets/images/archive/shooting_star.webp" alt="" decoding="async" loading="lazy">
+      <p class="archive__skyHint">아무 곳이나 누르면 돌아옵니다</p>
+      <button class="archive__skyClose" type="button" data-archive-sky-close aria-label="돌아가기">✕</button>
+    </div>
+    <p class="archive__rest" data-archive-rest hidden aria-live="polite">조용히 쉬는 중 · 아무 키나 누르면 돌아옵니다</p>
+  </section>
+  <!-- Night, between one place and the next (PHASE 8). -->
+  <div class="crossing" data-crossing hidden aria-hidden="true"></div>
 
   <!-- The garage: a room larger than the window. Furniture, hit areas and the
        crew all live in one world coordinate space (src/data/world.ts); the

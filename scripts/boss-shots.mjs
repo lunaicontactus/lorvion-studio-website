@@ -2,11 +2,10 @@
  *  CHECK and DOZE are in the bag, then standing in the open to be caught. */
 import { chromium } from '@playwright/test'
 const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1280, height: 800 } })
-await p.goto('http://localhost:4180/', { waitUntil: 'load' })
+await p.goto('http://localhost:4180/?play=build', { waitUntil: 'load' })
 await p.locator('[data-alley-enter]').click(); await p.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
 await p.waitForTimeout(800)
-await p.evaluate(() => document.querySelector('.thing--pc')?.dispatchEvent(new MouseEvent('click', { bubbles: true })))
-await p.locator('[data-minigame="build"]').click(); await p.locator('[data-game-start]').click()
+await p.locator('[data-game-start]').click()
 const want = new Set(['WORK', 'DOZE', 'WARN', 'CHECK', 'CAUGHT']); const got = {}
 for (let i = 0; i < 900 && want.size; i++) {
   const s = await p.evaluate(() => document.querySelector('[data-build-boss]')?.dataset.state)

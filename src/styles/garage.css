@@ -172,47 +172,53 @@
   pointer-events:none;
 }
 
-/* A real piece of the studio's work, printed on a sheet of paper and pinned
-   over the painted poster underneath.
-
-   The sheet is opaque because it has a painted one to cover. The picture is
-   not stretched into the sheet and is not cropped by it: the scene works out
-   its size from the picture's own proportions and writes both in, so a tall
-   picture stands tall and a wide one lies wide, with paper showing where the
-   two shapes disagree. Every size here is a world unit; the camera scales
-   the room, so these are the same on a phone. */
+/* A real piece of the studio's work, hung over the painted poster or frame in
+   its place (garage.ts hangPrint). The box is the picture's own shape plus the
+   frame's edge — there is no paper around it, so no shape can show through as
+   a white or cream margin. Three ways of hanging, so the wall reads as a wall
+   and not as a grid of identical cards. Every size is a world unit. */
 .print{
   position:absolute;pointer-events:none;
-  background:linear-gradient(176deg,#f0e5cd 0%,#e7dabf 62%,#e2d3b6 100%);
-  border-radius:3px;
-  box-shadow:0 3px 8px rgba(58,42,26,.36), inset 0 0 0 1px rgba(120,96,66,.24);
-  transform-origin:50% 8%;
+  transform-origin:50% 6%;
+  box-shadow:0 3px 8px rgba(58,42,26,.38);
+  /* Over the painted poster only once its picture has arrived: the frame
+     on its own was a dark box on the wall while the picture loaded. */
+  opacity:0;
+  transition:opacity 420ms ease;
 }
-.print__img{
-  position:absolute;max-width:none;display:block;
-  border-radius:2px;
-  box-shadow:0 0 0 1px rgba(92,72,48,.26);
+.print.is-in{opacity:1}
+.print__img{position:absolute;max-width:none;display:block}
+/* A poster: the picture is the sheet, held up by two strips of tape. */
+.print--poster{border-radius:1px}
+.print__tape{
+  position:absolute;top:-5px;width:26%;height:11px;
+  background:rgba(236,224,196,.78);
+  box-shadow:0 1px 2px rgba(58,42,26,.18);
 }
-.print__cap{
-  position:absolute;display:flex;flex-direction:column;justify-content:center;
-  align-items:center;gap:.28em;text-align:center;overflow:hidden;
-  color:#5b452e;line-height:1.15;
+.print__tape--l{left:-6%;transform:rotate(-24deg)}
+.print__tape--r{right:-6%;transform:rotate(22deg)}
+/* A print: a thin dark frame. */
+.print--print{background:#2f241b;border-radius:2px;
+  box-shadow:0 3px 9px rgba(40,28,16,.45), inset 0 0 0 1px rgba(255,236,200,.12)}
+/* In a wooden frame: the painted one it hangs in, carried on. */
+.print--wood{background:linear-gradient(135deg,#9a6a3a,#6e4724 55%,#8a5b30);border-radius:2px;
+  box-shadow:0 2px 6px rgba(40,28,16,.4), inset 0 0 0 1px rgba(40,24,10,.5)}
+/* Its name, on a scrap of paper pinned over the lower corner. */
+.print__memo{
+  position:absolute;right:-4%;bottom:-3%;
+  padding:.28em .55em .3em;
+  background:#efe3c8;color:#4d3a27;
+  font-family:var(--mono);font-weight:700;letter-spacing:.08em;line-height:1;white-space:nowrap;
+  box-shadow:0 1px 3px rgba(58,42,26,.35);
+  transform:rotate(-4deg);
 }
-.print__cap b{
-  font-family:var(--mono);font-weight:700;letter-spacing:.1em;font-size:1em;
-}
-.print__cap i{
-  font-style:normal;font-size:.62em;letter-spacing:.02em;opacity:.72;
-  padding:0 .3em;
-}
+.print--wood .print__memo{right:auto;left:-3%;bottom:-14%;transform:rotate(3deg)}
 /* Under the pointer the sheet lifts the way paper does, not the way a button
    does. The lift is on the thing, so it is one movement with the outline. */
-.thing:hover .print,.thing:focus-visible .print{
-  box-shadow:0 5px 12px rgba(58,42,26,.4), inset 0 0 0 1px rgba(120,96,66,.3);
-}
+.thing:hover .print,.thing:focus-visible .print{box-shadow:0 6px 14px rgba(58,42,26,.44)}
 
 @media (prefers-reduced-motion:reduce){
-  .thing__outline,.thing__lift{transition:none}
+  .thing__outline,.thing__lift,.print{transition:none}
 }
 
 /* Touched, but there is nothing behind it yet: the thing shifts a couple of
@@ -345,8 +351,14 @@
   transition:opacity 900ms ease;
 }
 .garage__light[data-light="tv"],
-.garage__light[data-light="secret"]{opacity:0}
-.garage__light.is-lit{opacity:1}
+.garage__light[data-light="secret"],
+.garage__light[data-light="fridge"],
+.garage__light[data-light="radio"]{opacity:0}
+.garage__light.is-lit,.garage__light.is-on{opacity:1}
+/* While the visitor has the thing open it stays lit whatever the room's own
+   flicker is doing; the interaction's light and the ambient's are two classes. */
+.garage__light[data-light="fridge"].is-on{transition:opacity 260ms ease}
+.garage__light[data-light="radio"].is-on{transition:opacity 260ms ease}
 /* The monitor breathes, very slightly, and only when asked. */
 .garage__light[data-light="pc"]{transition:opacity 2200ms ease}
 .garage__light[data-light="pc"].is-lit{opacity:1.6}
@@ -543,4 +555,77 @@
 }
 @media (prefers-reduced-motion:reduce){
   .thing--parcel.is-knocked .thing__art{animation:none}
+}
+
+/* ── PHASE 6: the room living ──────────────────────────────────────────── */
+/* Lights that only come on while the visitor has the thing open. */
+.garage__light[data-light="cabinet"],
+.garage__light[data-light="moon"]{opacity:0}
+.garage__light[data-light="cabinet"].is-on{transition:opacity 320ms ease}
+.garage__light[data-light="moon"].is-on{transition:opacity 700ms ease}
+/* The monitor's small beep: a short lift, not the breathing glow. */
+.garage__light[data-light="pc"].is-beep{opacity:1.3;transition:opacity 120ms ease}
+
+/* The broom that sweeps by itself. Positioned by its bristles, in world
+   units, like the crew; drawn in the y-sort with them. Takes no pointer. */
+.garage__broom{
+  position:absolute;
+  left:0;top:0;
+  max-width:none;
+  pointer-events:none;
+  opacity:0;
+  transform-origin:50% 100%;
+  will-change:transform;
+}
+.garage__broom.is-live{opacity:1}
+.garage__broom[data-phase="sweep"]{animation:broom-sweep 1000ms ease-in-out 2}
+.garage__broom[data-phase="move"]{animation:broom-shuffle 600ms ease-in-out infinite}
+.garage__broom[data-phase="enter"],.garage__broom[data-phase="leave"]{animation:broom-shuffle 700ms ease-in-out infinite}
+@keyframes broom-sweep{
+  0%{rotate:0deg;translate:0 0}
+  30%{rotate:-9deg;translate:-8px 0}
+  70%{rotate:8deg;translate:9px 0}
+  100%{rotate:0deg;translate:0 0}
+}
+@keyframes broom-shuffle{
+  0%{rotate:-2deg;translate:0 0}
+  50%{rotate:2deg;translate:0 -3px}
+  100%{rotate:-2deg;translate:0 0}
+}
+
+/* Depth. The plate is the middle; the sky through the window is behind it
+   and moves a little less, the few things standing on the boards are in
+   front and move a little more. Both are set by the scene as the camera
+   moves, in world units, and are a few pixels at the most. */
+.garage__decor,.garage__gear,.garage__broom{margin-left:var(--fgx,0px);margin-top:var(--fgy,0px)}
+@media (prefers-reduced-motion:reduce){
+  .garage__broom{display:none}
+  .garage__decor,.garage__gear{margin:0}
+}
+
+/* ── PHASE 11: the door in the bookcase ─────────────────────────────────── */
+/* Locked, it is the cabinet it is painted as: nothing at rest, the usual
+   outline under the pointer. Touched, the seam shows for a moment — a
+   little starlight along the edges, and no message. Open, the seam stays,
+   faintly. The moment it opens: the seam bright, the face giving a little. */
+.garage__light[data-light="bookcase"]{opacity:0}
+.garage__light[data-light="bookcase"].is-on{opacity:1;transition:opacity 500ms ease}
+.thing--secret-door .thing__lift{transition:opacity 260ms ease, box-shadow 400ms ease}
+.thing--secret-door.is-hinting .thing__lift{opacity:1;animation:secret-hint 900ms ease}
+@keyframes secret-hint{
+  0%,100%{box-shadow:inset 0 0 0 0 rgba(196,214,255,0)}
+  35%{box-shadow:inset 0 0 22px 3px rgba(196,214,255,.5)}
+}
+.thing--secret-door.is-unlocked .thing__lift{opacity:.6;box-shadow:inset 0 0 26px 3px rgba(196,214,255,.3)}
+.thing--secret-door.is-unlocking .thing__lift{opacity:1;animation:secret-open 2600ms ease}
+.thing--secret-door.is-unlocking .thing__outline{opacity:1}
+@keyframes secret-open{
+  0%{box-shadow:inset 0 0 0 0 rgba(196,214,255,0);translate:0 0}
+  18%{box-shadow:inset 0 0 34px 6px rgba(210,224,255,.75);translate:-2px 0}
+  32%{translate:2px 0}
+  46%{translate:-1px 0}
+  100%{box-shadow:inset 0 0 26px 3px rgba(196,214,255,.3);translate:0 0}
+}
+@media (prefers-reduced-motion:reduce){
+  .thing--secret-door.is-hinting .thing__lift,.thing--secret-door.is-unlocking .thing__lift{animation:none;opacity:1}
 }

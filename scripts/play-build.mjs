@@ -1,7 +1,7 @@
 /**
  * Play 빌드 중입니다, 부장님 the way a visitor would, and photograph it.
  *
- *   PC → 미니게임 → 시작 → jump a while → get caught on purpose →
+ *   ?play=build → 시작 → jump a while → get caught on purpose →
  *   재도전 → hide every time the boss warns, and survive the round →
  *   차고로, and check the room is itself again.
  *
@@ -30,14 +30,10 @@ const state = () => p.evaluate(() => ({
   time: document.querySelector('[data-game-time]')?.textContent,
 }))
 
-await p.goto('http://localhost:4180/', { waitUntil: 'load' })
+await p.goto('http://localhost:4180/?play=build', { waitUntil: 'load' })
 await p.locator('[data-alley-enter]').click()
 await p.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
 await p.waitForTimeout(1200)
-await p.evaluate(() => document.querySelector('.thing--pc')?.dispatchEvent(new MouseEvent('click', { bubbles: true })))
-await p.locator('[data-minigame="build"]').waitFor({ state: 'visible', timeout: 8000 })
-await shot('1_hub')
-await p.locator('[data-minigame="build"]').click()
 await p.locator('[data-game-start]').waitFor({ state: 'visible' })
 console.log('ready:', await state())
 await shot('2_ready')

@@ -30,6 +30,26 @@ export type AlleyPhase = 'idle' | 'entering' | 'inside'
 export interface AlleyOptions {
   /** Called once the camera is through the door and the wash is up. */
   readonly onEntered?: () => void
+  /**
+   * Each beat of the entrance as it happens, by name (PHASE 7): the host
+   * plays the shutter on `rise` and brings the room's sound up on `light`,
+   * so the sound is on the picture and not on the click.
+   */
+  readonly onBeat?: (beat: keyof typeof BEATS | 'enter' | 'skip') => void
+  /**
+   * Whether the room behind the door is ready to be shown. If it is not by
+   * the time the camera is through, the entrance says so — one short line,
+   * no progress bar — and finishes when it is. Never invented: with the
+   * plate already here the line is never shown at all.
+   */
+  readonly ready?: () => Promise<unknown> | null
+  /**
+   * A visitor who has been here before gets the short version: the same
+   * door, opened in a second rather than two and a bit. Read at ENTER, so
+   * a first visit that leaves and comes back through the alley is short the
+   * second time.
+   */
+  readonly returning?: () => boolean
 }
 
 /**
@@ -52,6 +72,18 @@ const BEATS = {
   inside: 2300,
 } as const
 
+/**
+ * The same beats for somebody who has seen them (PHASE 7): no knock, no
+ * hesitation, the shutter straight up and through in just over a second.
+ * The stylesheet's `alley--quick` shortens the transitions to match.
+ */
+const QUICK: Record<keyof typeof BEATS, number> = {
+  bump: 0, flicker: 0, hesitate: 0, rise: 40, light: 300, peek: 380, push: 520, inside: 1100,
+}
+
+/** How long the entrance will wait for the room before going in anyway. */
+const READY_CAP_MS = 8000
+
 export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {}): () => void {
   const scene = root.querySelector<HTMLElement>('[data-alley]')
   if (!scene) return () => undefined
@@ -59,6 +91,8 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
   const plateEl = scene.querySelector<HTMLElement>('[data-alley-plate]')
   const baseImg = scene.querySelector<HTMLImageElement>('[data-alley-base]')
   const enterBtn = scene.querySelector<HTMLButtonElement>('[data-alley-enter]')
+  const skipBtn = scene.querySelector<HTMLButtonElement>('[data-alley-skip]')
+  const loadingEl = scene.querySelector<HTMLElement>('[data-alley-loading]')
 
   const timers = new Set<ReturnType<typeof setTimeout>>()
   const off: (() => void)[] = []
@@ -187,40 +221,105 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
 
   // ── Entrance ─────────────────────────────────────────────────────────────
   let finished = false
+  /** Been through once already this page: the next time is the short one. */
+  let beenIn = false
   const finish = (): void => {
     if (finished) return
     finished = true
+    beenIn = true
+    scene.classList.remove('alley--loading')
+    if (loadingEl) loadingEl.hidden = true
     setPhase('inside')
     scene.classList.add('alley--inside')
     opts.onEntered?.()
     log.debug('alley: inside')
   }
 
+  /**
+   * The camera is through. Go in — unless the room is honestly not here
+   * yet, in which case say so and go in the moment it is. The line is never
+   * shown for a room that has already arrived, and a room that never arrives
+   * does not trap the visitor at the door.
+   */
+  const finishWhenReady = (): void => {
+    const pending = opts.ready?.() ?? null
+    if (!pending) {
+      finish()
+      return
+    }
+    let settled = false
+    const done = (): void => {
+      settled = true
+      finish()
+    }
+    void Promise.resolve(pending).then(done, done)
+    // Give the plate a frame to be already here before saying anything.
+    later(() => {
+      if (settled || finished) return
+      scene.classList.add('alley--loading')
+      if (loadingEl) loadingEl.hidden = false
+    }, 120)
+    later(finish, READY_CAP_MS)
+  }
+
   const enter = (): void => {
     if (phase !== 'idle') return // one way in, once
     setPhase('entering')
     enterBtn?.setAttribute('disabled', '')
+    opts.onBeat?.('enter')
 
     if (motion.reduced) {
       // No theatre: the shutter is up, the light is on, we are inside.
       scene.classList.add('alley--rise', 'alley--light')
-      finish()
+      opts.onBeat?.('rise')
+      opts.onBeat?.('light')
+      finishWhenReady()
       return
     }
 
-    const beat = (cls: string, at: number): void => later(() => scene.classList.add(cls), at)
-    beat('alley--bump', BEATS.bump)
-    beat('alley--flicker', BEATS.flicker)
-    beat('alley--hesitate', BEATS.hesitate)
+    const quick = beenIn || opts.returning?.() === true
+    const at = quick ? QUICK : BEATS
+    scene.classList.toggle('alley--quick', quick)
+    // The way out of the sequence, for anybody who has seen it.
+    if (skipBtn) {
+      skipBtn.hidden = false
+      skipBtn.focus({ preventScroll: true })
+    }
+
+    const beat = (cls: string, name: keyof typeof BEATS): void => later(() => {
+      scene.classList.add(cls)
+      opts.onBeat?.(name)
+    }, at[name])
+    if (!quick) {
+      beat('alley--bump', 'bump')
+      beat('alley--flicker', 'flicker')
+      beat('alley--hesitate', 'hesitate')
+    }
     later(() => {
       scene.classList.remove('alley--hesitate')
       scene.classList.add('alley--rise')
-    }, BEATS.rise)
-    beat('alley--light', BEATS.light)
-    beat('alley--peek', BEATS.peek)
-    beat('alley--push', BEATS.push)
+      opts.onBeat?.('rise')
+    }, at.rise)
+    beat('alley--light', 'light')
+    beat('alley--peek', 'peek')
+    beat('alley--push', 'push')
     // Whatever the transitions do, we are inside by the deadline.
-    later(finish, BEATS.inside)
+    later(finishWhenReady, at.inside)
+  }
+
+  /**
+   * Skip (PHASE 7): a click, a tap, Enter, Space or Escape while the door is
+   * opening finishes it now. Everything the beats would have added is added,
+   * so the picture the room takes over from is the same one.
+   */
+  const skip = (): void => {
+    if (phase !== 'entering' || finished) return
+    for (const tm of timers) clearTimeout(tm)
+    timers.clear()
+    scene.classList.remove('alley--hesitate')
+    scene.classList.add('alley--rise', 'alley--light', 'alley--push')
+    opts.onBeat?.('skip')
+    finishWhenReady()
   }
 
   if (enterBtn) {
@@ -228,6 +327,34 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
     enterBtn.addEventListener('click', onClick)
     off.push(() => enterBtn.removeEventListener('click', onClick))
   }
+  if (skipBtn) {
+    const onSkipClick = (e: Event): void => {
+      e.stopPropagation()
+      skip()
+    }
+    skipBtn.addEventListener('click', onSkipClick)
+    off.push(() => skipBtn.removeEventListener('click', onSkipClick))
+  }
+  const onScenePointer = (e: PointerEvent): void => {
+    if (phase !== 'entering') return
+    // The ENTER button's own click is what started this; a second press on
+    // it while it is disabled is not a skip.
+    if ((e.target as HTMLElement | null)?.closest('[data-alley-enter]')) return
+    skip()
+  }
+  const onSceneKey = (e: KeyboardEvent): void => {
+    if (phase !== 'entering') return
+    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      skip()
+    }
+  }
+  scene.addEventListener('pointerdown', onScenePointer)
+  document.addEventListener('keydown', onSceneKey)
+  off.push(() => {
+    scene.removeEventListener('pointerdown', onScenePointer)
+    document.removeEventListener('keydown', onSceneKey)
+  })
 
   // ── Ambient life ─────────────────────────────────────────────────────────
   // Continuous drifts on their own slow periods, plus one small "event" at a

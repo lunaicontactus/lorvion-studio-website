@@ -1,0 +1,163 @@
+/* ── The Dokkaebi Playground ──────────────────────────────────────────────
+   Outside the garage's door. Built like the garage: a painted plate larger
+   than the window, moved by the camera, with hit areas over the places the
+   painter already put there. Nothing here draws a building.
+   ──────────────────────────────────────────────────────────────────────── */
+.playground{
+  position:fixed;
+  inset:0;
+  overflow:clip;
+  background:#171a30;
+  touch-action:none;
+  cursor:grab;
+  user-select:none;
+  z-index:1;
+}
+.playground[hidden]{display:none}
+.playground.is-dragging{cursor:grabbing}
+.playground.is-paused{cursor:default}
+.playground__stage{position:absolute;inset:0;overflow:clip}
+.playground__world{
+  position:absolute;left:0;top:0;
+  transform-origin:0 0;
+  will-change:transform;
+  background-repeat:no-repeat;
+  background-size:100% 100%;
+  background-color:#171a30;
+}
+
+/* A place in the painting. At rest it draws nothing; under the pointer or a
+   keyboard focus a soft ring sits round it and its name comes up. */
+.spot{
+  position:absolute;
+  padding:0;margin:0;border:0;background:none;
+  -webkit-appearance:none;appearance:none;
+  cursor:pointer;
+  z-index:20;
+}
+.spot:focus{outline:none}
+.spot__ring{
+  position:absolute;
+  display:block;
+  pointer-events:none;
+  border-radius:18%;
+  box-shadow:0 0 0 3px rgba(255,246,222,.92), 0 0 0 7px rgba(20,16,30,.28), 0 0 26px rgba(255,220,150,.45);
+  opacity:0;
+  transition:opacity 110ms ease;
+}
+.spot:hover .spot__ring,.spot:focus-visible .spot__ring,.spot.is-pressed .spot__ring,.spot.is-active .spot__ring{opacity:1}
+@media (hover:none){
+  .spot:hover .spot__ring{opacity:0}
+  .spot.is-pressed .spot__ring,.spot.is-active .spot__ring{opacity:1}
+}
+.spot__label{
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 8px);
+  transform:translate(-50%,4px);
+  padding:calc(7px / var(--scale,1)) calc(11px / var(--scale,1));
+  border:calc(1px / var(--scale,1)) solid rgba(255,255,255,.22);
+  border-radius:calc(999px / var(--scale,1));
+  background:rgba(24,20,34,.78);
+  color:rgba(255,246,232,.96);
+  font:600 calc(13px / var(--scale,1))/1.2 var(--sans);
+  letter-spacing:.02em;
+  white-space:nowrap;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 120ms ease, transform 120ms ease;
+  z-index:30;
+}
+.spot:hover .spot__label,.spot:focus-visible .spot__label,.spot.is-active .spot__label{opacity:1;transform:translate(-50%,0)}
+@media (hover:none){.spot:hover .spot__label{opacity:0}}
+/* The three buildings are along the top of the plate: their names sit
+   under them, where there is room, rather than above under the nav. */
+.spot--poko-office .spot__label,.spot--snack-stall .spot__label,.spot--parcel-office .spot__label{bottom:auto;top:calc(100% + 8px);transform:translate(-50%,-4px)}
+.spot--poko-office:hover .spot__label,.spot--snack-stall:hover .spot__label,.spot--parcel-office:hover .spot__label,
+.spot--poko-office:focus-visible .spot__label,.spot--snack-stall:focus-visible .spot__label,.spot--parcel-office:focus-visible .spot__label,
+.spot--poko-office.is-active .spot__label,.spot--snack-stall.is-active .spot__label,.spot--parcel-office.is-active .spot__label{transform:translate(-50%,0)}
+
+/* The dokkaebi fires: the same drawing three times, each on its own float
+   and its own breath. Slow, small, and never a glow that lights the ground. */
+.playground__fire{
+  position:absolute;
+  pointer-events:none;
+  max-width:none;
+  z-index:15;
+  opacity:.9;
+  transform-origin:50% 90%;
+  animation:fire-float 6s ease-in-out infinite, fire-breathe 8s ease-in-out infinite;
+}
+@keyframes fire-float{
+  0%{translate:0 0}
+  50%{translate:4px -9px}
+  100%{translate:0 0}
+}
+@keyframes fire-breathe{
+  0%{scale:1;opacity:.86}
+  50%{scale:1.04;opacity:.98}
+  100%{scale:1;opacity:.86}
+}
+/* The foreground: bottom of the plate, over everything, never a target. */
+.playground__front{
+  position:absolute;
+  left:0;bottom:0;
+  max-width:none;
+  pointer-events:none;
+  z-index:40;
+}
+@media (prefers-reduced-motion:reduce){
+  .playground__fire{animation:none}
+  .spot__ring,.spot__label{transition:none}
+}
+
+/* ── Crossing between worlds (PHASE 8) ─────────────────────────────────── */
+/* Night comes in from the door and goes out again on the other side. One
+   element, fixed over everything below the nav; the scene swaps under it
+   while it is dark. */
+.crossing{
+  position:fixed;
+  inset:0;
+  z-index:940;
+  background:#12142a;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 620ms ease-in-out;
+}
+.crossing[hidden]{display:none}
+.crossing.is-dark{opacity:1;pointer-events:auto}
+@media (prefers-reduced-motion:reduce){
+  .crossing{transition:opacity 160ms linear}
+}
+
+/* Where the two places sit relative to the room's hit areas: the
+   presentation of a place grows out of its spot exactly as furniture does. */
+.prop--place .place{position:absolute;inset:0;display:grid;align-content:center;justify-items:center;gap:.5em;padding:4%;text-align:center;container-type:inline-size}
+.prop--place .place__name{margin:0;font:700 clamp(12px,7cqi,22px)/1.2 var(--sans);color:#fff8ea;text-shadow:0 1px 3px rgba(20,12,6,.7)}
+.prop--place .place__line{margin:0;font:500 clamp(10px,4.4cqi,14px)/1.35 var(--sans);color:#fff2da;text-shadow:0 1px 3px rgba(20,12,6,.7)}
+.prop--place .place__enter{
+  min-height:44px;min-width:44px;margin-top:.3em;padding:.55em 1.3em;
+  border:0;border-radius:999px;background:#ffd27a;color:#2a2013;
+  font:700 clamp(11px,4.8cqi,15px)/1 var(--sans);letter-spacing:.06em;cursor:pointer;
+  box-shadow:0 4px 12px rgba(20,12,6,.45);
+}
+.prop--place .place__enter:hover,.prop--place .place__enter:focus-visible{filter:brightness(1.06)}
+.prop--place .place__enter:focus-visible{outline:2px solid #fff;outline-offset:2px}
+/* The signpost's arms are the painted ones. Each is a hit area over its
+   arrow — nothing drawn over the drawing — and says where it points only
+   under the pointer or a focus. Not a menu: a hint you can lean on. */
+.prop--place .sign{position:absolute;inset:0;display:grid;grid-template-rows:repeat(3,1fr);container-type:inline-size}
+.prop--place .sign__arm{
+  position:relative;min-height:44px;
+  padding:0;border:0;border-radius:.6em;background:transparent;color:transparent;
+  font:700 clamp(11px,5cqi,15px)/1.2 var(--sans);cursor:pointer;
+  transition:box-shadow 120ms ease;
+}
+.prop--place .sign__arm:hover,.prop--place .sign__arm:focus-visible{box-shadow:0 0 0 3px rgba(255,246,222,.9), 0 0 18px rgba(255,220,150,.5)}
+.prop--place .sign__arm:focus-visible{outline:none}
+.prop--place .sign__arm span{
+  position:absolute;left:104%;top:50%;transform:translateY(-50%);
+  padding:.35em .7em;border-radius:999px;background:rgba(24,20,34,.82);color:#fff6e4;
+  white-space:nowrap;opacity:0;transition:opacity 120ms ease;pointer-events:none;
+}
+.prop--place .sign__arm:hover span,.prop--place .sign__arm:focus-visible span{opacity:1}

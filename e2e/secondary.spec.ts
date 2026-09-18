@@ -73,50 +73,52 @@ for (const vp of [
     test('the fridge says one thing at a time and keeps no score', async ({ page }) => {
       await enter(page)
       await touch(page, 'fridge')
-      await expect(page.locator('.chill')).toHaveCount(7, { timeout: 6000 })
+      await expect(page.locator('.chill')).toHaveCount(5, { timeout: 6000 })
       await expect(page.locator('[data-fridge-say]')).toHaveText('')
-      await page.locator('[data-item="eggs"]').click()
+      await page.locator('.chill').nth(0).click()
       const first = await page.locator('[data-fridge-say]').textContent()
       expect(first?.length).toBeGreaterThan(2)
-      await page.locator('[data-item="cup-ramen"]').click()
+      await page.locator('.chill').nth(1).click()
       const second = await page.locator('[data-fridge-say]').textContent()
       expect(second).not.toBe(first)
       // One line, not a paragraph, and nothing is counted.
-      expect(second!.length).toBeLessThan(40)
+      expect(second!.length).toBeLessThan(48)
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
     })
 
-    test('the shelf shows the leftovers and hands the game to the PC', async ({ page }) => {
+    test('the shelf is the crew\'s own things, and never a second games menu', async ({ page }) => {
       await enter(page)
       await touch(page, 'shelf')
-      await expect(page.locator('.relic')).toHaveCount(4, { timeout: 6000 })
-      await expect(page.locator('.figure')).toHaveCount(5)
-      await page.locator('[data-relic="liminal-file"]').click()
+      await expect(page.locator('.relic')).toHaveCount(3, { timeout: 6000 })
+      await expect(page.locator('[data-game], [data-shelf-go]')).toHaveCount(0)
+      await page.locator('.relic').first().click()
       await expect(page.locator('.shelf__note')).toBeVisible()
-      // The shelf points at the PC rather than repeating what the PC says.
-      await expect(page.locator('.shelf__note')).not.toContainText('Narrative mystery')
-      await page.locator('[data-shelf-go]').click()
-      await expect(page.locator('.crtgame__name')).toHaveText('LIMINAL', { timeout: 8000 })
+      await expect(page.locator('.shelf__note')).not.toContainText(/LUNAI|LIMINAL|WORM UP|LUMIORA|RUBATO/)
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
     })
 
-    test('the door has nothing behind it, and says so both times', async ({ page }) => {
+    test('the outside door remembers, for this visit, that you have been out', async ({ page }) => {
       await enter(page)
-      await touch(page, 'secret-door')
+      await touch(page, 'outside-door')
       await expect(page.locator('.dark__line')).toBeVisible({ timeout: 6000 })
       const first = await page.locator('.dark__line').textContent()
       // No invented project, date or teaser.
       await expect(page.locator('[data-panel]')).not.toContainText(/20\d\d/)
-      await page.keyboard.press('Escape')
+      // Then it is a door (PHASE 8): outside, and Back.
+      await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 6000 })
+      await page.goBack()
+      await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 6000 })
       await expect(page.locator(panel)).toBeHidden()
 
-      await touch(page, 'secret-door')
+      await touch(page, 'outside-door')
       await expect(page.locator('.dark__line')).toBeVisible({ timeout: 6000 })
-      // It remembers, for this visit, that you already tried it.
+      // A different line the second time.
       expect(await page.locator('.dark__line').textContent()).not.toBe(first)
-      await page.keyboard.press('Escape')
+      await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 6000 })
+      await page.goBack()
+      await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 6000 })
     })
 
     test('a poster stays a poster, and the picture keeps its shape', async ({ page }) => {
@@ -124,6 +126,10 @@ for (const vp of [
       await touch(page, 'poster-lunai')
       const shot = page.locator('[data-artwork-view] img')
       await expect(shot).toBeVisible({ timeout: 6000 })
+      // Decoded, not merely laid out: the picture opens at once now, and the
+      // shape is judged against the file, which arrives a moment later.
+      await expect(shot).toHaveJSProperty('complete', true)
+      await expect.poll(() => shot.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0)
       await expect(page.locator('.panel__title')).toHaveText('LUNAI')
       // Shown at the size it was drawn, not at the size of a box somebody
       // picked first. LUNAI's key visual is 1024x1536; a 16:9 frame with the
@@ -146,13 +152,14 @@ for (const vp of [
 
     test('a wide picture opens wide, and closes every way it can be closed', async ({ page }) => {
       // The other half of the same promise. RUBATO's piece is one of the
-      // game's own backgrounds, 1920x1080, and it hangs on a tall sheet of
-      // paper — so if any of this measured the paper instead of the picture,
+      // game's own backgrounds, 1920x1080, hung in a small wooden frame — so if any of this measured the paper instead of the picture,
       // this is where it would show.
       await enter(page)
-      await touch(page, 'poster-rubato')
+      await touch(page, 'picture-rubato')
       const shot = page.locator('[data-artwork-view] img')
       await expect(shot).toBeVisible({ timeout: 6000 })
+      await expect(shot).toHaveJSProperty('complete', true)
+      await expect.poll(() => shot.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0)
       const fit = await shot.evaluate((img: HTMLImageElement) => {
         const r = img.getBoundingClientRect()
         return {
@@ -178,7 +185,7 @@ for (const vp of [
       // line is where the focus goes back to. `touch` above dispatches an
       // event at the button without focusing it, so there would be nothing
       // to go back to.
-      const poster = page.locator('[data-object="poster-rubato"]')
+      const poster = page.locator('[data-object="picture-rubato"]')
       await poster.focus()
       await poster.press('Enter')
       await expect(shot).toBeVisible({ timeout: 6000 })
@@ -226,8 +233,9 @@ test.describe('desktop', () => {
     await page.keyboard.press('Escape')
     // The room is locked while it is closing; wait, as a visitor would.
     await expect(page.locator(panel)).toBeHidden()
-    await touch(page, 'secret-door')
-    await expect(page.locator('.dark.is-ajar')).toBeVisible({ timeout: 2000 })
+    await touch(page, 'outside-door')
+    // No journey: the door is open and the playground is there.
+    await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 2500 })
     await context.close()
   })
 })

@@ -55,6 +55,12 @@ export interface AmbientEvent {
    * be alive, so the rare things wait out the first minute.
    */
   readonly notBefore?: number
+  /**
+   * Whether there is room for it right now. Asked just before it would
+   * start; a no puts it off a few seconds rather than cancelling it. The
+   * broom uses this: it needs a stretch of floor with nobody on it.
+   */
+  readonly ready?: () => boolean
 }
 
 interface Scheduled {
@@ -131,7 +137,12 @@ export class Ambient {
       if (this.#now < item.next) continue
       if (item.event.priority < this.#floor) {
         // Something more worth watching is going on. Wait, do not queue up.
-        item.next = this.#now + this.#gap(item.event) / 2
+        // A short wait: half the gap was fine for a flicker that fires every
+        // ten seconds and wrong for the broom, which fires every minute or
+        // two and was pushed back half a minute every time it happened to
+        // fall on somebody's bubble or a scene between two of them, and so
+        // went whole visits without coming out.
+        item.next = this.#now + Math.min(this.#gap(item.event) / 2, 3000)
         continue
       }
       // Never the same thing twice running. On a quiet room — a phone, where
@@ -154,6 +165,10 @@ export class Ambient {
         : this.#items.filter((o) => o.running).length >= STRONG_AT_ONCE + 1
       if (busy || above) {
         item.next = this.#now + 1500
+        continue
+      }
+      if (item.event.ready && !item.event.ready()) {
+        item.next = this.#now + 4000
         continue
       }
       item.running = true

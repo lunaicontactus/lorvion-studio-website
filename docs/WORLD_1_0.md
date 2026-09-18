@@ -136,3 +136,209 @@ After: greetings every minute or so.
 the head, not of the whole body — so a scene can only ever *add* a face, and
 the floor under `src/systems/faces.ts` cannot be broken by anything here.
 Checked in `e2e/crew.spec.ts` over a hundred seconds of a busy room.
+
+## PHASE 4 — the shell the three games sit in
+
+### 4-1 audit: what was already there
+
+`src/games/runner.ts` was already most of this, and it is kept.
+
+| already there | verdict | why |
+|---|---|---|
+| `GameRunner` — ready screen, HUD, pause on blur/hidden, result, best score, retry-as-fresh-instance, listener cleanup, focus restore | **reuse** | it is the shell, and it works; rewriting it would be churn against a tested thing |
+| adapter contract `GameDef.mount(host) → {start,pause,resume,destroy}`, host gives `end/sfx/hud` | **reuse** | already the separation PHASE 4 asks for: a game never touches shell DOM |
+| Escape policy (PLAYING → pause, otherwise close) | **reuse** | exactly the policy asked for |
+| `build` — the running game with the boss | **keep, do not extend** | it is not one of the three canonical games; PHASE 5 supersedes it |
+| per-game clock inside `build` | **leave alone** | it works and is tested; new games use the shared clock instead |
+| best score in `save.data.games` | **replace** | one object read and rewritten whole; a best score every round rewrote the visitor's whole history |
+
+| added | file |
+|---|---|
+| `COUNTDOWN` + one table of what may happen next | `src/games/state.ts` |
+| round clock that owns no timer | `src/games/clock.ts` |
+| one input manager, semantic events, releases holds on blur | `src/games/input.ts` |
+| namespaced storage with validation | `src/games/scores.ts` |
+| a game that is barely a game, for walking the shell | `src/games/mock.ts` (dev-only) |
+| stars and `success` on the result | `src/games/types.ts` |
+
+### The two leaks this shape makes impossible
+
+**A clock that runs twice.** `RoundClock` cannot start a timer — it is handed
+milliseconds and subtracts them. A game that starts an interval on `start` and
+another on `resume` runs at double speed and the second one outlives the
+first; a clock that cannot start anything cannot leak one. The runner holds
+**one** ticker subscription for the whole round and drives the countdown, the
+clock and the game's frame from it, in that order.
+
+**Listeners that pile up.** `GameInput` remembers every listener it adds and
+`destroy` removes them. A retry destroys the whole thing and mounts a new one
+rather than resetting the old, so "retry five times" cannot mean five copies
+of every handler. There is a test that measures the clock rate after three
+retries, because a stacked subscription shows up there as a round that runs
+four times too fast.
+
+### A hold that outlives the window
+
+Nothing sends `keyup` for a key that was down when the window went. The POKO
+game is built entirely on a hold, and a SLACK that never ends is a player
+caught the instant they come back through no fault of their own. So blur,
+`pointercancel`, `touchcancel` and a hidden tab all release everything held
+and say `forced: true` before the pause happens.
+
+### The mock, and why it is not in the bundle
+`src/games/mock.ts` is behind `import.meta.env.DEV`, so a built bundle does
+not contain it. The lifecycle spec therefore runs against the dev server —
+one extra `webServer` and one extra project in the Playwright config — while
+everything else runs against the built bundle. A mock game somebody can reach
+is a mock game somebody eventually plays.
+
+### Costs
+`?play=<id>` opens a game on arrival. It is how the shell spec gets to the
+mock, and a real deep link for the games the PC lists. The ✕ was 34px and is
+now 44, which is the floor every other hit area in this project is held to.
+`build`'s tests pressed start and waited a second; there is a countdown now,
+so they wait for the countdown to end instead.
+
+## PHASE 5 — 무궁화꽃이 피었습니다, 부장님 감시 편
+
+### 5-1 audit of the running game
+
+| from `build` | verdict |
+|---|---|
+| `boss.ts` — the timing: a warning always before a look, a floor under the warning, difficulty in the quiet stretches only | **reused**, as `poko/boss.ts` with the five states the brief names |
+| the glasses — a CSS layer over the face with per-pose eye positions | **reused**; re-measured for the approved crew by `scripts/eye_measure.py` |
+| the shell — HUD, result, best score, sounds, entry from the PC | **reused** (PHASE 4) |
+| its tests' shape — wait on state, not on a clock | **reused** |
+| running, jumping, obstacles, a finish line, the build screen | **discarded**; none of it is in the new game |
+
+`build` is left in place and still listed, untouched, until the new game is
+signed off.
+
+### The five states
+
+`PATROLLING` walks the back wall with its back turned · `AWAY` is right out of
+the picture, the long window · `WARNING` stops and straightens the glasses ·
+`WATCHING` looks, and is the only state anything is judged in · `RECOVER`
+turns back.
+
+Never a look without a warning, and never a warning below `WARN_FLOOR`
+(1000ms — four times a comfortable reaction, and it does not move with
+difficulty). What difficulty changes is the length and variation of the quiet
+stretches, so late in a round counting does not work and watching does.
+Seeded, so `?pokoseed=7` replays a patrol exactly.
+
+### Judged on the button, never on the picture
+`setSlacking` changes the logical state the instant the key comes up, and the
+verdict is read from that on the same tick the boss is read. A sprite that
+takes four frames to turn round cannot catch somebody who let go in time.
+There is a test that holds, lets go, and then walks into a look.
+
+### Balance, measured rather than guessed
+
+`scripts/poko-balance.mjs` plays a thousand rounds each for five policies,
+with 180ms of hand on every decision:
+
+| player | caught | mean score | stars |
+|---|---|---|---|
+| never slacks | 0% | 6 | 0.00 |
+| only while it is out of the picture | 0% | 40 | 0.23 |
+| uses every quiet stretch, lets go at the warning | 0% | 189 | 2.53 |
+| pushes halfway into the warning | 0% | 246 | 3.00 |
+| holds until the warning is nearly over | **100%** | 44 | 0.00 |
+| never lets go | **100%** | 44 | 0.00 |
+
+Which is the shape the game needs: working through the whole round is
+survivable and worth almost nothing; using the quiet is worth thirty times as
+much and is never punished if you react; and holding past the point where
+less of the warning is left than a hand takes is caught every time. Stars at
+45 / 150 / 230.
+
+A round's own shape, seed 7: six looks, warnings 1296–1900ms, quiet stretches
+averaging 2.9s and totalling 20s of a 45s round.
+
+### In the garage, not in front of it
+The layer is transparent and the room is the board: the plate is behind it,
+the rest of the crew are at their benches, and `setCalm` rather than a full
+pause is what the room gets — so they go on working without starting new
+errands. `CrewInteractions` is suspended, strong ambience is suppressed, and
+the room's own POKO walks off the plate for the duration and walks back on
+afterwards, so there is only ever one of him. Nothing about the garage's state
+is changed permanently.
+
+## PHASE 6 — 도깨비 야식 심부름
+
+Somebody in the room asks for something out of the fridge; four things are on
+the shelf; hand over the right one. Thirty seconds. A wrong one costs 1.5s off
+the clock and the order stays up — a cost, never a life.
+
+**Everything on the shelf is the fridge's own** (`src/data/fridge.ts`): the
+same week's shopping that is stacked outside the shutter. Nothing was drawn
+for this game. No real-world brand appears; what is in that fridge is what
+this studio drew.
+
+The penalty is spent through the shell (`host.penalty`) rather than out of a
+second clock kept in the game — two clocks is how a round ends twice.
+
+### Balance, measured
+
+`scripts/snack-balance.mjs`, a thousand rounds each:
+
+| player | delivered | wrong | mean | stars |
+|---|---|---|---|---|
+| quick, sure (0.7s, 2% wrong) | 39.7 | 0.8 | 292 | 2.83 |
+| steady (1.1s, 6%) | 23.4 | 1.4 | 158 | 1.61 |
+| slow, careful (1.8s, 4%) | 14.9 | 0.6 | 98 | 0.92 |
+| fast, sloppy (0.55s, 28%) | 22.9 | 8.4 | 121 | 1.14 |
+
+The one worth reading is the last two rows: the sloppy player delivers as many
+as the steady one and scores a quarter less, because a mistake costs the run
+and the run is where the multiplier lives. Speed alone is not enough. Stars at
+70 / 150 / 260.
+
+### Input
+A tap on a thing, or the number key printed on it. Both arrive as the same
+`SELECT` through the shared input manager; the game adds no listener of its
+own. Four across on a desk, two by two on a phone held upright, one row of
+smaller ones sideways — every one of them at least 44px.
+
+## PHASE 7 — 택배 정리
+
+What came in this week, split between the five things the studio is making. A
+parcel arrives with a project's name and colour on it; put it on that
+project's pile. Thirty seconds, 1.5s for a wrong pile, the parcel stays.
+
+Not a delivery-company game: it is the studio's own sorting, and the piles are
+the five projects.
+
+### Difficulty without shrinking the label
+The easy way to make sorting harder is to make the writing smaller, and a game
+you lose because you could not read something is not a game. So what grows is
+**how many piles are out**: three at the start, five by the end. Every target
+and every label stays the same size. The piles keep the registry's own order,
+so the row does not reshuffle between parcels — a row that moves is a row
+nobody can learn.
+
+Three cues on every pile: the project's colour, its name, and its own key art
+(the same `-wall.webp` print that hangs on the garage wall).
+
+### Three ways to answer
+Drag the parcel onto a pile, tap the pile, or press the number printed on it.
+All three go through the shared input manager — a drag as `DRAG_END` with a
+position to hit-test, the other two as `SELECT` — and the game adds no
+listener of its own. A drag cancelled by a lost window is not an answer and
+costs nothing.
+
+### Balance, measured
+
+`scripts/parcel-balance.mjs`, a thousand rounds each:
+
+| player | sorted | wrong | mean | stars |
+|---|---|---|---|---|
+| quick, sure (0.65s, 2%) | 42.5 | 0.9 | 313 | 2.98 |
+| steady (1.0s, 6%) | 25.5 | 1.5 | 173 | 1.92 |
+| slow, careful (1.7s, 3%) | 16.1 | 0.5 | 109 | 0.99 |
+| fast, sloppy (0.5s, 30%) | 22.9 | 9.3 | 119 | 1.33 |
+
+Same shape as the errand game: the sloppy player sorts as many as the steady
+one and scores a third less. Piles out across a round: 3 → 4 → 4 → 5 → 5.
+Stars at 60 / 130 / 230.
