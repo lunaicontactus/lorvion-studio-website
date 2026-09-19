@@ -577,20 +577,18 @@
   transform-origin:50% 100%;
   will-change:transform;
 }
-.garage__broom.is-live{opacity:1}
-.garage__broom[data-phase="sweep"]{animation:broom-sweep 1000ms ease-in-out 2}
-.garage__broom[data-phase="move"]{animation:broom-shuffle 600ms ease-in-out infinite}
-.garage__broom[data-phase="enter"],.garage__broom[data-phase="leave"]{animation:broom-shuffle 700ms ease-in-out infinite}
+.garage__broom.is-live{opacity:.9}
+/* One slow sweep, low and small: the bristles move, the handle barely does.
+   Coming and going it only fades and glides — nothing bobs or bounces. */
+.garage__broom[data-phase="sweep"]{animation:broom-sweep 1300ms ease-in-out 2}
 @keyframes broom-sweep{
   0%{rotate:0deg;translate:0 0}
-  30%{rotate:-9deg;translate:-8px 0}
-  70%{rotate:8deg;translate:9px 0}
+  35%{rotate:-4deg;translate:-4px 0}
+  75%{rotate:3.5deg;translate:4px 0}
   100%{rotate:0deg;translate:0 0}
 }
-@keyframes broom-shuffle{
-  0%{rotate:-2deg;translate:0 0}
-  50%{rotate:2deg;translate:0 -3px}
-  100%{rotate:-2deg;translate:0 0}
+@media (prefers-reduced-motion:reduce){
+  .garage__broom[data-phase="sweep"]{animation:none}
 }
 
 /* Depth. The plate is the middle; the sky through the window is behind it

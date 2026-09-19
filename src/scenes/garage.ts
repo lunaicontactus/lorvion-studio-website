@@ -17,7 +17,7 @@ import { loadImage } from '@/systems/assets'
 import { depthOf, occludersFor } from '@/data/occlusion'
 import { BITS, BROOM_ZONES, BROOM_ZONES_PORTRAIT, LIGHTS, LIGHTS_PORTRAIT, SKY, STARS, STEAM, STEAM_PORTRAIT, TV_SCREEN, TV_SCREEN_PORTRAIT } from '@/data/ambience'
 import { ATTENTION, Ambient } from '@/systems/ambient'
-import { Broom, BROOM_MS } from '@/systems/broom'
+import { Broom, BROOM_EVERY, BROOM_MS, BROOM_NOT_BEFORE } from '@/systems/broom'
 import { Footsteps } from '@/systems/footsteps'
 import { OUTLINE_PATHS, HIT_PADDING, OUTLINE_OFFSET } from '@/data/outlines'
 import { ticker } from '@/systems/tick'
@@ -159,7 +159,8 @@ const REACT_LIGHT: Readonly<Record<string, string>> = {
 const PARALLAX = { bg: 0.022, fg: 0.012 }
 
 /** How tall the broom stands, in world units: a little over a dokkaebi. */
-const BROOM_HEIGHT = { landscape: 172, portrait: 160 }
+// Smaller than a dokkaebi standing up, so it never reads as one of the cast.
+const BROOM_HEIGHT = { landscape: 148, portrait: 136 }
 import { CHARACTERS } from '@/data/characters'
 import { spritesFor } from '@/data/sprites'
 import type { WorldLayout, WorldObject } from '@/types/world'
@@ -570,7 +571,6 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
 
       el.addEventListener('click', (e) => {
         e.stopPropagation()
-        if (obj.sfx) audio.play(obj.sfx)
         if (obj.action.kind === 'toggle') {
           // Nothing opens. The thing itself changes, and stays changed —
           // through a rebuild on rotation as well.
@@ -767,7 +767,6 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
             // to acknowledge that quietly. No bubble, no name tag, no panel —
             // the dokkaebi are not another menu.
             onTouch: (touched) => {
-              audio.play('click', 0.22)
               save.update((d) => {
                 if (!d.discoveredCharacters.includes(touched.id)) {
                   d.discoveredCharacters.push(touched.id)
@@ -853,7 +852,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
           }
           const sweeper = new Broom({
             zones: portrait ? BROOM_ZONES_PORTRAIT : BROOM_ZONES,
-            onSweep: () => audio.play('broom', 0.2),
+            onSweep: () => audio.play('broom', 0.12),
             paint: (s) => {
               if (!s) {
                 el.classList.remove('is-live')
@@ -885,8 +884,11 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
           }
           let zone = sweeper.pickZone([], null)
           ambient.add({
-            id: 'broom', every: { min: 45000, max: 110000 }, duration: BROOM_MS,
-            priority: ATTENTION.object, restless: true, notBefore: 18000,
+            // ?broom=now brings it out early, so its routine can be watched
+            // without waiting out the minutes it keeps between visits.
+            id: 'broom', every: BROOM_EVERY, duration: BROOM_MS,
+            priority: ATTENTION.object, restless: true,
+            notBefore: new URLSearchParams(location.search).get('broom') === 'now' ? 3000 : BROOM_NOT_BEFORE,
             ready: () => {
               zone = sweeper.pickZone(bodies(), avoidRect(), h)
               return zone !== null

@@ -20,7 +20,9 @@ const THINGS = [
   { id: 'fridge', prop: 'fridge', surface: '.prop--fridge .fridge__inside', content: '.prop--fridge .fridge__shelves--low', sfx: 'fridge_open', light: 'fridge' },
   // PHASE 6: the open drawer gets a faint warm light of its own.
   { id: 'cabinet', prop: 'cabinet', surface: '.prop--cabinet .drawer__lift', content: '.prop--cabinet .paper', sfx: 'drawer_open', light: 'cabinet' },
-  { id: 'shelf', prop: 'shelf', surface: '.prop--shelf', content: '.prop--shelf .relic', sfx: 'drawer', light: null },
+  // The shelf has no sound of its own (WORLD 2.1: only delivered sounds), so
+  // it is heard as nothing at all — no borrowed click in its place.
+  { id: 'shelf', prop: 'shelf', surface: '.prop--shelf', content: '.prop--shelf .relic', sfx: null, light: null },
   { id: 'workbench', prop: 'workbench', surface: '.prop--workbench', content: '.prop--workbench .bench2__img', sfx: 'paper', light: null },
   { id: 'radio', prop: 'radio', surface: '.prop--radio', content: '.prop--radio [data-radio-freq]', sfx: 'radio_tune', light: 'radio' },
   // The outside door is not here: since PHASE 8 it is a crossing, not a
@@ -97,12 +99,19 @@ for (const view of [
         await expect(page.locator(`.thing--${t.id}`)).toHaveClass(/is-active/)
         if (t.light) await expect(page.locator(`.garage__light[data-light="${t.light}"]`)).toHaveClass(/is-on/)
         const sounds = (await played(page)).filter((p) => p.at >= t0)
-        expect(sounds.some((p) => p.src.includes(`/${t.sfx}.m4a`)), `${t.sfx} was not played (${sounds.map((p) => p.src.split('/').pop()).join(',')})`).toBe(true)
+        const effects = sounds.filter((p) => p.src.includes('/sfx/'))
+        if (t.sfx) expect(sounds.some((p) => p.src.includes(`/${t.sfx}.m4a`)), `${t.sfx} was not played (${sounds.map((p) => p.src.split('/').pop()).join(',')})`).toBe(true)
+        else expect(effects.map((p) => p.src.split('/').pop()), 'a thing with no sound of its own made one').toEqual([])
+        // One sound per touch, never a stock clip on top of the delivered one.
+        expect(effects.length, `more than one effect for one touch (${effects.map((p) => p.src.split('/').pop()).join(',')})`).toBeLessThanOrEqual(1)
+        expect(sounds.some((p) => /\/(click|door|drawer|bell|discovery|keyboard|surprise|wrapper)\.m4a/.test(p.src)), 'a stock clip played').toBe(false)
         expect(page.locator(panel)).not.toHaveClass(/is-open/)
         // 2. Then its own cut-out, with the content inside its surface.
         await expect(page.locator(panel)).toHaveClass(/is-open/, { timeout: 6000 })
-        const openedAt = (await played(page)).find((p) => p.src.includes(`/${t.sfx}.m4a`))!.at
-        expect(openedAt, 'the sound came after the thing opened').toBeLessThan(t0 + 400)
+        if (t.sfx) {
+          const openedAt = (await played(page)).find((p) => p.src.includes(`/${t.sfx}.m4a`))!.at
+          expect(openedAt, 'the sound came after the thing opened').toBeLessThan(t0 + 400)
+        }
         await expect(page.locator(`.prop[data-prop="${t.prop}"]`)).toBeVisible()
         await expect(page.locator(t.content).first()).toBeVisible({ timeout: 4000 })
         await page.waitForTimeout(700) // the prop has arrived and its doors have swung

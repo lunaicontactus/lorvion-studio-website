@@ -29,16 +29,15 @@ const SFX = '/assets/audio'
 const ROOM_TONE = `${SFX}/ambient.m4a`
 const ROOM_TONE_VOLUME = 0.16
 
+/**
+ * Every effect on the site is one the studio chose and delivered (WORLD 2.1,
+ * PHASE B): nothing generic, nothing doubled. A thing with no sound of its own
+ * is silent, which is better than a borrowed click. The eight stock clips
+ * that were here before the delivery (click, door, drawer, bell, discovery,
+ * keyboard, surprise, wrapper) are gone, and so are their files.
+ */
 const CLIPS = {
-  click: `${SFX}/click.m4a`,
-  door: `${SFX}/door.m4a`,
-  drawer: `${SFX}/drawer.m4a`,
-  bell: `${SFX}/bell.m4a`,
-  discovery: `${SFX}/discovery.m4a`,
-  keyboard: `${SFX}/keyboard.m4a`,
-  surprise: `${SFX}/surprise.m4a`,
-  wrapper: `${SFX}/wrapper.m4a`,
-  // The objects, at the moment they react (the user's own effects, PHASE 5).
+  // The objects, at the moment they react.
   pc_on: `${SFX}/sfx/pc_on.m4a`,
   pc_click: `${SFX}/sfx/pc_click.m4a`,
   tv_channel: `${SFX}/sfx/tv_channel.m4a`,
@@ -48,16 +47,29 @@ const CLIPS = {
   radio_tune: `${SFX}/sfx/radio_tune.m4a`,
   door_open: `${SFX}/sfx/door_open.m4a`,
   shutter_open: `${SFX}/sfx/shutter_open.m4a`,
-  // The room living (PHASE 6).
+  // The room living.
   broom: `${SFX}/sfx/broom.m4a`,
   crew_step: `${SFX}/sfx/crew_step_01.m4a`,
-  // The games and the archive, for the phases after this one.
+  // The games and the archive.
   game_start: `${SFX}/sfx/game_start.m4a`,
   game_fail: `${SFX}/sfx/game_fail.m4a`,
   star_get: `${SFX}/sfx/star_get.m4a`,
   secret_unlock: `${SFX}/sfx/secret_unlock.m4a`,
   lantern: `${SFX}/sfx/lantern.m4a`,
   stall_bell: `${SFX}/sfx/stall_bell.m4a`,
+  // WORLD 2.1: YOMI's snack (the first, loud bite of the delivered eating
+  // sound, and its small second bite), and POKO turning round and getting up.
+  eat: `${SFX}/sfx/eat.m4a`,
+  eat_soft: `${SFX}/sfx/eat_soft.m4a`,
+  poko_turn: `${SFX}/sfx/poko_turn.m4a`,
+  poko_step: `${SFX}/sfx/poko_step.m4a`,
+} as const
+
+/** Loops that are not music: the air of a place, and the music box's tune. */
+export const LOOPS = {
+  alley: `${SFX}/ambience/alley.m4a`,
+  playground: `${SFX}/ambience/playground_night.m4a`,
+  musicBox: `${SFX}/music/music_box.m4a`,
 } as const
 
 export type ClipName = keyof typeof CLIPS
@@ -138,6 +150,8 @@ class AudioManager {
   private worldSrc: string | null = null
   private worldVolume = 0.3
   private worldOn = false
+  /** How far the world's music is stepped back under something (the music box). */
+  private worldDim = 1
 
   /** Files fetched ahead of a door, so the crossing does not wait on the network. */
   private warmed = new Map<string, HTMLAudioElement>()
@@ -190,12 +204,13 @@ class AudioManager {
       if (el.src !== abs) el.src = src
       this.world = el
     }
-    if (fadeMs > 0) this.fadeUp(el, volume, fadeMs)
+    const target = volume * this.worldDim
+    if (fadeMs > 0) this.fadeUp(el, target, fadeMs)
     else {
       const r = this.ramps.get(el)
       if (r !== undefined) cancelAnimationFrame(r)
       this.ramps.delete(el)
-      el.volume = volume
+      el.volume = target
     }
     void el.play().catch((err: unknown) => log.debug('audio: world', err))
   }
@@ -210,6 +225,66 @@ class AudioManager {
 
   get worldPlaying(): boolean {
     return this.worldOn && !!this.world && !this.world.paused
+  }
+
+  /**
+   * Hold the world's music lower (a fraction of its level) until asked back
+   * to 1: the music box plays its tune over the archive's song, not beside it.
+   */
+  dimWorld(factor: number, ms = 600): void {
+    this.worldDim = Math.max(0, Math.min(1, factor))
+    if (this.world && !this.world.paused) this.ramp(this.world, this.worldVolume * this.worldDim, ms)
+  }
+
+  // ── Loops that are not music (WORLD 2.1) ────────────────────────────────
+  private loops = new Map<string, { el: HTMLAudioElement; src: string; volume: number; on: boolean }>()
+
+  /**
+   * Start a loop under the music — the air of a place, the music box's tune —
+   * by key, so the same one is never started twice. Silent before a gesture
+   * and while muted; comes back with the sound.
+   */
+  loop(key: string, src: string, volume: number, fadeMs = 0): void {
+    let l = this.loops.get(key)
+    if (!l) {
+      const el = new Audio()
+      el.loop = true
+      el.preload = 'auto'
+      l = { el, src: '', volume, on: true }
+      this.loops.set(key, l)
+    }
+    l.on = true
+    l.volume = volume
+    if (!this.unlocked || !pref.enabled) {
+      l.src = src
+      return
+    }
+    const abs = new URL(src, location.href).href
+    if (l.el.src !== abs) l.el.src = src
+    l.src = src
+    if (fadeMs > 0 && l.el.paused) this.fadeUp(l.el, volume, fadeMs)
+    else if (fadeMs > 0) this.ramp(l.el, volume, fadeMs)
+    else {
+      const r = this.ramps.get(l.el)
+      if (r !== undefined) cancelAnimationFrame(r)
+      this.ramps.delete(l.el)
+      l.el.volume = volume
+    }
+    void l.el.play().catch((err: unknown) => log.debug('audio: loop', key, err))
+  }
+
+  /** Down and out over `fadeMs`. */
+  unloop(key: string, fadeMs = 0): void {
+    const l = this.loops.get(key)
+    if (!l) return
+    l.on = false
+    if (fadeMs > 0 && !l.el.paused) this.ramp(l.el, 0, fadeMs, true)
+    else l.el.pause()
+  }
+
+  loopPlaying(key: string): boolean {
+    const l = this.loops.get(key)
+    return !!l && l.on && !l.el.paused
   }
 
   /**
@@ -405,6 +480,7 @@ class AudioManager {
       this.stream?.pause()
       this.world?.pause()
       for (const el of this.cache.values()) el.pause()
+      for (const l of this.loops.values()) l.el.pause()
       return
     }
     this.unlocked = true
@@ -421,6 +497,7 @@ class AudioManager {
     this.reconcile()
     if (!this.inRoom && this.ambientOn) this.toggleAmbient(true, this.ambientVolume)
     if (this.worldOn && this.worldSrc) this.playWorld(this.worldSrc, this.worldVolume)
+    for (const [key, l] of this.loops) if (l.on && l.src) this.loop(key, l.src, l.volume)
   }
 
   /** The tab went away: nothing keeps playing to an empty room. */
@@ -429,6 +506,7 @@ class AudioManager {
       this.stream?.pause()
       this.ambient?.pause()
       this.world?.pause()
+      for (const l of this.loops.values()) l.el.pause()
     } else if (pref.enabled && this.unlocked) {
       this.resume()
     }

@@ -59,10 +59,16 @@ async function touch(page: Page, id: string): Promise<void> {
 const outside = (page: Page, timeout = 6000): Promise<void> =>
   expect(page.locator('[data-playground]')).toBeVisible({ timeout })
 
+/** Arrived: the night has lifted and the places have come up (WORLD 2.1). */
+const arrived = async (page: Page): Promise<void> => {
+  await expect(page.locator('[data-crossing]')).toBeHidden({ timeout: 8000 })
+  await expect(page.locator('[data-playground]')).not.toHaveClass(/is-hushed/)
+}
+
 async function goOut(page: Page): Promise<void> {
   await touch(page, 'outside-door')
   await outside(page)
-  await page.waitForTimeout(800) // the night has gone out again
+  await arrived(page)
 }
 
 const worldTransform = (page: Page): Promise<string> =>
@@ -93,15 +99,20 @@ for (const view of [
       expect(door, 'the door made no sound').toBeDefined()
       expect(door!.at).toBeGreaterThanOrEqual(t0)
       expect(door!.at, 'the sound came after the leaf swung').toBeLessThan(ajarAt)
-      // 3. The crossing: night in, the room gone, the playground up, night out.
+      // 3. The crossing (WORLD 2.1): not a cut. The night that comes in is
+      // the outward dusk, the playground arrives hushed — nothing to touch
+      // until the night lifts — and the whole way takes a breath, not an age.
       await expect(page.locator('[data-crossing]')).toHaveClass(/is-dark/, { timeout: 3000 })
+      await expect(page.locator('[data-crossing]')).toHaveClass(/is-dusk/)
       await outside(page)
-      const crossedAt = await page.evaluate(() => performance.now())
-      expect(crossedAt - t0, 'the crossing took too long').toBeLessThan(3200)
+      await expect(page.locator('[data-playground]')).toHaveClass(/is-hushed/)
       await expect(page.locator('[data-garage]')).toBeHidden()
       await expect(page.locator('[data-panel-root]')).toBeHidden()
       expect(await page.evaluate(() => location.hash)).toBe('#playground')
-      await expect(page.locator('[data-crossing]')).not.toHaveClass(/is-dark/, { timeout: 2000 })
+      await arrived(page)
+      const arrivedAt = await page.evaluate(() => performance.now())
+      expect(arrivedAt - t0, 'the way out was a jump cut').toBeGreaterThan(3500)
+      expect(arrivedAt - t0, 'the way out dragged').toBeLessThan(6000)
       // The world outside: five places, three fires, the foreground over all.
       await expect(page.locator('.spot')).toHaveCount(5)
       expect(await page.locator('.playground__fire').count()).toBeGreaterThanOrEqual(2)

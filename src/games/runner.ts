@@ -40,6 +40,12 @@ export interface RunnerHost {
    * it was opened from one of its buildings.
    */
   readonly exitLabel?: () => string
+  /**
+   * Leaving is a way out of a world, not a click that makes things vanish
+   * (WORLD 2.1): when this is given, quitting hands the actual `close` to it,
+   * and it decides when — after the screen has been covered, say.
+   */
+  readonly leave?: (close: () => void) => Promise<void>
 }
 
 const REASON_LABEL: Record<GameResult['reason'], string> = {
@@ -186,9 +192,9 @@ export class GameRunner {
       end: (r) => this.#result(r),
       sfx: (name, volume) => {
         audio.play(name, volume)
-        // POKO turning round is the cue that matters; the world's music
-        // steps back for a moment so it is never lost under it (PHASE 10).
-        if (name === 'bell' && def.id === 'mugunghwa') audio.duck(1400)
+        // POKO turning round is the cue that matters; the music steps back
+        // for a moment so it is never lost under it.
+        if (name === 'poko_turn') audio.duck(1400)
       },
       hud: (score, seconds) => {
         this.#score = score
@@ -437,8 +443,20 @@ export class GameRunner {
     this.#clock = null
   }
 
+  #leaving = false
+
   #quit(): void {
-    this.close()
+    const leave = this.#host.leave
+    if (!leave) {
+      this.close()
+      return
+    }
+    if (this.#leaving) return
+    this.#leaving = true
+    // Nothing runs, and nothing can be pressed, on the way out.
+    this.#input?.setEnabled(false)
+    this.#stop()
+    void leave(() => this.close()).finally(() => { this.#leaving = false })
   }
 
   #exitLabel(): string {

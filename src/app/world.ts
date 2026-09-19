@@ -20,10 +20,12 @@ import { acknowledge, secretState } from '@/systems/secret'
 import { GameRunner } from '@/games/runner'
 import { gameById } from '@/games/registry'
 import { Panels } from '@/ui/panels'
+import { PixelWipe } from '@/ui/pixelWipe'
+import type { GameDef } from '@/games/types'
 import { Interaction } from '@/systems/interaction'
 import { PROJECTS } from '@/data/projects'
 import { ROOM_ART, worldFor } from '@/data/world'
-import { audio } from '@/systems/audio'
+import { audio, LOOPS } from '@/systems/audio'
 import { motion } from '@/systems/motion'
 import { log } from '@/systems/log'
 import { save } from '@/systems/storage'
@@ -38,8 +40,10 @@ const REACT_SFX: Readonly<Record<string, { readonly name: string; readonly volum
   cabinet: { name: 'drawer_open', volume: 0.3 },
   radio: { name: 'radio_tune', volume: 0.26 },
   'outside-door': { name: 'door_open', volume: 0.3 },
-  parcel: { name: 'wrapper', volume: 0.4 },
-  shelf: { name: 'drawer', volume: 0.26 },
+  // The door in the bookcase is a door too, once it opens (a locked touch
+  // never reaches here: it only shows its seam).
+  'secret-door': { name: 'door_open', volume: 0.24 },
+  // The parcel and the shelf have no sound of their own, so they have none.
   workbench: { name: 'paper', volume: 0.24 },
   wall: { name: 'paper', volume: 0.18 },
 }
@@ -124,9 +128,17 @@ export function mountWorld(): () => void {
     rectOf: (id) => (outside ? playground?.screenRectOf(id) : inArchive ? archive?.screenRectOf(id) : garage?.screenRectOf(id)) ?? null,
   })
   const gameRoot = document.querySelector<HTMLElement>('[data-game-root]')!
+  // The door between the painted site and the pixel games (WORLD 2.1).
+  const wipe = new PixelWipe()
+  off.push(() => wipe.destroy())
+  const wait = (ms: number): Promise<void> => new Promise((resolve) => later(resolve, ms))
   const games = new GameRunner(gameRoot, {
     // Leaving a game goes back to wherever it was entered from.
     exitLabel: () => (outside ? '놀이터로' : '차고로'),
+    leave: (close) => wipe.cover('', 420).then(() => {
+      close()
+      return wait(motion.reduced ? 0 : 160)
+    }).then(() => wipe.uncover(480)),
     onOpenChange: (open, gameId) => {
       // One music at a time (PHASE 14): the game's own while it is up, and
       // whatever was playing where it was opened from, again, afterwards.
@@ -268,7 +280,6 @@ export function mountWorld(): () => void {
       const el = garageEl.querySelector(`.thing--${id}`)
       el?.classList.add('is-rattling')
       setTimeout(() => el?.classList.remove('is-rattling'), 460)
-      audio.play('click', 0.25)
       // The locked door: the seam shows for a moment, and that is all.
       if (id === 'secret-door') garage?.hintSecret()
     },
@@ -385,32 +396,58 @@ export function mountWorld(): () => void {
     inside = false
     alleyEl?.classList.remove('alley--inside', 'alley--push')
     audio.leaveRoom()
-    audio.play('door', 0.4)
+    // Out the way it came in: the shutter.
+    audio.play('shutter_open', 0.26)
   }
 
   // ── Outside: the crossing, the places, the way back ──────────────────────
   /** Night in, then the promise; night out is the caller's. */
-  const dark = (quick: boolean): Promise<void> => new Promise((resolve) => {
+  /**
+   * `ms` is how long the night takes to come in (or go out); the crossing's
+   * CSS transition is set to match, so the promise and the picture agree.
+   * `dusk` is the outward journey's own night (WORLD 2.1): deep blue with the
+   * doorway's warm light in the middle of it, rather than plain dark.
+   */
+  const dark = (quick: boolean, ms = 660, dusk = false): Promise<void> => new Promise((resolve) => {
     if (!crossingEl) {
       resolve()
       return
     }
+    const t = quick ? 170 : ms
+    crossingEl.style.setProperty('--cross-ms', `${t}ms`)
+    crossingEl.classList.toggle('is-dusk', dusk && !quick)
     crossingEl.hidden = false
     void crossingEl.offsetWidth
     crossingEl.classList.add('is-dark')
-    later(resolve, quick ? 170 : 660)
+    later(resolve, t)
   })
-  const light = (quick: boolean): Promise<void> => new Promise((resolve) => {
+  const light = (quick: boolean, ms = 660): Promise<void> => new Promise((resolve) => {
     if (!crossingEl) {
       resolve()
       return
     }
+    const t = quick ? 170 : ms
+    crossingEl.style.setProperty('--cross-ms', `${t}ms`)
     crossingEl.classList.remove('is-dark')
     later(() => {
       crossingEl.hidden = true
+      crossingEl.classList.remove('is-dusk')
       resolve()
-    }, quick ? 170 : 660)
+    }, t)
   })
+  /** A breath in the dark, between one place and the next. */
+  const pause = (ms: number): Promise<void> => new Promise((resolve) => later(resolve, ms))
+
+  /**
+   * The way out to the playground, in time (WORLD 2.1). Not a cut: the
+   * room's sound goes down with the light, the night outside comes in from
+   * the doorway, there is a breath of dark in which the playground's own air
+   * starts, and then it is there — a little close and dim at first, settling
+   * back to itself — and its places show their rings and names only as the
+   * night lifts. About four seconds from the door to a playground you can
+   * touch; the reduced-motion visitor gets the quick cut.
+   */
+  const OUT = { dark: 1300, breath: 450, light: 1400, settle: 2600 } as const
 
   /**
    * Through the door (PHASE 8). The room's sound goes down as the night
@@ -426,17 +463,21 @@ export function mountWorld(): () => void {
     }
     crossing = true
     const quick = motion.reduced || o.instant === true
-    audio.leaveRoom(quick ? 0 : 700)
-    void dark(quick).then(() => {
+    audio.leaveRoom(quick ? 0 : OUT.dark + 500)
+    void dark(quick, OUT.dark, true).then(() => {
       interaction.dismiss({ instant: true })
       garageEl.hidden = true
       garage?.setPaused(true)
       if (!playground) playground = mountPlayground(document, { onPlace })
       playgroundEl.hidden = false
+      // Arriving: close and dim, and nothing to touch yet (styles/playground.css).
+      if (!quick) playgroundEl.classList.add('is-arriving', 'is-hushed')
       playground?.setPaused(false)
       document.body.classList.add('is-outside')
       outside = true
-      audio.playWorld(PLAYGROUND_MUSIC, 0.3, quick ? 0 : 1400)
+      // The air first, in the dark; the song a moment after it.
+      audio.loop('playground', LOOPS.playground, 0.3, quick ? 0 : 2400)
+      audio.playWorld(PLAYGROUND_MUSIC, 0.3, quick ? 0 : 2800)
       if (!o.fromHistory) {
         // The door's own entry (pushed when it was touched) becomes the
         // playground's: Back from outside is the room, not the door again.
@@ -445,7 +486,13 @@ export function mountWorld(): () => void {
         else history.pushState({ world: 'playground' }, '', '#playground')
       }
       log.debug('world: outside')
-      return light(quick)
+      return quick ? light(true) : pause(OUT.breath).then(() => {
+        void playgroundEl.offsetWidth
+        playgroundEl.classList.add('is-settling')
+        later(() => playgroundEl.classList.remove('is-arriving', 'is-settling'), OUT.settle)
+        // The places come up as the night lifts; the picture keeps settling.
+        return light(false, OUT.light).then(() => playgroundEl.classList.remove('is-hushed'))
+      })
     }).then(crossed)
   }
 
@@ -463,6 +510,7 @@ export function mountWorld(): () => void {
       closePlace()
     }
     audio.stopWorld(quick ? 0 : 500)
+    audio.unloop('playground', quick ? 0 : 600)
     void dark(quick).then(() => {
       playgroundEl.hidden = true
       playground?.setPaused(true)
@@ -601,7 +649,10 @@ export function mountWorld(): () => void {
         archive.focusPlace(place.id)
         archive.setPaused(true)
         if (place.id === 'music-box') {
-          audio.play('discovery', 0.24)
+          // Its own tune, wound and playing, with the archive's song
+          // stepped back under it until the lid is closed.
+          audio.dimWorld(0.3, 700)
+          audio.loop('musicBox', LOOPS.musicBox, 0.34, 900)
           panels.openMusicBox(place, def)
         } else {
           audio.play('paper', 0.2)
@@ -614,6 +665,10 @@ export function mountWorld(): () => void {
   }
 
   const closeArchivePlace = (): void => {
+    if (audio.loopPlaying('musicBox')) {
+      audio.unloop('musicBox', 700)
+      audio.dimWorld(1, 900)
+    }
     if (!archive) return
     archive.setActive(null)
     archive.restoreCamera()
@@ -657,7 +712,6 @@ export function mountWorld(): () => void {
     playground.setActive(place.id)
     playground.focusPlace(place.id)
     playground.setPaused(true)
-    audio.play('click', 0.25)
     if (place.id === 'signpost') {
       panels.openSignpost(place, (target) => {
         panels.close()
@@ -669,18 +723,49 @@ export function mountWorld(): () => void {
     } else {
       // The game's track, fetched while its building is open.
       if (place.game && GAME_MUSIC[place.game]) audio.preloadWorld(GAME_MUSIC[place.game]!)
-      panels.openPlace(place, () => {
-        const def = place.game ? gameById(place.game) : undefined
+      const def = place.game ? gameById(place.game) : undefined
+      const go = (): void => {
+        if (!def || !panels.isOpen || entering) return
+        entering = true
         panels.close()
         closePlace()
-        if (def) games.open(def)
-      })
+        enterGame(def)
+      }
+      panels.openPlace(place, go)
+      // WORLD 2.1: the building answers — its sign lights, with the lantern's
+      // own sound — and a moment later the screen goes to pixels and the game
+      // is there. 들어가기 is still the immediate way; Escape still says no.
+      later(() => {
+        if (!panels.isOpen) return
+        document.querySelector(`.prop--place[data-prop="${place.id}"]`)?.classList.add('is-lit')
+        audio.play('lantern', 0.28)
+      }, motion.reduced ? 0 : 380)
+      const opened = panelsOpenedAt = performance.now()
+      later(() => {
+        if (panelsOpenedAt === opened) go()
+      }, motion.reduced ? 400 : 1600)
     }
     history.pushState({ world: 'playground', place: place.id }, '', '#playground')
   }
 
+  /** Into a game, through the pixels: covered, the title, the game, uncovered. */
+  let entering = false
+  let panelsOpenedAt = 0
+  const enterGame = (def: GameDef): void => {
+    void wipe.cover(def.title, 460)
+      .then(() => wait(motion.reduced ? 0 : 560))
+      .then(() => {
+        games.open(def)
+        return wait(80)
+      })
+      .then(() => wipe.uncover(440))
+      .finally(() => { entering = false })
+  }
+
   /** The place is given back: unringed, the camera returned, the world moving. */
   const closePlace = (): void => {
+    // Whatever was about to happen at the place does not, now.
+    panelsOpenedAt = -1
     if (!playground) return
     playground.setActive(null)
     playground.restoreCamera()
@@ -783,9 +868,15 @@ export function mountWorld(): () => void {
       // the room's air as its light comes on, its song under that a moment
       // later — all from the one gesture that started the door.
       onBeat: (beat) => {
-        if (beat === 'enter') audio.unlock()
+        if (beat === 'enter') {
+          audio.unlock()
+          // The alley's own night air, for the moment before the shutter.
+          audio.loop('alley', LOOPS.alley, 0.3, 500)
+        }
         if (beat === 'rise') audio.play('shutter_open', 0.34)
         if (beat === 'light' || beat === 'skip') {
+          // Inside, the room's air takes over from the street's.
+          audio.unloop('alley', beat === 'skip' ? 300 : 1800)
           if (soundUnderDoor) return
           soundUnderDoor = true
           audio.enterRoom({ tone: 1400, music: 2200, musicAfter: 700 })

@@ -638,7 +638,6 @@ export class Panels {
               await navigator.clipboard.writeText(btn.dataset['copy'] ?? '')
               btn.textContent = 'COPIED'
               btn.classList.add('is-copied')
-              audio.play('click', 0.35)
               this.#later(() => {
                 btn.textContent = 'COPY'
                 btn.classList.remove('is-copied')
@@ -810,7 +809,6 @@ export class Panels {
         say.classList.remove('is-said')
         void say.offsetWidth
         say.classList.add('is-said')
-        audio.play('click', 0.22)
       })
     }
   }
@@ -918,7 +916,6 @@ export class Panels {
         card.style.left = btn.style.left
         card.style.top = btn.style.top
         card.innerHTML = `<b class="shelf__name">${esc(item.title)}</b><p class="shelf__note">${esc(item.description)}</p>`
-        audio.play('click', 0.22)
       })
     }
   }
@@ -962,7 +959,6 @@ export class Panels {
       car.classList.toggle('is-done', done)
       car.setAttribute('aria-pressed', String(done))
       if (note) note.textContent = done ? '닫았다. 남은 부품은 못 본 걸로.' : '태엽 자동차. 뚜껑 열고 기어 맞추는 중.'
-      audio.play('click', 0.3)
     })
   }
 

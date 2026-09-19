@@ -124,7 +124,7 @@ class SnackGame implements GameInstance {
     } else {
       // Time, not a life. A wrong answer is a cost and never the end.
       this.#host.penalty(WRONG_MS)
-      this.#host.sfx('click', 0.22)
+      // No sound of its own for a wrong hand-over: the shelf shakes instead.
       this.#shelf.classList.add('is-wrong')
       this.#shakeIn = 420
       this.#run.hidden = true
