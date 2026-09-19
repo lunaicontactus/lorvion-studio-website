@@ -214,6 +214,7 @@ export class GameRunner {
       this.#input = new GameInput({
         root: this.#box,
         ...(def.holdKeys ? { holdKeys: def.holdKeys } : {}),
+        ...(def.controlKeys ? { controls: def.controlKeys } : {}),
         on: (event) => {
           // Never while paused, counting down or finished. The manager
           // already stops sending when disabled; this is the second lock,

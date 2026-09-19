@@ -217,25 +217,36 @@ for (const view of [
       await expect(page.locator('[data-playground-world] img[src*="poko_office"], [data-playground-world] img[src*="snack_stall"], [data-playground-world] img[src*="parcel_office"]')).toHaveCount(0)
     })
 
-    test('a building grows out of its place, and its game is played inside it and comes back', async ({ page }) => {
-      test.setTimeout(90_000)
+    test('a building answers, and its game opens through the pixels by itself, and comes back', async ({ page }) => {
+      test.setTimeout(120_000)
       await enter(page)
       await goOut(page)
-      for (const [id, title] of [['poko-office', '무궁화'], ['snack-stall', '야식'], ['parcel-office', '택배']] as const) {
+      const games = [['poko-office', '요미의 과자 몰래 먹기'], ['snack-stall', '도깨비 야식 심부름'], ['parcel-office', '모모의 택배 배달']] as const
+      for (const [i, [id, title]] of games.entries()) {
         const spot = page.locator(`[data-place="${id}"]`)
         await spot.focus()
         await page.waitForTimeout(700)
         await spot.press('Enter')
+        // The building grows out of its place, and its sign lights.
         await expect(page.locator(`.prop--place[data-prop="${id}"]`)).toBeVisible({ timeout: 6000 })
         await expect(spot).toHaveClass(/is-active/)
-        await expect(page.locator('.place__enter')).toBeVisible()
-        await page.locator('.place__enter').click()
+        await expect(page.locator(`.prop--place[data-prop="${id}"]`)).toHaveClass(/is-lit/, { timeout: 2000 })
+        // 들어가기 is the immediate way in; left alone, it goes in by itself.
+        if (i === 0) await page.locator('.place__enter').click()
+        // The pixels cover the screen with the game's name on them…
+        await expect(page.locator('[data-pixel-wipe-title]')).toHaveText(title, { timeout: 4000 })
+        // …and the game is there: its own pixel screen, its title.
         await expect(page.locator('[data-game-shell]')).toBeVisible({ timeout: 6000 })
-        await expect(page.locator('#gameTitle')).toContainText(title)
-        // The way out says where it goes.
+        await expect(page.locator('#gameTitle')).toHaveText(title)
+        await expect(page.locator('[data-game-box].pixel-game canvas.pixel-stage__screen')).toBeVisible()
+        await expect(page.locator('[data-pixel-wipe]')).toBeHidden({ timeout: 4000 })
+        // Nothing of the painted site shows round it.
+        expect(await page.locator('.game-layer').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(7, 6, 13)')
+        // The way out says where it goes, and goes there through the pixels.
         await expect(page.locator('[data-game-exit]')).toHaveText('놀이터로')
         await page.locator('[data-game-exit]').click()
-        await expect(page.locator('[data-game-shell]')).toHaveCount(0)
+        await expect(page.locator('[data-game-shell]')).toHaveCount(0, { timeout: 6000 })
+        await expect(page.locator('[data-pixel-wipe]')).toBeHidden({ timeout: 4000 })
         await outside(page, 3000)
         await expect(page.locator('[data-panel-root]')).toBeHidden()
         await expect(spot).not.toHaveClass(/is-active/)

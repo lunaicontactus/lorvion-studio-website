@@ -62,13 +62,16 @@ test.describe('desktop', () => {
     const now = await order(page)
     expect(now.says.length).toBeGreaterThan(2)
     expect(now.right).toBeTruthy()
-    // The pictures are the fridge's own, not anybody's brand.
+    // The pictures are the fridge's own, not anybody's brand: each pixel
+    // icon is drawn from the fridge's own cut-out, and is actually drawn.
     const arts = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.snack__art')]
-      .map((el) => el.style.backgroundImage))
+      .map((el) => el.dataset['src'] ?? ''))
     expect(arts).toHaveLength(4)
     for (const a of arts) {
       expect(a, `unexpected picture ${a}`).toMatch(/\/assets\/images\/(alley|garage)\/[a-z_]+\.webp/)
     }
+    await expect.poll(() => page.evaluate(() => [...document.querySelectorAll<HTMLCanvasElement>('canvas.snack__art')]
+      .filter((c) => c.width > 8 && c.height > 8).length), { timeout: 6000 }).toBe(4)
   })
 
   test('the right one pays and brings the next order', async ({ page }) => {

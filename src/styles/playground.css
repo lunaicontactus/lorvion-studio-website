@@ -215,7 +215,7 @@
   box-shadow:0 0 0 3px #07060d,0 0 0 6px #ffe9a8,0 0 0 9px #07060d;
   opacity:0;
 }
-.pixel-wipe__title.is-on{opacity:1;animation:pixel-title 560ms steps(4,end) both}
+.pixel-wipe__title.is-on{opacity:1;animation:pixel-title 200ms steps(2,end) both}
 .pixel-wipe__title.is-on::after{content:" ▶";animation:pixel-blink 400ms steps(1,end) infinite}
 @keyframes pixel-title{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
 @keyframes pixel-blink{50%{opacity:0}}

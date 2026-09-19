@@ -72,11 +72,12 @@ for (const w of WINDOWS) {
         return now.some((t, k) => t !== before[k])
       }, { message: 'somebody in the room moved within 40s', timeout: 40_000, intervals: [250] }).toBe(true)
 
-      // The game, by its deep link. It is opened from the alley the way the
-      // link would be followed, through the same door.
-      await page.goto('/?play=build', { waitUntil: 'load' })
+      // A game, by its deep link (WORLD 2.1): the games live outside, so the
+      // link goes out to the playground and the game opens there, over it.
+      await page.goto('/?play=mugunghwa&sneakseed=7', { waitUntil: 'load' })
       await touch(page, '[data-alley-enter]', w.mobile)
-      await expect(page.locator('[data-game-start]')).toBeVisible({ timeout: 8000 })
+      await expect(page.locator('[data-game-start]')).toBeVisible({ timeout: 10_000 })
+      await expect(page.locator('[data-playground]')).toBeVisible()
       await expect(page.locator('[data-panel-root]')).toBeHidden()
       await touch(page, '[data-game-start]', w.mobile)
       await expect(page.locator('[data-game-time]')).not.toHaveText('45', { timeout: 5000 })
@@ -90,43 +91,30 @@ for (const w of WINDOWS) {
       await touch(page, '[data-game-resume]', w.mobile)
       await expect(page.locator('[data-game-resume]')).toBeHidden()
 
-      // Ignore the boss until caught — measured on the game's clock, not on
-      // the machine's.
-      //
-      // The round is forty-five seconds and it is spent a frame at a time,
-      // with each frame worth at most 64ms so that a tab coming back from
-      // the background cannot teleport through it (src/games/build/game.ts).
-      // A browser starved of processor therefore plays the same round in
-      // slow motion: it is not stuck, it is slow, and the clock says so.
-      // Counting off a fixed number of wall-clock seconds here is asking how
-      // fast the machine is — which is how this timed out on a loaded runner
-      // with the round still showing 36 and the boss on its first look.
-      //
-      // So press, and keep pressing for as long as the round is still
-      // counting down. A round that has stopped counting is the failure
-      // worth catching, and it is caught in ten seconds rather than four
-      // minutes.
-      //
-      // The press itself is given a second and no more. Being caught is the
-      // point of this loop, and the panel that says so covers the jump
-      // button — so the press that happens to land on the same beat as the
-      // result waits for a button it can never reach again. `catch` cannot
-      // help with that: there is no action timeout in this project, so the
-      // tap does not fail, it waits, and the whole test times out with the
-      // finished round sitting there on screen. That is what it was doing.
+      // Eat and never stop: POKO turns round, three times, and that is the
+      // round. Held by a finger on the pad on a phone, by Space on a desktop.
+      // Measured on the game's clock: a round that stops counting down is
+      // the failure worth catching, and it is caught in seconds.
+      if (w.mobile) {
+        const pad = (await page.locator('[data-sneak-pad]').boundingBox())!
+        await page.mouse.move(pad.x + pad.width / 2, pad.y + pad.height / 2)
+        await page.mouse.down()
+      } else {
+        await page.keyboard.down(' ')
+      }
       const onTheClock = async (): Promise<number> =>
         Number(await page.locator('[data-game-time]').textContent())
       let last = await onTheClock()
       let stalled = 0
       while (!(await page.locator('[data-game-result]').count())) {
-        if (w.mobile) await page.locator('[data-build-jump]').tap({ timeout: 1000 }).catch(() => {})
-        else await page.keyboard.press('Space')
         await page.waitForTimeout(320)
         const now = await onTheClock()
         stalled = now < last ? 0 : stalled + 1
         last = now
         expect(stalled, 'the round stopped counting down').toBeLessThan(30)
       }
+      if (w.mobile) await page.mouse.up()
+      else await page.keyboard.up(' ')
       await expect(page.locator('[data-game-result]')).toHaveAttribute('data-reason', 'caught')
       // Retry starts from nothing, and straight away: a fresh round, 45s on
       // the clock, no score, no result on screen.
@@ -136,12 +124,16 @@ for (const w of WINDOWS) {
       const clock = Number(await page.locator('[data-game-time]').textContent())
       expect(clock).toBeGreaterThan(40)
       expect(clock).toBeLessThanOrEqual(45)
-      // Back to the garage, through the pause: same room, same crew.
+      // Out through the pause, back to the playground, and home through the
+      // arch: same room, same crew.
       await page.evaluate(() => window.dispatchEvent(new Event('blur')))
       await expect(page.locator('[data-game-exit]')).toBeVisible()
       await touch(page, '[data-game-exit]', w.mobile)
-      await expect(page.locator('[data-game-root]')).toBeHidden()
-      await expect(page.locator('[data-garage]')).toBeVisible()
+      await expect(page.locator('[data-game-root]')).toBeHidden({ timeout: 6000 })
+      await expect(page.locator('[data-playground]')).toBeVisible()
+      await expect(page.locator('[data-playground]')).not.toHaveClass(/is-paused/)
+      await page.locator('[data-place="garage-door"]').click({ timeout: 8000 })
+      await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 8000 })
       await expect(page.locator('[data-npc]')).toHaveCount(w.crew)
 
       // The television → the studio's address, as a real mailto link.

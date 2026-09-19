@@ -140,43 +140,25 @@ export function mountWorld(): () => void {
       return wait(motion.reduced ? 0 : 160)
     }).then(() => wipe.uncover(480)),
     onOpenChange: (open, gameId) => {
-      // One music at a time (PHASE 14): the game's own while it is up, and
-      // whatever was playing where it was opened from, again, afterwards.
+      // WORLD 2.1: a game is its own world, entered from its building
+      // outside. One music at a time: the game's own while it is up, and the
+      // playground's back afterwards; the playground's night air steps out
+      // while a game plays so nothing of the painted world sounds under the
+      // pixels, and comes back with it.
       const track = GAME_MUSIC[gameId]
-      if (outside) {
-        // Outside, every game is played in its building: the playground
-        // waits behind the layer, and POKO's office is the board for POKO's.
-        playground?.setPaused(open)
-        gameRoot.classList.toggle('is-outside', open)
-        document.body.classList.toggle('is-playing', open)
-        if (open && track) audio.playWorld(track, 0.24, motion.reduced ? 0 : 900)
-        else if (!open) audio.playWorld(PLAYGROUND_MUSIC, 0.3, motion.reduced ? 0 : 1200)
-        return
-      }
-      if (open && track) {
-        audio.leaveRoom(motion.reduced ? 0 : 500)
-        audio.playWorld(track, 0.24, motion.reduced ? 0 : 900)
-      } else if (!open) {
-        audio.stopWorld(motion.reduced ? 0 : 400)
-        audio.enterRoom(motion.reduced ? null : { tone: 900, music: 1200, musicAfter: 200 })
-      }
-      // 무궁화꽃이 피었습니다 is played in the garage rather than in front of
-      // it: the layer is transparent, the room is the board, and the rest of
-      // the crew have to still be at their benches behind it. So the room is
-      // not stopped for that one — only quietened, which is what `setCalm`
-      // already means: finish what you are doing and stay there.
-      const inTheRoom = gameId === 'mugunghwa'
-      garage?.setPaused(open && !inTheRoom)
-      for (const one of garage?.crew ?? []) one.setCalm(open)
-      // A round may have earned the star that opens the door.
-      if (!open) later(() => syncSecret(true), 400)
-      // And there is only one POKO. The game draws its own, in glasses, so
-      // the room's own goes off the plate for the duration and walks back on
-      // afterwards — the stage's own mechanism, and nothing else changes.
-      if (inTheRoom) {
-        const poko = garage?.crew.find((c) => c.id === 'poko')
-        if (open) poko?.leave()
-        else poko?.comeBack()
+      playground?.setPaused(open || !outside)
+      garage?.setPaused(open || outside || inArchive)
+      document.body.classList.toggle('is-playing', open)
+      if (open) {
+        audio.unloop('playground', motion.reduced ? 0 : 500)
+        if (track) audio.playWorld(track, 0.24, motion.reduced ? 0 : 900)
+        else audio.stopWorld(motion.reduced ? 0 : 400)
+      } else {
+        audio.playWorld(PLAYGROUND_MUSIC, 0.3, motion.reduced ? 0 : 1200)
+        audio.loop('playground', LOOPS.playground, 0.3, motion.reduced ? 0 : 1600)
+        // A round may have earned the star that opens the door; it is
+        // counted when the visitor is back in the room.
+        later(() => syncSecret(true), 400)
       }
     },
   })
@@ -753,7 +735,8 @@ export function mountWorld(): () => void {
   let panelsOpenedAt = 0
   const enterGame = (def: GameDef): void => {
     void wipe.cover(def.title, 460)
-      .then(() => wait(motion.reduced ? 0 : 560))
+      // The game's name, long enough to read.
+      .then(() => wait(motion.reduced ? 0 : 750))
       .then(() => {
         games.open(def)
         return wait(80)
@@ -896,7 +879,16 @@ export function mountWorld(): () => void {
         // on the PC, which holds the real works only.
         const play = new URLSearchParams(location.search).get('play')
         const def = play ? gameById(play) : undefined
-        if (def) setTimeout(() => games.open(def), 260)
+        if (def) {
+          // The games live outside (WORLD 2.1): out first, without the
+          // ceremony, then straight into the game.
+          setTimeout(() => goOutside({ fromHistory: true, instant: true }), 200)
+          const open = (): void => {
+            if (outside && !crossing) games.open(def)
+            else setTimeout(open, 80)
+          }
+          setTimeout(open, 420)
+        }
       },
     }),
   )

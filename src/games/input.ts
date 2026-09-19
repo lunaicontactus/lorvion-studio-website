@@ -34,6 +34,13 @@ export type GameInputKind =
   | 'DRAG_END'
   /** Somewhere in the game's own box, for games that want a position. */
   | 'POINT'
+  /**
+   * A named control went down or came up (WORLD 2.1): left, right, jump —
+   * for a game that needs more than one thing held at once. From a key in
+   * `controls`, or a finger on an element with `data-control`.
+   */
+  | 'PRESS'
+  | 'RELEASE'
 
 export interface GameInputEvent {
   readonly kind: GameInputKind
@@ -44,6 +51,8 @@ export interface GameInputEvent {
   readonly choice?: string
   /** The key, when a key caused it. */
   readonly key?: string
+  /** Which control, for PRESS and RELEASE. */
+  readonly control?: string
   /**
    * True when the page let go on the player's behalf — a lost window, a
    * cancelled touch — rather than the player letting go. A game may want to
@@ -59,6 +68,8 @@ export interface GameInputOptions {
   readonly holdKeys?: readonly string[]
   /** Keys that count as a choice. */
   readonly selectKeys?: readonly string[]
+  /** Keys that are named controls, each held on its own: `{ ArrowLeft: 'left' }`. */
+  readonly controls?: Readonly<Record<string, string>>
   /** Somewhere to send everything. */
   readonly on: (event: GameInputEvent) => void
 }
@@ -80,9 +91,14 @@ export class GameInput {
   #dragging = false
   #enabled = true
   #dead = false
+  /** Named controls: which keys map to which, and what is down right now. */
+  #controls: Readonly<Record<string, string>>
+  #controlKeys = new Map<string, string>()
+  #controlPointers = new Map<number, string>()
 
   constructor(opts: GameInputOptions) {
     this.#root = opts.root
+    this.#controls = opts.controls ?? {}
     this.#hold = new Set(opts.holdKeys ?? DEFAULT_HOLD)
     this.#select = new Set(opts.selectKeys ?? DEFAULT_SELECT)
     this.#on = opts.on
@@ -116,6 +132,10 @@ export class GameInput {
    * rather than the player — a lost window, a cancelled touch.
    */
   releaseAll(forced = false): void {
+    const down = new Set([...this.#controlKeys.values(), ...this.#controlPointers.values()])
+    this.#controlKeys.clear()
+    this.#controlPointers.clear()
+    for (const control of down) this.#send({ kind: 'RELEASE', control, ...(forced ? { forced } : {}) })
     this.#keys.clear()
     this.#pointers.clear()
     if (this.#dragging) {
@@ -164,6 +184,13 @@ export class GameInput {
     this.#send({ kind: 'HOLD_END', ...(forced ? { forced } : {}) })
   }
 
+  /** Is this control held by any key or finger? */
+  #isDown(control: string): boolean {
+    for (const c of this.#controlKeys.values()) if (c === control) return true
+    for (const c of this.#controlPointers.values()) if (c === control) return true
+    return false
+  }
+
   #at(e: { clientX: number; clientY: number }): { x: number; y: number } {
     const r = this.#root.getBoundingClientRect()
     return { x: e.clientX - r.left, y: e.clientY - r.top }
@@ -173,7 +200,17 @@ export class GameInput {
     // Keys are taken on the document in capture, so the room behind never
     // sees a game key — the arrows pan the camera, and Space is the hold.
     this.#add(document, 'keydown', (e: KeyboardEvent) => {
-      if (!this.#enabled || e.repeat) return
+      if (!this.#enabled) return
+      const control = this.#controls[e.key]
+      if (control) {
+        e.preventDefault()
+        if (e.repeat || this.#controlKeys.has(e.key)) return
+        const was = this.#isDown(control)
+        this.#controlKeys.set(e.key, control)
+        if (!was) this.#send({ kind: 'PRESS', control, key: e.key })
+        return
+      }
+      if (e.repeat) return
       if (this.#hold.has(e.key)) {
         e.preventDefault()
         this.#keys.add(e.key)
@@ -193,6 +230,12 @@ export class GameInput {
     }, { capture: true })
 
     this.#add(document, 'keyup', (e: KeyboardEvent) => {
+      const control = this.#controlKeys.get(e.key)
+      if (control) {
+        this.#controlKeys.delete(e.key)
+        if (!this.#isDown(control)) this.#send({ kind: 'RELEASE', control, key: e.key })
+        return
+      }
       if (!this.#hold.has(e.key)) return
       this.#keys.delete(e.key)
       this.#endHold()
@@ -200,6 +243,21 @@ export class GameInput {
 
     this.#add(this.#root, 'pointerdown', (e: PointerEvent) => {
       if (!this.#enabled) return
+      // An on-screen button for a named control: held while the finger is on it.
+      const pad = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-control]')
+      if (pad) {
+        e.preventDefault()
+        const control = pad.dataset['control']!
+        const was = this.#isDown(control)
+        this.#controlPointers.set(e.pointerId, control)
+        try {
+          pad.setPointerCapture(e.pointerId)
+        } catch {
+          /* already gone */
+        }
+        if (!was) this.#send({ kind: 'PRESS', control })
+        return
+      }
       const target = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-choice]')
       if (target) {
         // A thing to choose, not a surface to hold.
@@ -226,6 +284,12 @@ export class GameInput {
     })
 
     const up = (e: PointerEvent, forced: boolean): void => {
+      const control = this.#controlPointers.get(e.pointerId)
+      if (control) {
+        this.#controlPointers.delete(e.pointerId)
+        if (!this.#isDown(control)) this.#send({ kind: 'RELEASE', control, ...(forced ? { forced } : {}) })
+        return
+      }
       if (!this.#pointers.delete(e.pointerId)) return
       try {
         this.#root.releasePointerCapture(e.pointerId)

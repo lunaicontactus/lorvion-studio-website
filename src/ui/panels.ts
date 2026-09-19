@@ -1007,10 +1007,11 @@ export class Panels {
   openPlace(place: Place, onEnter: () => void): void {
     const def = PLACE_PROPS[place.id]
     if (!def) return
+    // What each building is, in a line, while its sign lights up (WORLD 2.1).
     const LINES: Partial<Record<PlaceId, string>> = {
-      'poko-office': '부장님이 자리를 비운 사이에만.',
+      'poko-office': '포코가 뒤돌아 있는 동안, 요미는 몰래…',
       'snack-stall': '누가 뭘 시켰는지, 30초 안에.',
-      'parcel-office': '이번 주 택배를 작품별로.',
+      'parcel-office': '모모가 택배를 들고 불 켜진 문까지.',
     }
     this.#show(
       'place',
