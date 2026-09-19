@@ -98,5 +98,7 @@ export interface GameDef {
    * shared input manager turns them into HOLD_START and HOLD_END.
    */
   readonly holdKeys?: readonly string[]
+  /** Keys that are named controls (WORLD 2.1): `{ ArrowLeft: 'left', ' ': 'jump' }`. */
+  readonly controlKeys?: Readonly<Record<string, string>>
   mount(host: GameHost): GameInstance
 }

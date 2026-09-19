@@ -122,12 +122,37 @@
   background:#12142a;
   opacity:0;
   pointer-events:none;
-  transition:opacity 620ms ease-in-out;
+  transition:opacity var(--cross-ms,620ms) ease-in-out;
 }
 .crossing[hidden]{display:none}
 .crossing.is-dark{opacity:1;pointer-events:auto}
+/* The way out (WORLD 2.1): the night is blue, not black, and the doorway's
+   warm light is still in the middle of it, fading as the dark settles. */
+.crossing.is-dusk{
+  background:
+    radial-gradient(ellipse 34% 42% at 50% 60%,rgba(255,196,128,.34),rgba(255,196,128,0) 70%),
+    linear-gradient(180deg,#0c0e22 0%,#161a36 55%,#1c2140 100%);
+}
+.crossing.is-dusk::after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse 34% 42% at 50% 60%,rgba(255,214,160,.28),transparent 70%);
+  animation:crossing-doorlight var(--cross-ms,1300ms) ease-out both;
+}
+@keyframes crossing-doorlight{from{opacity:1;transform:scale(.7)}to{opacity:.15;transform:scale(1.25)}}
+
+/* Arriving outside: the playground is there a little close and dim, and
+   settles back to itself; its places show only once it has. */
+.playground.is-arriving .playground__stage{transform:scale(1.06);filter:brightness(.55) saturate(.8);transform-origin:50% 62%}
+.playground.is-arriving.is-settling .playground__stage{
+  transform:none;filter:none;
+  transition:transform 2600ms cubic-bezier(.22,.8,.3,1),filter 2200ms ease-out;
+}
+.playground.is-hushed .spot{opacity:0;pointer-events:none}
+.playground .spot{transition:opacity 600ms ease}
 @media (prefers-reduced-motion:reduce){
   .crossing{transition:opacity 160ms linear}
+  .crossing.is-dusk::after{animation:none}
+  .playground.is-arriving .playground__stage{transform:none;filter:none}
 }
 
 /* Where the two places sit relative to the room's hit areas: the
@@ -161,3 +186,40 @@
   white-space:nowrap;opacity:0;transition:opacity 120ms ease;pointer-events:none;
 }
 .prop--place .sign__arm:hover span,.prop--place .sign__arm:focus-visible span{opacity:1}
+
+/* The building answers before the game opens (WORLD 2.1): its sign and
+   windows come up warm, once, like a light switched on inside. */
+.prop--place .prop__art{transition:filter 420ms ease}
+.prop--place.is-lit .prop__art{
+  filter:brightness(1.14) saturate(1.08) drop-shadow(0 0 18px rgba(255,200,120,.55));
+  animation:place-lit 900ms ease-out 1;
+}
+@keyframes place-lit{
+  0%{filter:brightness(1) drop-shadow(0 0 0 rgba(255,200,120,0))}
+  35%{filter:brightness(1.3) saturate(1.1) drop-shadow(0 0 26px rgba(255,210,140,.75))}
+  100%{filter:brightness(1.14) saturate(1.08) drop-shadow(0 0 18px rgba(255,200,120,.55))}
+}
+
+/* ── The pixel door (WORLD 2.1): between the painted site and a game ─────── */
+.pixel-wipe{position:fixed;inset:0;z-index:970;pointer-events:auto;overflow:hidden}
+.pixel-wipe[hidden]{display:none}
+.pixel-wipe__blocks{position:absolute;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges}
+.pixel-wipe__title{
+  position:absolute;left:50%;top:50%;translate:-50% -50%;margin:0;
+  padding:.7em 1.1em .6em;
+  color:#ffe9a8;
+  font:700 clamp(14px,2.2vw,22px)/1.2 var(--pixel-font);
+  letter-spacing:.12em;
+  white-space:nowrap;
+  background:#07060d;
+  box-shadow:0 0 0 3px #07060d,0 0 0 6px #ffe9a8,0 0 0 9px #07060d;
+  opacity:0;
+}
+.pixel-wipe__title.is-on{opacity:1;animation:pixel-title 200ms steps(2,end) both}
+.pixel-wipe__title.is-on::after{content:" ▶";animation:pixel-blink 400ms steps(1,end) infinite}
+@keyframes pixel-title{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+@keyframes pixel-blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){
+  .prop--place.is-lit .prop__art{animation:none}
+  .pixel-wipe__title.is-on,.pixel-wipe__title.is-on::after{animation:none}
+}

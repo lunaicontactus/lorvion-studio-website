@@ -42,17 +42,17 @@ export interface PlaygroundLayout extends SceneLayout {
 }
 
 const PLACES_LANDSCAPE: readonly Place[] = [
-  { id: 'poko-office', label: 'POKO 사무실', caption: 'POKO 사무실 · 부장님 몰래', rect: { x: 110, y: 110, w: 360, h: 290 }, game: 'mugunghwa' },
+  { id: 'poko-office', label: 'POKO 사무실', caption: 'POKO 사무실 · 요미의 과자 몰래 먹기', rect: { x: 110, y: 110, w: 360, h: 290 }, game: 'mugunghwa' },
   { id: 'snack-stall', label: '간식 노점', caption: '간식 노점 · 야식 심부름', rect: { x: 610, y: 205, w: 380, h: 175 }, game: 'snack' },
-  { id: 'parcel-office', label: '택배 사무소', caption: '택배 사무소 · 택배 정리', rect: { x: 1250, y: 160, w: 400, h: 250 }, game: 'parcel' },
+  { id: 'parcel-office', label: '택배 사무소', caption: '택배 사무소 · 모모의 택배 배달', rect: { x: 1250, y: 160, w: 400, h: 250 }, game: 'parcel' },
   { id: 'signpost', label: '이정표', caption: '이정표', rect: { x: 415, y: 615, w: 90, h: 110 } },
   { id: 'garage-door', label: '차고로 돌아가기', caption: '차고 문 · 돌아가기', rect: { x: 700, y: 540, w: 330, h: 220 } },
 ]
 
 const PLACES_PORTRAIT: readonly Place[] = [
-  { id: 'poko-office', label: 'POKO 사무실', caption: 'POKO 사무실 · 부장님 몰래', rect: { x: 105, y: 205, w: 305, h: 215 }, game: 'mugunghwa' },
+  { id: 'poko-office', label: 'POKO 사무실', caption: 'POKO 사무실 · 요미의 과자 몰래 먹기', rect: { x: 105, y: 205, w: 305, h: 215 }, game: 'mugunghwa' },
   { id: 'snack-stall', label: '간식 노점', caption: '간식 노점 · 야식 심부름', rect: { x: 235, y: 565, w: 360, h: 165 }, game: 'snack' },
-  { id: 'parcel-office', label: '택배 사무소', caption: '택배 사무소 · 택배 정리', rect: { x: 700, y: 445, w: 240, h: 195 }, game: 'parcel' },
+  { id: 'parcel-office', label: '택배 사무소', caption: '택배 사무소 · 모모의 택배 배달', rect: { x: 700, y: 445, w: 240, h: 195 }, game: 'parcel' },
   { id: 'signpost', label: '이정표', caption: '이정표', rect: { x: 100, y: 1120, w: 90, h: 105 } },
   { id: 'garage-door', label: '차고로 돌아가기', caption: '차고 문 · 돌아가기', rect: { x: 345, y: 1030, w: 270, h: 240 } },
 ]

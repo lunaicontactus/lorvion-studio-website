@@ -146,7 +146,8 @@ for (const view of [
       await archive(page)
       expect(await page.evaluate(() => location.hash)).toBe('#archive')
       await expect(page.locator('[data-garage]')).toBeHidden()
-      await expect(page.locator('.spot')).toHaveCount(6)
+      // Six painted things and the table with the polaroids (WORLD 2.1).
+      await expect(page.locator('.spot')).toHaveCount(7)
       await expect(page.locator('.archive__front')).toBeVisible()
       await page.waitForTimeout(1800)
       const music = await page.evaluate(() => window.__plays!.some((p) => p.src.includes('music/archive')))
@@ -169,7 +170,7 @@ for (const view of [
         await page.waitForTimeout(700)
         await spot(id).press('Enter')
       }
-      for (const id of ['star-jar', 'music-box', 'telescope', 'memory-box', 'lantern', 'cushion']) {
+      for (const id of ['star-jar', 'music-box', 'telescope', 'memory-box', 'lantern', 'cushion', 'polaroids']) {
         const box = (await spot(id).boundingBox())!
         expect(Math.min(box.width, box.height), `${id} is smaller than a finger`).toBeGreaterThanOrEqual(44)
       }
@@ -198,6 +199,38 @@ for (const view of [
       await expect(page.locator('.memory__when')).toHaveText(/20\d\d\.\d\d\.\d\d · [0-9a-f]{7}/)
       await page.keyboard.press('Escape')
       await expect(page.locator('[data-panel-root]')).toBeHidden()
+      // The polaroids: the record, spread out on the table. Touch one and it
+      // is picked up; the arrows go through the rest; Escape puts it back
+      // down, and Escape again leaves the table.
+      await tap('polaroids')
+      const cards = page.locator('[data-album] [data-polaroid]')
+      await expect(page.locator('[data-album]')).toBeVisible({ timeout: 6000 })
+      const n = await cards.count()
+      expect(n, 'the table is set from the record').toBeGreaterThanOrEqual(11)
+      const vw = page.viewportSize()!
+      for (const box of await cards.evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } }))) {
+        expect(box.x > 0 && box.x < vw.width && box.y > 0 && box.y < vw.height, 'a polaroid off the table').toBe(true)
+      }
+      // Every photo arrives; none is a broken picture.
+      await expect.poll(() => cards.locator('img').evaluateAll((imgs) => (imgs as HTMLImageElement[]).filter((i) => i.complete && i.naturalWidth > 0).length), { timeout: 10_000 }).toBe(n)
+      await cards.nth(2).click()
+      const view = page.locator('[data-album-view]')
+      await expect(view).toBeVisible()
+      await expect(page.locator('[data-album-count]')).toHaveText(`3 / ${n}`)
+      const first = await page.locator('[data-album-img]').getAttribute('src')
+      await page.keyboard.press('ArrowRight')
+      await expect(page.locator('[data-album-count]')).toHaveText(`4 / ${n}`)
+      expect(await page.locator('[data-album-img]').getAttribute('src')).not.toBe(first)
+      await page.keyboard.press('ArrowLeft')
+      await page.keyboard.press('ArrowLeft')
+      await expect(page.locator('[data-album-count]')).toHaveText(`2 / ${n}`)
+      const card = (await page.locator('[data-album-card]').boundingBox())!
+      expect(card.y + card.height, 'the photo in the hand runs off the screen').toBeLessThanOrEqual(vw.height + 1)
+      await page.keyboard.press('Escape')
+      await expect(view).toBeHidden()
+      await expect(page.locator('[data-album]')).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(page.locator('[data-panel-root]')).toBeHidden()
       // The telescope: the glass fills the window, a star goes over, Escape.
       await tap('telescope')
       await expect(page.locator('[data-archive-sky]')).toHaveClass(/is-open/, { timeout: 3000 })
@@ -224,6 +257,23 @@ for (const view of [
 
 test.describe('desktop only', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
+
+  test('a record with nothing in it yet says so, and nothing breaks', async ({ page }) => {
+    await seed(page, ALL, 3)
+    await page.goto('/?album=empty', { waitUntil: 'load' })
+    await page.locator('[data-alley-enter]').click()
+    await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 20_000 })
+    await goIn(page)
+    const spot = page.locator('[data-place="polaroids"]')
+    await spot.focus()
+    await page.waitForTimeout(600)
+    await spot.press('Enter')
+    await expect(page.locator('[data-album-empty]')).toHaveText('기록이 아직 쌓이는 중입니다')
+    await expect(page.locator('[data-album] [data-polaroid]')).toHaveCount(0)
+    await page.keyboard.press('ArrowRight')
+    await page.keyboard.press('Escape')
+    await expect(page.locator('[data-panel-root]')).toBeHidden()
+  })
 
   test('Healing Mode drifts the camera and takes the nav away; a click ends it', async ({ page }) => {
     await seed(page, ALL, 3)

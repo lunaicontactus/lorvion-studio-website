@@ -5,7 +5,7 @@ import { CHARACTERS } from '@/data/characters'
 import { worldFor } from '@/data/world'
 import { BROOM_ZONES, BROOM_ZONES_PORTRAIT } from '@/data/ambience'
 import { Ambient, ATTENTION, STRONG_AT_ONCE } from '@/systems/ambient'
-import { Broom, BROOM_MS, PLAN } from '@/systems/broom'
+import { Broom, BROOM_EVERY, BROOM_MS, BROOM_NOT_BEFORE, PLAN } from '@/systems/broom'
 import { Footsteps } from '@/systems/footsteps'
 import { CrewInteractions, type InteractionMember } from '@/systems/interactions'
 import type { Waypoint } from '@/data/navigation'
@@ -118,16 +118,19 @@ describe('the broom', () => {
 
   it('never comes out in front of the thing the visitor has open', () => {
     const b = make()
+    // Something open on the boards of the rest stretch keeps it off them.
+    const onTheRest = { x: 1150, y: 1000, w: 60, h: 80 }
+    expect(b.pickZone([], onTheRest)?.id).not.toBe('rest')
+    // Since WORLD 2.1 the broom only glides a step, so the radio beside the
+    // stretch (from 1258) is no longer in its way.
     const radio = { x: 1258, y: 978, w: 116, h: 102 }
-    // The rest stretch ends at 1215, and the broom's run-in reaches past it.
-    const without = b.pickZone([], radio)
-    expect(without?.id).not.toBe('rest')
+    expect(b.pickZone([], radio)).not.toBeNull()
     // The desk's monitor is on the wall well above the boards: no overlap.
     const pc = { x: 1462, y: 563, w: 233, h: 200 }
     expect(b.pickZone([], pc)?.id).toBe('rest')
   })
 
-  it('comes in, sweeps twice, and goes, in that order, then is gone', () => {
+  it('fades in, sweeps once, rests, and fades out, in that order, then is gone', () => {
     const sweeps: number[] = []
     let clock = 0
     // The step that crosses into the sweep is the step that sounds it, so
@@ -141,28 +144,47 @@ describe('the broom', () => {
     expect(paints[paints.length - 1]).toBeNull()
     const seen = paints.filter((p): p is string => p !== null)
     const order = seen.filter((p, i) => p !== seen[i - 1])
+    expect(order).toEqual(['enter', 'sweep', 'pause', 'leave'])
     expect(order).toEqual(PLAN.map(([p]) => p))
-    // The sound goes with the bristles: once per sweep, at the sweep.
-    expect(sweeps.length).toBe(2)
+    // The sound goes with the bristles: once, at the one sweep.
+    expect(sweeps.length).toBe(1)
     expect(sweeps[0]).toBeGreaterThanOrEqual(PLAN[0]![1])
     expect(sweeps[0]).toBeLessThan(PLAN[0]![1] + 100)
   })
 
-  it('never moves faster than the crew walk', () => {
-    const b = new Broom({ zones, random: () => 0.9, paint: () => undefined })
-    b.start(zones[2]!)
-    let last = b.state()!.x
-    let fastest = 0
-    for (let t = 0; t < BROOM_MS; t += 16) {
-      b.step(16)
-      const s = b.state()
-      if (!s) break
-      fastest = Math.max(fastest, Math.abs(s.x - last) / 16 * 1000)
-      last = s.x
+  it('stays on the floor, barely travels, and is never quite solid', () => {
+    for (const zone of [...zones, ...BROOM_ZONES_PORTRAIT]) {
+      const b = new Broom({ zones: [zone], random: () => 0.9, paint: () => undefined })
+      b.start(zone)
+      const xs: number[] = []
+      let fastest = 0
+      let last = b.state()!.x
+      for (let t = 0; t < BROOM_MS; t += 16) {
+        b.step(16)
+        const s = b.state()
+        if (!s) break
+        // One line: its bristles are on the boards the whole time.
+        expect(s.y).toBe(zone.y)
+        expect(s.opacity).toBeLessThanOrEqual(0.9)
+        xs.push(s.x)
+        fastest = Math.max(fastest, Math.abs(s.x - last) / 16 * 1000)
+        last = s.x
+      }
+      // Glides a step in and a step on: under 40 units end to end.
+      expect(Math.max(...xs) - Math.min(...xs), zone.id).toBeLessThanOrEqual(40)
+      // The crew walk at 76 world units a second; the broom's fastest
+      // moment, mid-glide, is about a quarter of that.
+      expect(fastest, zone.id).toBeLessThan(20)
     }
-    // The crew walk at 76 world units a second; the broom's fastest moment,
-    // mid-ease, stays within a third of that.
-    expect(fastest).toBeLessThan(100)
+  })
+
+  it('comes out rarely, and not in the first minute', () => {
+    expect(BROOM_EVERY.min).toBeGreaterThanOrEqual(150_000)
+    expect(BROOM_EVERY.max).toBeGreaterThan(BROOM_EVERY.min)
+    expect(BROOM_NOT_BEFORE).toBeGreaterThanOrEqual(60_000)
+    // Out for a few seconds, gone for minutes.
+    expect(BROOM_MS).toBeLessThan(10_000)
+    expect(BROOM_MS / BROOM_EVERY.min).toBeLessThan(0.07)
   })
 
   it('is one of the things worth watching, so two of them plus it never happens', () => {

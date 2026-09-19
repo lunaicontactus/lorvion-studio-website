@@ -30,6 +30,10 @@
   --ease:cubic-bezier(.22,1,.36,1);
   --nav-h:78px;
   --mono:"SFMono-Regular","Cascadia Code","Roboto Mono",Consolas,ui-monospace,monospace;
+  /* The games' own lettering (WORLD 2.1). A bundled Korean pixel face is still
+     to come; until then the HUD's numbers are drawn in pixels and words fall
+     back to a monospace face. */
+  --pixel-font:"Galmuri11","DungGeunMo","NeoDunggeunmo",ui-monospace,"SFMono-Regular",Consolas,monospace;
 }
 
 :root{

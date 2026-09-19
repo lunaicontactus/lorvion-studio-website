@@ -29,6 +29,7 @@ import { RADIO_ENTRIES, STATIONS } from '@/data/garage/radio'
 import { PLACE_PROPS, SIGNPOST_ARMS, type Place, type PlaceId } from '@/data/playground'
 import type { ArchivePlace } from '@/data/archive'
 import { WORKBENCH_ENTRIES } from '@/data/garage/workbench'
+import { POLAROIDS, columnsFor, scatter, type Polaroid } from '@/data/polaroids'
 import type { WipPiece } from '@/data/garage/workbench'
 import type { CabinetPaper } from '@/data/garage/cabinet'
 import { GarageDiscoveryPool, hashString } from '@/systems/discovery'
@@ -146,9 +147,23 @@ export class Panels {
   #station = -1
   /** What is growing out of which thing, for the fit on open and on resize. */
   #prop: { readonly id: string; readonly def: PropDef | null; readonly anchor: 'above' | null; readonly aspect: number | null } | null = null
-  #onResize = (): void => { if (this.#open) this.#fit() }
+  #onResize = (): void => {
+    if (!this.#open) return
+    this.#fit()
+    this.#relayout?.()
+  }
   /** A tag anchored to a thing keeps up with it while the camera is still arriving. */
   #following = 0
+  /**
+   * Keys the panel on screen answers itself (the album's arrows), and what
+   * Escape means inside it before it means "close" (the album: back from a
+   * photo to the table). Both belong to whatever opened last and are dropped
+   * with it.
+   */
+  #keys: ((e: KeyboardEvent) => boolean) | null = null
+  /** Lays the panel out again when the window changes shape (the album's table). */
+  #relayout: (() => void) | null = null
+  #back: (() => boolean) | null = null
 
   constructor(root: HTMLElement, host: PanelHost = {}) {
     this.#root = root
@@ -180,7 +195,11 @@ export class Panels {
     document.addEventListener('keydown', (e) => {
       if (!this.#open) return
       if (e.key === 'Escape') return // the world closes and unwinds history
-      if (e.key === 'Tab') this.#trap(e)
+      if (e.key === 'Tab') {
+        this.#trap(e)
+        return
+      }
+      if (this.#keys?.(e)) e.preventDefault()
     })
     window.addEventListener('resize', this.#onResize)
   }
@@ -238,6 +257,9 @@ export class Panels {
   #show(kind: string, title: string, html: string,
     prop?: { readonly id: string; readonly def?: PropDef; readonly anchor?: 'above'; readonly aspect?: number }): void {
     this.#clearTimers()
+    this.#keys = null
+    this.#back = null
+    this.#relayout = null
     this.#lastFocus = document.activeElement as HTMLElement | null
     this.#shell.dataset['kind'] = kind
     this.#root.dataset['kind'] = kind
@@ -259,9 +281,21 @@ export class Panels {
     this.#shell.focus()
   }
 
+  /**
+   * Escape, before it closes anything: true if the panel on screen had a step
+   * of its own to take back (a photo put down on the table), false if Escape
+   * should close it.
+   */
+  stepBack(): boolean {
+    return this.#open ? (this.#back?.() ?? false) : false
+  }
+
   close(): void {
     if (!this.#open) return
     this.#clearTimers()
+    this.#keys = null
+    this.#back = null
+    this.#relayout = null
     cancelAnimationFrame(this.#following)
     this.#open = false
     this.afterClose(this.#shell.dataset['kind'])
@@ -604,7 +638,6 @@ export class Panels {
               await navigator.clipboard.writeText(btn.dataset['copy'] ?? '')
               btn.textContent = 'COPIED'
               btn.classList.add('is-copied')
-              audio.play('click', 0.35)
               this.#later(() => {
                 btn.textContent = 'COPY'
                 btn.classList.remove('is-copied')
@@ -776,7 +809,6 @@ export class Panels {
         say.classList.remove('is-said')
         void say.offsetWidth
         say.classList.add('is-said')
-        audio.play('click', 0.22)
       })
     }
   }
@@ -884,7 +916,6 @@ export class Panels {
         card.style.left = btn.style.left
         card.style.top = btn.style.top
         card.innerHTML = `<b class="shelf__name">${esc(item.title)}</b><p class="shelf__note">${esc(item.description)}</p>`
-        audio.play('click', 0.22)
       })
     }
   }
@@ -928,7 +959,6 @@ export class Panels {
       car.classList.toggle('is-done', done)
       car.setAttribute('aria-pressed', String(done))
       if (note) note.textContent = done ? '닫았다. 남은 부품은 못 본 걸로.' : '태엽 자동차. 뚜껑 열고 기어 맞추는 중.'
-      audio.play('click', 0.3)
     })
   }
 
@@ -977,10 +1007,11 @@ export class Panels {
   openPlace(place: Place, onEnter: () => void): void {
     const def = PLACE_PROPS[place.id]
     if (!def) return
+    // What each building is, in a line, while its sign lights up (WORLD 2.1).
     const LINES: Partial<Record<PlaceId, string>> = {
-      'poko-office': '부장님이 자리를 비운 사이에만.',
+      'poko-office': '포코가 뒤돌아 있는 동안, 요미는 몰래…',
       'snack-stall': '누가 뭘 시켰는지, 30초 안에.',
-      'parcel-office': '이번 주 택배를 작품별로.',
+      'parcel-office': '모모가 택배를 들고 불 켜진 문까지.',
     }
     this.#show(
       'place',
@@ -1054,6 +1085,131 @@ export class Panels {
         'prop--archive'),
       { id: place.id, def },
     )
+  }
+
+  /**
+   * The polaroids (WORLD 2.1): the record of making, spread out on the table.
+   *
+   * However many photos there are (src/data/polaroids.ts) lie scattered on
+   * the table, each where it always lies. Touch one and it is picked up: one
+   * photo, big, with whatever is written on it; ‹ › or the arrow keys or a
+   * swipe go through the rest in order, and Escape or 테이블로 puts it back
+   * down. An empty table says the record is still being kept.
+   */
+  openPolaroids(place: ArchivePlace, photos: readonly Polaroid[] = POLAROIDS): void {
+    const n = photos.length
+    const cards = photos.map((p, i) => {
+      const name = p.title ?? `사진 ${i + 1}`
+      return `<button class="polaroid" type="button" data-polaroid="${i}" style="--i:${i}"
+                aria-label="${esc(name)}">
+                <span class="polaroid__photo"><img src="${esc(p.src)}" alt="" loading="lazy" decoding="async"></span>
+                ${p.title ? `<span class="polaroid__cap">${esc(p.title)}</span>` : ''}
+              </button>`
+    }).join('')
+    this.#show(
+      'archive album',
+      place.label,
+      `<div class="album" data-album data-count="${n}">
+         <div class="album__table" data-album-table>
+           ${n ? cards : '<p class="album__empty" data-album-empty>기록이 아직 쌓이는 중입니다</p>'}
+         </div>
+         <div class="album__view" data-album-view hidden>
+           <button class="album__nav album__nav--prev" type="button" data-album-prev aria-label="이전 사진"><span aria-hidden="true">‹</span></button>
+           <figure class="polaroid polaroid--big" data-album-card>
+             <span class="polaroid__photo"><img data-album-img alt="" decoding="async"></span>
+             <figcaption class="polaroid__cap">
+               <b data-album-title></b>
+               <span class="album__note" data-album-note></span>
+               <small class="album__date" data-album-date></small>
+             </figcaption>
+           </figure>
+           <button class="album__nav album__nav--next" type="button" data-album-next aria-label="다음 사진"><span aria-hidden="true">›</span></button>
+           <p class="album__count" data-album-count aria-live="polite"></p>
+           <button class="album__back" type="button" data-album-back>테이블로</button>
+         </div>
+       </div>`,
+    )
+    const album = this.#body.querySelector<HTMLElement>('[data-album]')!
+    const table = album.querySelector<HTMLElement>('[data-album-table]')!
+    const view = album.querySelector<HTMLElement>('[data-album-view]')!
+    const img = view.querySelector<HTMLImageElement>('[data-album-img]')!
+    const title = view.querySelector<HTMLElement>('[data-album-title]')!
+    const note = view.querySelector<HTMLElement>('[data-album-note]')!
+    const date = view.querySelector<HTMLElement>('[data-album-date]')!
+    const count = view.querySelector<HTMLElement>('[data-album-count]')!
+    let at = -1
+    const show = (i: number): void => {
+      if (!n) return
+      at = ((i % n) + n) % n
+      const p = photos[at]!
+      img.src = p.src
+      img.alt = p.title ?? `사진 ${at + 1}`
+      title.textContent = p.title ?? ''
+      title.hidden = !p.title
+      note.textContent = p.note ?? ''
+      note.hidden = !p.note
+      date.textContent = p.date ?? ''
+      date.hidden = !p.date
+      count.textContent = `${at + 1} / ${n}`
+      view.dataset['at'] = String(at)
+    }
+    const pick = (i: number): void => {
+      show(i)
+      album.classList.add('is-viewing')
+      table.setAttribute('aria-hidden', 'true')
+      view.hidden = false
+      audio.play('paper', 0.16)
+      view.querySelector<HTMLElement>('[data-album-next]')?.focus()
+    }
+    const putDown = (): boolean => {
+      if (view.hidden) return false
+      const was = at
+      view.hidden = true
+      album.classList.remove('is-viewing')
+      table.removeAttribute('aria-hidden')
+      table.querySelector<HTMLElement>(`[data-polaroid="${was}"]`)?.focus()
+      return true
+    }
+    const cardEls = [...table.querySelectorAll<HTMLElement>('[data-polaroid]')]
+    for (const b of cardEls) b.addEventListener('click', () => pick(Number(b.dataset['polaroid'])))
+    // Where each card lies depends on the table's shape, so it is worked out
+    // once the table is on screen, and again if the window turns.
+    const lay = (): void => {
+      if (!n) return
+      const t = table.getBoundingClientRect()
+      const c = cardEls[0]!.getBoundingClientRect()
+      const cols = columnsFor(n, t.width, t.height, c.width || 100, c.height || 130)
+      cardEls.forEach((el, i) => {
+        const at = scatter(photos[i]!.id, i, n, cols)
+        el.style.setProperty('--x', `${(at.x * 100).toFixed(1)}%`)
+        el.style.setProperty('--y', `${(at.y * 100).toFixed(1)}%`)
+        el.style.setProperty('--turn', `${at.turn}deg`)
+      })
+      table.dataset['cols'] = String(cols)
+    }
+    lay()
+    this.#relayout = lay
+    view.querySelector('[data-album-prev]')!.addEventListener('click', () => show(at - 1))
+    view.querySelector('[data-album-next]')!.addEventListener('click', () => show(at + 1))
+    view.querySelector('[data-album-back]')!.addEventListener('click', () => putDown())
+    // A swipe across the photo turns it, as a finger would.
+    let from: number | null = null
+    const card = view.querySelector<HTMLElement>('[data-album-card]')!
+    card.addEventListener('pointerdown', (e) => { from = e.clientX })
+    card.addEventListener('pointerup', (e) => {
+      if (from === null) return
+      const dx = e.clientX - from
+      from = null
+      if (Math.abs(dx) > 40) show(at + (dx < 0 ? 1 : -1))
+    })
+    card.addEventListener('pointercancel', () => { from = null })
+    this.#keys = (e) => {
+      if (view.hidden) return false
+      if (e.key === 'ArrowRight') { show(at + 1); return true }
+      if (e.key === 'ArrowLeft') { show(at - 1); return true }
+      return false
+    }
+    this.#back = putDown
   }
 
   // ── A piece off the wall: the picture comes forward, and it is the whole thing

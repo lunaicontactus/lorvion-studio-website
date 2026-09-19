@@ -62,33 +62,41 @@ test.describe('desktop', () => {
     }
   })
 
-  test('the broom comes out, sweeps, and goes round the crew rather than through them', async ({ page }) => {
-    test.setTimeout(150_000)
-    await enter(page)
+  test('the broom fades in, sweeps once, rests and goes — small, slow, on the floor, never through the crew', async ({ page }) => {
+    test.setTimeout(90_000)
+    // It keeps minutes between visits (unit-tested in test/living.test.ts);
+    // ?broom=now brings the first one forward so the routine can be watched.
+    await enter(page, '?broom=now')
     const broom = page.locator('.garage__broom')
-    await expect(broom).toHaveClass(/is-live/, { timeout: 120_000 })
-    // While it is out: it never stands on anybody, and it moves slowly.
+    await expect(broom).toHaveClass(/is-live/, { timeout: 60_000 })
     const seen = await page.evaluate(async () => {
       const el = document.querySelector<HTMLElement>('.garage__broom')!
-      const read = (): { x: number; w: number } => {
-        const m = /translate3d\((-?[\d.]+)px/.exec(el.style.transform)
-        return { x: Number(m?.[1] ?? 0), w: el.offsetWidth }
+      const read = (): { x: number; y: number; w: number; h: number; o: number } => {
+        const m = /translate3d\((-?[\d.]+)px,\s*(-?[\d.]+)px/.exec(el.style.transform)
+        return { x: Number(m?.[1] ?? 0), y: Number(m?.[2] ?? 0), w: el.offsetWidth, h: el.offsetHeight, o: Number(el.style.opacity || 0) }
       }
-      const feet = (): number[] => [...document.querySelectorAll<HTMLElement>('[data-npc]:not(.is-away)')]
-        .map((n) => Number(/translate3d\((-?[\d.]+)px/.exec(n.style.transform)?.[1] ?? NaN))
-        .filter((x) => Number.isFinite(x))
+      const crew = (): { x: number; h: number }[] => [...document.querySelectorAll<HTMLElement>('[data-npc]:not(.is-away)')]
+        .map((n) => ({ x: Number(/translate3d\((-?[\d.]+)px/.exec(n.style.transform)?.[1] ?? NaN), h: n.querySelector('img')?.offsetHeight ?? 0 }))
+        .filter((c) => Number.isFinite(c.x))
       let overlaps = 0
       let fastest = 0
-      const phases = new Set<string>()
+      let opacity = 0
+      const ys = new Set<number>()
+      const xs: number[] = []
+      const phases: string[] = []
       let last = read().x
       let lastAt = performance.now()
+      const tallest = Math.max(...crew().map((c) => c.h))
+      const size = read().h
       while (el.classList.contains('is-live')) {
         const now = read()
         const t = performance.now()
-        if (el.dataset['phase']) phases.add(el.dataset['phase'])
-        // A dokkaebi is about 110 wide; standing inside the broom's box is
-        // an overlap, passing near it is not.
-        for (const fx of feet()) if (Math.abs(fx - (now.x + now.w / 2)) < 40) overlaps += 1
+        const p = el.dataset['phase']
+        if (p && phases[phases.length - 1] !== p) phases.push(p)
+        ys.add(now.y)
+        xs.push(now.x)
+        opacity = Math.max(opacity, now.o)
+        for (const c of crew()) if (Math.abs(c.x - (now.x + now.w / 2)) < 40) overlaps += 1
         if (t - lastAt > 200) {
           fastest = Math.max(fastest, Math.abs(now.x - last) / (t - lastAt) * 1000)
           last = now.x
@@ -96,15 +104,17 @@ test.describe('desktop', () => {
         }
         await new Promise((r) => requestAnimationFrame(() => r(null)))
       }
-      return { overlaps, fastest, phases: [...phases] }
+      return { overlaps, fastest, phases, ys: [...ys], travel: Math.max(...xs) - Math.min(...xs), opacity, size, tallest }
     })
-    expect(seen.phases).toContain('sweep')
-    expect(seen.phases).toContain('leave')
+    expect(seen.phases).toEqual(['enter', 'sweep', 'pause', 'leave'])
     expect(seen.overlaps, 'somebody stood inside the broom').toBe(0)
-    // The transform is in world units (the room is scaled as a whole), so
-    // this is world units a second: the crew walk at 76, and the broom's
-    // eased peak is under 100.
-    expect(seen.fastest).toBeLessThan(120)
+    // On the floor the whole time: one base line, no hops.
+    expect(seen.ys.length, `it moved up and down: ${seen.ys.join(',')}`).toBe(1)
+    // World units: a step's glide, a slow drift, never solid, never the tallest thing there.
+    expect(seen.travel).toBeLessThanOrEqual(40)
+    expect(seen.fastest).toBeLessThan(20)
+    expect(seen.opacity).toBeLessThanOrEqual(0.9)
+    expect(seen.size, 'the broom is taller than the crew').toBeLessThanOrEqual(seen.tallest * 1.02)
     await expect(broom).not.toHaveClass(/is-live/)
   })
 

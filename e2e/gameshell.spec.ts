@@ -180,33 +180,23 @@ test.describe('the mini-game shell', () => {
     await expect(page.locator(SHELL)).toHaveCount(0, { timeout: 5000 })
   })
 
-  test('leaving puts the room back, with nobody left waiting in it', async ({ page }) => {
+  test('leaving puts the world back, with nobody left waiting in it', async ({ page }) => {
     await open(page)
     await play(page)
     await page.locator('[data-game-quit]').click({ timeout: 5000 })
     await expect(page.locator(SHELL)).toHaveCount(0, { timeout: 5000 })
-    await expect(page.locator('[data-garage]')).toBeVisible()
-    // The room is running again. The scene says so itself (it is paused
-    // while a game is up, and not afterwards), and so does every dokkaebi
-    // (each reads PAUSED while held, and its own state again after) —
-    // asserted directly, because the movement below is only a proxy: crew
-    // out of the view are not drawn, and one mid-work stays put on purpose.
+    // WORLD 2.1: the games live outside, so leaving one is the playground
+    // again — and it is running again, not left paused behind the game.
+    await expect(page.locator('[data-playground]')).toBeVisible()
+    await expect(page.locator('[data-playground]')).not.toHaveClass(/is-paused/)
+    await expect(page.locator('body')).not.toHaveClass(/is-playing/)
+    // And the garage is the way it was left, waiting, when the visitor
+    // goes home through the arch: running, and every dokkaebi in its own
+    // state rather than held.
+    await page.locator('[data-place="garage-door"]').click({ timeout: 8000 })
+    await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 8000 })
     await expect(page.locator('[data-garage]')).not.toHaveClass(/is-paused/)
     await expect(page.locator('.npc[data-state="PAUSED"]')).toHaveCount(0)
-    // And then somebody does something: a step, or a change of what they
-    // are doing, within twelve seconds.
-    const moved = await page.evaluate(async () => {
-      const where = (): string => [...document.querySelectorAll<HTMLElement>('.npc:not(.is-away)')]
-        .map((e) => `${e.dataset['state']}@${e.style.transform}`).join('|')
-      const before = where()
-      const t0 = performance.now()
-      while (performance.now() - t0 < 12_000) {
-        if (where() !== before) return true
-        await new Promise((r) => setTimeout(r, 200))
-      }
-      return false
-    })
-    expect(moved, 'the crew were still frozen after the game closed').toBe(true)
   })
 
   test('nothing scores while the game is not running', async ({ page }) => {

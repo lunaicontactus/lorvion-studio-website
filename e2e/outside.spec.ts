@@ -59,10 +59,16 @@ async function touch(page: Page, id: string): Promise<void> {
 const outside = (page: Page, timeout = 6000): Promise<void> =>
   expect(page.locator('[data-playground]')).toBeVisible({ timeout })
 
+/** Arrived: the night has lifted and the places have come up (WORLD 2.1). */
+const arrived = async (page: Page): Promise<void> => {
+  await expect(page.locator('[data-crossing]')).toBeHidden({ timeout: 8000 })
+  await expect(page.locator('[data-playground]')).not.toHaveClass(/is-hushed/)
+}
+
 async function goOut(page: Page): Promise<void> {
   await touch(page, 'outside-door')
   await outside(page)
-  await page.waitForTimeout(800) // the night has gone out again
+  await arrived(page)
 }
 
 const worldTransform = (page: Page): Promise<string> =>
@@ -93,15 +99,20 @@ for (const view of [
       expect(door, 'the door made no sound').toBeDefined()
       expect(door!.at).toBeGreaterThanOrEqual(t0)
       expect(door!.at, 'the sound came after the leaf swung').toBeLessThan(ajarAt)
-      // 3. The crossing: night in, the room gone, the playground up, night out.
+      // 3. The crossing (WORLD 2.1): not a cut. The night that comes in is
+      // the outward dusk, the playground arrives hushed — nothing to touch
+      // until the night lifts — and the whole way takes a breath, not an age.
       await expect(page.locator('[data-crossing]')).toHaveClass(/is-dark/, { timeout: 3000 })
+      await expect(page.locator('[data-crossing]')).toHaveClass(/is-dusk/)
       await outside(page)
-      const crossedAt = await page.evaluate(() => performance.now())
-      expect(crossedAt - t0, 'the crossing took too long').toBeLessThan(3200)
+      await expect(page.locator('[data-playground]')).toHaveClass(/is-hushed/)
       await expect(page.locator('[data-garage]')).toBeHidden()
       await expect(page.locator('[data-panel-root]')).toBeHidden()
       expect(await page.evaluate(() => location.hash)).toBe('#playground')
-      await expect(page.locator('[data-crossing]')).not.toHaveClass(/is-dark/, { timeout: 2000 })
+      await arrived(page)
+      const arrivedAt = await page.evaluate(() => performance.now())
+      expect(arrivedAt - t0, 'the way out was a jump cut').toBeGreaterThan(3500)
+      expect(arrivedAt - t0, 'the way out dragged').toBeLessThan(6000)
       // The world outside: five places, three fires, the foreground over all.
       await expect(page.locator('.spot')).toHaveCount(5)
       expect(await page.locator('.playground__fire').count()).toBeGreaterThanOrEqual(2)
@@ -206,25 +217,36 @@ for (const view of [
       await expect(page.locator('[data-playground-world] img[src*="poko_office"], [data-playground-world] img[src*="snack_stall"], [data-playground-world] img[src*="parcel_office"]')).toHaveCount(0)
     })
 
-    test('a building grows out of its place, and its game is played inside it and comes back', async ({ page }) => {
-      test.setTimeout(90_000)
+    test('a building answers, and its game opens through the pixels by itself, and comes back', async ({ page }) => {
+      test.setTimeout(120_000)
       await enter(page)
       await goOut(page)
-      for (const [id, title] of [['poko-office', '무궁화'], ['snack-stall', '야식'], ['parcel-office', '택배']] as const) {
+      const games = [['poko-office', '요미의 과자 몰래 먹기'], ['snack-stall', '도깨비 야식 심부름'], ['parcel-office', '모모의 택배 배달']] as const
+      for (const [i, [id, title]] of games.entries()) {
         const spot = page.locator(`[data-place="${id}"]`)
         await spot.focus()
         await page.waitForTimeout(700)
         await spot.press('Enter')
+        // The building grows out of its place, and its sign lights.
         await expect(page.locator(`.prop--place[data-prop="${id}"]`)).toBeVisible({ timeout: 6000 })
         await expect(spot).toHaveClass(/is-active/)
-        await expect(page.locator('.place__enter')).toBeVisible()
-        await page.locator('.place__enter').click()
+        await expect(page.locator(`.prop--place[data-prop="${id}"]`)).toHaveClass(/is-lit/, { timeout: 2000 })
+        // 들어가기 is the immediate way in; left alone, it goes in by itself.
+        if (i === 0) await page.locator('.place__enter').click()
+        // The pixels cover the screen with the game's name on them…
+        await expect(page.locator('[data-pixel-wipe-title]')).toHaveText(title, { timeout: 4000 })
+        // …and the game is there: its own pixel screen, its title.
         await expect(page.locator('[data-game-shell]')).toBeVisible({ timeout: 6000 })
-        await expect(page.locator('#gameTitle')).toContainText(title)
-        // The way out says where it goes.
+        await expect(page.locator('#gameTitle')).toHaveText(title)
+        await expect(page.locator('[data-game-box].pixel-game canvas.pixel-stage__screen')).toBeVisible()
+        await expect(page.locator('[data-pixel-wipe]')).toBeHidden({ timeout: 4000 })
+        // Nothing of the painted site shows round it.
+        expect(await page.locator('.game-layer').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(7, 6, 13)')
+        // The way out says where it goes, and goes there through the pixels.
         await expect(page.locator('[data-game-exit]')).toHaveText('놀이터로')
         await page.locator('[data-game-exit]').click()
-        await expect(page.locator('[data-game-shell]')).toHaveCount(0)
+        await expect(page.locator('[data-game-shell]')).toHaveCount(0, { timeout: 6000 })
+        await expect(page.locator('[data-pixel-wipe]')).toBeHidden({ timeout: 4000 })
         await outside(page, 3000)
         await expect(page.locator('[data-panel-root]')).toBeHidden()
         await expect(spot).not.toHaveClass(/is-active/)

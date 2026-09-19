@@ -3,10 +3,11 @@
  *
  * One of the room's ambient events (src/systems/ambient.ts), not a scheduler
  * of its own: the manager decides when, this decides where and what the
- * broom does once it is going. It is deliberately slow and short — it comes
- * in, sweeps a little, shuffles along, sweeps a little more, stands there,
- * and goes — because a broom that crosses the room at a run is a cartoon
- * and a broom that never stops is a screensaver.
+ * broom does once it is going. It is deliberately slow, short and rare — it
+ * fades in where it stands, sweeps once, rests, and fades — because a broom
+ * that crosses the room at a run is a cartoon, a broom that never stops is a
+ * screensaver, and a broom that is the liveliest thing on screen has taken
+ * the room from the dokkaebi.
  *
  * Where it sweeps is chosen when it fires, from where the crew are: it takes
  * the stretch of boards with nobody near it and nobody heading there, and
@@ -19,22 +20,25 @@
  */
 import type { BroomZone } from '@/data/ambience'
 
-export type BroomPhase = 'enter' | 'sweep' | 'move' | 'pause' | 'leave'
+export type BroomPhase = 'enter' | 'sweep' | 'pause' | 'leave'
 
-/** The routine, in order. Two sweeps, each the length of the sweep sound. */
+/**
+ * The routine, in order (WORLD 2.1: calmer). It fades in almost where it
+ * stands, gives the boards one slow sweep, rests a moment, and fades out.
+ * No shuffle along the floor, no second sweep, nothing that bounces: the
+ * broom is the room's small aside, never the thing being watched.
+ */
 export const PLAN: readonly (readonly [BroomPhase, number])[] = [
-  // In and out cover 70 units; at 1.1 s the eased peak was 127 units a
-  // second, faster than anybody in the room walks. 1.5 s keeps it under.
-  ['enter', 1500],
-  ['sweep', 2000],
-  // Slow: the longest stretch is 144 units, and an eased move peaks at
-  // about twice its average, so this keeps even that under 100 a second
-  // against the crew's 76.
-  ['move', 3000],
-  ['sweep', 2000],
-  ['pause', 900],
-  ['leave', 1500],
+  ['enter', 2000],
+  ['sweep', 2600],
+  ['pause', 1600],
+  ['leave', 2200],
 ]
+
+/** How rarely it comes out: every two and a half to four and a half minutes. */
+export const BROOM_EVERY = { min: 150_000, max: 270_000 } as const
+/** Not in the first minute of a visit, when the room is still being looked at. */
+export const BROOM_NOT_BEFORE = 70_000
 
 /** How long the whole thing takes; the ambient event's duration. */
 export const BROOM_MS = PLAN.reduce((a, [, ms]) => a + ms, 0)
@@ -49,7 +53,11 @@ export const BROOM_MS = PLAN.reduce((a, [, ms]) => a + ms, 0)
 const CLEAR = 96
 
 /** How far off the near end it starts and finishes, fading. */
-const OFFSET = 70
+/** Never quite solid: it is a thing in the room's corner of the eye. */
+const MAX_OPACITY = 0.9
+
+/** How far it glides in and out, in world units: a step, not a run. */
+const OFFSET = 18
 
 export interface BroomState {
   readonly x: number
@@ -185,26 +193,21 @@ export class Broom {
     if (!z) return null
     const [phase, ms] = PLAN[this.#index]!
     const t = Math.min(1, this.#into / ms)
-    // Starts at the near end, sweeps, moves to the far end, sweeps, goes
-    // back out the way it came.
+    // Fades in a step short of its spot, sweeps there once, rests, and
+    // fades a step on.
     const near = this.#dir === 1 ? z.x0 : z.x1
     const far = this.#dir === 1 ? z.x1 : z.x0
-    const out = near - this.#dir * OFFSET
-    let x = near
-    let opacity = 1
+    const out = near + (far - near) * 0.35 - this.#dir * OFFSET
+    // It works one spot: a little in from the near end of its stretch.
+    const spot = near + (far - near) * 0.35
+    let x = spot
+    let opacity = MAX_OPACITY
     if (phase === 'enter') {
-      x = out + (near - out) * ease(t)
-      opacity = t
-    } else if (phase === 'move') {
-      x = near + (far - near) * ease(t)
-    } else if (this.#index > 2) {
-      // After the move, everything happens at the far end.
-      x = far
-      if (phase === 'leave') {
-        const back = far + this.#dir * OFFSET
-        x = far + (back - far) * ease(t)
-        opacity = 1 - t
-      }
+      x = out + (spot - out) * ease(t)
+      opacity = MAX_OPACITY * ease(t)
+    } else if (phase === 'leave') {
+      x = spot + this.#dir * OFFSET * ease(t)
+      opacity = MAX_OPACITY * (1 - ease(t))
     }
     return { x, y: z.y, phase, t, opacity, dir: this.#dir }
   }

@@ -15,7 +15,7 @@ import type { SceneLayout, ScenePlace } from '@/scenes/scene'
 
 const ART = '/assets/images/archive'
 
-export type ArchivePlaceId = 'star-jar' | 'music-box' | 'telescope' | 'memory-box' | 'lantern' | 'cushion'
+export type ArchivePlaceId = 'star-jar' | 'music-box' | 'telescope' | 'memory-box' | 'lantern' | 'cushion' | 'polaroids'
 
 export interface ArchivePlace extends ScenePlace {
   readonly id: ArchivePlaceId
@@ -36,6 +36,9 @@ const PLACES_LANDSCAPE: readonly ArchivePlace[] = [
   { id: 'memory-box', label: '기억 상자', caption: '기억 상자 · 만들던 날들', rect: { x: 455, y: 575, w: 130, h: 95 } },
   { id: 'lantern', label: '작은 등', caption: '작은 등', rect: { x: 632, y: 600, w: 80, h: 100 } },
   { id: 'cushion', label: '방석과 담요', caption: '방석 · 조용히 쉬기', rect: { x: 625, y: 690, w: 220, h: 190 } },
+  // WORLD 2.1: the round table's top, where the books and loose papers lie —
+  // the polaroids are spread out on it (src/data/polaroids.ts).
+  { id: 'polaroids', label: '폴라로이드', caption: '폴라로이드 · 만든 날들', rect: { x: 1010, y: 668, w: 175, h: 92 } },
 ]
 
 const PLACES_PORTRAIT: readonly ArchivePlace[] = [
@@ -44,7 +47,10 @@ const PLACES_PORTRAIT: readonly ArchivePlace[] = [
   { id: 'music-box', label: '오르골', caption: '오르골', rect: { x: 300, y: 1090, w: 105, h: 115 } },
   { id: 'memory-box', label: '기억 상자', caption: '기억 상자 · 만들던 날들', rect: { x: 800, y: 1100, w: 140, h: 115 } },
   { id: 'lantern', label: '작은 등', caption: '작은 등', rect: { x: 695, y: 1440, w: 130, h: 180 } },
-  { id: 'cushion', label: '방석과 담요', caption: '방석 · 조용히 쉬기', rect: { x: 90, y: 1200, w: 360, h: 300 } },
+  // The cushions start below the table's edge now, so the table is its own.
+  { id: 'cushion', label: '방석과 담요', caption: '방석 · 조용히 쉬기', rect: { x: 60, y: 1245, w: 390, h: 265 } },
+  // The table beside the tea cup, with the card lying on it.
+  { id: 'polaroids', label: '폴라로이드', caption: '폴라로이드 · 만든 날들', rect: { x: 410, y: 1150, w: 100, h: 88 } },
 ]
 
 export const ARCHIVE_LANDSCAPE: ArchiveLayout = {
