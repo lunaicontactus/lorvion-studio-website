@@ -31,7 +31,9 @@ for (const [name, w, h, mobile] of [['desktop', 1440, 900, false], ['portrait', 
     await page.waitForTimeout(300)
     await shot(`${g}_0_sign`)
     await page.waitForSelector('[data-pixel-wipe-title]', { state: 'visible', timeout: 4000 }).catch(() => { bad += 1 })
-    await page.waitForFunction(() => document.querySelector('[data-pixel-wipe-title]')?.classList.contains('is-on'), null, { timeout: 4000 }).catch(() => {})
+    await page.waitForFunction(() => document.querySelector('[data-pixel-wipe-title]')?.classList.contains('is-on'), null, { timeout: 4000 }).catch(() => { bad += 1 })
+    // is-on starts a 200 ms step-in from nothing; shoot once it is in.
+    await page.waitForTimeout(300)
     await shot(`${g}_1_wipe`)
     await page.waitForSelector('[data-game-start]', { timeout: 8000 })
     await page.waitForTimeout(700)
