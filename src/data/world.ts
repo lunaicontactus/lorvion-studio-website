@@ -115,7 +115,9 @@ export const MOBILE_WORLD: WorldLayout = {
     // taken up to its hanging hook at 2012: the television below limits the
     // hit padding, and 70 units tall is 42px on a 390 phone — short of a finger.
     { id: 'picture-rubato', label: 'RUBATO', zone: 'tvArea', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'rubato' }, rect: { x: 579, y: 2012, w: 120, h: 78 }, outline: 'poster', artwork: 'rubato-opera' },
-    { id: 'cabinet', label: 'Records', zone: 'archive', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'cabinet' }, rect: { x: 424, y: 522, w: 142, h: 82 }, outline: 'cabinet', inMenu: true },
+    // The painted drawers run on below this; the spot reaches ten units further
+    // down them so it is a fingertip tall with the LUNAI frame's plate above it.
+    { id: 'cabinet', label: 'Records', zone: 'archive', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'cabinet' }, rect: { x: 424, y: 522, w: 142, h: 92 }, outline: 'cabinet', inMenu: true },
     { id: 'pc', label: 'Works', zone: 'mainDesk', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'pc' }, rect: { x: 439, y: 1251, w: 158, h: 135 }, outline: 'monitorPortrait', inMenu: true },
     { id: 'workbench', label: 'Work in progress', zone: 'workbench', kind: 'desk', enabled: true, action: { kind: 'panel', panelId: 'building' }, rect: { x: 831, y: 1152, w: 169, h: 147 }, outline: 'rect', inMenu: true },
     { id: 'fridge', label: 'Fridge', zone: 'fridgeArea', kind: 'appliance', enabled: true, action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 276, y: 2121, w: 158, h: 306 }, outline: 'fridge' },

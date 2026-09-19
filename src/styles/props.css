@@ -376,6 +376,8 @@
 .prop--wall .view__cap{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 14px;text-align:center;color:#f4e7cd;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 .prop--wall .view__cap b{font:700 .72rem/1 var(--mono);letter-spacing:.2em;color:#f4e7cd}
 .prop--wall .view__cap span{font-size:.82rem;color:#f4e7cd;opacity:.85}
+/* Two rows at most: the name and the way on, then the one line under them. */
+.prop--wall .view__cap > span{order:3;flex-basis:100%;line-height:1.4}
 .prop--wall .wall__go{border:0;border-radius:999px;padding:8px 14px;min-height:36px;cursor:pointer;background:rgba(244,231,205,.18);color:#f4e7cd;font:600 .58rem/1 var(--mono);letter-spacing:.14em}
 .prop--wall .wall__go:hover,.prop--wall .wall__go:focus-visible{background:rgba(244,231,205,.36)}
 
@@ -409,6 +411,7 @@
   .prop--wall .view{position:relative}
   .prop--wall .view__cap{position:absolute;left:calc(100% + 14px);top:50%;width:170px;transform:translateY(-50%);
     flex-direction:column;align-items:flex-start;text-align:left}
+  .prop--wall .view__cap > span{order:0;flex-basis:auto}
 }
 
 @media (prefers-reduced-motion:reduce){

@@ -73,9 +73,9 @@ for (const vp of [
 
       await page.locator('[data-game="liminal"]').click()
       await expect(page.locator('.crtgame__name')).toHaveText('LIMINAL')
-      await expect(page.locator('.crtgame__facts')).toContainText('Narrative mystery')
+      await expect(page.locator('.crtgame__facts')).toContainText('Narrative Mystery / Investigation')
       // Still inside the monitor: the full page is a link, not the first stop.
-      await expect(page.locator('.crtgame__full')).toHaveAttribute('href', /games\.html/)
+      await expect(page.locator('.crtgame__full')).toHaveAttribute('href', /^\/works\/[a-z]+\.html$/)
 
       await page.locator('[data-crt-back]').click()
       await expect(page.locator('[data-game]')).toHaveCount(5)
