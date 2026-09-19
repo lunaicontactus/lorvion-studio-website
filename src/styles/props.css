@@ -210,31 +210,98 @@
 .prop--cabinet .file__tab{display:inline-flex;align-items:center;gap:.4em;min-height:32px;padding:.5em .9em;border-radius:.4em .4em 0 0;background:#d9c6a2;color:#3f3024;font:700 clamp(8px,2.4cqi,11px)/1 var(--mono);letter-spacing:.1em;text-decoration:none;box-shadow:0 -2px 0 rgba(0,0,0,.15) inset}
 .prop--cabinet .file__tab:hover,.prop--cabinet .file__tab:focus-visible{background:#ebd9b3}
 
-/* ── Shelf: their things on the shelves; the picked one comes forward ──── */
-.prop--shelf .shelf{position:absolute;inset:0}
-.prop--shelf .relic{
-  position:absolute;transform:translate(-50%,-100%);display:grid;justify-items:center;gap:.3em;
-  width:22%;padding:.4em .3em;border:0;border-radius:.6em;background:rgba(255,246,220,.2);color:#3f3024;cursor:pointer;
-  font-size:clamp(9px,2.2cqi,13px);min-height:44px;
-  transition:transform 260ms cubic-bezier(.2,.9,.3,1),background 200ms,box-shadow 200ms;
-  box-shadow:0 2px 4px rgba(20,12,6,.25);animation:relicIn .38s cubic-bezier(.2,.9,.3,1) both;
+/* ── Shelf: the archive cabinet. Every thing is already painted into it;
+   the spots are where they are, and the one picked is lit. Its note comes on
+   a stitched felt tag, the name plates' own material, over the half of the
+   cabinet the thing is not in. ─────────────────────────────────────────── */
+.prop--shelf{container-type:inline-size}
+.prop--shelf .cab{position:absolute;inset:0}
+.prop--shelf .cab__spot{
+  position:absolute;padding:0;border:0;border-radius:12%/14%;background:transparent;cursor:pointer;
+  transition:box-shadow 220ms ease, background 220ms ease;
 }
-.prop--shelf .relic:nth-of-type(2){animation-delay:.06s}
-.prop--shelf .relic:nth-of-type(3){animation-delay:.12s}
-.prop--shelf .relic:hover,.prop--shelf .relic:focus-visible{background:rgba(255,246,220,.55)}
-.prop--shelf .relic.is-picked{transform:translate(-50%,-100%) scale(1.28) translateY(-6%);background:#f4e7cd;box-shadow:0 10px 18px rgba(20,12,6,.45);z-index:3}
-.prop--shelf .relic__art{width:70%;aspect-ratio:1;background-size:contain;background-repeat:no-repeat;background-position:center bottom}
-.prop--shelf .relic .owner{flex-direction:column;gap:0}
-.prop--shelf .relic .owner__face{width:60%}
-.prop--shelf .relic .owner__name{font-size:.75em}
-.prop--shelf .relic__label{font-weight:700;text-align:center;line-height:1.2}
-.prop--shelf .shelf__card{
-  position:absolute;z-index:4;width:44%;transform:translate(-50%,8%);padding:.7em .9em;border-radius:.6em;background:#fbf5e6;color:#3f3024;
-  box-shadow:0 8px 18px rgba(20,12,6,.4);font-size:clamp(10px,2.4cqi,14px);pointer-events:none;
+.prop--shelf .cab__spot:hover,.prop--shelf .cab__spot:focus-visible{
+  background:radial-gradient(ellipse at 50% 60%,rgba(255,226,160,.22),rgba(255,226,160,0) 72%);
+  box-shadow:0 0 0 1.5px rgba(255,238,200,.75), 0 0 16px rgba(255,200,120,.45);
+  outline:none;
 }
-.prop--shelf .shelf__card[hidden]{display:none}
-.prop--shelf .shelf__name{display:block;font:700 .8em/1 var(--mono);letter-spacing:.1em;margin-bottom:.4em}
-.prop--shelf .shelf__note{margin:0;line-height:1.45}
+.prop--shelf .cab__spot.is-picked{
+  background:radial-gradient(ellipse at 50% 60%,rgba(255,226,160,.3),rgba(255,226,160,0) 75%);
+  box-shadow:0 0 0 2px #fbeccb, 0 0 22px rgba(255,196,110,.65);
+}
+/* The name, on a small felt tag over the thing, while it is pointed at. */
+.prop--shelf .cab__tag{
+  position:absolute;left:50%;bottom:calc(100% + 4px);transform:translate(-50%,4px);
+  padding:.35em .7em;border-radius:.5em;white-space:nowrap;pointer-events:none;
+  background:#f1e3c3;color:#4a321f;font:700 clamp(9px,1.9cqi,12px)/1 var(--mono);letter-spacing:.04em;
+  outline:1px dashed rgba(150,96,45,.55);outline-offset:-3px;box-shadow:0 2px 5px rgba(40,22,8,.35);
+  opacity:0;transition:opacity 180ms ease, transform 180ms ease;
+}
+.prop--shelf .cab__spot[data-shelf="drawer"] .cab__tag{bottom:auto;top:-2px}
+.prop--shelf .cab__spot:hover .cab__tag,.prop--shelf .cab__spot:focus-visible .cab__tag{opacity:1;transform:translate(-50%,0)}
+.prop--shelf .cab__spot.is-picked .cab__tag{opacity:0}
+/* On a touch screen nothing is pointed at, so each thing wears a small felt
+   stud: something here can be picked up. */
+@media (hover:none){
+  .prop--shelf .cab__spot::after{
+    content:"";position:absolute;right:6%;top:8%;width:clamp(7px,1.6cqi,11px);aspect-ratio:1;border-radius:50%;
+    background:#fbeccb;box-shadow:0 0 0 2px rgba(150,96,45,.55), 0 0 8px rgba(255,210,140,.8);
+    animation:cabStud 2.4s ease-in-out infinite;
+  }
+  .prop--shelf .cab__spot.is-picked::after{display:none}
+}
+@keyframes cabStud{0%,100%{opacity:.55}50%{opacity:1}}
+
+.prop--shelf .cab__card{
+  /* Never over the cabinet: under it on a tall window (the panel keeps the
+     room, PropDef.reserveBelow), to its left on a wide one — the right-hand
+     corner is the panel's close button. */
+  position:absolute;left:50%;top:calc(100% + 10px);z-index:4;
+  width:min(calc(100vw - 32px),440px);transform:translateX(-50%);
+  padding:.95em 1.1em .75em;border-radius:.8em;
+  background:linear-gradient(180deg,#f6ead0,#ecdcb8);color:#3f2a18;
+  outline:1.5px dashed rgba(150,96,45,.6);outline-offset:-6px;
+  box-shadow:0 10px 24px rgba(30,16,6,.5);
+  font-size:14px;
+}
+@media (min-aspect-ratio:1/1){
+  .prop--shelf .cab__card{
+    left:auto;right:calc(100% + 18px);top:20%;transform:none;
+    width:min(330px,calc((100vw - var(--w, 600px)) / 2 - 34px));
+    font-size:clamp(12px,1.1vw,15px);
+  }
+}
+@media (min-aspect-ratio:1/1) and (max-height:520px){
+  .prop--shelf .cab__card{top:13%;font-size:12px;padding:.7em .85em .6em}
+}
+.prop--shelf .cab__card[hidden]{display:none}
+.prop--shelf .cab__project{display:block;margin-bottom:.35em;font:700 .72em/1 var(--mono);letter-spacing:.16em;color:#8a5a2c}
+.prop--shelf .cab__title{display:block;font-size:1.12em;line-height:1.25}
+.prop--shelf .cab__note{margin:.35em 0 0;line-height:1.5}
+.prop--shelf .cab__extra:empty{display:none}
+.prop--shelf .cab__extra{margin-top:.55em}
+.prop--shelf .cab__record{display:block;font-size:.86em;line-height:1.45;color:#5b3f25}
+.prop--shelf .cab__record code{font:600 .9em var(--mono);color:#8a5a2c}
+.prop--shelf .cab__photos{display:flex;gap:.55em}
+.prop--shelf .cab__photo{margin:0;flex:1;padding:.3em .3em .2em;background:#fffaf0;box-shadow:0 2px 5px rgba(40,22,8,.3)}
+.prop--shelf .cab__photo:nth-child(1){transform:rotate(-2deg)}
+.prop--shelf .cab__photo:nth-child(3){transform:rotate(1.6deg)}
+.prop--shelf .cab__photo img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+.prop--shelf .cab__photo figcaption{font:600 .68em/1.6 var(--mono);text-align:center;color:#6a4a2a}
+.prop--shelf .cab__foot{display:flex;flex-wrap:wrap;align-items:center;gap:.5em;margin-top:.6em}
+.prop--shelf .cab__step{
+  display:grid;place-items:center;min-width:44px;min-height:44px;padding:0;border:0;border-radius:50%;cursor:pointer;
+  background:#7a4f2c;color:#fbeccb;font:700 1.25em/1 var(--mono);
+  box-shadow:inset 0 0 0 2px rgba(251,236,203,.35), 0 2px 3px rgba(30,16,6,.35);
+}
+.prop--shelf .cab__step:hover,.prop--shelf .cab__step:focus-visible{background:#8e5d34}
+.prop--shelf .cab__count{font:700 .8em/1 var(--mono);color:#7a5332;min-width:3.6em;text-align:center;white-space:nowrap}
+.prop--shelf .cab__go{
+  margin-left:auto;min-height:44px;padding:0 1em;border:0;border-radius:.6em;cursor:pointer;
+  background:#3f2a18;color:#fbeccb;font:700 .82em/1 var(--mono);letter-spacing:.04em;white-space:nowrap;
+}
+.prop--shelf .cab__go[hidden]{display:none}
+.prop--shelf .cab__go:hover,.prop--shelf .cab__go:focus-visible{background:#5a3c22}
 
 /* ── Workbench: a capture propped on the board, the note on the drawers ── */
 .prop--workbench .bench2{position:absolute;inset:0;container-type:inline-size}
@@ -337,7 +404,7 @@
 
 @media (prefers-reduced-motion:reduce){
   .prop,.prop--fridge .fridge__door,.prop--fridge .fridge__memo,.prop--cabinet .drawer__pull,.prop--cabinet .paper,
-  .prop--radio .radio__needle,.prop--outside-door .door__leaf,.prop--shelf .relic,.prop--parcel .delivery__thing{transition:none;animation:none}
+  .prop--radio .radio__needle,.prop--outside-door .door__leaf,.prop--shelf .cab__spot,.prop--shelf .cab__spot::after,.prop--shelf .cab__tag,.prop--parcel .delivery__thing{transition:none;animation:none}
 }
 
 /* Shared bits that used to live in panels.css. */

@@ -40,7 +40,7 @@ export const DESKTOP_WORLD: WorldLayout = {
   ],
   objects: [
     // Read off the panorama with a rectangle overlay, then checked against it.
-    { id: 'shelf', label: 'Collection', zone: 'shelf', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 244, y: 205, w: 171, h: 412 }, outline: 'shelf' },
+    { id: 'shelf', label: 'Archive cabinet', zone: 'shelf', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 244, y: 205, w: 171, h: 412 }, outline: 'shelf' },
     // The four works hang in felt frames (src/data/wallFrames.ts). `rect` is
     // the whole frame, ornament to name plate; `painted` is the painted poster
     // it hangs over, measured off the plate at 2x, which the frame's body
@@ -103,7 +103,7 @@ export const MOBILE_WORLD: WorldLayout = {
     { id: 'entry', label: 'Wall', rect: { x: 0, y: 1700, w: 1100, h: 740 }, blocks: { x: 0, y: 1700, w: 1100, h: 740 } },
   ],
   objects: [
-    { id: 'shelf', label: 'Collection', zone: 'shelf', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 172, y: 345, w: 128, h: 105 }, outline: 'shelf' },
+    { id: 'shelf', label: 'Archive cabinet', zone: 'shelf', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 172, y: 345, w: 128, h: 105 }, outline: 'shelf' },
     { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lunai' }, rect: { x: 305, y: 223, w: 149, h: 257 }, painted: { x: 320, y: 240, w: 127, h: 212 }, outline: 'frame', artwork: 'lunai-keyart' },
     { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 460, y: 220, w: 144, h: 258 }, painted: { x: 462, y: 240, w: 134, h: 212 }, outline: 'frame', artwork: 'liminal-keyart' },
     { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 611, y: 221, w: 148, h: 261 }, painted: { x: 616, y: 242, w: 139, h: 212 }, outline: 'frame', artwork: 'wormup-keyart' },
@@ -155,7 +155,7 @@ export const CAPTIONS: Readonly<Record<string, string>> = {
   radio: '라디오 · 소리',
   fridge: '냉장고 · 오늘의 냉장고',
   cabinet: '캐비닛 · 기록',
-  shelf: '선반 · 크루 컬렉션',
+  shelf: '진열장 · 작업 기록',
   'outside-door': '바깥문',
   'secret-door': '비밀문',
   parcel: '택배 · 열어 보기',
@@ -181,7 +181,7 @@ export const OBJECT_ART: Record<string, string> = {
   'outside-door': `${ART}/secret_door.webp`,
   radio: `${ART}/radio.webp`,
   fridge: `${ART}/fridge.webp`,
-  shelf: `${ART}/shelf.webp`,
+  shelf: `${ART}/archive_cabinet.webp`,
 }
 
 export function worldFor(portrait: boolean): WorldLayout {

@@ -19,7 +19,8 @@ import { artworkFor, fullSrc, orientationOf } from '@/data/artwork'
 import { contactRows } from '@/data/site'
 import { ROOM_ART } from '@/data/world'
 import { DOCUMENTS } from '@/data/documents'
-import { SHELF_ENTRIES, SHELF_SHOWN } from '@/data/garage/shelf'
+import { CABINET_ITEMS } from '@/data/garage/shelf'
+import type { CabinetItem } from '@/data/garage/shelf'
 import { PARCEL_ENTRIES } from '@/data/garage/parcels'
 import { FRIDGE_FOOD, FRIDGE_MEMOS, FRIDGE_SHOWN, fridgeDay } from '@/data/garage/fridge'
 import { CABINET_ENTRIES } from '@/data/garage/cabinet'
@@ -140,7 +141,7 @@ export class Panels {
   #timers = new Set<ReturnType<typeof setTimeout>>()
   /** Everything the room's things can bring out, and what they brought last. */
   readonly pool = new GarageDiscoveryPool(
-    [...SHELF_ENTRIES, ...PARCEL_ENTRIES, ...CABINET_ENTRIES, ...TV_ENTRIES, ...RADIO_ENTRIES, ...WORKBENCH_ENTRIES],
+    [...PARCEL_ENTRIES, ...CABINET_ENTRIES, ...TV_ENTRIES, ...RADIO_ENTRIES, ...WORKBENCH_ENTRIES],
     { spent: readSpent() },
   )
   #tvChannel = 0
@@ -366,9 +367,12 @@ export class Panels {
     if (!def) return
     const ratio = def.h / def.w
     const s = def.surface
-    let w = Math.min(availW * 0.94, (availH * 0.94) / ratio)
+    // A tall window keeps room under the cut-out when the thing asks for it;
+    // a wide one has room beside it already.
+    const below = def.reserveBelow && vh > vw ? Math.min(def.reserveBelow, availH * 0.4) : 0
+    let w = Math.min(availW * 0.94, ((availH - below) * 0.94) / ratio)
     let tx = 0
-    let ty = midShift
+    let ty = midShift - below / 2
     const surfaceW = w * s.w
     const surfaceH = w * ratio * s.h
     if (surfaceW < def.min.w || surfaceH < def.min.h) {
@@ -880,44 +884,109 @@ export class Panels {
   // ── The shelf: three of their things, on the shelves; one comes forward ─
   openShelf(): void {
     this.#touch('shelf')
-    const items = this.pool.drawMany('shelf', SHELF_SHOWN)
-    writeSpent(this.pool.spent)
     const def = PROPS['shelf']!
-    const parts = def.parts!
-    const rows = [parts['top']!, parts['middle']!, parts['bottom']!]
-    const seats = [0.22, 0.5, 0.78]
+    const items = CABINET_ITEMS
     this.#show(
       'shelf',
-      'DOKKA CREW COLLECTION',
+      '작업 기록 진열장',
       Panels.#furniture('shelf', def, `
-        <div class="shelf" data-shelf-items="${items.map((i) => i.id).join(' ')}">
-          ${items.map((i, k) => {
-            const row = rows[k % rows.length]!
-            return `<button class="relic" type="button" data-relic="${i.id}"
-               style="left:${(row.x + row.w * seats[k % seats.length]!) * 100}%;top:${(row.y + row.h) * 100}%">
-              ${i.asset ? `<span class="relic__art" style="background-image:url('${i.asset}')"></span>` : this.#owner(i.owner)}
-              <span class="relic__label">${esc(i.title)}</span>
-            </button>`
-          }).join('')}
-          <div class="shelf__card" data-relic-card hidden></div>
+        <div class="cab" data-cabinet>
+          ${items.map((i) => `<button class="cab__spot" type="button" data-cab="${i.id}" data-shelf="${i.shelf}"
+               aria-label="${esc(i.title)}"
+               style="left:${i.box.x * 100}%;top:${i.box.y * 100}%;width:${i.box.w * 100}%;height:${i.box.h * 100}%">
+               <span class="cab__tag" aria-hidden="true">${esc(i.title)}</span>
+             </button>`).join('')}
+          <div class="cab__card" data-cab-card hidden aria-live="polite">
+            <span class="cab__project" data-cab-project></span>
+            <b class="cab__title" data-cab-title></b>
+            <p class="cab__note" data-cab-note></p>
+            <div class="cab__extra" data-cab-extra></div>
+            <div class="cab__foot">
+              <button class="cab__step" type="button" data-cab-step="-1" aria-label="앞의 것">‹</button>
+              <span class="cab__count" data-cab-count></span>
+              <button class="cab__step" type="button" data-cab-step="1" aria-label="다음 것">›</button>
+              <button class="cab__go" type="button" data-cab-go hidden></button>
+            </div>
+          </div>
         </div>`,
       ),
       { id: 'shelf', def },
     )
-    const card = this.#body.querySelector<HTMLElement>('[data-relic-card]')!
-    for (const btn of this.#body.querySelectorAll<HTMLElement>('[data-relic]')) {
-      btn.addEventListener('click', () => {
-        const item = items.find((i) => i.id === btn.dataset['relic'])
-        if (!item) return
-        for (const other of this.#body.querySelectorAll('[data-relic]')) {
-          other.classList.toggle('is-picked', other === btn)
-        }
-        card.hidden = false
-        card.style.left = btn.style.left
-        card.style.top = btn.style.top
-        card.innerHTML = `<b class="shelf__name">${esc(item.title)}</b><p class="shelf__note">${esc(item.description)}</p>`
+    const card = this.#body.querySelector<HTMLElement>('[data-cab-card]')!
+    const go = card.querySelector<HTMLButtonElement>('[data-cab-go]')!
+    const spots = [...this.#body.querySelectorAll<HTMLButtonElement>('[data-cab]')]
+    let at = -1
+    const pick = (k: number): void => {
+      at = (k + items.length) % items.length
+      const item = items[at]!
+      spots.forEach((b, n) => {
+        b.classList.toggle('is-picked', n === at)
+        b.setAttribute('aria-pressed', String(n === at))
       })
+      const project = item.projectId ? PROJECTS.find((p) => p.id === item.projectId) : undefined
+      card.querySelector('[data-cab-project]')!.textContent = project ? project.title : 'EUNGARAGE · 작업 기록'
+      card.querySelector('[data-cab-title]')!.textContent = item.title
+      card.querySelector('[data-cab-note]')!.textContent = item.note
+      card.querySelector('[data-cab-extra]')!.innerHTML = Panels.#cabinetExtra(item)
+      card.querySelector('[data-cab-count]')!.textContent = `${at + 1} / ${items.length}`
+      // Where the thing leads: the work's own page on the PC, or the bench.
+      go.hidden = !project && item.id !== 'drawer-tools'
+      go.textContent = project ? 'PC에서 자세히 보기 ›' : '작업대 보기 ›'
+      go.dataset['to'] = project ? project.id : 'workbench'
+      card.hidden = false
     }
+    const putDown = (): boolean => {
+      if (card.hidden) return false
+      card.hidden = true
+      spots.forEach((b) => {
+        b.classList.remove('is-picked')
+        b.setAttribute('aria-pressed', 'false')
+      })
+      spots[at]?.focus()
+      at = -1
+      return true
+    }
+    spots.forEach((b, n) => b.addEventListener('click', () => pick(n)))
+    for (const step of card.querySelectorAll<HTMLElement>('[data-cab-step]')) {
+      step.addEventListener('click', () => pick(at + Number(step.dataset['cabStep'])))
+    }
+    go.addEventListener('click', () => {
+      const to = go.dataset['to']
+      if (!to) return
+      if (to === 'workbench') {
+        this.#host.onGoTo?.('workbench')
+        return
+      }
+      this.queueProject(to)
+      this.#host.onGoTo?.('pc')
+    })
+    this.#keys = (e) => {
+      if (card.hidden) return false
+      if (e.key === 'ArrowRight') pick(at + 1)
+      else if (e.key === 'ArrowLeft') pick(at - 1)
+      else return false
+      return true
+    }
+    this.#back = putDown
+  }
+
+  /**
+   * What a drawer has in it beyond its note: the bench's newest record, or
+   * three of the printed photos. Real records (src/data/garage/workbench.ts),
+   * with their dates and commits.
+   */
+  static #cabinetExtra(item: CabinetItem): string {
+    const newest = [...WORKBENCH_ENTRIES].sort((a, b) => b.date.localeCompare(a.date))
+    if (item.id === 'drawer-tools') {
+      const w = newest[0]
+      return w ? `<span class="cab__record">가장 최근 기록 · ${w.date} · ${esc(w.title)} <code>${w.commit}</code></span>` : ''
+    }
+    if (item.id === 'drawer-records') {
+      return `<span class="cab__photos">${newest.filter((w) => w.asset).slice(0, 3).map((w) => `
+        <figure class="cab__photo"><img src="${w.asset}" alt="${esc(w.title)}" decoding="async" loading="lazy">
+          <figcaption>${w.date}</figcaption></figure>`).join('')}</span>`
+    }
+    return ''
   }
 
   // ── The workbench: what is being worked on, out on the bench ────────────
