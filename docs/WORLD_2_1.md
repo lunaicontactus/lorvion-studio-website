@@ -168,3 +168,38 @@ site's requests:
 A Korean pixel face needs bundling a font file, which is a download; it has
 not been done. Until then numbers and short English words are drawn in the
 games' own bitmap face and Korean falls back to a monospace face.
+
+## PHASE E — tests
+
+On `da35147`, `--retries=0`, 2026-09-19:
+
+| | |
+|---|---|
+| typecheck | clean |
+| lint | clean |
+| unit (vitest) | 220 / 220 |
+| Playwright, all projects | 287 / 287 — chromium 249, shell 12, webkit 13, firefox 13; 0 failed, 0 skipped (48.9 min) |
+
+Tests added: `test/polaroids.test.ts`, `test/sneak.test.ts` (simulated
+rounds), `test/delivery.test.ts` (MOMO walked to both doors), the broom's
+rarity/travel/speed/opacity/floor-line cases in `test/living.test.ts`,
+`e2e/sneak.spec.ts`, `e2e/delivery.spec.ts`, the album and empty-record
+cases in `e2e/archive.spec.ts`. Tests removed with the games they tested:
+`test/poko.test.ts`, `test/parcel.test.ts`, `test/boss.test.ts`,
+`e2e/poko.spec.ts`, `e2e/parcel.spec.ts`, `e2e/minigame.spec.ts`. Tests
+changed because the product changed: the crossing now asserts it takes
+3.5–6 s (it asserted under 3.2 s); leaving a game returns to the
+playground (it asserted the garage); the snack shelf's pictures are
+checked by the cut-out each pixel icon is drawn from; the shelf is
+asserted silent and every touch one sound. No timeout was raised to pass
+anything, nothing skipped.
+
+Found and fixed on the way, by the tests and the captures: the album's
+cards buried one another on a short landscape table (columns now chosen
+from the table's real shape); the pixel screen overflowed its box on a
+landscape phone (it now fits its own cell); the snack shelf's cards were
+40 px wide on a landscape phone (a shared pad style overrode their grid);
+the wipe's title never reached full strength before the screen uncovered.
+
+Captures: `docs/shots/world21` (the album; each game's sign, ready screen,
+play and result, at 1440 × 900, 390 × 844, 844 × 390).
