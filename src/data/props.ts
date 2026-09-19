@@ -82,8 +82,10 @@ export const PROPS: Readonly<Record<string, PropDef>> = {
     // three shelves and the two open drawers, where everything is.
     art: `${G}/archive_cabinet.webp`, w: 900, h: 1075,
     surface: { x: 0.15, y: 0.17, w: 0.7, h: 0.79 },
-    min: { w: 300, h: 330 },
-    reserveBelow: 250,
+    // Everything on it is a picture to point at, not text to read: a phone
+    // shows the whole cabinet rather than zooming into it.
+    min: { w: 220, h: 280 },
+    reserveBelow: 340,
   },
   radio: {
     art: `${G}/radio.webp`, w: 560, h: 493,

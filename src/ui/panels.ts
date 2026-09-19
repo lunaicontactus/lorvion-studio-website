@@ -369,7 +369,7 @@ export class Panels {
     const s = def.surface
     // A tall window keeps room under the cut-out when the thing asks for it;
     // a wide one has room beside it already.
-    const below = def.reserveBelow && vh > vw ? Math.min(def.reserveBelow, availH * 0.4) : 0
+    const below = def.reserveBelow && vh > vw ? Math.min(def.reserveBelow, availH * 0.46) : 0
     let w = Math.min(availW * 0.94, ((availH - below) * 0.94) / ratio)
     let tx = 0
     let ty = midShift - below / 2
@@ -382,7 +382,7 @@ export class Panels {
       const cap = Math.min((availW * 0.96) / s.w, (availH * 0.96) / (s.h * ratio))
       w = Math.min(Math.max(need, w), cap)
       tx = -(s.x + s.w / 2 - 0.5) * w
-      ty = midShift - (s.y + s.h / 2 - 0.5) * w * ratio
+      ty = midShift - below / 2 - (s.y + s.h / 2 - 0.5) * w * ratio
     }
     el.style.setProperty('--w', `${Math.round(w)}px`)
     el.style.setProperty('--tx', `${tx.toFixed(1)}px`)

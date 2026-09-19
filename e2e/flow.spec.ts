@@ -22,7 +22,7 @@ const OPENS: Readonly<Record<string, string>> = {
   parcel: '.delivery',
   cabinet: '.drawer',
   fridge: '.fridge',
-  shelf: '.shelf',
+  shelf: '[data-cabinet]',
   'outside-door': '.dark',
   'poster-lunai': '[data-kind~="poster--lunai"] .wall',
   'poster-liminal': '[data-kind~="poster--liminal"] .wall',

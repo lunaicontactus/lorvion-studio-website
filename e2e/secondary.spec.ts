@@ -87,14 +87,28 @@ for (const vp of [
       await expect(page.locator(panel)).toBeHidden()
     })
 
-    test('the shelf is the crew\'s own things, and never a second games menu', async ({ page }) => {
+    test('the shelf is the studio\'s work kept, and never a second games menu', async ({ page }) => {
       await enter(page)
       await touch(page, 'shelf')
-      await expect(page.locator('.relic')).toHaveCount(3, { timeout: 6000 })
+      await expect(page.locator('.cab__spot')).toHaveCount(14, { timeout: 6000 })
+      // Kept things, not a list of games to launch.
       await expect(page.locator('[data-game], [data-shelf-go]')).toHaveCount(0)
-      await page.locator('.relic').first().click()
-      await expect(page.locator('.shelf__note')).toBeVisible()
-      await expect(page.locator('.shelf__note')).not.toContainText(/LUNAI|LIMINAL|WORM UP|LUMIORA|RUBATO/)
+      await page.locator('[data-cab="liminal-book"]').click()
+      const card = page.locator('[data-cab-card]')
+      await expect(card).toBeVisible()
+      await expect(card.locator('[data-cab-project]')).toHaveText('LIMINAL')
+      await expect(card.locator('[data-cab-note]')).toContainText('LIMINAL')
+      await expect(card.locator('[data-cab-count]')).toHaveText('4 / 14')
+      // The next thing along, by the card and by the keyboard.
+      await card.locator('[data-cab-step="1"]').click()
+      await expect(card.locator('[data-cab-count]')).toHaveText('5 / 14')
+      await page.keyboard.press('ArrowRight')
+      await expect(card.locator('[data-cab-count]')).toHaveText('6 / 14')
+      await expect(page.locator('[data-cab="liminal-lantern"]')).toHaveClass(/is-picked/)
+      // Escape puts the thing down first, and then closes the cabinet.
+      await page.keyboard.press('Escape')
+      await expect(card).toBeHidden()
+      await expect(page.locator(panel)).toHaveClass(/is-open/)
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
     })

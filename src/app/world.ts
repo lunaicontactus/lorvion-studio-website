@@ -785,6 +785,8 @@ export function mountWorld(): () => void {
     // during the move means it, and should not have a panel open on them.
     if (interaction.state !== 'OBJECT_OPEN' && interaction.state !== 'OBJECT_FOCUSING') return
     e.preventDefault()
+    // A thing picked off the shelf goes back before the shelf closes.
+    if (panels.stepBack()) return
     popOpen()
     interaction.dismiss()
   }

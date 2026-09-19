@@ -92,6 +92,9 @@ function hangFrame(piece: Artwork, frame: WallFrame, rect: { w: number; h: numbe
   sheet.dataset['artwork'] = piece.id
   sheet.dataset['mount'] = piece.mount
   sheet.setAttribute('aria-hidden', 'true')
+  // The felt below the ornament, as fractions of the frame: what has to cover
+  // the painted poster underneath (checked in e2e/gallery.spec.ts).
+  sheet.dataset['body'] = [frame.body.x, frame.body.y, frame.body.w, frame.body.h].join(' ')
   Object.assign(sheet.style, { left: `${pad}px`, top: `${pad}px`, width: `${rect.w}px`, height: `${rect.h}px` })
 
   // The window, a unit bigger all round than the hole so the felt's lip
@@ -599,9 +602,14 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         el.append(lift)
       }
 
-      // A real piece of work, printed over the painted poster it replaces.
+      // A real piece of work, hung over the painted poster it replaces.
       const print = hangPrint(obj, pad)
       if (print) el.append(print)
+      if (obj.painted) {
+        // Where the painted poster is, in the thing's own units.
+        const p = obj.painted
+        el.dataset['painted'] = [p.x - obj.rect.x + pad, p.y - obj.rect.y + pad, p.w, p.h].join(' ')
+      }
 
       if (obj.art) {
         // Not in the painting; this one is placed into the room.

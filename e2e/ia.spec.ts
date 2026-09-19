@@ -54,30 +54,57 @@ test.describe('desktop', () => {
     await expect(page.locator('[data-panel]')).not.toContainText('미니게임')
   })
 
-  test('the shelf is the crew\'s things, and a second look brings out others', async ({ page }) => {
+  test('the shelf is the archive: every work on it, each where it is painted', async ({ page }) => {
     await enter(page)
     await touch(page, 'shelf')
-    const items = page.locator('[data-shelf-items]')
-    // The previous panel's markup stays in the DOM until the next one
-    // replaces it, so wait for the layer to be open, not for the count.
     await expect(page.locator(panel)).toHaveClass(/is-open/, { timeout: 6000 })
-    await expect(page.locator('.relic')).toHaveCount(3)
-    const first = (await items.getAttribute('data-shelf-items'))!.split(' ')
-    await expect(page.locator('[data-panel]')).not.toContainText(TITLE)
-    await expect(page.locator('[data-game]')).toHaveCount(0)
-    // Owners are the approved crew, not the retired v1 figures.
-    for (const src of await page.locator('.owner__face').evaluateAll((els) => els.map((e) => e.getAttribute('src')))) {
-      expect(src).toContain('/dokkaebi-v2/')
+    await expect(page.locator('.cab__spot')).toHaveCount(14)
+    await page.waitForFunction(() => document.querySelector<HTMLImageElement>('.prop--shelf .prop__art')?.complete)
+    await page.waitForTimeout(700)
+    // The spot a finger lands on is the spot for the thing painted there,
+    // and no spot lies on another.
+    const spots = await page.locator('.cab__spot').evaluateAll((els) => els.map((el) => {
+      const r = el.getBoundingClientRect()
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      return { id: (el as HTMLElement).dataset['cab'], hit: hit?.closest<HTMLElement>('[data-cab]')?.dataset['cab'],
+        l: r.left, t: r.top, r: r.right, b: r.bottom }
+    }))
+    for (const s of spots) expect(s.hit, `${s.id} is covered by ${s.hit}`).toBe(s.id)
+    for (const a of spots) {
+      for (const b of spots) {
+        if (a === b) continue
+        const w = Math.min(a.r, b.r) - Math.max(a.l, b.l)
+        const h = Math.min(a.b, b.b) - Math.max(a.t, b.t)
+        const area = Math.min((a.r - a.l) * (a.b - a.t), (b.r - b.l) * (b.b - b.t))
+        expect(Math.max(0, w) * Math.max(0, h) / area, `${a.id} lies on ${b.id}`).toBeLessThan(0.03)
+      }
     }
-    await close(page)
+    // Round the cabinet once: every work is on it, and the drawers are the
+    // studio's own records.
+    await page.locator('.cab__spot').first().click()
+    const seen = new Set<string>()
+    for (let i = 0; i < 14; i++) {
+      seen.add((await page.locator('[data-cab-project]').textContent())!.trim())
+      await page.keyboard.press('ArrowRight')
+    }
+    for (const w of WORKS) expect(seen.has(w), `${w} is not on the shelf`).toBe(true)
+    await page.locator('[data-cab="drawer-tools"]').click()
+    await expect(page.locator('.cab__record code')).toHaveText(/^[0-9a-f]{7}$/)
+    await page.locator('[data-cab="drawer-records"]').click()
+    const photos = page.locator('.cab__photo img')
+    await expect(photos).toHaveCount(3)
+    await expect.poll(() => photos.evaluateAll((els) =>
+      els.every((i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0)), { timeout: 8000 }).toBe(true)
+  })
+
+  test('a thing on the shelf leads to its work on the PC', async ({ page }) => {
+    await enter(page)
     await touch(page, 'shelf')
     await expect(page.locator(panel)).toHaveClass(/is-open/, { timeout: 6000 })
-    await expect(page.locator('.relic')).toHaveCount(3)
-    const second = (await items.getAttribute('data-shelf-items'))!.split(' ')
-    expect(second, 'the shelf showed exactly the same things again').not.toEqual(first)
-    // Picking one says what it is.
-    await page.locator('.relic').first().click()
-    await expect(page.locator('.shelf__note')).not.toBeEmpty()
+    await page.locator('[data-cab="lunai-diary"]').click()
+    await expect(page.locator('[data-cab-go]')).toHaveText(/PC에서 자세히 보기/)
+    await page.locator('[data-cab-go]').click()
+    await expect(page.locator('.crtgame__name')).toHaveText('LUNAI', { timeout: 8000 })
   })
 
   test('the fridge is today\'s fridge: no games, and the same shelves all day', async ({ page }) => {
@@ -213,7 +240,7 @@ test.describe('phone', () => {
   test('every new thing can be reached and opened with a finger', async ({ page }) => {
     await enter(page)
     for (const [id, sel] of [['radio', '[data-radio]'], ['parcel', '[data-delivery]'], ['tv', '[data-tv]'],
-      ['shelf', '.relic'], ['workbench', '.bench2__img']] as const) {
+      ['shelf', '.cab__spot'], ['workbench', '.bench2__img']] as const) {
       const thing = page.locator(`.thing--${id}`)
       const box = await thing.evaluate((el) => { const r = el.getBoundingClientRect(); return { w: r.width, h: r.height } })
       expect(Math.min(box.w, box.h), `${id} is smaller than a finger`).toBeGreaterThanOrEqual(44)
@@ -223,3 +250,41 @@ test.describe('phone', () => {
     }
   })
 })
+
+for (const view of [
+  { name: 'phone portrait', viewport: { width: 390, height: 844 } },
+  { name: 'phone landscape', viewport: { width: 844, height: 390 } },
+] as const) {
+  test.describe(view.name, () => {
+    test.use({ ...view, isMobile: true, hasTouch: true })
+
+    test('what the shelf says about a thing never covers the shelf', async ({ page }) => {
+      await enter(page)
+      await touch(page, 'shelf')
+      await expect(page.locator(panel)).toHaveClass(/is-open/, { timeout: 6000 })
+      await page.waitForTimeout(900)
+      for (const id of ['wormup-crown', 'liminal-book', 'rubato-ticket', 'drawer-records']) {
+        await page.locator(`[data-cab="${id}"]`).tap()
+        await expect(page.locator('[data-cab-card]')).toBeVisible()
+        await page.waitForTimeout(300)
+        const got = await page.evaluate(() => {
+          const card = document.querySelector('[data-cab-card]')!.getBoundingClientRect()
+          const over = [...document.querySelectorAll<HTMLElement>('.cab__spot')].filter((s) => {
+            const r = s.getBoundingClientRect()
+            return Math.min(r.right, card.right) - Math.max(r.left, card.left) > 2
+              && Math.min(r.bottom, card.bottom) - Math.max(r.top, card.top) > 2
+          }).map((s) => s.dataset['cab'])
+          const buttons = [...document.querySelectorAll<HTMLElement>('[data-cab-card] button:not([hidden])')]
+            .map((b) => { const r = b.getBoundingClientRect(); return Math.min(r.width, r.height) })
+          return { over, card: { l: card.left, t: card.top, r: card.right, b: card.bottom }, vw: innerWidth, vh: innerHeight, buttons }
+        })
+        expect(got.over, `${id}: the card lies on ${got.over.join(', ')}`).toEqual([])
+        expect(got.card.l, `${id}: off the left`).toBeGreaterThanOrEqual(0)
+        expect(got.card.t, `${id}: off the top`).toBeGreaterThanOrEqual(0)
+        expect(got.card.r, `${id}: off the right`).toBeLessThanOrEqual(got.vw)
+        expect(got.card.b, `${id}: off the bottom`).toBeLessThanOrEqual(got.vh)
+        for (const b of got.buttons) expect(b, `${id}: a button smaller than a finger`).toBeGreaterThanOrEqual(44)
+      }
+    })
+  })
+}

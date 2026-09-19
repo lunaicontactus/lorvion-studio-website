@@ -282,7 +282,7 @@
 .prop--shelf .cab__extra{margin-top:.55em}
 .prop--shelf .cab__record{display:block;font-size:.86em;line-height:1.45;color:#5b3f25}
 .prop--shelf .cab__record code{font:600 .9em var(--mono);color:#8a5a2c}
-.prop--shelf .cab__photos{display:flex;gap:.55em}
+.prop--shelf .cab__photos{display:flex;gap:.55em;max-width:340px}
 .prop--shelf .cab__photo{margin:0;flex:1;padding:.3em .3em .2em;background:#fffaf0;box-shadow:0 2px 5px rgba(40,22,8,.3)}
 .prop--shelf .cab__photo:nth-child(1){transform:rotate(-2deg)}
 .prop--shelf .cab__photo:nth-child(3){transform:rotate(1.6deg)}
