@@ -392,6 +392,7 @@ test.describe('desktop', () => {
   test('it stops choosing errands while something is open, and starts again after', async ({
     page,
   }) => {
+    await watchStates(page)
     await enter(page, '?npcseed=7')
     await page.evaluate(() =>
       document.querySelector('.thing--tv')?.dispatchEvent(new MouseEvent('click', { bubbles: true })),
@@ -399,24 +400,39 @@ test.describe('desktop', () => {
     await expect(page.locator('.tvset')).toBeVisible({ timeout: 6000 })
     await page.waitForTimeout(1500)
     const a = await feet(page)
+    const openedAt = await page.evaluate(() => window.__npcStates!.length)
     await page.waitForTimeout(6000)
     const b = await feet(page)
-    // It may finish a step it had started, but it does not set off again.
+    // It may finish a step it had started, but it does not set off again:
+    // no errand is chosen while the thing is open.
     expect(Math.hypot(b.x - a.x, b.y - a.y)).toBeLessThan(60)
+    const whileOpen = await page.evaluate((i) => window.__npcStates!.slice(i), openedAt)
+    expect(whileOpen.map((s) => s.state)).not.toContain('CHOOSE_TARGET')
+    expect(whileOpen.map((s) => s.state)).not.toContain('WALK')
 
     await page.keyboard.press('Escape')
     await expect(page.locator('[data-panel-root]')).toBeHidden()
+    const closedAt = await page.evaluate(() => window.__npcStates!.length)
     // It picks up where it left off — which, found at the bench, is a job
     // of up to twelve seconds before it so much as looks for the next thing.
-    let moved = 0
-    let previous = await feet(page)
-    for (let i = 0; i < 32 && moved <= 50; i++) {
-      await page.waitForTimeout(1000)
-      const now = await feet(page)
-      moved += Math.hypot(now.x - previous.x, now.y - previous.y)
-      previous = now
-    }
-    expect(moved).toBeGreaterThan(50)
+    // How far the next errand is depends on which one it draws; that it
+    // chooses one and walks there is the point.
+    await page.waitForFunction(
+      (i) => window.__npcStates!.slice(i).some((s) => s.state === 'WALK'),
+      closedAt,
+      { timeout: 32000 },
+    )
+    const setOff = await page.evaluate(
+      (i) => window.__npcStates!.slice(i).find((s) => s.state === 'WALK')!,
+      closedAt,
+    )
+    await page.waitForFunction(
+      (i) => window.__npcStates!.slice(i).some((s, n, all) => n > 0 && all[n - 1]!.state === 'WALK' && s.state !== 'WALK'),
+      closedAt,
+      { timeout: 32000 },
+    )
+    const arrived = await feet(page)
+    expect(Math.hypot(arrived.x - setOff.x, arrived.y - setOff.y)).toBeGreaterThan(8)
   })
 
   test('it moves with the room when the camera does', async ({ page }) => {
