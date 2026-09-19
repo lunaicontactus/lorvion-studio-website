@@ -13,6 +13,7 @@
 export type OutlineShape =
   | 'rect'
   | 'poster'
+  | 'frame'
   | 'monitor'
   | 'monitorPortrait'
   | 'tv'
@@ -35,6 +36,15 @@ export const OUTLINE_PATHS: Readonly<Record<OutlineShape, string>> = {
   rect: roundedRect(0.02, 0.02),
   /** Paper pinned flat to the plaster. */
   poster: roundedRect(0.025, 0.018),
+  /**
+   * A felt frame on the poster wall (src/data/wallFrames.ts): the ornament
+   * tab on top, the frame, and the name plate hanging under it. Averaged over
+   * the four cut-outs, which differ by under a percent.
+   */
+  frame:
+    'M0.34,0.062 L0.4,0.012 H0.6 L0.66,0.062 H0.955 Q0.992,0.062 0.992,0.085 V0.874 ' +
+    'Q0.992,0.897 0.955,0.897 H0.85 V0.975 Q0.85,0.996 0.82,0.996 H0.18 ' +
+    'Q0.15,0.996 0.15,0.975 V0.897 H0.045 Q0.008,0.897 0.008,0.874 V0.085 Q0.008,0.062 0.045,0.062 Z',
   /**
    * The desk PC: the monitor's cream body, and the keyboard in front of it as
    * a second subpath. Two strokes, one object, no invented stand.

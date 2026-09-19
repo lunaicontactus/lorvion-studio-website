@@ -26,7 +26,9 @@ import { audio } from '@/systems/audio'
 import { save } from '@/systems/storage'
 import { log } from '@/systems/log'
 import { artworkById, wallSrc, aspectOf } from '@/data/artwork'
-import type { Mount } from '@/data/artwork'
+import type { Artwork } from '@/data/artwork'
+import { wallFrameFor } from '@/data/wallFrames'
+import type { WallFrame } from '@/data/wallFrames'
 import { getProject } from '@/data/projects'
 import { mountNpc, npcAllowed, seededRandom, type NpcHandle } from '@/scenes/npc'
 import { Crowd, type CrowdMember } from '@/systems/crowd'
@@ -35,37 +37,116 @@ import { Faces } from '@/systems/faces'
 import { CrewInteractions } from '@/systems/interactions'
 import { pointNamed, navFor } from '@/data/navigation'
 
-/** The frame's own edge, in world units, by how the piece is mounted. */
-const MOUNT_EDGE: Record<Mount, number> = { poster: 0, print: 3, wood: 6 }
+/** The wooden frame's own edge, in world units. */
+const WOOD_EDGE = 6
 
 /**
  * Hang a real piece of the studio's work over the painted thing in its place.
  *
- * The frame is the picture's shape, full stop: there is no sheet of paper
- * around it for a mismatched shape to show through. It is sized to *cover*
- * the painted poster or frame underneath — the smallest box at the picture's
- * own aspect that is at least as big as the painted one in both directions —
- * so nothing painted peeks out and nothing of the picture is cut off.
- *
- * The name goes on a small memo pinned over the bottom corner, not on a strip
- * of paper under the picture; that strip was most of what made the wall read
- * as four identical cards.
+ * The four main works go in felt frames (hangFrame); RUBATO's wide opera
+ * house goes in the wooden frame painted over the television (hangWood).
+ * Either way the picture is its own shape, never cropped, and whatever holds
+ * it covers the painted picture underneath so nothing painted peeks out.
  *
  * Everything is in world units; the camera scales the room.
  */
 function hangPrint(obj: { rect: { w: number; h: number }; artwork?: string }, pad: number): HTMLElement | null {
   const piece = obj.artwork ? artworkById(obj.artwork) : undefined
   if (!piece) return null
-  const project = getProject(piece.projectId)
-  const edge = MOUNT_EDGE[piece.mount]
-  // Past the painted thing by a few units all round: the sheet is tilted, and
-  // a tilted rectangle's corners fall inside its own bounding box.
-  const bleed = 4
-  const needW = obj.rect.w + bleed * 2
-  const needH = obj.rect.h + bleed * 2
+  if (piece.mount === 'frame') {
+    const frame = wallFrameFor(piece.id)
+    return frame ? hangFrame(piece, frame, obj.rect, pad) : null
+  }
+  return hangWood(piece, obj.rect, pad)
+}
+
+/** Show a sheet only once every picture in it has arrived. */
+function whenLoaded(sheet: HTMLElement, imgs: readonly HTMLImageElement[]): void {
+  // Before that, a frame alone would show as an empty box on the wall for the
+  // first moment of a visit — the painted poster underneath is the right thing
+  // to show until the real one is here.
+  let waiting = imgs.length
+  const one = (): void => {
+    waiting -= 1
+    if (waiting <= 0) sheet.classList.add('is-in')
+  }
+  for (const img of imgs) {
+    if (img.complete && img.naturalWidth > 0) one()
+    else {
+      img.addEventListener('load', one, { once: true })
+      img.addEventListener('error', one, { once: true })
+    }
+  }
+}
+
+/**
+ * A felt frame, as the studio's own painting of this wall hangs it: the
+ * frame cut-out on top, its window open, and the key art behind the window
+ * at its own shape. Where the picture is narrower than the window, the rest
+ * is felt (the mount); the picture is never stretched or cut to fill it.
+ * `rect` is the whole frame, ornament to name plate.
+ */
+function hangFrame(piece: Artwork, frame: WallFrame, rect: { w: number; h: number }, pad: number): HTMLElement {
+  const sheet = document.createElement('span')
+  sheet.className = 'frame'
+  sheet.dataset['artwork'] = piece.id
+  sheet.dataset['mount'] = piece.mount
+  sheet.setAttribute('aria-hidden', 'true')
+  Object.assign(sheet.style, { left: `${pad}px`, top: `${pad}px`, width: `${rect.w}px`, height: `${rect.h}px` })
+
+  // The window, a unit bigger all round than the hole so the felt's lip
+  // laps over the mount's edge rather than leaving a hairline of wall.
+  const lip = 1
+  const win = {
+    x: frame.win.x * rect.w - lip, y: frame.win.y * rect.h - lip,
+    w: frame.win.w * rect.w + lip * 2, h: frame.win.h * rect.h + lip * 2,
+  }
+  const mount = document.createElement('span')
+  mount.className = 'frame__mount'
+  Object.assign(mount.style, {
+    left: `${win.x}px`, top: `${win.y}px`, width: `${win.w}px`, height: `${win.h}px`, background: frame.mat,
+  })
+  // Contain: the largest box at the picture's own shape that fits the window.
   const aspect = aspectOf(piece)
-  // Cover: the picture (inside its frame edge) at its own shape, big enough
-  // for both directions.
+  let w = win.w
+  let h = w / aspect
+  if (h > win.h) {
+    h = win.h
+    w = h * aspect
+  }
+  const img = document.createElement('img')
+  img.className = 'frame__img'
+  img.src = wallSrc(piece)
+  img.alt = ''
+  img.decoding = 'async'
+  Object.assign(img.style, {
+    left: `${(win.w - w) / 2}px`, top: `${(win.h - h) / 2}px`, width: `${w}px`, height: `${h}px`,
+  })
+  mount.append(img)
+
+  const felt = document.createElement('img')
+  felt.className = 'frame__felt'
+  felt.src = frame.src
+  felt.alt = ''
+  felt.decoding = 'async'
+  sheet.append(mount, felt)
+  whenLoaded(sheet, [img, felt])
+  return sheet
+}
+
+/**
+ * The wooden landscape frame: the picture plus an even wooden edge, sized to
+ * cover the painted frame underneath — the smallest box at the picture's own
+ * aspect at least as big as the painted one both ways. The name goes on a
+ * small memo pinned over its corner.
+ */
+function hangWood(piece: Artwork, rect: { w: number; h: number }, pad: number): HTMLElement {
+  const project = getProject(piece.projectId)
+  const edge = WOOD_EDGE
+  const bleed = 4
+  const needW = rect.w + bleed * 2
+  const needH = rect.h + bleed * 2
+  const aspect = aspectOf(piece)
   let imgH = needH - edge * 2
   let imgW = imgH * aspect
   if (imgW + edge * 2 < needW) {
@@ -81,13 +162,12 @@ function hangPrint(obj: { rect: { w: number; h: number }; artwork?: string }, pa
   sheet.className = `print print--${piece.mount}`
   sheet.dataset['artwork'] = piece.id
   sheet.dataset['mount'] = piece.mount
-  sheet.dataset['aspect'] = aspectOf(piece).toFixed(4)
+  sheet.dataset['aspect'] = aspect.toFixed(4)
   sheet.setAttribute('aria-hidden', 'true')
   Object.assign(sheet.style, {
-    left: `${pad + Math.round((obj.rect.w - w) / 2)}px`,
-    top: `${pad + Math.round((obj.rect.h - h) / 2)}px`,
+    left: `${pad + Math.round((rect.w - w) / 2)}px`,
+    top: `${pad + Math.round((rect.h - h) / 2)}px`,
     width: `${w}px`, height: `${h}px`,
-    // Pinned by hand, one at a time. Fixed per piece so it never twitches.
     transform: `rotate(${piece.tilt}deg)`,
   })
   // A custom property: Object.assign on style silently drops these.
@@ -100,26 +180,8 @@ function hangPrint(obj: { rect: { w: number; h: number }; artwork?: string }, pa
   img.decoding = 'async'
   Object.assign(img.style, { left: `${edge}px`, top: `${edge}px`, width: `${imgW}px`, height: `${imgH}px` })
   sheet.append(img)
-  // The sheet comes in over the painted poster only once its picture is
-  // here. Before that the frame alone showed as a dark box on the wall for
-  // the first half-second of a visit (PHASE 7 capture) — the painted poster
-  // underneath is the right thing to show until the print has arrived.
-  const arrived = (): void => sheet.classList.add('is-in')
-  if (img.complete && img.naturalWidth > 0) arrived()
-  else {
-    img.addEventListener('load', arrived, { once: true })
-    img.addEventListener('error', arrived, { once: true })
-  }
+  whenLoaded(sheet, [img])
 
-  if (piece.mount === 'poster') {
-    for (const side of ['l', 'r']) {
-      const tape = document.createElement('i')
-      tape.className = `print__tape print__tape--${side}`
-      sheet.append(tape)
-    }
-  }
-
-  // The name, on a scrap of paper pinned over the lower corner.
   const memo = document.createElement('span')
   memo.className = 'print__memo'
   memo.textContent = project?.title ?? ''

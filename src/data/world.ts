@@ -41,11 +41,16 @@ export const DESKTOP_WORLD: WorldLayout = {
   objects: [
     // Read off the panorama with a rectangle overlay, then checked against it.
     { id: 'shelf', label: 'Collection', zone: 'shelf', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 244, y: 205, w: 171, h: 412 }, outline: 'shelf' },
-    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lunai' }, rect: { x: 455, y: 335, w: 168, h: 288 }, outline: 'poster', artwork: 'lunai-keyart' },
-    { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 651, y: 335, w: 168, h: 280 }, outline: 'poster', artwork: 'liminal-keyart' },
-    { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 848, y: 320, w: 191, h: 302 }, outline: 'poster', artwork: 'wormup-keyart' },
+    // The four works hang in felt frames (src/data/wallFrames.ts). `rect` is
+    // the whole frame, ornament to name plate; `painted` is the painted poster
+    // it hangs over, measured off the plate at 2x, which the frame's body
+    // covers. One hanging line for the four: the same body top, each centred
+    // on its painted poster.
+    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lunai' }, rect: { x: 435, y: 324, w: 201, h: 348 }, painted: { x: 452, y: 347, w: 178, h: 286 }, outline: 'frame', artwork: 'lunai-keyart' },
+    { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 648, y: 320, w: 195, h: 349 }, painted: { x: 650, y: 347, w: 185, h: 286 }, outline: 'frame', artwork: 'liminal-keyart' },
+    { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 856, y: 321, w: 200, h: 352 }, painted: { x: 860, y: 350, w: 191, h: 285 }, outline: 'frame', artwork: 'wormup-keyart' },
     // The fourth painted poster is tall, so it takes the tall piece: LUMIORA.
-    { id: 'poster-lumiora', label: 'LUMIORA', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lumiora' }, rect: { x: 1068, y: 328, w: 197, h: 300 }, outline: 'poster', artwork: 'lumiora-splash' },
+    { id: 'poster-lumiora', label: 'LUMIORA', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lumiora' }, rect: { x: 1070, y: 319, w: 204, h: 357 }, painted: { x: 1075, y: 350, w: 191, h: 288 }, outline: 'frame', artwork: 'lumiora-splash' },
     // RUBATO's opera house is 16:9, and a 16:9 picture in a tall poster's
     // place is a picture floating in paper. It hangs in the wooden landscape
     // frame painted over the television instead (measured: 2788–2962 ×
@@ -99,10 +104,10 @@ export const MOBILE_WORLD: WorldLayout = {
   ],
   objects: [
     { id: 'shelf', label: 'Collection', zone: 'shelf', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'shelf' }, rect: { x: 172, y: 345, w: 128, h: 105 }, outline: 'shelf' },
-    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lunai' }, rect: { x: 324, y: 238, w: 111, h: 202 }, outline: 'poster', artwork: 'lunai-keyart' },
-    { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 459, y: 238, w: 118, h: 202 }, outline: 'poster', artwork: 'liminal-keyart' },
-    { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 610, y: 232, w: 155, h: 213 }, outline: 'poster', artwork: 'wormup-keyart' },
-    { id: 'poster-lumiora', label: 'LUMIORA', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lumiora' }, rect: { x: 789, y: 238, w: 126, h: 202 }, outline: 'poster', artwork: 'lumiora-splash' },
+    { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lunai' }, rect: { x: 305, y: 223, w: 149, h: 257 }, painted: { x: 320, y: 240, w: 127, h: 212 }, outline: 'frame', artwork: 'lunai-keyart' },
+    { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 460, y: 220, w: 144, h: 258 }, painted: { x: 462, y: 240, w: 134, h: 212 }, outline: 'frame', artwork: 'liminal-keyart' },
+    { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 611, y: 221, w: 148, h: 261 }, painted: { x: 616, y: 242, w: 139, h: 212 }, outline: 'frame', artwork: 'wormup-keyart' },
+    { id: 'poster-lumiora', label: 'LUMIORA', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lumiora' }, rect: { x: 772, y: 220, w: 151, h: 263 }, painted: { x: 776, y: 242, w: 140, h: 213 }, outline: 'frame', artwork: 'lumiora-splash' },
     // The landscape frame over the portrait television (579–699 × 2020–2090),
     // taken up to its hanging hook at 2012: the television below limits the
     // hit padding, and 70 units tall is 42px on a 390 phone — short of a finger.
