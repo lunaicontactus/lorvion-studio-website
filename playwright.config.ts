@@ -65,12 +65,12 @@ export default defineConfig({
     // entrance plate is preloaded per orientation, and engines pick differently.
     {
       name: 'webkit',
-      testMatch: /(outline|first-paint)\.spec\.ts/,
+      testMatch: /(outline|first-paint|works-route)\.spec\.ts/,
       use: { ...devices['Desktop Safari'] },
     },
     {
       name: 'firefox',
-      testMatch: /(outline|first-paint)\.spec\.ts/,
+      testMatch: /(outline|first-paint|works-route)\.spec\.ts/,
       use: { ...devices['Desktop Firefox'] },
     },
   ],

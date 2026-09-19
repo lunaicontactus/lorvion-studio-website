@@ -14,7 +14,7 @@
  * Content comes from the central registries — PROJECTS, SITE_CONFIG, the
  * discovery pools — never from strings typed into a component.
  */
-import { PROJECTS } from '@/data/projects'
+import { PROJECTS, STATUS_LABEL, coverOf, workHref } from '@/data/projects'
 import { artworkFor, fullSrc, orientationOf } from '@/data/artwork'
 import { contactRows } from '@/data/site'
 import { ROOM_ART } from '@/data/world'
@@ -42,7 +42,7 @@ import { sound } from '@/systems/sound'
 import { save } from '@/systems/storage'
 import { audio } from '@/systems/audio'
 import { motion } from '@/systems/motion'
-import type { ProjectConfig, ProjectStatus } from '@/types/project'
+import type { ProjectConfig } from '@/types/project'
 
 export interface PanelHost {
   /** Send the visitor to another thing in the room, e.g. shelf → PC. */
@@ -65,12 +65,6 @@ export interface PanelHost {
 }
 
 /** The only place a status is turned into words. */
-const STATUS_LABEL: Record<ProjectStatus, string> = {
-  released: 'RELEASED',
-  inDevelopment: 'IN DEVELOPMENT',
-  prototype: 'PROTOTYPE',
-  comingSoon: 'COMING SOON',
-}
 
 
 /**
@@ -82,10 +76,15 @@ const STATUS_LABEL: Record<ProjectStatus, string> = {
  * the picture.
  */
 function shape(project: ProjectConfig): string {
-  if (!project.keyArt) return ' data-empty'
+  const cover = coverOf(project)
+  if (!cover) return ' data-empty'
+  // The work's own picture if it has one (LUMIORA's is its 3D world), else
+  // the print on the wall.
   const piece = artworkFor(project.id)
-  const ratio = piece ? ` --shot:${piece.width}/${piece.height};` : ''
-  return ` style="background-image:url('${project.keyArt}');${ratio}"`
+  const w = project.hero?.w ?? piece?.width
+  const h = project.hero?.h ?? piece?.height
+  const ratio = w && h ? ` --shot:${w}/${h};` : ''
+  return ` style="background-image:url('${cover}');${ratio}"`
 }
 
 /** The approved crew's own face, for things that belong to one of them. */
@@ -477,10 +476,10 @@ export class Panels {
     view.innerHTML = `<p class="hub__head">WORKS</p><div class="hub" data-works>${PROJECTS.map(
       (p) => `
       <button class="hub__row" type="button" data-game="${p.id}">
-        <span class="hub__thumb"${p.keyArt ? ` style="background-image:url('${p.keyArt}')"` : ' data-empty'}></span>
+        <span class="hub__thumb"${coverOf(p) ? ` style="background-image:url('${coverOf(p)}')"` : ' data-empty'}></span>
         <span class="hub__meta">
           <span class="hub__name">${p.title}</span>
-          <span class="hub__tag">${p.tagline}</span>
+          <span class="hub__tag">${p.taglineKo}</span>
           <span class="hub__facts">${p.genre} · ${p.platforms.join(' · ')}</span>
         </span>
         <span class="hub__right">
@@ -510,6 +509,7 @@ export class Panels {
       this.#host.onProgress?.()
     }
     const links = project.links
+      .filter((l) => l.href)
       .map((l) => `<a class="crtgame__link" href="${l.href}">${l.label} <span aria-hidden="true">↗</span></a>`)
       .join('')
     view.innerHTML = `
@@ -524,17 +524,29 @@ export class Panels {
             <p class="crtgame__tag">${project.tagline}</p>
             <p class="crtgame__tag crtgame__tag--ko">${project.taglineKo}</p>
             <dl class="crtgame__facts">
-              <div><dt>GENRE</dt><dd>${project.genre}</dd></div>
+              <div><dt>TYPE</dt><dd>${project.kind}</dd></div>
               <div><dt>STATUS</dt><dd>${STATUS_LABEL[project.status]}</dd></div>
-              <div><dt>PLATFORM</dt><dd>${project.platforms.join(' · ')}</dd></div>
+              <div><dt>NOW</dt><dd>${project.milestone}</dd></div>
             </dl>
-            <div class="crtgame__links">${links}<a class="crtgame__full" href="./games.html#${project.id}">작품 자세히 보기 <span aria-hidden="true">↗</span></a></div>
+            <div class="crtgame__links">${links}<a class="crtgame__full" href="${workHref(project.id)}" data-crt-open>작업대 열어 보기 <span aria-hidden="true">↗</span></a></div>
           </div>
         </div>
       </div>`
     view.querySelector('[data-crt-back]')?.addEventListener('click', () => {
       audio.play('pc_click', 0.22)
       this.#pcList(view)
+    })
+    // Into the work's own page through the monitor: the screen flares and
+    // folds to a line, the way an old set does, and only then does the page
+    // change — the garage is not left in a cut. A modified click is the
+    // visitor's own (a new tab), and goes as it is.
+    const open = view.querySelector<HTMLAnchorElement>('[data-crt-open]')
+    open?.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0 || motion.reduced) return
+      e.preventDefault()
+      audio.play('pc_click', 0.22)
+      view.closest('.crt')?.classList.add('is-leaving')
+      this.#later(() => location.assign(open.href), 420)
     })
     view.querySelector<HTMLElement>('[data-crt-back]')?.focus()
   }

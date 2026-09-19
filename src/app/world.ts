@@ -50,7 +50,7 @@ const REACT_SFX: Readonly<Record<string, { readonly name: string; readonly volum
 
 /** Which nav link stands for which thing in the room. */
 const NAV_TARGETS: Readonly<Record<string, string>> = {
-  games: 'pc',
+  works: 'pc',
   // STUDIO keeps its own page: the workbench is work in progress now, not
   // the studio's introduction.
   contact: 'tv',
@@ -793,7 +793,7 @@ export function mountWorld(): () => void {
   document.addEventListener('keydown', onKey)
   off.push(() => document.removeEventListener('keydown', onKey))
 
-  // The top nav and the room are the same site: GAMES is the PC.
+  // The top nav and the room are the same site: WORKS is the PC.
   for (const link of document.querySelectorAll<HTMLAnchorElement>('.nav-links a')) {
     const key = (link.textContent ?? '').trim().toLowerCase()
     const target = NAV_TARGETS[key]

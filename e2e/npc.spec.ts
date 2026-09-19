@@ -458,7 +458,7 @@ test.describe('desktop', () => {
   test('leaving and coming back does not leave two of them', async ({ page }) => {
     await enter(page)
     const before = await whoIsHere(page)
-    await page.goto('/games.html', { waitUntil: 'load' })
+    await page.goto('/works.html', { waitUntil: 'load' })
     await page.goBack()
     await page.waitForTimeout(500)
     await page.locator('[data-alley-enter]').click()

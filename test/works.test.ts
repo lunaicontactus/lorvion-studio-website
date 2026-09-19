@@ -1,0 +1,157 @@
+import { describe, expect, it } from 'vitest'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { PROJECTS, getProject, workPicture } from '@/data/projects'
+import { POLAROIDS, polaroidsOf } from '@/data/polaroids'
+
+/**
+ * WORKS: the five works as the studio's own records say they are, and the
+ * pages that show them. What is checked is what goes wrong with a portfolio
+ * page: a status nobody can back up, a log with no commit behind it, a
+ * picture that is not there, a page whose title says one thing and the data
+ * another, and old copy coming back.
+ */
+const read = (f: string): string => readFileSync(f, 'utf8')
+
+describe('the works, as their records say', () => {
+  it('has the five works, each with a page of its own', () => {
+    expect(PROJECTS.map((p) => p.id)).toEqual(['lunai', 'liminal', 'wormup', 'lumiora', 'rubato'])
+    for (const p of PROJECTS) expect(existsSync(`works/${p.id}.html`), p.id).toBe(true)
+  })
+
+  it('claims no release, and links only to places that exist', () => {
+    for (const p of PROJECTS) {
+      expect(p.status, p.id).not.toBe('released')
+      for (const l of p.links) {
+        if (!l.href) continue
+        // Only the site's own pages: no store link without a store page.
+        expect(l.href, `${p.id}: ${l.label}`).toMatch(/^\/[a-z-]+\.html$/)
+        expect(existsSync(l.href.slice(1)), `${p.id}: ${l.href}`).toBe(true)
+      }
+    }
+  })
+
+  it('says what each is, what a player does, and how far it has got', () => {
+    for (const p of PROJECTS) {
+      expect(p.about.length, p.id).toBeGreaterThanOrEqual(3)
+      expect(p.about.length, p.id).toBeLessThanOrEqual(5)
+      expect(p.core.length, p.id).toBeGreaterThanOrEqual(3)
+      expect(p.core.length, p.id).toBeLessThanOrEqual(6)
+      const states = new Set(p.build.map((b) => b.state))
+      expect(states.has('done'), `${p.id}: nothing done`).toBe(true)
+      expect(states.has('todo') || states.has('doing'), `${p.id}: nothing left, which no work in development can say`).toBe(true)
+      expect(p.asOf).toMatch(/^2026\.\d\d\.\d\d$/)
+      for (const field of [p.kind, p.genre, p.engine, p.milestone]) expect(field.length, p.id).toBeGreaterThan(2)
+    }
+  })
+
+  it('logs real commits: dated, hashed, newest first', () => {
+    for (const p of PROJECTS) {
+      expect(p.devLog.length, p.id).toBeGreaterThanOrEqual(3)
+      expect(p.devLog.length, p.id).toBeLessThanOrEqual(8)
+      for (const d of p.devLog) {
+        expect(d.date, p.id).toMatch(/^2026\.\d\d\.\d\d$/)
+        expect(d.ref, p.id).toMatch(/^[0-9a-f]{7,8}$/)
+        expect(d.date <= p.asOf, `${p.id}: ${d.date} is after the record's own date`).toBe(true)
+      }
+      const dates = p.devLog.map((d) => d.date)
+      expect(dates, p.id).toEqual([...dates].sort().reverse())
+    }
+  })
+
+  it('shows only pictures that are there, in both sizes', () => {
+    for (const p of PROJECTS) {
+      expect(p.gallery.length, p.id).toBeGreaterThanOrEqual(3)
+      expect(p.gallery.length, p.id).toBeLessThanOrEqual(8)
+      const shown = [...p.gallery.map((g) => g.name), ...(p.hero ? [p.hero.name] : [])]
+      for (const name of shown) {
+        for (const size of ['thumb', 'full'] as const) {
+          expect(existsSync(`public${workPicture(p.id, name, size)}`), `${p.id}/${name}-${size}`).toBe(true)
+        }
+      }
+    }
+  })
+
+  it('keeps the traces on the archive polaroids, each belonging to its work', () => {
+    for (const p of PROJECTS) {
+      const own = polaroidsOf(p.id)
+      expect(own.length, p.id).toBeGreaterThanOrEqual(1)
+      for (const t of own) expect(existsSync(`public${t.src}`), t.id).toBe(true)
+    }
+    expect(new Set(POLAROIDS.map((p) => p.id)).size).toBe(POLAROIDS.length)
+  })
+})
+
+describe('LUMIORA, as its current canon has it', () => {
+  const lumiora = getProject('lumiora')!
+
+  it('is the 3D musical narrative adventure, not the old children\'s app', () => {
+    expect(lumiora.kind).toBe('Stylized 3D Musical Narrative Adventure')
+    expect(lumiora.platforms).toEqual(['PC'])
+    expect(lumiora.status).toBe('prototype')
+    const all = JSON.stringify(lumiora)
+    expect(all).not.toMatch(/동화|유아|아이와|부모|교육|storybook|children|kids/i)
+  })
+
+  it('goes through the composers in the order the canon fixes', () => {
+    const worlds = lumiora.lists?.find((l) => l.title === 'SCORE WORLDS')
+    expect(worlds?.rows.map((r) => r.name)).toEqual([
+      'Vivaldi', 'Saint-Saëns', 'Beethoven', 'Tchaikovsky', 'Rimsky-Korsakov', 'Debussy', 'Your Score',
+    ])
+  })
+
+  it('shows the greybox as a greybox', () => {
+    const greybox = lumiora.gallery.filter((g) => g.kind === 'greybox')
+    expect(greybox.length).toBeGreaterThanOrEqual(3)
+    for (const g of greybox) expect(g.caption).toContain('그레이박스')
+  })
+})
+
+describe('RUBATO, as its script has it', () => {
+  it('names only the canon cast', () => {
+    const cast = JSON.stringify(getProject('rubato')!.lists)
+    for (const name of ['윤서아', '베토벤', '모차르트', '슈베르트', '브람스', '말러', '살리에리']) expect(cast).toContain(name)
+    // In the older design files only; not in the v3 script.
+    expect(cast).not.toContain('파가니니')
+  })
+})
+
+describe('the pages', () => {
+  it('title and describe each work the way its record does', () => {
+    for (const p of PROJECTS) {
+      const html = read(`works/${p.id}.html`)
+      expect(html, p.id).toContain(`<title>${p.title} — EUNGARAGE</title>`)
+      expect(html, p.id).toContain(`<meta name="description" content="${p.taglineKo}">`)
+      expect(html, p.id).toContain(`<link rel="canonical" href="https://eungarage.com/works/${p.id}.html">`)
+      expect(html, p.id).toContain(`data-works-detail="${p.id}"`)
+      expect(html, p.id).toMatch(new RegExp(`<h1[^>]*>${p.title.replace(/[!]/g, '\\$&')}</h1>`))
+    }
+  })
+
+  it('sends the old GAMES address, and its #<work> links, to WORKS', () => {
+    const games = read('games.html')
+    expect(games).toContain('/works.html')
+    for (const p of PROJECTS) expect(games, p.id).toContain(`'${p.id}'`)
+  })
+
+  it('calls it WORKS in every nav, and the old words are gone', () => {
+    const pages = [
+      ...readdirSync('.').filter((f) => f.endsWith('.html') && f !== 'games.html'),
+      ...readdirSync('works').map((f) => `works/${f}`),
+    ]
+    for (const f of pages) {
+      const html = read(f)
+      expect(html, f).not.toMatch(/>Games</)
+      expect(html, f).not.toMatch(/OUR<br>GAMES|Selected worlds/i)
+    }
+    const sources = readdirSync('src', { recursive: true }).map(String).filter((f) => f.endsWith('.ts'))
+    for (const f of sources) {
+      expect(read(`src/${f}`), f).not.toMatch(/음악 동화|Music storybook|듣고, 발견하고|OUR GAMES/)
+    }
+  })
+
+  it('lists the works in the sitemap', () => {
+    const map = read('public/sitemap.xml')
+    expect(map).toContain('https://eungarage.com/works.html')
+    for (const p of PROJECTS) expect(map).toContain(`https://eungarage.com/works/${p.id}.html`)
+  })
+})

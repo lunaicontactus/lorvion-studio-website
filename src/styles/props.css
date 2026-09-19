@@ -68,6 +68,15 @@
   content:"";position:absolute;inset:0;pointer-events:none;
   background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.14) 2px 3px);
 }
+/* Leaving through the monitor for a work's own page: the picture flares,
+   folds to one bright line and goes out, and then the page changes. */
+.prop--pc .crt.is-leaving .crt__screen{animation:crtOff 420ms cubic-bezier(.5,0,.8,.4) forwards}
+@keyframes crtOff{
+  0%{transform:none;filter:none}
+  35%{transform:scale(1.02,.9);filter:brightness(2.2)}
+  75%{transform:scale(1,.02);filter:brightness(3)}
+  100%{transform:scale(0,.01);filter:brightness(3);opacity:0}
+}
 .prop--pc .crt__boot{margin:0 0 2cqi;font-size:2.4cqi;letter-spacing:.2em}
 .prop--pc .hub__head{font-size:2.1cqi;margin:0 0 1.6cqi;opacity:.6;letter-spacing:.24em}
 .prop--pc .hub{gap:1.2cqi}

@@ -96,7 +96,7 @@ export const CABINET_ITEMS: readonly CabinetItem[] = [
     id: 'lumiora-musicbox', shelf: 'bottom', projectId: 'lumiora',
     box: { x: 0.449, y: 0.578, w: 0.187, h: 0.089 },
     title: '작은 피아노 오르골',
-    note: '듣고, 발견하고, 나만의 소리로 이야기하다 — 음악 동화 LUMIORA.',
+    note: '클래식이 배경음악이 아니라 세계의 물리법칙이 되는 곳 — LUMIORA의 음악 상자.',
   },
   {
     id: 'rubato-ticket', shelf: 'bottom', projectId: 'rubato',
