@@ -157,3 +157,133 @@ body.is-healing .site-nav{opacity:0;pointer-events:none;transition:opacity 900ms
 .prop--archive.is-playing .prop__art{animation:musicbox-sway 2400ms ease-in-out infinite}
 @keyframes musicbox-sway{0%,100%{rotate:0deg}50%{rotate:1.2deg}}
 @media (prefers-reduced-motion:reduce){.prop--archive.is-playing .prop__art{animation:none}}
+
+/* ── The polaroids (WORLD 2.1) ─────────────────────────────────────────────
+   The table in the archive, under its lamp, with the record spread out on
+   it. The panel is the table: night navy, warm in the middle where the lamp
+   falls, the stitching in gold instead of brown. */
+.panel-layer[data-kind~="album"] .panel{
+  width:min(96vw,1120px);
+  height:min(calc(100vh - var(--nav-h,78px) - 24px),760px);
+  max-height:none;
+  overflow:hidden;
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 48%,rgba(255,196,120,.2),transparent 70%),
+    radial-gradient(ellipse 90% 80% at 50% 50%,#2a2440 0%,#1b1830 60%,#131126 100%);
+  box-shadow:0 30px 70px rgba(6,4,18,.6);
+  margin-top:calc(var(--nav-h,78px) / 2);
+}
+.panel-layer[data-kind~="album"] .panel__inner{height:100%;box-sizing:border-box;display:flex;flex-direction:column;padding:20px 22px 22px}
+.panel-layer[data-kind~="album"] .panel__inner::after{border-color:rgba(232,196,128,.28)}
+.panel-layer[data-kind~="album"] .panel__title{color:#f2dfb4;margin-bottom:10px}
+.panel-layer[data-kind~="album"] .panel__close{background:rgba(242,223,180,.14);color:#f2dfb4}
+.panel-layer[data-kind~="album"] .panel__body{flex:1;min-height:0}
+/* One card size for the whole table, from the table's own height and width,
+   and the table's inner edge kept half a card in: every card lies wholly on
+   it, however many there are. */
+.album{position:relative;height:100%;--card:clamp(72px,min(11.5vw,calc((100vh - var(--nav-h,78px) - 150px) / 4.4)),150px)}
+.album__table{position:absolute;inset:calc(var(--card) * .78) calc(var(--card) * .56);transition:opacity 260ms ease,filter 260ms ease}
+.album.is-viewing .album__table{opacity:.25;filter:blur(2px);pointer-events:none}
+.album__empty{
+  position:absolute;left:50%;top:50%;translate:-50% -50%;margin:0;white-space:nowrap;
+  color:rgba(242,223,180,.75);font:500 .95rem/1.5 var(--sans);letter-spacing:.04em;
+}
+
+.polaroid{
+  --w:var(--card,120px);
+  position:absolute;left:var(--x);top:var(--y);
+  width:var(--w);
+  margin:0;padding:calc(var(--w) * .07) calc(var(--w) * .07) calc(var(--w) * .2);
+  box-sizing:border-box;
+  border:0;border-radius:3px;
+  background:#fbf7ee;
+  box-shadow:0 10px 22px rgba(6,4,18,.55),0 1px 0 rgba(255,255,255,.6) inset;
+  transform:translate(-50%,-50%) rotate(var(--turn));
+  cursor:pointer;
+  transition:transform 220ms cubic-bezier(.2,.9,.3,1),box-shadow 220ms ease;
+  animation:polaroid-down 520ms cubic-bezier(.2,.9,.3,1) both;
+  animation-delay:calc(var(--i,0) * 45ms);
+}
+.polaroid:hover,.polaroid:focus-visible{
+  transform:translate(-50%,-54%) rotate(calc(var(--turn) * .3)) scale(1.06);
+  box-shadow:0 18px 32px rgba(6,4,18,.6);
+  z-index:2;
+}
+@keyframes polaroid-down{
+  from{opacity:0;transform:translate(-50%,-62%) rotate(calc(var(--turn) * 1.6))}
+  to{opacity:1;transform:translate(-50%,-50%) rotate(var(--turn))}
+}
+.polaroid__photo{display:block;aspect-ratio:1;overflow:hidden;background:#2b2635}
+.polaroid__photo img{display:block;width:100%;height:100%;object-fit:cover;max-width:none}
+.polaroid__cap{
+  display:block;margin-top:calc(var(--w) * .05);
+  color:#4a3b2c;font:600 clamp(9px,1vw,12px)/1.25 var(--sans);text-align:center;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+/* One photo, picked up. */
+.album__view{
+  position:absolute;inset:0;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-rows:minmax(0,1fr) auto;
+  align-items:center;justify-items:center;
+  gap:8px 12px;
+}
+.album__view[hidden]{display:none}
+.polaroid--big{
+  --w:min(440px,62vw,calc((100vh - var(--nav-h,78px) - 170px) * .78));
+  position:relative;left:auto;top:auto;
+  grid-column:2;grid-row:1;
+  transform:rotate(-1.2deg);
+  animation:polaroid-lift 300ms cubic-bezier(.2,.9,.3,1) both;
+  cursor:grab;touch-action:pan-y;
+}
+.polaroid--big:hover{transform:rotate(-1.2deg)}
+@keyframes polaroid-lift{from{opacity:0;transform:rotate(-4deg) scale(.9)}to{opacity:1;transform:rotate(-1.2deg)}}
+.polaroid--big .polaroid__cap{white-space:normal;text-align:left;font-size:clamp(11px,1.2vw,14px)}
+.polaroid--big .polaroid__cap b{display:block;font-size:1.05em}
+.album__note{display:block;font-weight:500;margin-top:.2em;color:#5b4a38;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.album__date{display:block;margin-top:.3em;font:600 .8em/1 var(--mono);letter-spacing:.08em;color:#8a7458}
+.album__note[hidden],.album__date[hidden],.polaroid__cap b[hidden]{display:none}
+.album__nav{
+  grid-row:1;width:44px;height:44px;border-radius:50%;
+  border:1px solid rgba(242,223,180,.35);background:rgba(242,223,180,.1);
+  color:#f2dfb4;font-size:26px;line-height:1;cursor:pointer;
+}
+.album__nav:hover{background:rgba(242,223,180,.22)}
+.album__nav--prev{grid-column:1}
+.album__nav--next{grid-column:3}
+.album__count{grid-column:1 / -1;grid-row:2;margin:0;color:rgba(242,223,180,.8);font:600 .78rem/1 var(--mono);letter-spacing:.16em}
+.album__back{
+  position:absolute;right:0;bottom:0;
+  min-height:40px;padding:0 16px;border-radius:20px;
+  border:1px solid rgba(242,223,180,.35);background:rgba(242,223,180,.1);
+  color:#f2dfb4;font:600 .8rem/1 var(--sans);cursor:pointer;
+}
+@media (max-width:520px){
+  .album{--card:clamp(80px,27vw,130px)}
+}
+@media (max-height:460px){
+  .panel-layer[data-kind~="album"] .panel__inner{padding:12px 14px 14px}
+  .panel-layer[data-kind~="album"] .panel__title{margin-bottom:4px}
+  .album{--card:clamp(56px,calc((100vh - var(--nav-h,78px) - 90px) / 2.9),110px)}
+  /* The close button sits in the top-right corner; the table stops short of it. */
+  .album__table{right:calc(var(--card) * .56 + 30px)}
+  /* A short screen holds the photo sideways: the picture, and what is
+     written on it beside it rather than under it. */
+  .polaroid--big{
+    --h:calc(100vh - var(--nav-h,78px) - 118px);
+    width:auto;height:var(--h);
+    display:grid;grid-template-columns:auto minmax(120px,190px);gap:12px;align-items:start;
+    padding:8px 12px 8px 8px;
+  }
+  .polaroid--big .polaroid__photo{height:100%;width:auto}
+  .polaroid--big .polaroid__cap{margin-top:4px;font-size:11px}
+  .album__back{min-height:34px}
+}
+@media (prefers-reduced-motion:reduce){
+  .polaroid,.polaroid--big{animation:none}
+  .polaroid,.album__table{transition:none}
+}

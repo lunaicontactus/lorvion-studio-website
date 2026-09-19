@@ -582,6 +582,16 @@ export function mountWorld(): () => void {
       case 'cushion':
         startHealing()
         return
+      case 'polaroids': {
+        if (panels.isOpen) return
+        archive.setActive(place.id)
+        archive.setPaused(true)
+        audio.play('paper', 0.2)
+        // ?album=empty shows the table as it looks before any photo is added.
+        panels.openPolaroids(place, new URLSearchParams(location.search).get('album') === 'empty' ? [] : undefined)
+        history.pushState({ world: 'archive', place: place.id }, '', '#archive')
+        return
+      }
       case 'music-box':
       case 'memory-box': {
         if (panels.isOpen) return
@@ -688,6 +698,8 @@ export function mountWorld(): () => void {
       if (archive?.skyOpen) return
       if (panels.isOpen) {
         e.preventDefault()
+        // A photo in the hand goes back on the table before anything closes.
+        if (panels.stepBack()) return
         panels.close()
         closeArchivePlace()
       }
