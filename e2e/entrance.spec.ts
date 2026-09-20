@@ -47,7 +47,7 @@ for (const vp of [
         await expect(page.locator(gone)).toHaveCount(0)
       }
       // But every page it held is still reachable from here.
-      for (const href of ['./games.html', './studio.html', './support.html', './privacy.html']) {
+      for (const href of ['./works.html', './studio.html', './support.html', './privacy.html']) {
         await expect(page.locator(`a[href="${href}"]`).first()).toHaveCount(1)
       }
 
@@ -96,16 +96,16 @@ test('a visitor who does not want motion is taken straight in', async ({ browser
 })
 
 test('the pages that hold the same content still work on their own', async ({ page }) => {
-  await page.goto('/games.html', { waitUntil: 'load' })
-  await expect(page.locator('.fb-game')).toHaveCount(5)
+  await page.goto('/works.html', { waitUntil: 'load' })
+  await expect(page.locator('[data-record]')).toHaveCount(5)
   await expect(page.locator('body')).toContainText('LUNAI')
+
+  await page.goto('/studio.html', { waitUntil: 'load' })
   // `.intro` on these pages is a lead paragraph. It must stay one — a bare
   // `.intro` rule once turned it into a full-screen box.
   expect(
     await page.evaluate(() => getComputedStyle(document.querySelector('main p.intro')!).position),
   ).toBe('static')
-
-  await page.goto('/studio.html', { waitUntil: 'load' })
   await expect(page.locator('.fb-block')).toHaveCount(3)
   await expect(page.locator('body')).toContainText('eungarage@gmail.com')
 

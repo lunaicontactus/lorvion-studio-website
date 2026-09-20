@@ -7,7 +7,12 @@ import { scan } from '../scripts/brand-scan.mjs'
  * EUNGARAGE, and nothing older. The scanner is the same one CI runs against
  * the built site; here it covers everything a build is made from.
  */
-const pages = readdirSync('.').filter((f) => f.endsWith('.html'))
+// Every page a visitor can stay on — each work's own too. A page that only
+// forwards (games.html, now WORKS) has nothing of its own to brand.
+const pages = [
+  ...readdirSync('.').filter((f) => f.endsWith('.html')),
+  ...readdirSync('works').filter((f) => f.endsWith('.html')).map((f) => `works/${f}`),
+].filter((f) => !/http-equiv="refresh"/.test(readFileSync(f, 'utf8')))
 
 describe('the brand', () => {
   it('has no legacy brand text or retired logo file anywhere a visitor can reach', () => {

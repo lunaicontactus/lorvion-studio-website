@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
  * The brand, as a browser gets it: every logo, icon and share image the pages
  * point at actually loads, and is the v02 set.
  */
-const PAGES = ['/', '/games.html', '/studio.html', '/support.html', '/privacy.html', '/404.html']
+const PAGES = ['/', '/works.html', '/works/lumiora.html', '/studio.html', '/support.html', '/privacy.html', '/404.html']
 
 test.describe('brand files', () => {
   for (const path of PAGES) {

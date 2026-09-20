@@ -19,15 +19,16 @@
 export type ArtworkKind = 'keyart' | 'still'
 
 /**
- * How a piece hangs. A wall where everything is the same sheet of paper is a
- * portfolio grid; a studio wall is a taped-up poster next to a framed print
- * next to a picture in a wooden frame.
+ * How a piece hangs.
  *
- *   poster  full bleed, taped at the top corners
- *   print   full bleed in a thin dark frame
+ *   frame   in a stitched felt frame with a name plate (src/data/wallFrames.ts)
  *   wood    full bleed in a wooden picture frame (hung in a painted one)
+ *
+ * The four main works hang in felt frames, each its own felt and its own
+ * plate: a set, not a grid. RUBATO's opera house is wide, and hangs where a
+ * wide picture fits, in the wooden frame over the television.
  */
-export type Mount = 'poster' | 'print' | 'wood'
+export type Mount = 'frame' | 'wood'
 export type Orientation = 'portrait' | 'landscape' | 'square'
 
 export interface Artwork {
@@ -38,22 +39,18 @@ export interface Artwork {
   readonly width: number
   readonly height: number
   readonly mount: Mount
-  /**
-   * Degrees, set by hand. Neighbouring posters have to cover painted ones a
-   * few units apart, so they touch; opposite small tilts are what let the eye
-   * read two sheets rather than one dark block.
-   */
+  /** Degrees, set by hand. Framed pieces hang straight. */
   readonly tilt: number
 }
 
 const ART = '/assets/images/artwork'
 
 const PIECES: readonly Artwork[] = [
-  { id: 'lunai-keyart', projectId: 'lunai', kind: 'keyart', width: 1024, height: 1536, mount: 'poster', tilt: -2.2 },
-  { id: 'liminal-keyart', projectId: 'liminal', kind: 'keyart', width: 1024, height: 1536, mount: 'print', tilt: 1.6 },
-  { id: 'wormup-keyart', projectId: 'wormup', kind: 'keyart', width: 941, height: 1672, mount: 'poster', tilt: -0.9 },
+  { id: 'lunai-keyart', projectId: 'lunai', kind: 'keyart', width: 1024, height: 1536, mount: 'frame', tilt: 0 },
+  { id: 'liminal-keyart', projectId: 'liminal', kind: 'keyart', width: 1024, height: 1536, mount: 'frame', tilt: 0 },
+  { id: 'wormup-keyart', projectId: 'wormup', kind: 'keyart', width: 941, height: 1672, mount: 'frame', tilt: 0 },
   { id: 'rubato-opera', projectId: 'rubato', kind: 'still', width: 1920, height: 1080, mount: 'wood', tilt: 0 },
-  { id: 'lumiora-splash', projectId: 'lumiora', kind: 'keyart', width: 900, height: 1599, mount: 'print', tilt: 1.3 },
+  { id: 'lumiora-keyart', projectId: 'lumiora', kind: 'keyart', width: 1122, height: 1402, mount: 'frame', tilt: 0 },
 ] as const
 
 export const ARTWORK: readonly Artwork[] = PIECES

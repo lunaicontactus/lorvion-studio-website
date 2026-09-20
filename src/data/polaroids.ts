@@ -15,10 +15,12 @@
  * fine too — the table says the record is still being kept, and that is all.
  *
  * What is here to start with is only what the site already has for real:
- * the key art of the five games, and the working record the workbench keeps
- * (each with the day and the commit it came from). Nothing is invented.
+ * the five works' own pictures, a couple of working screens from each
+ * (the works' galleries, src/data/projects.ts), and the working record the
+ * workbench keeps (each with the day and the commit it came from). Nothing
+ * is invented.
  */
-import { PROJECTS } from '@/data/projects'
+import { PROJECTS, workPicture } from '@/data/projects'
 import { artworkFor, wallSrc } from '@/data/artwork'
 import { WORKBENCH_ENTRIES } from '@/data/garage/workbench'
 
@@ -33,6 +35,8 @@ export interface Polaroid {
   /** As written on the back: `2026.09.16`. */
   readonly date?: string
   readonly category?: PolaroidCategory
+  /** The work it belongs to, if one: a work's page shows its own (src/ui/works.ts). */
+  readonly projectId?: string
 }
 
 /**
@@ -44,11 +48,22 @@ export interface Polaroid {
  */
 const ADDED: readonly Polaroid[] = []
 
-/** The five games, from the pictures on the garage wall. */
+/** The five works, each by its own picture (the wall print, or the work's hero). */
 const GAMES: readonly Polaroid[] = PROJECTS.flatMap((p) => {
   const art = artworkFor(p.id)
-  return art ? [{ id: `game-${p.id}`, src: wallSrc(art), title: p.title, note: p.taglineKo, category: 'game' as const }] : []
+  const src = p.hero ? workPicture(p.id, p.hero.name, 'thumb') : art ? wallSrc(art) : null
+  return src ? [{ id: `game-${p.id}`, src, title: p.title, note: p.taglineKo, category: 'game' as const, projectId: p.id }] : []
 })
+
+/**
+ * Working traces from the works themselves: a screen of the running build, a
+ * greybox — two at most from each, from its page's own gallery.
+ */
+const TRACES: readonly Polaroid[] = PROJECTS.flatMap((p) =>
+  p.gallery.filter((g) => g.kind === 'screen' || g.kind === 'greybox').slice(0, 2).map((g) => ({
+    id: `trace-${p.id}-${g.name}`, src: workPicture(p.id, g.name, 'thumb'), title: g.caption, note: p.title,
+    category: 'dev' as const, projectId: p.id,
+  })))
 
 /** The days of making, from the workbench's own record. */
 const MAKING: readonly Polaroid[] = WORKBENCH_ENTRIES.flatMap((w) =>
@@ -56,7 +71,12 @@ const MAKING: readonly Polaroid[] = WORKBENCH_ENTRIES.flatMap((w) =>
     ? [{ id: `dev-${w.id}`, src: w.asset, title: w.title, note: w.description, date: w.date, category: 'dev' as const }]
     : [])
 
-export const POLAROIDS: readonly Polaroid[] = [...ADDED, ...MAKING, ...GAMES]
+export const POLAROIDS: readonly Polaroid[] = [...ADDED, ...MAKING, ...TRACES, ...GAMES]
+
+/** A work's own photos, for its page. */
+export function polaroidsOf(projectId: string): readonly Polaroid[] {
+  return POLAROIDS.filter((p) => p.projectId === projectId)
+}
 
 /**
  * Where a card lies on the table: the same place every visit, per photo.

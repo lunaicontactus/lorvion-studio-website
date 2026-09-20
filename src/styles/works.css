@@ -1,0 +1,376 @@
+/* ── WORKS (src/ui/works.ts) ──────────────────────────────────────────────
+   The garage's own evening, carried on: the painted room behind everything,
+   out of focus and turned down like a lamp; felt, paper, thread and wood in
+   front of it. The works first, then what they say, then the few controls.
+   ──────────────────────────────────────────────────────────────────────── */
+.works-page{
+  --wk-ground:#170f0a;
+  --wk-ink:#3b2718;
+  --wk-cream:#f3e6cb;
+  --wk-paper:#f1e3c4;
+  --wk-felt:#6a4426;
+  --wk-felt-dark:#2c1d12;
+  --wk-thread:rgba(236,196,128,.72);
+  --wk-muted:#cdb994;
+  background:transparent;color:var(--wk-cream);
+}
+/* The ground is on the root, so the room can sit between it and the page. */
+html:has(body.works-page){background:#170f0a}
+/* The room itself, out of focus: this is still the garage. */
+.works-page::before{
+  content:"";position:fixed;inset:-40px;z-index:-2;pointer-events:none;
+  background:url('/assets/images/garage/room_landscape.webp') 22% 40% / cover no-repeat;
+  filter:blur(16px) brightness(.3) saturate(1.2);
+}
+.works-page::after{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 55% at 18% 0%,rgba(255,184,104,.2),transparent 70%),
+    radial-gradient(ellipse 60% 50% at 90% 100%,rgba(70,86,150,.22),transparent 70%),
+    linear-gradient(180deg,rgba(23,15,10,.35),rgba(23,15,10,.75));
+}
+@media (orientation:portrait){
+  .works-page::before{background-image:url('/assets/images/garage/room_portrait.webp');background-position:50% 12%}
+}
+.works-page .site-nav{background:linear-gradient(180deg,rgba(23,15,10,.92),rgba(23,15,10,0));color:var(--wk-cream)}
+.works-page .site-nav.scrolled{background:rgba(26,17,11,.9);border-bottom:1px solid rgba(236,196,128,.14)}
+.works-page .site-footer{background:#110b07;border-top-color:rgba(236,196,128,.12)}
+.works-page :where(a,button):focus-visible{outline:3px solid #f2c14e;outline-offset:3px}
+.works-page .nav-links a[aria-current="page"]:after{transform:scaleX(1)}
+
+/* Coming in from the garage: the room's dark lifts off the page. */
+.works{position:relative;min-height:100svh}
+.works::before{
+  content:"";position:fixed;inset:0;z-index:150;pointer-events:none;background:#0d0906;
+  animation:worksDusk 700ms var(--ease) both;
+}
+@keyframes worksDusk{from{opacity:1}to{opacity:0;visibility:hidden}}
+.works__wrap{max-width:1180px;margin:0 auto;padding:calc(var(--nav-h) + 22px) 20px 90px}
+.works__wrap > *{animation:worksIn 760ms var(--ease) both}
+.works__wrap > :nth-child(2){animation-delay:90ms}
+.works__wrap > :nth-child(3){animation-delay:180ms}
+.works__wrap > :nth-child(4){animation-delay:260ms}
+@keyframes worksIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.works__back{margin:0 0 26px;font:600 .8rem/1.4 var(--mono);letter-spacing:.06em;color:var(--wk-muted)}
+.works__back a{display:inline-flex;align-items:center;gap:.4em;min-height:46px;padding:0 .2em;color:var(--wk-cream);text-decoration:none}
+.works__back a:hover{text-decoration:underline;text-underline-offset:4px}
+
+/* ── The index ─────────────────────────────────────────────────────────── */
+.works-head{max-width:760px;margin:0 0 44px}
+.works-head__kicker{margin:0 0 12px;font:700 .72rem/1 var(--mono);letter-spacing:.3em;color:#e8c48a}
+.works-head__title{
+  margin:0 0 18px;font-size:clamp(2.1rem,5.4vw,3.9rem);line-height:1.12;font-weight:800;letter-spacing:-.02em;
+  color:var(--wk-cream);text-shadow:0 2px 0 rgba(0,0,0,.35);
+}
+.works-head__title::after{
+  content:"";display:block;width:min(340px,70%);height:0;margin-top:14px;
+  border-top:2px dashed var(--wk-thread);
+}
+.works-head__line{margin:0;font-size:clamp(1rem,1.6vw,1.12rem);line-height:1.8;color:#e7d6b6}
+
+/* The table: each work is its own kind of object, and they do not line up
+   like a catalogue — but they are all the same hand's work. */
+.records{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,1fr);gap:34px 30px}
+.records__item{grid-column:span 3;animation:worksIn 760ms var(--ease) both;animation-delay:calc(200ms + var(--i) * 80ms)}
+.records__item:nth-child(3){grid-column:span 2}
+.records__item:nth-child(4){grid-column:span 2}
+.records__item:nth-child(5){grid-column:span 2}
+.record{
+  --tilt:0deg;
+  position:relative;display:grid;grid-template-columns:128px 1fr;gap:18px;align-items:start;
+  min-height:230px;padding:26px 24px 22px 26px;border-radius:10px;text-decoration:none;
+  transform:rotate(var(--tilt));transition:transform 320ms var(--ease),box-shadow 320ms var(--ease);
+  box-shadow:0 14px 28px rgba(8,4,2,.55),0 2px 0 rgba(255,255,255,.06) inset;
+}
+.record:hover,.record:focus-visible{transform:rotate(0) translateY(-5px);box-shadow:0 22px 40px rgba(8,4,2,.62)}
+.record__trim{position:absolute;inset:0;pointer-events:none;border-radius:inherit;overflow:visible}
+.record__trim i{position:absolute;font-style:normal}
+.record__photo{
+  position:relative;z-index:1;display:block;padding:6px 6px 18px;background:#fbf6ea;
+  transform:rotate(-2.5deg);box-shadow:0 6px 12px rgba(0,0,0,.35);
+}
+.record__photo img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
+.record__body{position:relative;z-index:1;display:grid;gap:7px;align-content:start}
+.record__kind{font:700 .64rem/1.3 var(--mono);letter-spacing:.16em;opacity:.8}
+.record__title{font-size:1.7rem;font-weight:800;line-height:1.05;letter-spacing:-.01em}
+.record__line{font-size:.98rem;line-height:1.6}
+.record__meta{font-size:.8rem;opacity:.78}
+.record__status{
+  justify-self:start;margin-top:6px;padding:.45em .8em;border-radius:4px;
+  font:700 .66rem/1 var(--mono);letter-spacing:.14em;color:#fbeccb;background:#6a4426;
+  outline:1px dashed rgba(251,236,203,.55);outline-offset:-4px;
+}
+.record__status[data-status="testflight"],.work-tags [data-status="testflight"]{background:#35604f}
+.record__status[data-status="prototype"],.work-tags [data-status="prototype"]{background:#27586a}
+.record__status[data-status="inDevelopment"],.work-tags [data-status="inDevelopment"]{background:#7a4a24}
+
+/* LUNAI — a diary bound in purple felt, a moon on the cover, an elastic band. */
+.record--lunai{
+  --tilt:-1.2deg;color:#f3ecff;
+  background:
+    radial-gradient(circle at 80% 18%,rgba(214,196,255,.22),transparent 38%),
+    repeating-radial-gradient(circle at 30% 40%,rgba(255,255,255,.03) 0 1px,transparent 1px 3px),
+    linear-gradient(140deg,#54429a,#2f255f 70%);
+  padding-left:44px;
+}
+.record--lunai .record__spine{left:0;top:0;bottom:0;width:22px;border-radius:10px 0 0 10px;background:#211848;border-right:2px dashed rgba(214,196,255,.45)}
+.record--lunai .record__band{right:34px;top:-4px;bottom:-4px;width:10px;border-radius:3px;background:#1a1336;box-shadow:0 0 0 1px rgba(0,0,0,.3)}
+.record--lunai .record__moon{right:62px;top:20px;width:26px;height:26px;border-radius:50%;box-shadow:-6px 4px 0 0 #f5e9b8;transform:rotate(-20deg)}
+
+/* LIMINAL — a black case file from the bureau, a tab, a clip, a red stamp. */
+.record--liminal{
+  --tilt:.8deg;color:#ece6da;margin-top:14px;
+  background:
+    repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 2px,transparent 2px 4px),
+    linear-gradient(160deg,#25262b,#141519 75%);
+  box-shadow:0 14px 28px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.06);
+}
+.record--liminal .record__tab{
+  left:26px;top:-22px;padding:5px 14px 7px;border-radius:6px 6px 0 0;background:#25262b;
+  font:700 .66rem/1 var(--mono);letter-spacing:.2em;color:#c4a36e;
+}
+.record--liminal .record__clip{right:40px;top:-12px;width:16px;height:46px;border:3px solid #b9bcc4;border-bottom:0;border-radius:8px 8px 0 0}
+.record--liminal .record__stamp{
+  right:22px;bottom:22px;padding:4px 10px;border:2px solid rgba(190,60,52,.8);border-radius:4px;
+  color:rgba(210,80,70,.9);font:800 .9rem/1 sans-serif;letter-spacing:.3em;transform:rotate(-8deg);
+}
+
+/* WORM UP! — a trail map, folded, the route marked in red, two stickers. */
+.record--wormup{
+  --tilt:-.6deg;color:#3a2a17;
+  background:
+    linear-gradient(90deg,transparent 32.8%,rgba(90,60,20,.14) 33.3%,transparent 33.9%,transparent 66.2%,rgba(90,60,20,.14) 66.7%,transparent 67.2%),
+    repeating-radial-gradient(ellipse at 70% 60%,rgba(90,130,70,.14) 0 2px,transparent 2px 14px),
+    linear-gradient(170deg,#f3e6c4,#e2cf9f);
+}
+.record--wormup .record__route{left:18px;bottom:10px;width:190px;height:54px;border:3px dashed rgba(206,78,70,.7);border-color:transparent transparent rgba(206,78,70,.7) rgba(206,78,70,.7);border-radius:0 0 0 70%}
+.record--wormup .record__badge{
+  display:grid;place-items:center;width:46px;height:46px;border-radius:50%;
+  font:800 .8rem/1 var(--mono);color:#fff;box-shadow:0 3px 6px rgba(0,0,0,.25),inset 0 0 0 3px rgba(255,255,255,.5);
+}
+/* Stuck on over the top edge, clear of the writing. */
+.record--wormup .record__badge--a{right:20px;top:-16px;background:#dc665f;transform:rotate(-10deg)}
+.record--wormup .record__badge--b{right:72px;top:-10px;background:#e0a93b;transform:rotate(8deg)}
+.record--wormup .record__status{color:#fbeccb}
+
+/* LUMIORA — a score book that gives off its own light. */
+.record--lumiora{
+  --tilt:1deg;color:#e4fbf5;
+  background:
+    repeating-linear-gradient(180deg,transparent 0 13px,rgba(160,240,225,.1) 13px 14px,transparent 14px 16px) 0 calc(100% - 60px) / 100% 56px no-repeat,
+    radial-gradient(ellipse at 70% 110%,rgba(111,230,210,.28),transparent 60%),
+    linear-gradient(160deg,#133d47,#0b242b 80%);
+  box-shadow:0 14px 28px rgba(0,0,0,.55),0 0 36px rgba(111,220,200,.18),inset 0 0 0 1px rgba(160,240,225,.22);
+}
+.record--lumiora .record__glow{inset:auto 18px 16px auto;width:10px;height:10px;border-radius:50%;background:#bff7ea;box-shadow:0 0 18px 8px rgba(160,245,225,.55)}
+
+/* RUBATO — an old letter with a wax seal, and a ticket for the opera. */
+.record--rubato{
+  --tilt:-1deg;color:#3d2a17;
+  background:
+    radial-gradient(ellipse at 50% 50%,transparent 60%,rgba(120,80,30,.28) 100%),
+    linear-gradient(175deg,#efe1c2,#dcc79f);
+}
+.record--rubato .record__seal{left:128px;top:188px;z-index:2;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#c2453c,#7e1f1b);box-shadow:0 2px 4px rgba(0,0,0,.35)}
+.record--rubato .record__ticket{
+  right:22px;top:-14px;padding:6px 12px 6px 16px;background:#f7ecd4;color:#7e1f1b;
+  border-left:2px dashed rgba(126,31,27,.5);font:800 .6rem/1 var(--mono);letter-spacing:.14em;
+  transform:rotate(4deg);box-shadow:0 3px 6px rgba(0,0,0,.25);
+}
+
+/* ── One work's bench ─────────────────────────────────────────────────── */
+.work-hero{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:44px;align-items:start;margin-bottom:26px}
+.work-hero__frame{
+  /* The frame is the picture's shape: it shrinks round a tall poster rather
+     than leaving it in a dark box. */
+  position:relative;justify-self:center;width:fit-content;max-width:100%;margin:0;padding:14px 14px 34px;border-radius:12px;
+  background:linear-gradient(160deg,#4a301c,#2c1d12);
+  box-shadow:0 18px 36px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,220,160,.08);
+}
+.work-hero__frame::before{content:"";position:absolute;inset:6px;border:1.5px dashed var(--wk-thread);border-radius:8px;pointer-events:none}
+.work-hero__frame img{display:block;width:auto;max-width:100%;height:auto;max-height:72svh;border-radius:3px;background:#120b07}
+.work-hero__plate{
+  position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);
+  padding:.55em 1.2em;border-radius:6px;white-space:nowrap;background:var(--wk-paper);color:var(--wk-ink);
+  font:800 .82rem/1 var(--mono);letter-spacing:.18em;outline:1.5px dashed rgba(150,96,45,.6);outline-offset:-5px;
+  box-shadow:0 4px 8px rgba(0,0,0,.4);
+}
+.work-hero__kicker{margin:4px 0 10px;font:700 .72rem/1.3 var(--mono);letter-spacing:.2em;color:#e8c48a}
+.work-hero__title{margin:0 0 12px;font-size:clamp(2.4rem,5vw,4rem);line-height:1;font-weight:850;letter-spacing:-.01em;color:#fff4e0}
+.work-hero__ko{margin:0 0 4px;font-size:1.18rem;line-height:1.6;color:var(--wk-cream)}
+.work-hero__en{margin:0 0 22px;font-size:.95rem;color:var(--wk-muted);font-style:italic}
+/* The facts, on fabric labels. */
+.work-tags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 20px}
+.work-tags > div{
+  padding:.7em .9em .75em;border-radius:6px;background:var(--wk-paper);color:var(--wk-ink);
+  outline:1.5px dashed rgba(150,96,45,.55);outline-offset:-5px;box-shadow:0 3px 6px rgba(0,0,0,.3);
+}
+.work-tags > div:nth-child(odd){transform:rotate(-.6deg)}
+.work-tags > div:nth-child(even){transform:rotate(.5deg)}
+.work-tags .work-tags__wide{grid-column:1/-1}
+.work-tags dt{font:700 .6rem/1 var(--mono);letter-spacing:.2em;color:#8a5a2c;margin-bottom:5px}
+.work-tags dd{margin:0;font-weight:700;font-size:.92rem;line-height:1.4}
+.work-tags dd[data-status]{display:inline-block;padding:.2em .6em;border-radius:3px;color:#fbeccb;font:700 .74rem/1.4 var(--mono);letter-spacing:.1em}
+.work-links{display:flex;flex-wrap:wrap;gap:10px;margin:0}
+.work-link{
+  display:inline-flex;align-items:center;gap:.4em;min-height:44px;padding:0 1.1em;border-radius:8px;
+  background:#3f2a18;color:#fbeccb;font:700 .78rem/1 var(--mono);letter-spacing:.08em;text-decoration:none;
+  box-shadow:inset 0 0 0 1.5px rgba(251,236,203,.25);
+}
+a.work-link:hover{background:#5a3c22}
+.work-link--note{background:transparent;color:var(--wk-muted);box-shadow:inset 0 0 0 1.5px rgba(205,185,148,.4);border:0}
+
+.work-sec{margin-top:58px;animation:worksIn 760ms var(--ease) both;animation-delay:300ms}
+.work-sec__h{
+  display:inline-block;margin:0 0 18px;padding:.55em 1em;border-radius:5px;
+  background:var(--wk-felt-dark);color:#f0d9a8;font:800 .74rem/1 var(--mono);letter-spacing:.24em;
+  outline:1.5px dashed var(--wk-thread);outline-offset:-5px;box-shadow:0 4px 10px rgba(0,0,0,.35);
+}
+.work-sec__note{margin:-8px 0 14px;font:600 .74rem/1.4 var(--mono);color:var(--wk-muted)}
+
+/* WHAT IS THIS? — a note pinned to the board. */
+.work-note__paper{
+  position:relative;max-width:760px;padding:26px 30px 24px;border-radius:3px;
+  background:linear-gradient(180deg,#f6ead0,#ecdcb8);color:var(--wk-ink);
+  font-size:1.05rem;line-height:1.9;transform:rotate(-.5deg);box-shadow:0 12px 24px rgba(0,0,0,.45);
+}
+.work-note__paper::before{
+  content:"";position:absolute;left:50%;top:-9px;width:18px;height:18px;margin-left:-9px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#e8665c,#9b2a24);box-shadow:0 3px 4px rgba(0,0,0,.4);
+}
+.work-note__paper p{margin:0}
+
+/* CORE EXPERIENCE — index cards. */
+.work-cards{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
+.work-card{
+  display:grid;gap:8px;padding:18px 18px 20px;border-radius:4px;color:var(--wk-ink);
+  background:
+    linear-gradient(180deg,transparent 30px,rgba(200,80,70,.35) 30px 31px,transparent 31px),
+    repeating-linear-gradient(180deg,transparent 0 23px,rgba(70,110,170,.14) 23px 24px) 0 31px / 100% calc(100% - 31px) no-repeat,
+    #faf2de;
+  box-shadow:0 8px 16px rgba(0,0,0,.35);
+}
+.work-card:nth-child(3n+1){transform:rotate(-.7deg)}
+.work-card:nth-child(3n+2){transform:rotate(.5deg)}
+.work-card__t{font-size:1rem;line-height:1.1}
+.work-card__x{font-size:.92rem;line-height:1.6}
+
+/* A list of its own (LUMIORA's composers, RUBATO's cast). */
+.work-list{list-style:none;margin:0;padding:18px 20px;display:grid;gap:4px;border-radius:10px;
+  background:rgba(20,13,8,.72);box-shadow:inset 0 0 0 1.5px rgba(236,196,128,.18)}
+.work-list__row{display:grid;grid-template-columns:34px minmax(120px,auto) 1fr;gap:14px;align-items:center;padding:10px 4px;border-bottom:1px dashed rgba(236,196,128,.16)}
+.work-list__row:last-child{border-bottom:0}
+.work-list__n{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#1a120c;font:800 .78rem/1 var(--mono)}
+.work-list b{color:#fff4e0}
+.work-list span:last-child{color:#e2d0ae;font-size:.94rem}
+/* LUMIORA's worlds give off their own light. */
+[data-works-detail="lumiora"] .work-list{background:linear-gradient(160deg,rgba(14,48,56,.85),rgba(8,26,32,.9));box-shadow:0 0 34px rgba(111,220,200,.16),inset 0 0 0 1.5px rgba(160,240,225,.25)}
+[data-works-detail="lumiora"] .work-list__n{background:#9ff0dd;box-shadow:0 0 12px rgba(160,245,225,.7)}
+[data-works-detail="lumiora"] .work-list__row:last-child b{color:#bff7ea}
+
+/* CURRENT BUILD — the list on the bench, ticked in thread. */
+.work-build{list-style:none;margin:0;padding:10px 22px;max-width:820px;border-radius:10px;
+  background:linear-gradient(160deg,#3a2616,#24170e);box-shadow:0 12px 24px rgba(0,0,0,.45),inset 0 0 0 1.5px rgba(236,196,128,.14)}
+.work-build__item{display:grid;grid-template-columns:30px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px dashed rgba(236,196,128,.18)}
+.work-build__item:last-child{border-bottom:0}
+.work-build__mark{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;font-weight:900;font-size:.9rem;border:1.5px solid currentColor}
+.work-build__item[data-state="done"] .work-build__mark{color:#9fdcae;background:rgba(159,220,174,.14)}
+.work-build__item[data-state="doing"] .work-build__mark{color:#f2c14e;background:rgba(242,193,78,.12)}
+.work-build__item[data-state="todo"] .work-build__mark{color:#a99b85}
+.work-build__item[data-state="todo"] .work-build__label{color:#bfae90}
+.work-build__state{font:700 .66rem/1 var(--mono);letter-spacing:.12em;color:var(--wk-muted)}
+
+/* DEV LOG — dated strips of tape down a thread. */
+.work-log{list-style:none;margin:0;padding:0 0 0 22px;max-width:820px;position:relative}
+.work-log::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;border-left:2px dashed var(--wk-thread)}
+.work-log__entry{position:relative;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:baseline;padding:10px 0 14px}
+.work-log__entry::before{content:"";position:absolute;left:-21px;top:17px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(23,15,10,.9)}
+.work-log__date{padding:.35em .7em;background:rgba(240,200,120,.88);color:#3b2718;font:800 .72rem/1 var(--mono);letter-spacing:.06em;transform:rotate(-1.5deg);box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.work-log__text{line-height:1.65}
+.work-log__ref{font:600 .72rem/1 var(--mono);color:var(--wk-muted);opacity:.8}
+
+/* GALLERY — prints, pulled out one at a time. */
+.work-gallery{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:22px}
+.work-shot{
+  display:grid;gap:8px;width:100%;padding:8px 8px 12px;border:0;border-radius:3px;cursor:zoom-in;text-align:left;
+  background:#fbf6ea;color:var(--wk-ink);box-shadow:0 8px 16px rgba(0,0,0,.4);transition:transform 260ms var(--ease);
+}
+.work-gallery li:nth-child(odd) .work-shot{transform:rotate(-1deg)}
+.work-gallery li:nth-child(even) .work-shot{transform:rotate(.8deg)}
+.work-shot:hover,.work-shot:focus-visible{transform:rotate(0) translateY(-4px)}
+.work-shot img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#1a120c}
+.work-shot__cap{font-size:.84rem;line-height:1.45}
+.work-shot__kind{justify-self:start;padding:.3em .55em;border-radius:3px;font:700 .6rem/1 var(--mono);letter-spacing:.1em;background:#e6d6b3;color:#6a4426}
+.work-shot__kind[data-kind="greybox"]{background:#f2c14e;color:#3b2718}
+.work-shot__kind[data-kind="concept"]{background:#c9dde6;color:#23424f}
+.work-traces{margin:26px 0 0}
+.work-traces__go{
+  display:inline-flex;align-items:center;gap:.8em;min-height:48px;padding:0 1.3em;border:0;border-radius:10px;cursor:pointer;
+  background:#f6ead0;color:var(--wk-ink);font:800 .9rem/1 inherit;
+  outline:1.5px dashed rgba(150,96,45,.6);outline-offset:-6px;box-shadow:0 8px 16px rgba(0,0,0,.4);
+}
+.work-traces__n{font:700 .68rem/1 var(--mono);color:#8a5a2c}
+
+.work-next{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;margin-top:70px;padding-top:24px;border-top:1px dashed rgba(236,196,128,.22)}
+.work-next a{display:inline-flex;align-items:center;gap:.5em;min-height:44px;padding:0 .4em;color:var(--wk-cream);font:700 .82rem/1 var(--mono);letter-spacing:.08em;text-decoration:none}
+.work-next a:hover{text-decoration:underline;text-underline-offset:4px}
+
+/* The viewer: one picture, the room dark behind it. */
+.work-view{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:20px}
+.work-view[hidden]{display:none}
+.work-view__shade{position:absolute;inset:0;background:rgba(12,8,5,.9);backdrop-filter:blur(6px)}
+.work-view__fig{position:relative;margin:0;max-width:min(92vw,1400px);display:grid;gap:12px;justify-items:center}
+.work-view__img{display:block;max-width:100%;max-height:calc(100svh - 170px);width:auto;height:auto;object-fit:contain;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.work-view__cap{color:var(--wk-cream);text-align:center;font-size:.95rem;line-height:1.5}
+.work-view__tag{margin-left:.4em;font:700 .66rem/1 var(--mono);letter-spacing:.12em;color:#e8c48a}
+.work-view__bar{position:relative;display:flex;align-items:center;gap:12px;margin-top:14px}
+.work-view__btn{display:grid;place-items:center;width:48px;height:48px;border:0;border-radius:50%;cursor:pointer;background:#6a4426;color:#fbeccb;font:700 1.3rem/1 var(--mono);box-shadow:inset 0 0 0 2px rgba(251,236,203,.3)}
+.work-view__btn[hidden]{display:none}
+.work-view__count{min-width:4em;text-align:center;font:700 .8rem/1 var(--mono);color:var(--wk-muted)}
+/* A polaroid in the hand: square, white, its caption written on the frame. */
+.work-view.is-polaroid .work-view__fig{padding:14px 14px 18px;background:#fbf8f0;box-shadow:0 20px 50px rgba(0,0,0,.6);transform:rotate(-1deg)}
+.work-view.is-polaroid .work-view__img{width:min(70vmin,560px);aspect-ratio:1;object-fit:cover;box-shadow:none}
+.work-view.is-polaroid .work-view__cap{color:#3b2718}
+.work-view.is-polaroid .work-view__tag{color:#8a5a2c}
+body.is-viewing{overflow:hidden}
+
+/* ── Narrow windows ─────────────────────────────────────────────────── */
+@media (max-width:900px){
+  .records{grid-template-columns:1fr;gap:30px}
+  .records__item,.records__item:nth-child(n){grid-column:auto}
+  .work-hero{grid-template-columns:1fr;gap:34px}
+  .work-hero__frame img{max-height:60svh}
+}
+@media (max-width:560px){
+  .works__wrap{padding-left:16px;padding-right:16px}
+  .record{grid-template-columns:92px 1fr;gap:14px;min-height:0;padding:22px 18px 20px}
+  .record--lunai{padding-left:34px}
+  .record__title{font-size:1.4rem}
+  .record__line{font-size:.92rem}
+  .record--wormup .record__route{display:none}
+  .record--rubato .record__seal{left:96px;top:150px}
+  .work-tags{grid-template-columns:1fr 1fr}
+  .work-list__row{grid-template-columns:30px 1fr;gap:4px 12px}
+  .work-list__row span:last-child{grid-column:2}
+  .work-log__entry{grid-template-columns:1fr;gap:6px}
+  .work-log__date{justify-self:start}
+  .work-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .work-note__paper{padding:22px 20px;font-size:1rem}
+}
+/* A phone on its side: the table is short, so the objects sit two by two. */
+@media (max-height:500px) and (orientation:landscape){
+  .records{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .work-hero{grid-template-columns:minmax(0,4fr) minmax(0,6fr)}
+  .work-hero__frame img{max-height:70svh}
+}
+
+/* Without motion there is no dusk to lift: the page is simply there. */
+@media (prefers-reduced-motion:reduce){
+  .works::before{display:none}
+  .works__wrap > *,.records__item,.work-sec{animation:none}
+  .record,.work-shot{transition:none}
+}
+:root[data-motion="reduced"] .works::before{display:none}
+:root[data-motion="reduced"] .works__wrap > *,
+:root[data-motion="reduced"] .records__item,
+:root[data-motion="reduced"] .work-sec{animation:none}

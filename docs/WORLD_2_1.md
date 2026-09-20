@@ -203,3 +203,23 @@ the wipe's title never reached full strength before the screen uncovered.
 
 Captures: `docs/shots/world21` (the album; each game's sign, ready screen,
 play and result, at 1440 × 900, 390 × 844, 844 × 390).
+
+## Release
+
+Merged to main on 2026-09-19 (`2969091`, tag `world-2.1-final` = `910ca6d`).
+The first CI run failed one test out of 287: `e2e/npc.spec.ts` "it stops
+choosing errands…" measured how far MOMO walked after a panel closed (> 50
+units); on CI's slower clock MOMO drew a nearby errand and walked 44. The test
+now asserts what it means — no `CHOOSE_TARGET` or `WALK` while the TV is open,
+and one chosen and walked after it closes (`94e0ee5`). The second run
+(`ac41c24`, run 35436726325) passed verify and deployed.
+
+Live QA at https://eungarage.com: the served bundle is the local build
+(main-CxNRoB4H.js / main-BulEDEJM.css); `scripts/live-smoke.mjs` clean at three
+sizes (0 console errors, 0 page errors, 0 failed responses; brand, sound,
+Back/Forward); `scripts/pixel-games-shots.mjs` against the live site, all three
+games at three sizes, no errors. Its wipe frame was shot at the first instant of
+the title's step-in (black); it now waits for the title to be in.
+
+Previous production: `cec93cc`. Rollback: on main, `git revert -m 1 ac41c24`
+and `git revert -m 1 2969091`, then push (no force).

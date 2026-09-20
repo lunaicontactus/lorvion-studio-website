@@ -22,7 +22,7 @@ const OPENS: Readonly<Record<string, string>> = {
   parcel: '.delivery',
   cabinet: '.drawer',
   fridge: '.fridge',
-  shelf: '.shelf',
+  shelf: '[data-cabinet]',
   'outside-door': '.dark',
   'poster-lunai': '[data-kind~="poster--lunai"] .wall',
   'poster-liminal': '[data-kind~="poster--liminal"] .wall',
@@ -104,7 +104,7 @@ test.describe('desktop', () => {
     for (const title of ['LUNAI', 'LIMINAL', 'WORM UP!', 'LUMIORA', 'RUBATO']) {
       await expect(page.locator('.hub').last()).toContainText(title)
     }
-    await page.goto('/games.html', { waitUntil: 'load' })
-    await expect(page.locator('.fb-game')).toHaveCount(5)
+    await page.goto('/works.html', { waitUntil: 'load' })
+    await expect(page.locator('[data-record]')).toHaveCount(5)
   })
 })

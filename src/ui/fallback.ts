@@ -3,61 +3,20 @@
  *
  * A visitor who cannot or will not walk through the garage — a search
  * crawler, an app-store reviewer following a link, somebody on a slow phone —
- * still needs the games and the studio. These pages carry the same content the
- * objects in the room open, rendered from the same registries, so the two can
- * never drift apart.
+ * still needs the studio. This page carries the same content the objects in
+ * the room open, rendered from the same registries, so the two can never
+ * drift apart. The works have their own pages (src/ui/works.ts).
  */
-import { PROJECTS } from '@/data/projects'
-import { artworkFor } from '@/data/artwork'
+import { PROJECTS, STATUS_LABEL, workHref } from '@/data/projects'
 import { SITE_CONFIG, contactRows } from '@/data/site'
 import { CHARACTERS } from '@/data/characters'
-import type { ProjectStatus } from '@/types/project'
-
-/** The picture's own proportions, so the frame takes them instead of 16:10. */
-function shot(projectId: string): string {
-  const piece = artworkFor(projectId)
-  return piece ? `${piece.width}/${piece.height}` : '16/10'
-}
-
-const STATUS_LABEL: Record<ProjectStatus, string> = {
-  released: 'RELEASED',
-  inDevelopment: 'IN DEVELOPMENT',
-  prototype: 'PROTOTYPE',
-  comingSoon: 'COMING SOON',
-}
-
-function games(host: HTMLElement): void {
-  host.innerHTML = PROJECTS.map(
-    (p) => `
-    <article class="fb-game">
-      <div class="fb-game__art"${p.keyArt ? ` style="background-image:url('${p.keyArt}'); --shot:${shot(p.id)}"` : ' data-empty'}></div>
-      <div class="fb-game__body">
-        <h2 class="fb-game__name">${p.title}</h2>
-        <p class="fb-game__tag">${p.tagline}</p>
-        <p class="fb-game__tag fb-game__tag--ko">${p.taglineKo}</p>
-        <dl class="fb-facts">
-          <div><dt>GENRE</dt><dd>${p.genre}</dd></div>
-          <div><dt>STATUS</dt><dd>${STATUS_LABEL[p.status]}</dd></div>
-          <div><dt>PLATFORM</dt><dd>${p.platforms.join(' · ')}</dd></div>
-        </dl>
-        ${
-          p.links.length
-            ? `<p class="fb-links">${p.links
-                .map((l) => `<a href="${l.href}">${l.label} <span aria-hidden="true">↗</span></a>`)
-                .join('')}</p>`
-            : ''
-        }
-      </div>
-    </article>`,
-  ).join('')
-}
 
 function studio(host: HTMLElement): void {
   const crew = CHARACTERS.map(
     (c) => `<li><b>${c.name}</b><span>${c.trait}</span></li>`,
   ).join('')
   const making = PROJECTS.map(
-    (p) => `<li>${p.title} <span>${p.genre} · ${STATUS_LABEL[p.status]}</span></li>`,
+    (p) => `<li><a href="${workHref(p.id)}">${p.title}</a> <span>${p.kind} · ${STATUS_LABEL[p.status]}</span></li>`,
   ).join('')
   const contact = contactRows()
     .map((r) => `<a class="fb-mail" href="${r.href}">${r.value} <span aria-hidden="true">↗</span></a>`)
@@ -80,8 +39,6 @@ function studio(host: HTMLElement): void {
 }
 
 export function mountFallback(root: ParentNode = document): void {
-  const gamesHost = root.querySelector<HTMLElement>('[data-fallback-games]')
-  if (gamesHost) games(gamesHost)
   const studioHost = root.querySelector<HTMLElement>('[data-fallback-studio]')
   if (studioHost) studio(studioHost)
 }

@@ -18,7 +18,7 @@ for (const [name, w, h, mobile] of [['desktop', 1440, 900, false], ['portrait', 
   await page.waitForSelector('[data-garage-room]', { timeout: 20000 })
   await page.waitForTimeout(3500)
   await page.screenshot({ path: `${out}/${name}_2_garage.png` })
-  await page.goto(`${origin}/games.html`, { waitUntil: 'load' })
+  await page.goto(`${origin}/works.html`, { waitUntil: 'load' })
   await page.waitForTimeout(800)
   await page.screenshot({ path: `${out}/${name}_3_games.png`, fullPage: false })
   await ctx.close()

@@ -70,12 +70,17 @@ export interface WorldObject {
    * A real piece of the studio's work, hung here (src/data/artwork.ts).
    *
    * The painting has posters in it, but they are painted posters — the room's
-   * decoration, not the studio's work. A piece named here is printed over the
-   * painted one on its own sheet of paper, at the proportions the picture was
-   * actually drawn at. `rect` is the sheet; the picture inside it is never
-   * cropped to fill the sheet.
+   * decoration, not the studio's work. A piece named here hangs over the
+   * painted one — in a felt frame (the four main works) or a print sheet
+   * (RUBATO) — at the proportions the picture was actually drawn at. The
+   * picture is never cropped to fill its frame.
    */
   readonly artwork?: string
+  /**
+   * The painted thing a framed piece hangs over, in world space. The frame's
+   * body has to cover it; `rect` is the frame itself.
+   */
+  readonly painted?: WorldRect
   /**
    * The same thing, opened. Only with a `toggle` action. The two files are
    * cut on one shared canvas, so swapping them moves nothing.

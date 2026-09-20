@@ -22,7 +22,7 @@ const THINGS = [
   { id: 'cabinet', prop: 'cabinet', surface: '.prop--cabinet .drawer__lift', content: '.prop--cabinet .paper', sfx: 'drawer_open', light: 'cabinet' },
   // The shelf has no sound of its own (WORLD 2.1: only delivered sounds), so
   // it is heard as nothing at all — no borrowed click in its place.
-  { id: 'shelf', prop: 'shelf', surface: '.prop--shelf', content: '.prop--shelf .relic', sfx: null, light: null },
+  { id: 'shelf', prop: 'shelf', surface: '.prop--shelf', content: '.prop--shelf .cab__spot', sfx: null, light: null },
   { id: 'workbench', prop: 'workbench', surface: '.prop--workbench', content: '.prop--workbench .bench2__img', sfx: 'paper', light: null },
   { id: 'radio', prop: 'radio', surface: '.prop--radio', content: '.prop--radio [data-radio-freq]', sfx: 'radio_tune', light: 'radio' },
   // The outside door is not here: since PHASE 8 it is a crossing, not a

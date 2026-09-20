@@ -172,53 +172,62 @@
   pointer-events:none;
 }
 
-/* A real piece of the studio's work, hung over the painted poster or frame in
-   its place (garage.ts hangPrint). The box is the picture's own shape plus the
-   frame's edge — there is no paper around it, so no shape can show through as
-   a white or cream margin. Three ways of hanging, so the wall reads as a wall
-   and not as a grid of identical cards. Every size is a world unit. */
+/* A real piece of the studio's work, hung over the painted poster in its
+   place (garage.ts hangPrint). Every size is a world unit.
+
+   The four main works hang in felt frames cut from the studio's own painting
+   of this wall: the frame on top with its window open, the key art behind
+   the window at its own shape, and felt (the mount) round a picture narrower
+   than its window. The shadow is the frame's own silhouette, so the window's
+   edge throws a little of it onto the picture, the way a deep frame does. */
+.frame{
+  position:absolute;pointer-events:none;
+  opacity:0;
+  transition:opacity 420ms ease, transform 260ms ease;
+}
+.frame.is-in{opacity:1}
+.frame__mount{
+  position:absolute;overflow:hidden;
+  box-shadow:inset 0 0 6px rgba(20,12,6,.55);
+}
+.frame__img{position:absolute;display:block;max-width:none}
+.frame__felt{
+  position:absolute;inset:0;width:100%;height:100%;max-width:none;display:block;
+  filter:drop-shadow(1px 5px 4px rgba(52,28,10,.5));
+  transition:filter 260ms ease;
+}
+/* Under the pointer the frame comes off the wall a little: the shadow
+   drops, one movement with the outline. */
+.thing:hover .frame,.thing:focus-visible .frame{transform:translateY(-1.5px)}
+.thing:hover .frame__felt,.thing:focus-visible .frame__felt{filter:drop-shadow(2px 9px 6px rgba(52,28,10,.55))}
+
+/* RUBATO's opera house, in the wooden landscape frame painted over the
+   television: the picture plus an even wooden edge, the painted frame it
+   hangs in carried on. */
 .print{
   position:absolute;pointer-events:none;
   transform-origin:50% 6%;
-  box-shadow:0 3px 8px rgba(58,42,26,.38);
-  /* Over the painted poster only once its picture has arrived: the frame
-     on its own was a dark box on the wall while the picture loaded. */
   opacity:0;
   transition:opacity 420ms ease;
 }
 .print.is-in{opacity:1}
 .print__img{position:absolute;max-width:none;display:block}
-/* A poster: the picture is the sheet, held up by two strips of tape. */
-.print--poster{border-radius:1px}
-.print__tape{
-  position:absolute;top:-5px;width:26%;height:11px;
-  background:rgba(236,224,196,.78);
-  box-shadow:0 1px 2px rgba(58,42,26,.18);
-}
-.print__tape--l{left:-6%;transform:rotate(-24deg)}
-.print__tape--r{right:-6%;transform:rotate(22deg)}
-/* A print: a thin dark frame. */
-.print--print{background:#2f241b;border-radius:2px;
-  box-shadow:0 3px 9px rgba(40,28,16,.45), inset 0 0 0 1px rgba(255,236,200,.12)}
-/* In a wooden frame: the painted one it hangs in, carried on. */
 .print--wood{background:linear-gradient(135deg,#9a6a3a,#6e4724 55%,#8a5b30);border-radius:2px;
   box-shadow:0 2px 6px rgba(40,28,16,.4), inset 0 0 0 1px rgba(40,24,10,.5)}
 /* Its name, on a scrap of paper pinned over the lower corner. */
 .print__memo{
-  position:absolute;right:-4%;bottom:-3%;
+  position:absolute;left:-3%;bottom:-14%;
   padding:.28em .55em .3em;
   background:#efe3c8;color:#4d3a27;
   font-family:var(--mono);font-weight:700;letter-spacing:.08em;line-height:1;white-space:nowrap;
   box-shadow:0 1px 3px rgba(58,42,26,.35);
-  transform:rotate(-4deg);
+  transform:rotate(3deg);
 }
-.print--wood .print__memo{right:auto;left:-3%;bottom:-14%;transform:rotate(3deg)}
-/* Under the pointer the sheet lifts the way paper does, not the way a button
-   does. The lift is on the thing, so it is one movement with the outline. */
 .thing:hover .print,.thing:focus-visible .print{box-shadow:0 6px 14px rgba(58,42,26,.44)}
 
 @media (prefers-reduced-motion:reduce){
-  .thing__outline,.thing__lift,.print{transition:none}
+  .thing__outline,.thing__lift,.print,.frame,.frame__felt{transition:none}
+  .thing:hover .frame,.thing:focus-visible .frame{transform:none}
 }
 
 /* Touched, but there is nothing behind it yet: the thing shifts a couple of

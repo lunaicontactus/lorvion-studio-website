@@ -6,16 +6,21 @@ import { defineConfig } from 'vite'
 const root = fileURLToPath(new URL('.', import.meta.url))
 
 /**
- * Every .html at the repo root is an entry point.
+ * Every .html at the repo root is an entry point, and every work's page
+ * under works/.
  * The legal pages are linked from the LUNAI app, so their URLs are frozen:
  * discovering them instead of listing them means a new page can never be
  * forgotten, and an existing one can never silently stop being built.
  */
-const htmlEntries = Object.fromEntries(
-  readdirSync(root)
+const htmlEntries = Object.fromEntries([
+  ...readdirSync(root)
     .filter((f) => f.endsWith('.html'))
     .map((f) => [f.replace(/\.html$/, ''), resolve(root, f)]),
-)
+  // Each work's own page (works/<id>.html).
+  ...readdirSync(resolve(root, 'works'))
+    .filter((f) => f.endsWith('.html'))
+    .map((f) => [`works/${f.replace(/\.html$/, '')}`, resolve(root, 'works', f)]),
+])
 
 export default defineConfig({
   appType: 'mpa',

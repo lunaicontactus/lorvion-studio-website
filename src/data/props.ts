@@ -33,6 +33,11 @@ export interface PropDef {
   readonly min: { readonly w: number; readonly h: number }
   /** Extra regions the presentation animates (doors, drawers, a door leaf). */
   readonly parts?: Readonly<Record<string, Frac>>
+  /**
+   * CSS px kept free under the cut-out on a tall window, for what it says
+   * about the thing picked (the shelf's note goes there, not over the shelf).
+   */
+  readonly reserveBelow?: number
 }
 
 const G = '/assets/images/garage'
@@ -73,14 +78,14 @@ export const PROPS: Readonly<Record<string, PropDef>> = {
     },
   },
   shelf: {
-    art: `${G}/shelf.webp`, w: 560, h: 592,
-    surface: { x: 0.2, y: 0.2, w: 0.63, h: 0.58 },
-    min: { w: 320, h: 300 },
-    parts: {
-      top: { x: 0.2, y: 0.22, w: 0.63, h: 0.15 },
-      middle: { x: 0.2, y: 0.42, w: 0.63, h: 0.16 },
-      bottom: { x: 0.2, y: 0.62, w: 0.63, h: 0.14 },
-    },
+    // The archive cabinet (src/data/garage/shelf.ts): the surface is its
+    // three shelves and the two open drawers, where everything is.
+    art: `${G}/archive_cabinet.webp`, w: 900, h: 1075,
+    surface: { x: 0.15, y: 0.17, w: 0.7, h: 0.79 },
+    // Everything on it is a picture to point at, not text to read: a phone
+    // shows the whole cabinet rather than zooming into it.
+    min: { w: 220, h: 280 },
+    reserveBelow: 340,
   },
   radio: {
     art: `${G}/radio.webp`, w: 560, h: 493,

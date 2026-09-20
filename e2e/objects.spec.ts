@@ -73,9 +73,9 @@ for (const vp of [
 
       await page.locator('[data-game="liminal"]').click()
       await expect(page.locator('.crtgame__name')).toHaveText('LIMINAL')
-      await expect(page.locator('.crtgame__facts')).toContainText('Narrative mystery')
+      await expect(page.locator('.crtgame__facts')).toContainText('Narrative Mystery / Investigation')
       // Still inside the monitor: the full page is a link, not the first stop.
-      await expect(page.locator('.crtgame__full')).toHaveAttribute('href', /games\.html/)
+      await expect(page.locator('.crtgame__full')).toHaveAttribute('href', /^\/works\/[a-z]+\.html$/)
 
       await page.locator('[data-crt-back]').click()
       await expect(page.locator('[data-game]')).toHaveCount(5)
@@ -149,7 +149,7 @@ test.describe('desktop', () => {
 
   test('the top nav opens the thing it names', async ({ page }) => {
     await enter(page)
-    await page.locator('.nav-links a', { hasText: 'Games' }).click()
+    await page.locator('.nav-links a', { hasText: 'Works' }).click()
     await expect(page.locator('[data-game]')).toHaveCount(5, { timeout: 5000 })
     await page.keyboard.press('Escape')
     await expect(page.locator(panel)).toBeHidden()
@@ -178,7 +178,7 @@ test.describe('desktop', () => {
     })
     await page.goto('/', { waitUntil: 'load' })
     await expect(page.locator('[data-garage]')).toBeHidden()
-    await page.locator('.nav-links a', { hasText: 'Games' }).click()
+    await page.locator('.nav-links a', { hasText: 'Works' }).click()
     await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 10000 })
     await expect(page.locator('[data-game]')).toHaveCount(5, { timeout: 8000 })
   })

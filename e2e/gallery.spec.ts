@@ -4,26 +4,25 @@ import type { Page } from '@playwright/test'
 /**
  * The wall, and what is actually hanging on it.
  *
- * The room's painting has four posters painted into it. They are decoration —
- * felt-and-thread illustrations of the studio's games, not the games' own art
- * — and for a studio site that is the wrong thing on the wall. What hangs
- * there now is the real work: LUNAI's and LIMINAL's and WORM UP!'s key
- * visuals, LUMIORA's splash, and one of RUBATO's own backgrounds in the painted
- * wooden landscape frame over the television.
+ * The room's painting has four posters painted into it — felt-and-thread
+ * decoration, not the games' own art. What hangs there is the real work:
+ * LUNAI's, LIMINAL's and WORM UP!'s key visuals and LUMIORA's splash, each in
+ * its own stitched felt frame with a name plate, cut from the studio's own
+ * painting of this wall (src/data/wallFrames.ts); and RUBATO's opera house in
+ * the wooden landscape frame painted over the television.
  *
- * What these check is the thing that was broken: every one of those pictures
- * is a different shape, and the room used to have one shape for all of them.
- * A 1024x1536 key visual in a 16:9 frame set to `cover` is a picture with two
- * thirds of itself missing, and nothing about the page said so — it just
- * looked like a bad crop. So the measurement here is always the same one: the
- * box the browser drew, against the picture the browser decoded.
+ * What these check is what goes wrong with a wall like this: a picture forced
+ * into a window of another shape (cropped, or stretched), a painted poster
+ * peeking out from behind its frame, frames that do not hang as a set. The
+ * measurement is always the box the browser drew against the picture the
+ * browser decoded.
  */
 
 const PIECES = [
   { thing: 'poster-lunai', art: 'lunai-keyart', tall: true },
   { thing: 'poster-liminal', art: 'liminal-keyart', tall: true },
   { thing: 'poster-wormup', art: 'wormup-keyart', tall: true },
-  { thing: 'poster-lumiora', art: 'lumiora-splash', tall: true },
+  { thing: 'poster-lumiora', art: 'lumiora-keyart', tall: true },
   { thing: 'picture-rubato', art: 'rubato-opera', tall: false },
 ] as const
 
@@ -39,34 +38,35 @@ async function enter(page: Page): Promise<void> {
   await page.goto('/', { waitUntil: 'load' })
   await page.locator('[data-alley-enter]').click()
   await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 20_000 })
-  await page.waitForFunction(() => document.querySelectorAll('.print img').length >= 5)
+  await page.waitForFunction(() => document.querySelectorAll('.print img, .frame img').length >= 9)
   // Decoded, not merely in the DOM: naturalWidth is what the shape is judged
   // against, and it is zero until the file has arrived.
   await page.waitForFunction(
-    () => [...document.querySelectorAll<HTMLImageElement>('.print img')].every((i) => i.naturalWidth > 0),
+    () => [...document.querySelectorAll<HTMLImageElement>('.print img, .frame img')].every((i) => i.naturalWidth > 0),
     null,
     { timeout: 15_000 },
   )
 }
 
-/** Every print: what it is, the shape drawn, the shape decoded, the sheet. */
+/** Every hung piece: what it is, the shape drawn, the shape decoded, its window. */
 async function prints(page: Page): Promise<{
   id: string; drawn: number; natural: number; inside: boolean; src: string
 }[]> {
-  return page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.print')].map((sheet) => {
-    const img = sheet.querySelector('img')!
-    // Layout boxes, not bounding rects: the sheets are tilted by hand, and a
-    // rotated rectangle's bounding box is a different shape from the
-    // rectangle. What is being judged is the box the picture was laid into.
+  return page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-artwork]')].map((sheet) => {
+    // In a felt frame the picture sits in the window's mount; in the wooden
+    // frame, in the sheet itself.
+    const img = sheet.querySelector<HTMLImageElement>('.frame__img, .print__img')!
+    const box = img.parentElement!
+    // Layout boxes, not bounding rects: what is judged is the box the picture
+    // was laid into.
     return {
       id: sheet.dataset['artwork'] ?? '',
       drawn: img.offsetHeight ? img.offsetWidth / img.offsetHeight : 0,
       natural: img.naturalHeight ? img.naturalWidth / img.naturalHeight : 0,
-      // Inside its own sheet: a picture that reaches past the frame is a
-      // picture the frame is not big enough for.
+      // Inside its own window: a picture that reaches past it is cut off.
       inside: img.offsetLeft >= -1 && img.offsetTop >= -1
-        && img.offsetLeft + img.offsetWidth <= sheet.offsetWidth + 1
-        && img.offsetTop + img.offsetHeight <= sheet.offsetHeight + 1,
+        && img.offsetLeft + img.offsetWidth <= box.offsetWidth + 1
+        && img.offsetTop + img.offsetHeight <= box.offsetHeight + 1,
       src: img.getAttribute('src') ?? '',
     }
   }))
@@ -99,55 +99,81 @@ for (const view of [
       }
     })
 
-    test('no white or cream matte: every frame is the picture\'s own shape', async ({ page }) => {
-      // The wall used to put every piece on a cream sheet shaped like the
-      // painted poster, so a wide picture floated in paper. The frame is now
-      // the picture plus an even edge, and that edge is never paper.
+    test('the four works hang in felt frames as one set, RUBATO in the wooden one', async ({ page }) => {
       await enter(page)
-      const frames = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.print')].map((sheet) => {
-        const img = sheet.querySelector('img')!
-        const edge = parseFloat(getComputedStyle(sheet).getPropertyValue('--edge')) || 0
-        const s = { w: sheet.offsetWidth, h: sheet.offsetHeight }
-        const i = { w: img.offsetWidth, h: img.offsetHeight, l: img.offsetLeft, t: img.offsetTop }
-        const bg = getComputedStyle(sheet).backgroundColor
-        return { id: sheet.dataset['artwork'], mount: sheet.dataset['mount'], s, i, edge, bg,
-          hasCaptionStrip: !!sheet.querySelector('.print__cap') }
+      const hung = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-artwork]')].map((sheet) => {
+        const felt = sheet.querySelector<HTMLImageElement>('.frame__felt')
+        const mount = sheet.querySelector<HTMLElement>('.frame__mount')
+        const img = sheet.querySelector<HTMLImageElement>('.frame__img, .print__img')!
+        const r = sheet.getBoundingClientRect()
+        return {
+          id: sheet.dataset['artwork'], mount: sheet.dataset['mount'],
+          felt: felt ? felt.naturalWidth : null,
+          // How much of the window is picture, and what the rest of it is.
+          filled: mount ? (img.offsetWidth * img.offsetHeight) / (mount.offsetWidth * mount.offsetHeight) : 1,
+          matBg: mount ? getComputedStyle(mount).backgroundColor : '',
+          top: r.top, bottom: r.bottom, left: r.left, right: r.right, h: r.height,
+          caption: !!sheet.querySelector('.print__cap, .print__tape'),
+        }
       }))
-      expect(frames).toHaveLength(5)
+      const frames = hung.filter((f) => f.mount === 'frame')
+      expect(frames.map((f) => f.id).sort()).toEqual(['liminal-keyart', 'lumiora-keyart', 'lunai-keyart', 'wormup-keyart'])
+      expect(hung.filter((f) => f.mount === 'wood').map((f) => f.id)).toEqual(['rubato-opera'])
       for (const f of frames) {
-        expect(f.hasCaptionStrip, `${f.id} still has a paper caption strip`).toBe(false)
-        // Even edge all round: sheet = picture + 2×edge, picture at (edge, edge).
-        expect(Math.abs(f.s.w - (f.i.w + 2 * f.edge)), `${f.id} width matte`).toBeLessThanOrEqual(1)
-        expect(Math.abs(f.s.h - (f.i.h + 2 * f.edge)), `${f.id} height matte`).toBeLessThanOrEqual(1)
-        expect(f.i.l).toBeCloseTo(f.edge, 0)
-        expect(f.i.t).toBeCloseTo(f.edge, 0)
-        expect(f.edge, `${f.id} edge is a frame, not a mat`).toBeLessThanOrEqual(6)
-        // Whatever the edge is painted, it is not paper-white.
-        const [r, g, b] = (f.bg.match(/\d+/g) ?? ['0', '0', '0']).map(Number)
-        const alpha = /rgba\(.*,\s*0\)$/.test(f.bg) ? 0 : 1
-        if (alpha) expect(Math.min(r!, g!, b!), `${f.id} frame is ${f.bg}`).toBeLessThan(200)
+        expect(f.felt, `${f.id}: its felt frame never arrived`).toBeGreaterThan(0)
+        expect(f.caption, `${f.id} still has tape or a paper strip`).toBe(false)
+        // A mount, not a margin: most of the window is the picture. The
+        // windows are all about 0.65 wide-to-tall, and LUMIORA's key art is
+        // 0.80, so its mount is the widest of the four at about a ninth of
+        // the window top and bottom — the picture is still whole, and never
+        // cropped to fill the hole.
+        expect(f.filled, `${f.id} floats in its window`).toBeGreaterThan(0.8)
+        // …and what is not is felt, never paper.
+        const [r, g, b] = (f.matBg.match(/\d+/g) ?? ['255', '255', '255']).map(Number)
+        expect(Math.max(r!, g!, b!), `${f.id} mount is ${f.matBg}`).toBeLessThan(120)
       }
-      expect(new Set(frames.map((f) => f.mount)).size, 'one mount for everything is a grid').toBeGreaterThanOrEqual(2)
+      // One row: the frames are much the same height, top to top, and hang
+      // apart from each other, left to right.
+      const row = [...frames].sort((a, b) => a.left - b.left)
+      const tallest = Math.max(...row.map((f) => f.h))
+      for (const f of row) {
+        expect(Math.abs(f.top - row[0]!.top), `${f.id} hangs out of line`).toBeLessThan(tallest * 0.03)
+        expect(f.h / tallest, `${f.id} is not the others' size`).toBeGreaterThan(0.95)
+      }
+      for (let i = 1; i < row.length; i++) {
+        expect(row[i]!.left - row[i - 1]!.right, `${row[i - 1]!.id} and ${row[i]!.id} touch`).toBeGreaterThan(0)
+      }
     })
 
-    test('each print covers the painted thing it hangs over', async ({ page }) => {
+    test('each frame covers the painted poster it hangs over', async ({ page }) => {
       await enter(page)
-      const cover = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.thing')]
-        .filter((t) => t.querySelector('.print')).map((t) => {
-          const sheet = t.querySelector<HTMLElement>('.print')!
-          const lift = t.querySelector<HTMLElement>('.thing__lift')
-          // The painted rect is the thing minus its hit padding, which is
-          // where the lift layer is laid.
-          const paintW = lift ? lift.offsetWidth : 0
-          const paintH = lift ? lift.offsetHeight : 0
-          return { id: t.dataset['object'], w: sheet.offsetWidth, h: sheet.offsetHeight, paintW, paintH }
-        }))
-      expect(cover.length).toBe(5)
+      const cover = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.thing[data-painted]')].map((t) => {
+        const sheet = t.querySelector<HTMLElement>('.frame')!
+        const [px, py, pw, ph] = t.dataset['painted']!.split(' ').map(Number)
+        const [bx, by, bw, bh] = sheet.dataset['body']!.split(' ').map(Number)
+        // All in the thing's own (world) units: offsets, not screen pixels.
+        const x = sheet.offsetLeft + bx! * sheet.offsetWidth
+        const y = sheet.offsetTop + by! * sheet.offsetHeight
+        return { id: t.dataset['object'], body: { l: x, t: y, r: x + bw! * sheet.offsetWidth, b: y + bh! * sheet.offsetHeight },
+          painted: { l: px!, t: py!, r: px! + pw!, b: py! + ph! } }
+      }))
+      expect(cover.length).toBe(4)
       for (const c of cover) {
-        expect(c.paintW, `${c.id}: no painted rect measured`).toBeGreaterThan(0)
-        expect(c.w, `${c.id} narrower than the painted one`).toBeGreaterThanOrEqual(c.paintW)
-        expect(c.h, `${c.id} shorter than the painted one`).toBeGreaterThanOrEqual(c.paintH)
+        expect(c.body.l, `${c.id}: painted poster shows on the left`).toBeLessThanOrEqual(c.painted.l)
+        expect(c.body.t, `${c.id}: painted poster shows at the top`).toBeLessThanOrEqual(c.painted.t)
+        expect(c.body.r, `${c.id}: painted poster shows on the right`).toBeGreaterThanOrEqual(c.painted.r)
+        expect(c.body.b, `${c.id}: painted poster shows at the bottom`).toBeGreaterThanOrEqual(c.painted.b)
       }
+      // RUBATO's print covers the painted frame it hangs in (the lift layer is
+      // laid on the painted rect).
+      const wood = await page.locator('[data-object="picture-rubato"]').evaluate((t) => {
+        const sheet = t.querySelector<HTMLElement>('.print')!
+        const lift = t.querySelector<HTMLElement>('.thing__lift')!
+        return { w: sheet.offsetWidth, h: sheet.offsetHeight, pw: lift.offsetWidth, ph: lift.offsetHeight }
+      })
+      expect(wood.pw).toBeGreaterThan(0)
+      expect(wood.w).toBeGreaterThanOrEqual(wood.pw)
+      expect(wood.h).toBeGreaterThanOrEqual(wood.ph)
     })
 
     test('a tall picture is tall and a wide one is wide', async ({ page }) => {
@@ -212,7 +238,12 @@ test.describe('desktop', () => {
     // viewer and must not be on the way in. A wall that arrives as five
     // 1600px pictures is a wall nobody on a phone gets to see.
     const got: { url: string; size: number }[] = []
+    const frames: { url: string; size: number }[] = []
     page.on('response', async (r) => {
+      if (r.url().includes('/garage/frames/')) {
+        frames.push({ url: r.url(), size: Number(r.headers()['content-length'] ?? 0) })
+        return
+      }
       if (!r.url().includes('/artwork/')) return
       const len = Number(r.headers()['content-length'] ?? 0)
       got.push({ url: r.url(), size: len })
@@ -227,5 +258,9 @@ test.describe('desktop', () => {
     const total = got.reduce((n, g) => n + g.size, 0)
     // The five wall prints together are well under a fifth of a megabyte.
     expect(total, `wall prints total ${total} bytes`).toBeLessThan(220_000)
+    // And the four felt frames round them, a fraction of that again.
+    expect(frames.length, 'the frames were not fetched').toBe(4)
+    const felt = frames.reduce((n, g) => n + g.size, 0)
+    expect(felt, `felt frames total ${felt} bytes`).toBeLessThan(100_000)
   })
 })

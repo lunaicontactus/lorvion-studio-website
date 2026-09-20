@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CHARACTERS, MAX_ACTIVE_CHARACTERS, getCharacter } from '@/data/characters'
-import { PROJECTS, VISIBLE_PROJECTS, getProject } from '@/data/projects'
+import { PROJECTS, coverOf, getProject } from '@/data/projects'
 import { ARTWORK, artworkFor, orientationOf } from '@/data/artwork'
 import { EASTER_EGGS } from '@/data/easterEggs'
 import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART, PROP_ART, PROP_NAMES } from '@/data/alley'
@@ -49,23 +49,16 @@ describe('project data', () => {
     expect(new Set(PROJECTS.map((p) => p.id)).size).toBe(PROJECTS.length)
   })
 
-  it('shows RUBATO the game without claiming RUBATO the release', () => {
-    // It has a picture now — one of the game's own backgrounds — and that is
-    // a different fact from having a date. The frame is filled; the status is
-    // unchanged.
-    const rubato = getProject('rubato')
-    expect(rubato).toBeDefined()
-    expect(rubato?.keyArt).toBe('/assets/images/artwork/rubato-opera-full.webp')
-    expect(rubato?.status).toBe('comingSoon')
+  it('claims no release: none of the five has a store page', () => {
+    // A picture of a game and a release are different facts. RUBATO has its
+    // opera house on the wall and is still in development.
+    for (const p of PROJECTS) expect(p.status, p.id).not.toBe('released')
+    expect(getProject('rubato')?.keyArt).toBe('/assets/images/artwork/rubato-opera-full.webp')
   })
 
-  it('gives every project a real picture, and knows the shape of it', () => {
-    // Nothing is listed without art any more, so nothing renders as an empty
-    // frame — and every picture's own proportions are on record, because that
-    // is what every frame in the room is built from.
-    expect(VISIBLE_PROJECTS).toHaveLength(PROJECTS.length)
+  it('gives every project a real picture, and knows the shape of the one on the wall', () => {
     for (const p of PROJECTS) {
-      expect(p.keyArt, p.id).toMatch(/^\/assets\/images\/.+\.(webp|png|jpg)$/)
+      expect(coverOf(p), p.id).toMatch(/^\/assets\/images\/.+\.(webp|png|jpg)$/)
       const piece = artworkFor(p.id)
       expect(piece, p.id).toBeDefined()
       expect(piece!.width, p.id).toBeGreaterThan(0)
