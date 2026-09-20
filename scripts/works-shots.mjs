@@ -34,11 +34,13 @@ for (const [name, w, h, mobile] of [['desktop', 1440, 900, false], ['portrait', 
     await page.screenshot({ path: `${out}/${name}_${id}_top.png` })
     await page.screenshot({ path: `${out}/${name}_${id}_full.png`, fullPage: true })
   }
-  await page.goto(`${origin}/works/lumiora.html`); await settle()
+  // RUBATO has several pictures; LUMIORA's page has one.
+  await page.goto(`${origin}/works/rubato.html`); await settle()
   await page.locator('[data-shot="1"]').click()
   await page.waitForFunction(() => document.querySelector('.work-view__img')?.complete)
   await page.screenshot({ path: `${out}/${name}_viewer.png` })
   await page.keyboard.press('Escape')
+  await page.goto(`${origin}/works/liminal.html`); await settle()
   await page.locator('[data-traces]').click()
   await page.waitForFunction(() => document.querySelector('.work-view__img')?.complete)
   await page.screenshot({ path: `${out}/${name}_traces.png` })

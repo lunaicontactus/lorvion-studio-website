@@ -100,9 +100,11 @@ html:has(body.works-page){background:#170f0a}
   font:700 .66rem/1 var(--mono);letter-spacing:.14em;color:#fbeccb;background:#6a4426;
   outline:1px dashed rgba(251,236,203,.55);outline-offset:-4px;
 }
-.record__status[data-status="testflight"],.work-tags [data-status="testflight"]{background:#35604f}
-.record__status[data-status="prototype"],.work-tags [data-status="prototype"]{background:#27586a}
-.record__status[data-status="inDevelopment"],.work-tags [data-status="inDevelopment"]{background:#7a4a24}
+.record__status[data-state="inDevelopment"]{background:#7a4a24}
+.record__status[data-state="comingSoon"]{background:#4a4130}
+.record__status[data-state="concept"]{background:#3f4a58}
+.record__status[data-state="testing"],.record__status[data-state="available"]{background:#35604f}
+.record__status[data-state="released"]{background:#2f6a44}
 
 /* LUNAI — a diary bound in purple felt, a moon on the cover, an elastic band. */
 .record--lunai{
@@ -210,8 +212,9 @@ html:has(body.works-page){background:#170f0a}
 .work-tags .work-tags__wide{grid-column:1/-1}
 .work-tags dt{font:700 .6rem/1 var(--mono);letter-spacing:.2em;color:#8a5a2c;margin-bottom:5px}
 .work-tags dd{margin:0;font-weight:700;font-size:.92rem;line-height:1.4}
-.work-tags dd[data-status]{display:inline-block;padding:.2em .6em;border-radius:3px;color:#fbeccb;font:700 .74rem/1.4 var(--mono);letter-spacing:.1em}
 .work-links{display:flex;flex-wrap:wrap;gap:10px;margin:0}
+.work-hero__state{margin:0}
+.work-hero__state .record__status{display:inline-block}
 .work-link{
   display:inline-flex;align-items:center;gap:.4em;min-height:44px;padding:0 1.1em;border-radius:8px;
   background:#3f2a18;color:#fbeccb;font:700 .78rem/1 var(--mono);letter-spacing:.08em;text-decoration:none;
@@ -226,7 +229,6 @@ a.work-link:hover{background:#5a3c22}
   background:var(--wk-felt-dark);color:#f0d9a8;font:800 .74rem/1 var(--mono);letter-spacing:.24em;
   outline:1.5px dashed var(--wk-thread);outline-offset:-5px;box-shadow:0 4px 10px rgba(0,0,0,.35);
 }
-.work-sec__note{margin:-8px 0 14px;font:600 .74rem/1.4 var(--mono);color:var(--wk-muted)}
 
 /* WHAT IS THIS? — a note pinned to the board. */
 .work-note__paper{
@@ -268,29 +270,26 @@ a.work-link:hover{background:#5a3c22}
 [data-works-detail="lumiora"] .work-list__n{background:#9ff0dd;box-shadow:0 0 12px rgba(160,245,225,.7)}
 [data-works-detail="lumiora"] .work-list__row:last-child b{color:#bff7ea}
 
-/* CURRENT BUILD — the list on the bench, ticked in thread. */
-.work-build{list-style:none;margin:0;padding:10px 22px;max-width:820px;border-radius:10px;
+/* FEATURES — what the work already promises, on stitched lines. */
+.work-features{list-style:none;margin:0;padding:18px 22px;max-width:820px;display:grid;gap:2px;border-radius:10px;
   background:linear-gradient(160deg,#3a2616,#24170e);box-shadow:0 12px 24px rgba(0,0,0,.45),inset 0 0 0 1.5px rgba(236,196,128,.14)}
-.work-build__item{display:grid;grid-template-columns:30px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px dashed rgba(236,196,128,.18)}
-.work-build__item:last-child{border-bottom:0}
-.work-build__mark{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;font-weight:900;font-size:.9rem;border:1.5px solid currentColor}
-.work-build__item[data-state="done"] .work-build__mark{color:#9fdcae;background:rgba(159,220,174,.14)}
-.work-build__item[data-state="doing"] .work-build__mark{color:#f2c14e;background:rgba(242,193,78,.12)}
-.work-build__item[data-state="todo"] .work-build__mark{color:#a99b85}
-.work-build__item[data-state="todo"] .work-build__label{color:#bfae90}
-.work-build__state{font:700 .66rem/1 var(--mono);letter-spacing:.12em;color:var(--wk-muted)}
+.work-features li{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;padding:11px 0;border-bottom:1px dashed rgba(236,196,128,.18);line-height:1.55}
+.work-features li:last-child{border-bottom:0}
+.work-features li::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--accent);transform:translateY(-1px)}
 
-/* DEV LOG — dated strips of tape down a thread. */
-.work-log{list-style:none;margin:0;padding:0 0 0 22px;max-width:820px;position:relative}
-.work-log::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;border-left:2px dashed var(--wk-thread)}
-.work-log__entry{position:relative;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:baseline;padding:10px 0 14px}
-.work-log__entry::before{content:"";position:absolute;left:-21px;top:17px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(23,15,10,.9)}
-.work-log__date{padding:.35em .7em;background:rgba(240,200,120,.88);color:#3b2718;font:800 .72rem/1 var(--mono);letter-spacing:.06em;transform:rotate(-1.5deg);box-shadow:0 2px 4px rgba(0,0,0,.3)}
-.work-log__text{line-height:1.65}
-.work-log__ref{font:600 .72rem/1 var(--mono);color:var(--wk-muted);opacity:.8}
+/* UPDATE NOTES — only for a work that is out, and only when there are any. */
+.work-updates{list-style:none;margin:0;padding:0;max-width:820px;display:grid;gap:18px}
+.work-update{padding:20px 22px;border-radius:4px;background:linear-gradient(180deg,#f6ead0,#ecdcb8);color:var(--wk-ink);box-shadow:0 10px 20px rgba(0,0,0,.4)}
+.work-update__head{display:flex;flex-wrap:wrap;align-items:baseline;gap:.6em;margin:0 0 .6em}
+.work-update__head b{font:800 1.05rem/1 var(--mono)}
+.work-update__head time{margin-left:auto;font:700 .74rem/1 var(--mono);color:#8a5a2c}
+.work-update ul{margin:0;padding-left:1.1em;line-height:1.7}
 
 /* GALLERY — prints, pulled out one at a time. */
 .work-gallery{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:22px}
+/* One picture on its own is shown at a size worth looking at, not as a
+   thumbnail with an empty row beside it. */
+.work-gallery li:only-child{grid-column:span 2;max-width:460px}
 .work-shot{
   display:grid;gap:8px;width:100%;padding:8px 8px 12px;border:0;border-radius:3px;cursor:zoom-in;text-align:left;
   background:#fbf6ea;color:var(--wk-ink);box-shadow:0 8px 16px rgba(0,0,0,.4);transition:transform 260ms var(--ease);
@@ -300,10 +299,7 @@ a.work-link:hover{background:#5a3c22}
 .work-shot:hover,.work-shot:focus-visible{transform:rotate(0) translateY(-4px)}
 .work-shot img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#1a120c}
 .work-shot__cap{font-size:.84rem;line-height:1.45}
-.work-shot__kind{justify-self:start;padding:.3em .55em;border-radius:3px;font:700 .6rem/1 var(--mono);letter-spacing:.1em;background:#e6d6b3;color:#6a4426}
-.work-shot__kind[data-kind="greybox"]{background:#f2c14e;color:#3b2718}
-.work-shot__kind[data-kind="concept"]{background:#c9dde6;color:#23424f}
-.work-traces{margin:26px 0 0}
+.work-traces{margin:22px 0 0}
 .work-traces__go{
   display:inline-flex;align-items:center;gap:.8em;min-height:48px;padding:0 1.3em;border:0;border-radius:10px;cursor:pointer;
   background:#f6ead0;color:var(--wk-ink);font:800 .9rem/1 inherit;
@@ -352,8 +348,7 @@ body.is-viewing{overflow:hidden}
   .work-tags{grid-template-columns:1fr 1fr}
   .work-list__row{grid-template-columns:30px 1fr;gap:4px 12px}
   .work-list__row span:last-child{grid-column:2}
-  .work-log__entry{grid-template-columns:1fr;gap:6px}
-  .work-log__date{justify-self:start}
+  .work-update__head time{margin-left:0;flex-basis:100%}
   .work-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
   .work-note__paper{padding:22px 20px;font-size:1rem}
 }

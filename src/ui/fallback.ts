@@ -7,7 +7,7 @@
  * the room open, rendered from the same registries, so the two can never
  * drift apart. The works have their own pages (src/ui/works.ts).
  */
-import { PROJECTS, STATUS_LABEL, workHref } from '@/data/projects'
+import { PROJECTS, STATE_LABEL, workHref } from '@/data/projects'
 import { SITE_CONFIG, contactRows } from '@/data/site'
 import { CHARACTERS } from '@/data/characters'
 
@@ -16,7 +16,7 @@ function studio(host: HTMLElement): void {
     (c) => `<li><b>${c.name}</b><span>${c.trait}</span></li>`,
   ).join('')
   const making = PROJECTS.map(
-    (p) => `<li><a href="${workHref(p.id)}">${p.title}</a> <span>${p.kind} · ${STATUS_LABEL[p.status]}</span></li>`,
+    (p) => `<li><a href="${workHref(p.id)}">${p.title}</a> <span>${p.kind} · ${STATE_LABEL[p.releaseState]}</span></li>`,
   ).join('')
   const contact = contactRows()
     .map((r) => `<a class="fb-mail" href="${r.href}">${r.value} <span aria-hidden="true">↗</span></a>`)

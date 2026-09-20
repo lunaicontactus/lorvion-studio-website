@@ -7,16 +7,21 @@
  *   works.html          the index: each work as its own kind of object on the
  *                       table — a diary, a case file, a trail map, a score
  *                       book, a letter with a ticket — not five equal cards.
- *   works/<id>.html     one work's bench: what it is, what a player does, how
- *                       far it has got, the log of real commits, its pictures,
- *                       and the traces of it kept on the archive's polaroids.
+ *   works/<id>.html     one work: what it is, what a player does in it, what
+ *                       it promises, its world, its pictures — and, once it is
+ *                       out, what has changed for the people playing it.
+ *
+ * What is deliberately not here: how far the build has got, what is being
+ * implemented this week, commits, test numbers. A visitor came to see the
+ * work. The making is in the archive's polaroids, one small way in from each
+ * page.
  *
  * The title and the one line are in each page's own markup (so they are there
  * without scripts, and for anything that reads the page before it runs); the
  * rest is built here. Pictures open on request, one at a time, in a viewer
  * that keeps the keyboard where it was.
  */
-import { PROJECTS, STATUS_LABEL, coverOf, getProject, workHref, workPicture } from '@/data/projects'
+import { PROJECTS, STATE_LABEL, coverOf, getProject, updatesOf, workHref, workPicture } from '@/data/projects'
 import { artworkFor, wallSrc } from '@/data/artwork'
 import { polaroidsOf } from '@/data/polaroids'
 import type { ProjectConfig } from '@/types/project'
@@ -80,7 +85,7 @@ function renderIndex(host: HTMLElement): void {
           <span class="record__title">${esc(p.title)}</span>
           <span class="record__line">${esc(p.taglineKo)}</span>
           <span class="record__meta">${esc(p.genre)} · ${esc(p.platforms.join(' · '))}</span>
-          <span class="record__status" data-status="${p.status}">${STATUS_LABEL[p.status]}</span>
+          <span class="record__status" data-state="${p.releaseState}">${STATE_LABEL[p.releaseState]}</span>
         </span>
       </a>
     </li>`
@@ -88,10 +93,6 @@ function renderIndex(host: HTMLElement): void {
 }
 
 // ── One work ───────────────────────────────────────────────────────────────
-
-const BUILD_MARK = { done: '✓', doing: '◐', todo: '○' } as const
-const BUILD_WORD = { done: '완료', doing: '진행 중', todo: '예정' } as const
-const KIND_WORD = { screen: '게임 화면', art: '작품 그림', concept: '컨셉 아트', greybox: '그레이박스' } as const
 
 function renderWork(main: HTMLElement, p: ProjectConfig): void {
   main.style.setProperty('--accent', p.accent)
@@ -113,24 +114,22 @@ function renderWork(main: HTMLElement, p: ProjectConfig): void {
   text?.insertAdjacentHTML('afterbegin', `<p class="work-hero__kicker">${esc(p.kind)}</p>`)
   text?.insertAdjacentHTML('beforeend', `
     <dl class="work-tags">
-      <div><dt>TYPE</dt><dd>${esc(p.genre)}</dd></div>
+      <div><dt>TYPE</dt><dd>${esc(p.kind)}</dd></div>
+      <div><dt>GENRE</dt><dd>${esc(p.genre)}</dd></div>
       <div><dt>PLATFORM</dt><dd>${esc(p.platforms.join(' · '))}</dd></div>
-      <div><dt>STATUS</dt><dd data-status="${p.status}">${STATUS_LABEL[p.status]}</dd></div>
-      <div><dt>ENGINE</dt><dd>${esc(p.engine)}</dd></div>
-      <div class="work-tags__wide"><dt>NOW</dt><dd>${esc(p.milestone)}</dd></div>
+      ${p.perspective ? `<div><dt>PERSPECTIVE</dt><dd>${esc(p.perspective)}</dd></div>` : ''}
     </dl>
-    <p class="work-links">${p.links.map((l) => l.href
-      ? `<a class="work-link" href="${l.href}">${esc(l.label)} <span aria-hidden="true">↗</span></a>`
-      : `<span class="work-link work-link--note">${esc(l.label)}</span>`).join('')}</p>`)
+    <p class="work-hero__state"><span class="record__status" data-state="${p.releaseState}">${STATE_LABEL[p.releaseState]}</span></p>`)
 
   const traces = polaroidsOf(p.id)
+  const updates = updatesOf(p)
   const index = PROJECTS.findIndex((x) => x.id === p.id)
   const prev = PROJECTS[(index + PROJECTS.length - 1) % PROJECTS.length]!
   const next = PROJECTS[(index + 1) % PROJECTS.length]!
 
   body.innerHTML = `
     <section class="work-sec work-note" aria-labelledby="about-h">
-      <h2 class="work-sec__h" id="about-h">WHAT IS THIS?</h2>
+      <h2 class="work-sec__h" id="about-h">ABOUT</h2>
       <div class="work-note__paper">${p.about.map((l) => `<p>${esc(l)}</p>`).join('')}</div>
     </section>
 
@@ -149,27 +148,9 @@ function renderWork(main: HTMLElement, p: ProjectConfig): void {
       </ol>
     </section>`).join('')}
 
-    <section class="work-sec" aria-labelledby="build-h">
-      <h2 class="work-sec__h" id="build-h">CURRENT BUILD</h2>
-      <p class="work-sec__note">${p.asOf} 기준 · 프로젝트의 작업 기록에서</p>
-      <ul class="work-build">${p.build.map((b) => `
-        <li class="work-build__item" data-state="${b.state}">
-          <span class="work-build__mark" aria-hidden="true">${BUILD_MARK[b.state]}</span>
-          <span class="work-build__label">${esc(b.label)}</span>
-          <span class="work-build__state">${BUILD_WORD[b.state]}</span>
-        </li>`).join('')}
-      </ul>
-    </section>
-
-    <section class="work-sec" aria-labelledby="log-h">
-      <h2 class="work-sec__h" id="log-h">DEV LOG</h2>
-      <ol class="work-log">${p.devLog.map((d) => `
-        <li class="work-log__entry">
-          <time class="work-log__date" datetime="${d.date.replace(/\./g, '-')}">${d.date}</time>
-          <span class="work-log__text">${esc(d.text)}</span>
-          <code class="work-log__ref" title="커밋">${esc(d.ref)}</code>
-        </li>`).join('')}
-      </ol>
+    <section class="work-sec" aria-labelledby="features-h">
+      <h2 class="work-sec__h" id="features-h">FEATURES</h2>
+      <ul class="work-features">${p.features.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
     </section>
 
     <section class="work-sec" aria-labelledby="gallery-h">
@@ -178,9 +159,27 @@ function renderWork(main: HTMLElement, p: ProjectConfig): void {
         <li><button class="work-shot" type="button" data-shot="${k}" aria-label="${esc(g.caption)} 크게 보기">
           <img src="${workPicture(p.id, g.name, 'thumb')}" alt="" loading="lazy" decoding="async">
           <span class="work-shot__cap">${esc(g.caption)}</span>
-          <span class="work-shot__kind" data-kind="${g.kind}">${KIND_WORD[g.kind]}</span>
         </button></li>`).join('')}
       </ul>
+    </section>
+
+    ${updates.length ? `
+    <section class="work-sec" aria-labelledby="updates-h">
+      <h2 class="work-sec__h" id="updates-h">UPDATE NOTES</h2>
+      <ol class="work-updates">${updates.map((u) => `
+        <li class="work-update">
+          <p class="work-update__head"><b>v${esc(u.version)}</b> <span>${esc(u.title)}</span>
+            <time datetime="${u.date.replace(/\./g, '-')}">${esc(u.date)}</time></p>
+          <ul>${u.changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
+        </li>`).join('')}
+      </ol>
+    </section>` : ''}
+
+    <section class="work-sec" aria-labelledby="links-h">
+      <h2 class="work-sec__h" id="links-h">LINKS</h2>
+      <p class="work-links work-links--foot">${p.links.map((l) => l.href
+        ? `<a class="work-link" href="${l.href}">${esc(l.label)} <span aria-hidden="true">↗</span></a>`
+        : `<span class="work-link work-link--note">${esc(l.label)}</span>`).join('')}</p>
       ${traces.length ? `<p class="work-traces"><button class="work-traces__go" type="button" data-traces>
         작업 흔적 보기 <span class="work-traces__n">폴라로이드 ${traces.length}장</span></button></p>` : ''}
     </section>
@@ -194,7 +193,7 @@ function renderWork(main: HTMLElement, p: ProjectConfig): void {
   const viewer = makeViewer()
   main.append(viewer.el)
   const shots = p.gallery.map((g) => ({
-    src: workPicture(p.id, g.name, 'full'), w: g.w, h: g.h, caption: g.caption, tag: KIND_WORD[g.kind], polaroid: false,
+    src: workPicture(p.id, g.name, 'full'), w: g.w, h: g.h, caption: g.caption, tag: '', polaroid: false,
   }))
   for (const btn of body.querySelectorAll<HTMLButtonElement>('[data-shot]')) {
     btn.addEventListener('click', () => viewer.open(shots, Number(btn.dataset['shot']), btn))

@@ -56,14 +56,25 @@ const GAMES: readonly Polaroid[] = PROJECTS.flatMap((p) => {
 })
 
 /**
- * Working traces from the works themselves: a screen of the running build, a
- * greybox — two at most from each, from its page's own gallery.
+ * The making, kept here rather than on the works' own pages: a screen of a
+ * running build, a greybox of a world still being blocked out. This is what
+ * the archive is for — the works show the work, these show how it was made.
  */
-const TRACES: readonly Polaroid[] = PROJECTS.flatMap((p) =>
-  p.gallery.filter((g) => g.kind === 'screen' || g.kind === 'greybox').slice(0, 2).map((g) => ({
-    id: `trace-${p.id}-${g.name}`, src: workPicture(p.id, g.name, 'thumb'), title: g.caption, note: p.title,
-    category: 'dev' as const, projectId: p.id,
-  })))
+const TRACES: readonly Polaroid[] = [
+  { id: 'trace-lunai-album', project: 'lunai', name: 'album', title: '감정 음악 앨범 화면' },
+  { id: 'trace-lunai-room', project: 'lunai', name: 'room-chat', title: '캐릭터의 방, 만드는 중' },
+  { id: 'trace-liminal-hub', project: 'liminal', name: 'hub-backyard', title: '관리국 뒤뜰, 게임 화면' },
+  { id: 'trace-liminal-3d', project: 'liminal', name: 'case04-3d-landing', title: '3D 조사 · 그레이박스' },
+  { id: 'trace-liminal-3d-window', project: 'liminal', name: 'case04-3d-window', title: '기억의 층 · 그레이박스' },
+  { id: 'trace-lumiora-garden', project: 'lumiora', name: 'flow-garden', title: '물살이 되는 셈여림 · 그레이박스' },
+  { id: 'trace-lumiora-weave', project: 'lumiora', name: 'glass-weave', title: '이어지고 끊기는 다리 · 그레이박스' },
+  { id: 'trace-lumiora-cathedral', project: 'lumiora', name: 'pitch-cathedral', title: '선율의 높이 · 그레이박스' },
+  { id: 'trace-rubato-title', project: 'rubato', name: 'title', title: 'RUBATO 타이틀 화면' },
+  { id: 'trace-rubato-cafe', project: 'rubato', name: 'cafe-scene', title: '빈의 카페, 게임 화면' },
+].map((t) => ({
+  id: t.id, src: workPicture(t.project, t.name, 'thumb'), title: t.title,
+  note: PROJECTS.find((p) => p.id === t.project)?.title ?? '', category: 'dev' as const, projectId: t.project,
+}))
 
 /** The days of making, from the workbench's own record. */
 const MAKING: readonly Polaroid[] = WORKBENCH_ENTRIES.flatMap((w) =>

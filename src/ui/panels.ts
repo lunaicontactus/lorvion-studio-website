@@ -14,7 +14,7 @@
  * Content comes from the central registries — PROJECTS, SITE_CONFIG, the
  * discovery pools — never from strings typed into a component.
  */
-import { PROJECTS, STATUS_LABEL, coverOf, workHref } from '@/data/projects'
+import { PROJECTS, STATE_LABEL, coverOf, workHref } from '@/data/projects'
 import { artworkFor, fullSrc, orientationOf } from '@/data/artwork'
 import { contactRows } from '@/data/site'
 import { ROOM_ART } from '@/data/world'
@@ -483,7 +483,7 @@ export class Panels {
           <span class="hub__facts">${p.genre} · ${p.platforms.join(' · ')}</span>
         </span>
         <span class="hub__right">
-          <span class="hub__status" data-status="${p.status}">${STATUS_LABEL[p.status]}</span>
+          <span class="hub__status" data-state="${p.releaseState}">${STATE_LABEL[p.releaseState]}</span>
           <span class="hub__more">OPEN <span aria-hidden="true">›</span></span>
         </span>
       </button>`,
@@ -525,8 +525,8 @@ export class Panels {
             <p class="crtgame__tag crtgame__tag--ko">${project.taglineKo}</p>
             <dl class="crtgame__facts">
               <div><dt>TYPE</dt><dd>${project.kind}</dd></div>
-              <div><dt>STATUS</dt><dd>${STATUS_LABEL[project.status]}</dd></div>
-              <div><dt>NOW</dt><dd>${project.milestone}</dd></div>
+              <div><dt>GENRE</dt><dd>${project.genre}</dd></div>
+              <div><dt>STATUS</dt><dd>${STATE_LABEL[project.releaseState]}</dd></div>
             </dl>
             <div class="crtgame__links">${links}<a class="crtgame__full" href="${workHref(project.id)}" data-crt-open>작업대 열어 보기 <span aria-hidden="true">↗</span></a></div>
           </div>

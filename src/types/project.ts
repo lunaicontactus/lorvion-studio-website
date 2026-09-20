@@ -1,51 +1,55 @@
 /**
- * What a project is allowed to say about itself — the one shape the garage
- * PC, the WORKS index and each work's own page all read (src/data/projects.ts).
+ * What a work says about itself in public — the one shape the garage PC, the
+ * WORKS index and each work's own page read (src/data/projects.ts).
+ *
+ * Public only. How far the build has got, what is on the bench this week, the
+ * commits, the test numbers, the QA builds: none of that is here, because
+ * none of it belongs on a page about the work. The making is kept in the
+ * archive's polaroids; what changes after a release is kept in `updates`,
+ * written by hand.
  */
 
 /**
- * Where a project really is. Nothing is ever `released` unless a store page
- * exists. `testflight` is a build testers install through Apple's TestFlight
- * (not public); `prototype` is a playable proof of one part of the game.
+ * How far along a work is, said the way a visitor would say it. Never an
+ * internal stage (a greybox, a slice, a build number, a QA round): a work
+ * being built is `inDevelopment`, whatever this week's milestone is called.
+ * `testing` is for a test a visitor can actually join.
  */
-export type ProjectStatus = 'released' | 'testflight' | 'inDevelopment' | 'prototype' | 'comingSoon'
+export type ReleaseState = 'concept' | 'inDevelopment' | 'comingSoon' | 'testing' | 'available' | 'released'
 
 export interface ProjectLink {
   readonly label: string
-  /** Absent for a line that is not a link (a private build, COMING SOON). */
+  /** Absent for a line that is not a link (COMING SOON). */
   readonly href?: string
 }
 
-/** A thing done, being done, or not started — from the project's own records. */
-export interface BuildItem {
-  readonly label: string
-  readonly state: 'done' | 'doing' | 'todo'
-}
-
-/** One entry of the development log: a real commit in the project's repository. */
-export interface DevLogEntry {
-  /** YYYY.MM.DD, the commit's date. */
-  readonly date: string
-  readonly text: string
-  /** The commit's short hash. */
-  readonly ref: string
-}
-
-/** A picture from the project's own repository (scripts/works_images.py). */
+/** A picture of the work, from its own repository (scripts/works_images.py). */
 export interface GalleryPicture {
   /** File stem under /assets/images/works/<id>/. */
   readonly name: string
   readonly w: number
   readonly h: number
   readonly caption: string
-  /** What it is, so a greybox is never mistaken for the finished game. */
-  readonly kind: 'screen' | 'art' | 'concept' | 'greybox'
 }
 
-/** A list the page shows under its own heading (LUMIORA's composers, RUBATO's cast). */
+/** A list the work shows under its own heading (LUMIORA's worlds, RUBATO's cast). */
 export interface ProjectList {
   readonly title: string
   readonly rows: readonly { readonly name: string; readonly text: string }[]
+}
+
+/**
+ * What changed for the people playing it, after a release. Written by hand
+ * once an update is out — never generated from commits, which are a record of
+ * work, not of what a player will notice.
+ */
+export interface UpdateNote {
+  /** The version the product itself uses: `1.1`. */
+  readonly version: string
+  /** `2027.03.12` */
+  readonly date: string
+  readonly title: string
+  readonly changes: readonly string[]
 }
 
 export interface ProjectConfig {
@@ -55,31 +59,30 @@ export interface ProjectConfig {
   readonly tagline: string
   /** One line, Korean. */
   readonly taglineKo: string
-  /** What kind of thing it is (TYPE on its page). */
+  /** What kind of thing it is (TYPE). */
   readonly kind: string
   /** In two or three words. */
   readonly genre: string
   readonly platforms: readonly string[]
-  readonly status: ProjectStatus
-  readonly engine: string
-  /** Where it is now, in one line (CURRENT MILESTONE). */
-  readonly milestone: string
-  /** The key picture: the wall print's full copy, or a picture of the game. */
+  readonly releaseState: ReleaseState
+  /** Only where it is part of what the work is (LIMINAL's first person). */
+  readonly perspective?: string
   readonly keyArt: string | null
   readonly accent: string
   readonly links: readonly ProjectLink[]
-  /** Which world scene dresses this project on the PC. */
+  /** Which world scene dresses this work on the PC. */
   readonly world: string
-  /** WHAT IS THIS? — three to five short lines. */
+  /** ABOUT — three to five short lines about the work, not about making it. */
   readonly about: readonly string[]
   /** CORE EXPERIENCE — what a player actually does. */
   readonly core: readonly { readonly title: string; readonly text: string }[]
-  /** CURRENT BUILD, as of `asOf`. */
-  readonly build: readonly BuildItem[]
-  readonly asOf: string
-  readonly devLog: readonly DevLogEntry[]
+  /** FEATURES — what the work already promises. */
+  readonly features: readonly string[]
   readonly gallery: readonly GalleryPicture[]
+  /** WORLD / STORY, where a work has one to show. */
   readonly lists?: readonly ProjectList[]
+  /** Shown only once the work is out, and only if there are any. */
+  readonly updates?: readonly UpdateNote[]
   /** The picture the work's page opens on, if not the key art. */
   readonly hero?: { readonly name: string; readonly w: number; readonly h: number; readonly caption: string }
 }

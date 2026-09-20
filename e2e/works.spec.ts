@@ -62,15 +62,26 @@ test.describe('desktop', () => {
       const errors = watch(page)
       await page.goto(`/works/${id}.html`, { waitUntil: 'load' })
       await expect(page).toHaveTitle(/ — EUNGARAGE$/)
-      for (const h of ['WHAT IS THIS?', 'CORE EXPERIENCE', 'CURRENT BUILD', 'DEV LOG', 'GALLERY']) {
-        await expect(page.locator('.work-sec__h', { hasText: h })).toHaveCount(1)
+      for (const h of ['ABOUT', 'CORE EXPERIENCE', 'FEATURES', 'GALLERY', 'LINKS']) {
+        await expect(page.locator('.work-sec__h', { hasText: h }), h).toHaveCount(1)
       }
-      await expect(page.locator('.work-tags dt')).toHaveText(['TYPE', 'PLATFORM', 'STATUS', 'ENGINE', 'NOW'])
-      // Never RELEASED: nothing has a store page.
-      await expect(page.locator('.work-tags [data-status]')).not.toHaveText('RELEASED')
-      await expect(page.locator('.work-build__item[data-state="done"]').first()).toBeVisible()
-      // Every log entry is a dated commit.
-      for (const ref of await page.locator('.work-log__ref').allTextContents()) expect(ref).toMatch(/^[0-9a-f]{7,8}$/)
+      await expect(page.locator('.work-tags dt')).toHaveText(id === 'liminal'
+        ? ['TYPE', 'GENRE', 'PLATFORM', 'PERSPECTIVE']
+        : ['TYPE', 'GENRE', 'PLATFORM'])
+      // The work, not the workshop: nothing about how far the build has got.
+      for (const gone of ['CURRENT BUILD', 'DEV LOG', 'UPDATE NOTES']) {
+        await expect(page.locator('.work-sec__h', { hasText: gone }), gone).toHaveCount(0)
+      }
+      const page_text = await page.locator('body').innerText()
+      expect(page_text, `${id}: internal wording`).not.toMatch(
+        /그레이박스|greybox|vertical slice|커밋|commit|QA|TestFlight|테스트플라이트|Build \d|빌드 \d/i)
+      // No commit hash anywhere on the page, nor in what it tells a crawler.
+      expect(page_text, `${id}: a commit hash`).not.toMatch(/\b[0-9a-f]{7,8}\b/)
+      const meta = await page.evaluate(() => [document.title,
+        ...[...document.querySelectorAll('meta')].map((m) => m.getAttribute('content') ?? '')].join(' | '))
+      expect(meta, `${id}: metadata`).not.toMatch(/greybox|prototype|vertical slice|build \d|QA|commit/i)
+      // Its state is said the way a visitor says it.
+      await expect(page.locator('.work-hero__state .record__status')).toHaveText(/^(CONCEPT|IN DEVELOPMENT|COMING SOON|TESTING|AVAILABLE|RELEASED)$/)
       await expect(page.locator('.work-hero__frame img')).toHaveCount(1)
       expect(await picturesArrived(page)).toEqual([])
       expect(errors).toEqual([])
@@ -78,7 +89,7 @@ test.describe('desktop', () => {
   }
 
   test('a picture opens whole, turns, and gives the keyboard back', async ({ page }) => {
-    await page.goto('/works/lumiora.html', { waitUntil: 'load' })
+    await page.goto('/works/rubato.html', { waitUntil: 'load' })
     const first = page.locator('[data-shot="1"]')
     await first.click()
     const view = page.locator('.work-view')
@@ -100,6 +111,11 @@ test.describe('desktop', () => {
     await page.keyboard.press('Escape')
     await expect(view).toBeHidden()
     await expect(first).toBeFocused()
+
+    // A work with one picture opens it too, and says so.
+    await page.goto('/works/lumiora.html', { waitUntil: 'load' })
+    await page.locator('[data-shot="0"]').click()
+    await expect(page.locator('[data-view-count]')).toHaveText('1 / 1')
   })
 
   test('the traces are the work\'s own polaroids', async ({ page }) => {

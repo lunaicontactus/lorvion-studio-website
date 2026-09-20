@@ -128,3 +128,30 @@ which keeps each source path.
   where sound shapes the world" — is what the page says in English.
 - WORM UP!'s art rights (unverified in its own release doc) and the LUMIORA
   concept image (not in the canon docs): confirm before this goes live.
+
+## Public and internal (2026-09-20)
+
+WORKS shows the work; the archive shows how it was made; update notes will show
+what changed for players once something is out. The three never mix.
+
+Taken off the public pages, and out of `src/data/projects.ts` entirely:
+CURRENT BUILD (what is done/in progress/not started), DEV LOG (commits, dates,
+short hashes), the engine, the "NOW" milestone line, and every internal stage
+word — greybox, vertical slice, build number, QA round, prototype. A work in
+progress says `IN DEVELOPMENT` and nothing more; the states a page may show are
+CONCEPT, IN DEVELOPMENT, COMING SOON, TESTING, AVAILABLE, RELEASED (`ReleaseState`).
+TESTING is only for a test a visitor can join — LUNAI's TestFlight is internal
+QA, so LUNAI reads IN DEVELOPMENT and no longer mentions TestFlight at all.
+
+Each page is now: HERO (key art, title, one line, state) → PROJECT FACTS (type,
+genre, platform, and perspective where it is part of the work) → ABOUT → CORE
+EXPERIENCE → WORLD / STORY where there is one → FEATURES → GALLERY → UPDATE
+NOTES (only once released, and only if there are any) → LINKS → other works.
+
+`updates` is written by hand, never generated from commits: version, date,
+title, changes. Nothing is released, so no page renders the section at all —
+there is no empty box and no "no updates yet" line.
+
+The greybox and in-build screens moved from the works' galleries to the
+archive's polaroids (`TRACES` in src/data/polaroids.ts), which is where the
+making belongs. Each page keeps one small way in to its own photos.

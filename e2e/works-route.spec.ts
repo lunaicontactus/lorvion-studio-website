@@ -14,7 +14,7 @@ test('the works open in this browser, and Back comes back', async ({ page }) => 
   await page.locator('[data-record="lumiora"]').click()
   await expect(page).toHaveURL(/\/works\/lumiora\.html$/)
   await expect(page.locator('h1')).toHaveText('LUMIORA')
-  await expect(page.locator('.work-build__item').first()).toBeVisible()
+  await expect(page.locator('.work-features li').first()).toBeVisible()
   await page.goBack()
   await expect(page).toHaveURL(/\/works\.html$/)
   await expect(page.locator('[data-record]')).toHaveCount(5)

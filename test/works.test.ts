@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { PROJECTS, getProject, workPicture } from '@/data/projects'
+import { PROJECTS, getProject, updatesOf, workPicture } from '@/data/projects'
 import { POLAROIDS, polaroidsOf } from '@/data/polaroids'
 
 /**
@@ -18,49 +18,69 @@ describe('the works, as their records say', () => {
     for (const p of PROJECTS) expect(existsSync(`works/${p.id}.html`), p.id).toBe(true)
   })
 
-  it('claims no release, and links only to places that exist', () => {
+  it('says only how far along it is, in words a visitor uses', () => {
+    const PUBLIC = ['concept', 'inDevelopment', 'comingSoon', 'testing', 'available', 'released']
     for (const p of PROJECTS) {
-      expect(p.status, p.id).not.toBe('released')
+      expect(PUBLIC, p.id).toContain(p.releaseState)
+      // Never a stage from inside the work: a build number, a greybox, a
+      // slice, a QA round.
+      expect(p.releaseState, p.id).not.toMatch(/build|grey|slice|qa|prototype/i)
+    }
+  })
+
+  it('links only to places that exist, and promises no store it does not have', () => {
+    for (const p of PROJECTS) {
       for (const l of p.links) {
         if (!l.href) continue
-        // Only the site's own pages: no store link without a store page.
         expect(l.href, `${p.id}: ${l.label}`).toMatch(/^\/[a-z-]+\.html$/)
         expect(existsSync(l.href.slice(1)), `${p.id}: ${l.href}`).toBe(true)
       }
     }
   })
 
-  it('says what each is, what a player does, and how far it has got', () => {
+  it('keeps no internal record at all: no build, no log, no commits', () => {
+    for (const p of PROJECTS) {
+      const record = JSON.stringify(p)
+      // The words a development record is made of.
+      expect(record, `${p.id}: internal wording`).not.toMatch(
+        /그레이박스|greybox|vertical slice|버티컬|커밋|commit|빌드 \d|build \d|QA|테스트플라이트|TestFlight|프로토타입 \d|리팩터|구현 중|구현했|개발 중인/i)
+      // A commit's short hash: seven or eight hex digits standing alone.
+      expect(record, `${p.id}: a commit hash`).not.toMatch(/\b[0-9a-f]{7,8}\b(?![^"]*\.webp)/)
+      for (const key of ['build', 'devLog', 'asOf', 'milestone', 'engine', 'status']) {
+        expect(key in p, `${p.id} still carries ${key}`).toBe(false)
+      }
+    }
+  })
+
+  it('says what each is, what a player does, and what it promises', () => {
     for (const p of PROJECTS) {
       expect(p.about.length, p.id).toBeGreaterThanOrEqual(3)
       expect(p.about.length, p.id).toBeLessThanOrEqual(5)
       expect(p.core.length, p.id).toBeGreaterThanOrEqual(3)
       expect(p.core.length, p.id).toBeLessThanOrEqual(6)
-      const states = new Set(p.build.map((b) => b.state))
-      expect(states.has('done'), `${p.id}: nothing done`).toBe(true)
-      expect(states.has('todo') || states.has('doing'), `${p.id}: nothing left, which no work in development can say`).toBe(true)
-      expect(p.asOf).toMatch(/^2026\.\d\d\.\d\d$/)
-      for (const field of [p.kind, p.genre, p.engine, p.milestone]) expect(field.length, p.id).toBeGreaterThan(2)
+      expect(p.features.length, p.id).toBeGreaterThanOrEqual(3)
+      expect(p.features.length, p.id).toBeLessThanOrEqual(8)
+      for (const field of [p.kind, p.genre]) expect(field.length, p.id).toBeGreaterThan(2)
     }
   })
 
-  it('logs real commits: dated, hashed, newest first', () => {
+  it('shows update notes only for a work that is out, and only if there are any', () => {
     for (const p of PROJECTS) {
-      expect(p.devLog.length, p.id).toBeGreaterThanOrEqual(3)
-      expect(p.devLog.length, p.id).toBeLessThanOrEqual(8)
-      for (const d of p.devLog) {
-        expect(d.date, p.id).toMatch(/^2026\.\d\d\.\d\d$/)
-        expect(d.ref, p.id).toMatch(/^[0-9a-f]{7,8}$/)
-        expect(d.date <= p.asOf, `${p.id}: ${d.date} is after the record's own date`).toBe(true)
-      }
-      const dates = p.devLog.map((d) => d.date)
-      expect(dates, p.id).toEqual([...dates].sort().reverse())
+      // None of the five is released, so none of them shows notes — and an
+      // empty section is never rendered (e2e/works.spec.ts).
+      expect(updatesOf(p), p.id).toEqual([])
     }
+    // A released work with notes would show them.
+    const out = { ...PROJECTS[0]!, releaseState: 'released' as const,
+      updates: [{ version: '1.1', date: '2027.03.12', title: '봄 업데이트', changes: ['새 동료 두 종'] }] }
+    expect(updatesOf(out)).toHaveLength(1)
+    // A released work with none shows nothing rather than an empty box.
+    expect(updatesOf({ ...PROJECTS[0]!, releaseState: 'released' as const })).toEqual([])
   })
 
   it('shows only pictures that are there, in both sizes', () => {
     for (const p of PROJECTS) {
-      expect(p.gallery.length, p.id).toBeGreaterThanOrEqual(3)
+      expect(p.gallery.length, p.id).toBeGreaterThanOrEqual(1)
       expect(p.gallery.length, p.id).toBeLessThanOrEqual(8)
       const shown = [...p.gallery.map((g) => g.name), ...(p.hero ? [p.hero.name] : [])]
       for (const name of shown) {
@@ -87,7 +107,7 @@ describe('LUMIORA, as its current canon has it', () => {
   it('is the 3D musical narrative adventure, not the old children\'s app', () => {
     expect(lumiora.kind).toBe('Stylized 3D Musical Action-Adventure')
     expect(lumiora.platforms).toEqual(['PC'])
-    expect(lumiora.status).toBe('prototype')
+    expect(lumiora.releaseState).toBe('inDevelopment')
     const all = JSON.stringify(lumiora)
     expect(all).not.toMatch(/동화|유아|아이와|부모|교육|storybook|children|kids/i)
   })
@@ -99,10 +119,10 @@ describe('LUMIORA, as its current canon has it', () => {
     ])
   })
 
-  it('shows the greybox as a greybox', () => {
-    const greybox = lumiora.gallery.filter((g) => g.kind === 'greybox')
-    expect(greybox.length).toBeGreaterThanOrEqual(3)
-    for (const g of greybox) expect(g.caption).toContain('그레이박스')
+  it('keeps its greybox out of the public gallery, and in the archive', () => {
+    for (const g of lumiora.gallery) expect(g.caption, g.name).not.toContain('그레이박스')
+    const traces = polaroidsOf('lumiora')
+    expect(traces.some((t) => (t.title ?? '').includes('그레이박스'))).toBe(true)
   })
 })
 

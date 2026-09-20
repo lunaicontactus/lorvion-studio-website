@@ -52,7 +52,7 @@ describe('project data', () => {
   it('claims no release: none of the five has a store page', () => {
     // A picture of a game and a release are different facts. RUBATO has its
     // opera house on the wall and is still in development.
-    for (const p of PROJECTS) expect(p.status, p.id).not.toBe('released')
+    for (const p of PROJECTS) expect(p.releaseState, p.id).not.toBe('released')
     expect(getProject('rubato')?.keyArt).toBe('/assets/images/artwork/rubato-opera-full.webp')
   })
 
