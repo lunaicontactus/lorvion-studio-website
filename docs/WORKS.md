@@ -122,9 +122,9 @@ which keeps each source path.
 
 ## Still open for the studio
 
-- LUMIORA's print on the garage wall (and in the poster viewer) is still the old
-  splash from the children's-app direction. WORKS does not use it. A new
-  portrait key art for the current game would replace it everywhere:
-  `lumiora-keyart-v02` (2:3 or 9:16, opaque, ≥ 900 px wide).
+- LUMIORA's key art for the current game was delivered 2026-09-20 and now hangs
+  on the wall, on the PC and on its page (`lumiora-keyart`, 1122×1402); the old
+  children's-app splash is deleted. Its own line — "a musical action-adventure
+  where sound shapes the world" — is what the page says in English.
 - WORM UP!'s art rights (unverified in its own release doc) and the LUMIORA
   concept image (not in the canon docs): confirm before this goes live.

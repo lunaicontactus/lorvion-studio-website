@@ -50,7 +50,7 @@ export const DESKTOP_WORLD: WorldLayout = {
     { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 648, y: 320, w: 195, h: 349 }, painted: { x: 650, y: 347, w: 185, h: 286 }, outline: 'frame', artwork: 'liminal-keyart' },
     { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 856, y: 321, w: 200, h: 352 }, painted: { x: 860, y: 350, w: 191, h: 285 }, outline: 'frame', artwork: 'wormup-keyart' },
     // The fourth painted poster is tall, so it takes the tall piece: LUMIORA.
-    { id: 'poster-lumiora', label: 'LUMIORA', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lumiora' }, rect: { x: 1070, y: 319, w: 204, h: 357 }, painted: { x: 1075, y: 350, w: 191, h: 288 }, outline: 'frame', artwork: 'lumiora-splash' },
+    { id: 'poster-lumiora', label: 'LUMIORA', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lumiora' }, rect: { x: 1070, y: 319, w: 204, h: 357 }, painted: { x: 1075, y: 350, w: 191, h: 288 }, outline: 'frame', artwork: 'lumiora-keyart' },
     // RUBATO's opera house is 16:9, and a 16:9 picture in a tall poster's
     // place is a picture floating in paper. It hangs in the wooden landscape
     // frame painted over the television instead (measured: 2788–2962 ×
@@ -110,7 +110,7 @@ export const MOBILE_WORLD: WorldLayout = {
     { id: 'poster-lunai', label: 'LUNAI', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lunai' }, rect: { x: 305, y: 223, w: 149, h: 257 }, painted: { x: 320, y: 240, w: 127, h: 212 }, outline: 'frame', artwork: 'lunai-keyart' },
     { id: 'poster-liminal', label: 'LIMINAL', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'liminal' }, rect: { x: 460, y: 220, w: 144, h: 258 }, painted: { x: 462, y: 240, w: 134, h: 212 }, outline: 'frame', artwork: 'liminal-keyart' },
     { id: 'poster-wormup', label: 'WORM UP!', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'wormup' }, rect: { x: 611, y: 221, w: 148, h: 261 }, painted: { x: 616, y: 242, w: 139, h: 212 }, outline: 'frame', artwork: 'wormup-keyart' },
-    { id: 'poster-lumiora', label: 'LUMIORA', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lumiora' }, rect: { x: 772, y: 220, w: 151, h: 263 }, painted: { x: 776, y: 242, w: 140, h: 213 }, outline: 'frame', artwork: 'lumiora-splash' },
+    { id: 'poster-lumiora', label: 'LUMIORA', zone: 'posterWall', kind: 'paper', enabled: true, action: { kind: 'project', projectId: 'lumiora' }, rect: { x: 772, y: 220, w: 151, h: 263 }, painted: { x: 776, y: 242, w: 140, h: 213 }, outline: 'frame', artwork: 'lumiora-keyart' },
     // The landscape frame over the portrait television (579–699 × 2020–2090),
     // taken up to its hanging hook at 2012: the television below limits the
     // hit padding, and 70 units tall is 42px on a 390 phone — short of a finger.

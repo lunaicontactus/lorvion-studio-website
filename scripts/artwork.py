@@ -41,8 +41,10 @@ PIECES = [
     ('wormup-keyart', 'wormup', 'repo:public/assets/images/worm-up-keyart.webp', 'keyart'),
     ('rubato-opera', 'rubato',
      'RUBATO/RUBATO/game/assets/bg/bg_court_opera_auditorium.jpg', 'still'),
-    ('lumiora-splash', 'lumiora',
-     'lumiora/lumiora-app/assets/branding/lumiora_splash_world.webp', 'keyart'),
+    # The studio's key art for the current 3D game (delivered 2026-09-20).
+    # The old splash belonged to the retired children's-app direction.
+    ('lumiora-keyart', 'lumiora',
+     'Downloads/ChatGPT Image 2026년 9월 20일 오후 07_40_42.png', 'keyart'),
 ]
 
 

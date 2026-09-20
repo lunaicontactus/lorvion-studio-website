@@ -85,7 +85,7 @@ describe('LUMIORA, as its current canon has it', () => {
   const lumiora = getProject('lumiora')!
 
   it('is the 3D musical narrative adventure, not the old children\'s app', () => {
-    expect(lumiora.kind).toBe('Stylized 3D Musical Narrative Adventure')
+    expect(lumiora.kind).toBe('Stylized 3D Musical Action-Adventure')
     expect(lumiora.platforms).toEqual(['PC'])
     expect(lumiora.status).toBe('prototype')
     const all = JSON.stringify(lumiora)

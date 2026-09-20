@@ -50,7 +50,7 @@ const PIECES: readonly Artwork[] = [
   { id: 'liminal-keyart', projectId: 'liminal', kind: 'keyart', width: 1024, height: 1536, mount: 'frame', tilt: 0 },
   { id: 'wormup-keyart', projectId: 'wormup', kind: 'keyart', width: 941, height: 1672, mount: 'frame', tilt: 0 },
   { id: 'rubato-opera', projectId: 'rubato', kind: 'still', width: 1920, height: 1080, mount: 'wood', tilt: 0 },
-  { id: 'lumiora-splash', projectId: 'lumiora', kind: 'keyart', width: 900, height: 1599, mount: 'frame', tilt: 0 },
+  { id: 'lumiora-keyart', projectId: 'lumiora', kind: 'keyart', width: 1122, height: 1402, mount: 'frame', tilt: 0 },
 ] as const
 
 export const ARTWORK: readonly Artwork[] = PIECES

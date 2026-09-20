@@ -22,7 +22,7 @@ const PIECES = [
   { thing: 'poster-lunai', art: 'lunai-keyart', tall: true },
   { thing: 'poster-liminal', art: 'liminal-keyart', tall: true },
   { thing: 'poster-wormup', art: 'wormup-keyart', tall: true },
-  { thing: 'poster-lumiora', art: 'lumiora-splash', tall: true },
+  { thing: 'poster-lumiora', art: 'lumiora-keyart', tall: true },
   { thing: 'picture-rubato', art: 'rubato-opera', tall: false },
 ] as const
 
@@ -117,13 +117,17 @@ for (const view of [
         }
       }))
       const frames = hung.filter((f) => f.mount === 'frame')
-      expect(frames.map((f) => f.id).sort()).toEqual(['liminal-keyart', 'lumiora-splash', 'lunai-keyart', 'wormup-keyart'])
+      expect(frames.map((f) => f.id).sort()).toEqual(['liminal-keyart', 'lumiora-keyart', 'lunai-keyart', 'wormup-keyart'])
       expect(hung.filter((f) => f.mount === 'wood').map((f) => f.id)).toEqual(['rubato-opera'])
       for (const f of frames) {
         expect(f.felt, `${f.id}: its felt frame never arrived`).toBeGreaterThan(0)
         expect(f.caption, `${f.id} still has tape or a paper strip`).toBe(false)
-        // A mount, not a margin: most of the window is the picture…
-        expect(f.filled, `${f.id} floats in its window`).toBeGreaterThan(0.84)
+        // A mount, not a margin: most of the window is the picture. The
+        // windows are all about 0.65 wide-to-tall, and LUMIORA's key art is
+        // 0.80, so its mount is the widest of the four at about a ninth of
+        // the window top and bottom — the picture is still whole, and never
+        // cropped to fill the hole.
+        expect(f.filled, `${f.id} floats in its window`).toBeGreaterThan(0.8)
         // …and what is not is felt, never paper.
         const [r, g, b] = (f.matBg.match(/\d+/g) ?? ['255', '255', '255']).map(Number)
         expect(Math.max(r!, g!, b!), `${f.id} mount is ${f.matBg}`).toBeLessThan(120)
