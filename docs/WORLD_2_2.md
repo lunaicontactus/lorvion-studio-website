@@ -89,3 +89,13 @@ menu, ‹ › and arrow keys, Escape in two steps), `presentation.spec.ts` (the
 cabinet's spots inside its surface).
 
 Captures: `scripts/wall-shots.mjs`, `scripts/cabinet-shots.mjs`.
+
+## The painted posters on the portrait plate's middle floor
+
+The portrait room is three floors of one panorama, and WORM UP!'s and RUBATO's
+painted posters appear again on the middle floor. They stay as the studio
+decided (2026-09-20): painted decoration, nothing hung over them, nothing to
+click. The works are shown once — the four felt frames on the main wall, and
+RUBATO in the wooden frame over the television — so the wall reads as the
+exhibition and the rest of the room as the room. There are no objects over
+that region in `src/data/world.ts`; a work is never displayed twice.
