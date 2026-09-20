@@ -124,6 +124,11 @@ describe('the pages', () => {
       expect(html, p.id).toContain(`<link rel="canonical" href="https://eungarage.com/works/${p.id}.html">`)
       expect(html, p.id).toContain(`data-works-detail="${p.id}"`)
       expect(html, p.id).toMatch(new RegExp(`<h1[^>]*>${p.title.replace(/[!]/g, '\\$&')}</h1>`))
+      // The lines in the page's own markup are the record's lines: the page
+      // carries them so they are there before any script runs, which is
+      // exactly how they drift.
+      expect(html, `${p.id}: the Korean line`).toContain(`>${p.taglineKo}</p>`)
+      expect(html, `${p.id}: the English line`).toContain(`>${p.tagline}</p>`)
     }
   })
 
