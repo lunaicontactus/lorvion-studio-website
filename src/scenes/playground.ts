@@ -16,15 +16,37 @@ export interface PlaygroundOptions {
   readonly onPlace?: (place: Place) => void
 }
 
-export type PlaygroundHandle = SceneHandle<PlaygroundLayout>
+export interface PlaygroundHandle extends SceneHandle<PlaygroundLayout> {
+  /** Which of the three buildings have given their star: the socket on each sign. */
+  setStars(earned: readonly string[]): void
+  /** A star just earned at this building: its socket comes on with a little light. */
+  lightStar(gameId: string): void
+}
 
 export function mountPlayground(root: ParentNode = document, opts: PlaygroundOptions = {}): PlaygroundHandle | null {
-  return mountScene<PlaygroundLayout>(root, {
+  const scene = mountScene<PlaygroundLayout>(root, {
     root: 'playground',
     layoutFor: playgroundFor,
     ...(opts.onPlace ? { onPlace: opts.onPlace } : {}),
     decorate: (world, layout) => {
+      // Each game building wears a star socket on its sign: dark until the
+      // game has given its star. The rule — a star from each building opens
+      // the door in the bookcase — is on the buildings and on the door, not
+      // in a message.
+      for (const p of layout.places) {
+        if (!p.game) continue
+        const spot = world.querySelector<HTMLElement>(`[data-place="${p.id}"]`)
+        if (!spot) continue
+        const socket = document.createElement('span')
+        socket.className = 'spot__socket'
+        socket.dataset['game'] = p.game
+        socket.setAttribute('aria-hidden', 'true')
+        socket.innerHTML = '<i class="spot__star"></i>'
+        spot.append(socket)
+      }
       if (motion.reduced) return
+      // The dokkaebi fires: ambient, small, and never in front of anything
+      // the visitor is here to look at. Two to three, low, at the edges.
       for (const [i, f] of layout.fires.entries()) {
         const img = document.createElement('img')
         img.className = 'playground__fire'
@@ -32,14 +54,32 @@ export function mountPlayground(root: ParentNode = document, opts: PlaygroundOpt
         img.alt = ''
         img.decoding = 'async'
         img.dataset['fire'] = String(i)
-        const w = Math.round(84 * f.scale)
+        const w = Math.round(54 * f.scale)
         Object.assign(img.style, {
           left: `${f.x - w / 2}px`, top: `${f.y - Math.round(w * 1.43)}px`, width: `${w}px`,
-          animationDuration: `${f.period}s, ${f.period * 1.37}s`,
-          animationDelay: `${-f.phase}s, ${-f.phase * 0.7}s`,
+          animationDuration: `${f.period * 1.6}s`,
+          animationDelay: `${-f.phase}s`,
         })
         world.append(img)
       }
+    },
+  })
+  if (!scene) return null
+  const socket = (gameId: string): HTMLElement | null => scene.world.querySelector<HTMLElement>(`.spot__socket[data-game="${gameId}"]`)
+  return Object.assign(scene, {
+    setStars(earned: readonly string[]): void {
+      for (const el of scene.world.querySelectorAll<HTMLElement>('.spot__socket')) {
+        el.classList.toggle('is-lit', earned.includes(el.dataset['game'] ?? ''))
+      }
+    },
+    lightStar(gameId: string): void {
+      const el = socket(gameId)
+      if (!el) return
+      el.classList.add('is-lit')
+      el.classList.remove('is-lighting')
+      void el.offsetWidth
+      el.classList.add('is-lighting')
+      setTimeout(() => el.classList.remove('is-lighting'), 1000)
     },
   })
 }

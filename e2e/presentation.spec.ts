@@ -24,7 +24,7 @@ const THINGS = [
   // it is heard as nothing at all — no borrowed click in its place.
   { id: 'shelf', prop: 'shelf', surface: '.prop--shelf', content: '.prop--shelf .cab__spot', sfx: null, light: null },
   { id: 'workbench', prop: 'workbench', surface: '.prop--workbench', content: '.prop--workbench .bench2__img', sfx: 'paper', light: null },
-  { id: 'radio', prop: 'radio', surface: '.prop--radio', content: '.prop--radio [data-radio-freq]', sfx: 'radio_tune', light: 'radio' },
+  { id: 'radio', prop: 'radio', surface: '.prop--radio', content: '.prop--radio [data-radio-freq]', sfx: null, light: 'radio' },
   // The outside door is not here: since PHASE 8 it is a crossing, not a
   // thing that stays open, and e2e/outside.spec.ts holds it to the same
   // "reacts first, opens as itself" contract on its way out.

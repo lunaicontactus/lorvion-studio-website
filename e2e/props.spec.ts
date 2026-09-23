@@ -93,7 +93,7 @@ test.describe('desktop', () => {
     await expect(open).toHaveCSS('opacity', '0')
   })
 
-  test('a thing says what it is under the pointer, beside its outline', async ({ page }) => {
+  test('a thing says what it is under the pointer, as it comes forward', async ({ page }) => {
     await enter(page)
     const pc = page.locator('.thing--pc')
     const label = pc.locator('.thing__label')
@@ -101,7 +101,7 @@ test.describe('desktop', () => {
     await pc.hover()
     await expect(label).toHaveText('PC · 작품 라이브러리')
     await expect(label).toHaveCSS('opacity', '1')
-    await expect(pc.locator('.thing__outline')).toHaveCSS('opacity', '1')
+    await expect(pc.locator('.thing__self')).toHaveCSS('opacity', '1')
     // Readable: 13px on screen whatever the room's scale.
     const size = await label.evaluate((el) => parseFloat(getComputedStyle(el).fontSize) * (el.getBoundingClientRect().height / el.offsetHeight))
     expect(size).toBeGreaterThan(11)

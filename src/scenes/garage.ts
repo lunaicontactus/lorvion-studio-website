@@ -19,7 +19,7 @@ import { BITS, BROOM_ZONES, BROOM_ZONES_PORTRAIT, LIGHTS, LIGHTS_PORTRAIT, SKY, 
 import { ATTENTION, Ambient } from '@/systems/ambient'
 import { Broom, BROOM_EVERY, BROOM_MS, BROOM_NOT_BEFORE } from '@/systems/broom'
 import { Footsteps } from '@/systems/footsteps'
-import { OUTLINE_PATHS, HIT_PADDING, OUTLINE_OFFSET } from '@/data/outlines'
+import { OUTLINE_PATHS, HIT_PADDING } from '@/data/outlines'
 import { ticker } from '@/systems/tick'
 import { motion } from '@/systems/motion'
 import { audio } from '@/systems/audio'
@@ -267,6 +267,8 @@ export interface GarageHandle {
   setSecret(state: { readonly have: number; readonly need: number; readonly unlocked: boolean }, celebrate: boolean): void
   /** Touched while locked: the seam shows for a moment. No message. */
   hintSecret(): void
+  /** A star just earned: a look at the door, the new socket lighting, back. */
+  glanceSecret(): void
   readonly world: WorldLayout
   destroy(): void
 }
@@ -568,38 +570,63 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       })
 
       if (obj.outline) {
+        // The object's silhouette, as a clip for its own pixels below. The
+        // path is never drawn: nothing traces a thing, the thing moves.
         const d = OUTLINE_PATHS[obj.outline]
-        // One path, two jobs: stroked as the outline, and the clip that keeps
-        // the brightness lift the object's shape instead of a rectangle.
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-        svg.setAttribute('class', 'thing__outline')
+        svg.setAttribute('class', 'thing__clip')
         svg.setAttribute('viewBox', '0 0 1 1')
-        svg.setAttribute('preserveAspectRatio', 'none')
         svg.setAttribute('aria-hidden', 'true')
-        // The dark path is drawn first and slightly wider: on a cream fridge
-        // against a cream wall, pure white alone dissolves. It is only there to
-        // separate the white line from the wall and must not read as a border.
-        svg.innerHTML =
-          `<clipPath id="clip-${obj.id}" clipPathUnits="objectBoundingBox"><path d="${d}"/></clipPath>` +
-          `<path class="thing__edge" d="${d}" vector-effect="non-scaling-stroke"/>` +
-          `<path class="thing__stroke" d="${d}" vector-effect="non-scaling-stroke"/>`
-        // An SVG is a replaced element: with height:auto it takes its own
-        // aspect ratio and ignores the bottom inset, so both are set here.
-        // The box is grown by OUTLINE_OFFSET so the line clears the artwork.
-        svg.style.left = `${pad - OUTLINE_OFFSET}px`
-        svg.style.top = `${pad - OUTLINE_OFFSET}px`
-        svg.style.width = `${obj.rect.w + OUTLINE_OFFSET * 2}px`
-        svg.style.height = `${obj.rect.h + OUTLINE_OFFSET * 2}px`
+        svg.innerHTML = `<clipPath id="clip-${obj.id}" clipPathUnits="objectBoundingBox"><path d="${d}"/></clipPath>`
         el.append(svg)
+      }
+      if (!obj.art) {
+        // The thing itself, as the painting: the same plate again, cut to
+        // the object's own silhouette, so that under the pointer it is the
+        // object that comes forward, brightens and throws a little shadow —
+        // not a box drawn round where it roughly is. Nothing shows at rest:
+        // the painting underneath is identical pixel for pixel.
+        const self = document.createElement('span')
+        self.className = 'thing__self'
+        self.setAttribute('aria-hidden', 'true')
+        Object.assign(self.style, {
+          left: `${pad}px`, top: `${pad}px`, width: `${obj.rect.w}px`, height: `${obj.rect.h}px`,
+        })
+        // How far it comes forward: a few world units whatever its size, so a
+        // fridge moves as little as a radio and its edge never smears.
+        self.style.setProperty('--lift', (1 + Math.min(0.035, 5 / Math.max(obj.rect.w, obj.rect.h))).toFixed(4))
+        const paint = document.createElement('span')
+        paint.className = 'thing__paint'
+        paint.style.backgroundImage = `url('${plate.src}')`
+        paint.style.backgroundSize = `${world.width}px ${world.height}px`
+        paint.style.backgroundPosition = `${-obj.rect.x}px ${-obj.rect.y}px`
+        if (obj.outline) paint.style.clipPath = `url(#clip-${obj.id})`
+        self.append(paint)
+        el.append(self)
+      }
 
-        const lift = document.createElement('span')
-        lift.className = 'thing__lift'
-        lift.style.left = `${pad}px`
-        lift.style.top = `${pad}px`
-        lift.style.width = `${obj.rect.w}px`
-        lift.style.height = `${obj.rect.h}px`
-        lift.style.clipPath = `url(#clip-${obj.id})`
-        el.append(lift)
+      if (obj.id === 'secret-door') {
+        // The seam the starlight comes through, and the plank of three star
+        // sockets across the lower face: the lock, visible as a lock.
+        const seam = document.createElement('span')
+        seam.className = 'thing__seam'
+        Object.assign(seam.style, { left: `${pad}px`, top: `${pad}px`, width: `${obj.rect.w}px`, height: `${obj.rect.h}px` })
+        if (obj.outline) seam.style.clipPath = `url(#clip-${obj.id})`
+        el.append(seam)
+        const plank = document.createElement('span')
+        plank.className = 'thing__stars'
+        plank.setAttribute('aria-hidden', 'true')
+        Object.assign(plank.style, {
+          left: `${pad + Math.round(obj.rect.w * 0.19)}px`, top: `${pad + Math.round(obj.rect.h * 0.74)}px`,
+          width: `${Math.round(obj.rect.w * 0.62)}px`, height: `${Math.round(Math.min(obj.rect.w * 0.62 * 0.26, obj.rect.h * 0.16))}px`,
+        })
+        for (let k = 0; k < 3; k++) {
+          const star = document.createElement('i')
+          star.className = 'thing__star'
+          star.dataset['star'] = String(k)
+          plank.append(star)
+        }
+        el.append(plank)
       }
 
       // A real piece of work, hung over the painted poster it replaces.
@@ -1348,21 +1375,49 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       const el = roomEl.querySelector<HTMLElement>('[data-object="secret-door"]')
       if (!el) return
       el.dataset['secret'] = state.unlocked ? 'unlocked' : 'locked'
+      el.dataset['stars'] = String(state.have)
       el.classList.toggle('is-unlocked', state.unlocked)
-      const cap = el.querySelector('.thing__label')
-      if (cap) cap.textContent = state.unlocked ? '비밀문 · 열림' : `비밀문 · ★ ${state.have}/${state.need}`
-      el.setAttribute('aria-label', state.unlocked ? '비밀문' : `비밀문 · 별 ${state.have}/${state.need}`)
+      el.setAttribute('aria-label', state.unlocked ? '비밀문 · 열림' : `비밀문 · 별 ${state.have}/${state.need}`)
+      // The sockets: as many lit as there are stars. A star that is new
+      // since the room last looked comes on with a little light of its
+      // own; the ones already there simply are.
+      const stars = [...el.querySelectorAll<HTMLElement>('.thing__star')]
+      const fresh = stars.filter((st, k) => k < state.have && !st.classList.contains('is-lit'))
+      stars.forEach((st, k) => st.classList.toggle('is-lit', k < state.have))
       if (!celebrate) return
       // Once, and seen: the room opens on the desk, and on a wide screen the
       // bookcase is out of the view, so the camera goes to the door first.
+      // The third star lights; a breath; then the handle gives and the seam
+      // comes alight.
       const obj = world.objects.find((o) => o.id === 'secret-door')
       if (obj) lookAt(obj)
-      el.classList.add('is-unlocking')
-      lights.get('bookcase')?.classList.add('is-on')
+      for (const st of fresh) st.classList.add('is-lighting')
       later(() => {
-        el.classList.remove('is-unlocking')
-        lights.get('bookcase')?.classList.remove('is-on')
-      }, 2600)
+        for (const st of stars) st.classList.remove('is-lighting')
+        el.classList.add('is-unlocking')
+        lights.get('bookcase')?.classList.add('is-on')
+        later(() => {
+          el.classList.remove('is-unlocking')
+          lights.get('bookcase')?.classList.remove('is-on')
+        }, 2600)
+      }, 900)
+    },
+    glanceSecret(): void {
+      // A star just earned: the camera looks over to the door for a moment
+      // and the new socket lights, then the camera comes back. The lock is
+      // explained by being seen, not by being told.
+      const el = roomEl.querySelector<HTMLElement>('[data-object="secret-door"]')
+      const obj = world.objects.find((o) => o.id === 'secret-door')
+      if (!el || !obj) return
+      const was = { x: camera.x, y: camera.y }
+      camera.moveTo(obj.rect.x + obj.rect.w / 2, obj.rect.y + obj.rect.h / 2)
+      const lit = [...el.querySelectorAll<HTMLElement>('.thing__star.is-lit')]
+      const newest = lit[lit.length - 1]
+      later(() => {
+        newest?.classList.add('is-lighting')
+        later(() => newest?.classList.remove('is-lighting'), 900)
+      }, 350)
+      later(() => camera.moveTo(was.x, was.y), 1500)
     },
     hintSecret(): void {
       const el = roomEl.querySelector<HTMLElement>('[data-object="secret-door"]')

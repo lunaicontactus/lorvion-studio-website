@@ -68,6 +68,78 @@ async function goIn(page: Page): Promise<void> {
   await page.waitForTimeout(800)
 }
 
+test.describe('the lock, star by star', () => {
+  test.use({ viewport: { width: 1440, height: 900 } })
+
+  test('0/3: three dark sockets on the door, and nothing said', async ({ page }) => {
+    await seed(page, {})
+    await enter(page)
+    const door = page.locator('[data-object="secret-door"]')
+    await door.focus()
+    await page.waitForTimeout(1200)
+    await expect(door.locator('.thing__star')).toHaveCount(3)
+    await expect(door.locator('.thing__star.is-lit')).toHaveCount(0)
+    await page.screenshot({ path: 'e2e/shots/secret-0of3.png' })
+  })
+
+  test('the first star: the room glances at the door and the socket lights, once', async ({ page }) => {
+    await spyOnPlay(page)
+    // The star is new to the room (it has acknowledged none).
+    await seed(page, { mugunghwa: 1 }, 0, true)
+    await enter(page)
+    const door = page.locator('[data-object="secret-door"]')
+    await expect(door.locator('.thing__star').nth(0)).toHaveClass(/is-lighting/, { timeout: 5000 })
+    // Looked at: the door is in the view while its star comes on.
+    const r = (await door.boundingBox())!
+    expect(r.x + r.width / 2).toBeGreaterThan(0)
+    expect(r.x + r.width / 2).toBeLessThan(1440)
+    await page.screenshot({ path: 'e2e/shots/secret-1of3.png' })
+    await expect(door.locator('.thing__star.is-lit')).toHaveCount(1)
+    await expect(door.locator('.thing__star').nth(1)).not.toHaveClass(/is-lit/)
+    await expect(door).toHaveAttribute('data-secret', 'locked')
+    await page.waitForTimeout(1500)
+    // The little chime, once; and no ceremony for one star.
+    expect(await page.evaluate(() => window.__plays!.filter((p) => p.src.includes('star_get')).length)).toBe(1)
+    expect(await page.evaluate(() => window.__plays!.filter((p) => p.src.includes('secret_unlock')).length)).toBe(0)
+    // Acknowledged: a second look does not repeat it.
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('eungarage:save') ?? '{}').secretProgress)).toBe(1)
+  })
+
+  test('the second star: the second socket, and only that one, lights', async ({ page }) => {
+    await spyOnPlay(page)
+    await seed(page, { mugunghwa: 1, snack: 1 }, 1, true)
+    await enter(page)
+    const door = page.locator('[data-object="secret-door"]')
+    await expect(door.locator('.thing__star').nth(1)).toHaveClass(/is-lighting/, { timeout: 5000 })
+    await expect(door.locator('.thing__star').nth(0)).not.toHaveClass(/is-lighting/)
+    await page.screenshot({ path: 'e2e/shots/secret-2of3.png' })
+    await expect(door.locator('.thing__star.is-lit')).toHaveCount(2)
+    await expect(door).toHaveAttribute('data-secret', 'locked')
+  })
+
+  test('a star already shown is not shown again', async ({ page }) => {
+    await spyOnPlay(page)
+    await seed(page, { mugunghwa: 1, snack: 1 }, 2, true)
+    await enter(page)
+    const door = page.locator('[data-object="secret-door"]')
+    await expect(door.locator('.thing__star.is-lit')).toHaveCount(2, { timeout: 5000 })
+    await page.waitForTimeout(2500)
+    await expect(door.locator('.thing__star.is-lighting')).toHaveCount(0)
+    expect(await page.evaluate(() => window.__plays!.filter((p) => p.src.includes('star_get')).length)).toBe(0)
+  })
+
+  test('outside, each building wears the star it has given', async ({ page }) => {
+    await seed(page, { mugunghwa: 1, snack: 1 }, 2)
+    await page.goto('/#playground', { waitUntil: 'load' })
+    await page.locator('[data-alley-enter]').click()
+    await page.waitForFunction(() => !document.querySelector<HTMLElement>('[data-playground]')!.hidden, null, { timeout: 15000 })
+    await expect(page.locator('.spot__socket')).toHaveCount(3)
+    await expect(page.locator('.spot__socket[data-game="mugunghwa"]')).toHaveClass(/is-lit/)
+    await expect(page.locator('.spot__socket[data-game="snack"]')).toHaveClass(/is-lit/)
+    await expect(page.locator('.spot__socket[data-game="parcel"]')).not.toHaveClass(/is-lit/)
+  })
+})
+
 test.describe('the lock', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
 
@@ -76,13 +148,15 @@ test.describe('the lock', () => {
     await enter(page)
     const door = page.locator('[data-object="secret-door"]')
     await expect(door).toHaveAttribute('data-secret', 'locked', { timeout: 4000 })
-    await expect(door.locator('.thing__label')).toHaveText('비밀문 · ★ 0/3')
+    await expect(door).toHaveAttribute('data-stars', '0')
+    await expect(door.locator('.thing__star')).toHaveCount(3)
+    await expect(door.locator('.thing__star.is-lit')).toHaveCount(0)
     await touch(page, 'secret-door')
     await expect(door).toHaveClass(/is-hinting|is-rattling/)
     await page.waitForTimeout(1500)
     await expect(page.locator('[data-panel-root]')).toBeHidden()
     await expect(page.locator('[data-archive]')).toBeHidden()
-    // No popup, no LOCKED: the label is the whole message.
+    // No popup, no LOCKED: the sockets on the door are the whole message.
     await expect(page.locator('body')).not.toContainText(/LOCKED|잠겨 있습니다|3 GAMES/)
   })
 
@@ -91,7 +165,9 @@ test.describe('the lock', () => {
     await enter(page)
     const door = page.locator('[data-object="secret-door"]')
     await expect(door).toHaveAttribute('data-secret', 'locked', { timeout: 4000 })
-    await expect(door.locator('.thing__label')).toHaveText('비밀문 · ★ 2/3')
+    await expect(door).toHaveAttribute('data-stars', '2')
+    await expect(door.locator('.thing__star.is-lit')).toHaveCount(2)
+    await expect(door.locator('.thing__star').nth(2)).not.toHaveClass(/is-lit/)
   })
 
   test('the third star opens the door, once, with its sound; a reload finds it open quietly', async ({ page, context }) => {
@@ -99,7 +175,12 @@ test.describe('the lock', () => {
     await seed(page, ALL, 2, true)
     await enter(page)
     const door = page.locator('[data-object="secret-door"]')
+    // The third star lights first; then the door.
+    await expect(door.locator('.thing__star').nth(2)).toHaveClass(/is-lighting/, { timeout: 5000 })
+    await expect(door).not.toHaveClass(/is-unlocking/)
     await expect(door).toHaveClass(/is-unlocking/, { timeout: 5000 })
+    await expect(door.locator('.thing__star.is-lit')).toHaveCount(3)
+    await page.screenshot({ path: 'e2e/shots/secret-3of3-opening.png' })
     await expect(door).toHaveAttribute('data-secret', 'unlocked')
     await expect(page.locator('.garage__light[data-light="bookcase"]')).toHaveClass(/is-on/)
     // And seen: the camera brings the door into the view for it (the room
@@ -124,6 +205,9 @@ test.describe('the lock', () => {
     await expect(door2).toHaveAttribute('data-secret', 'unlocked', { timeout: 5000 })
     await again.waitForTimeout(2000)
     await expect(door2).not.toHaveClass(/is-unlocking/)
+    await expect(door2.locator('.thing__star.is-lit')).toHaveCount(3)
+    await expect(door2.locator('.thing__star.is-lighting')).toHaveCount(0)
+    await again.screenshot({ path: 'e2e/shots/secret-reload-open.png' })
     expect(await again.evaluate(() => window.__plays!.filter((p) => p.src.includes('secret_unlock')).length)).toBe(0)
     await again.close()
   })

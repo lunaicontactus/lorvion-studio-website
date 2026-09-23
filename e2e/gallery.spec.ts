@@ -164,11 +164,11 @@ for (const view of [
         expect(c.body.r, `${c.id}: painted poster shows on the right`).toBeGreaterThanOrEqual(c.painted.r)
         expect(c.body.b, `${c.id}: painted poster shows at the bottom`).toBeGreaterThanOrEqual(c.painted.b)
       }
-      // RUBATO's print covers the painted frame it hangs in (the lift layer is
-      // laid on the painted rect).
+      // RUBATO's print covers the painted frame it hangs in (the thing's own
+      // layer is laid on the painted rect).
       const wood = await page.locator('[data-object="picture-rubato"]').evaluate((t) => {
         const sheet = t.querySelector<HTMLElement>('.print')!
-        const lift = t.querySelector<HTMLElement>('.thing__lift')!
+        const lift = t.querySelector<HTMLElement>('.thing__self')!
         return { w: sheet.offsetWidth, h: sheet.offsetHeight, pw: lift.offsetWidth, ph: lift.offsetHeight }
       })
       expect(wood.pw).toBeGreaterThan(0)

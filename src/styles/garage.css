@@ -40,13 +40,16 @@
 
 /* ── Things you can touch ──────────────────────────────────────────────── */
 /* A hit region over something already in the painting. At rest it draws
-   nothing whatsoever. Under the pointer — or under a keyboard focus — a heavy
-   white line traces the object itself, sitting just outside the artwork so it
-   reads as a selected game object rather than a focus ring on a box.
+   nothing whatsoever. Under the pointer the *thing itself* reacts, the way
+   an object in a point-and-click game does: it comes a little forward,
+   brightens a touch, and throws a little more shadow. Pressed, it gives.
+   Nothing is ever drawn round it — not a line, not a box, not a ring: the
+   hit region is looser than the object on purpose and is never seen.
 
-   Deliberately absent: radial-gradient, border-radius:50%, pulse, floating
-   marks, and any rectangle around the hit region. The hit region is looser
-   than the object on purpose; only the silhouette may be seen. */
+   How: `.thing__paint` is the painting again — the same plate, positioned
+   so its pixels sit exactly on the object's own — clipped to the object's
+   silhouette. At rest it is invisible; it appears only as it moves, so the
+   painting never doubles. */
 
 .thing{
   position:absolute;
@@ -58,60 +61,88 @@
   appearance:none;
   cursor:pointer;
 }
-/* The browser's own focus ring would be that rectangle; the silhouette is the
-   focus indicator instead. */
+/* The browser's own focus ring would be a rectangle; the thing's own
+   reaction, with a glow, is the focus indicator instead. */
 .thing:focus{outline:none}
 .thing:focus-visible{outline:none}
+.thing__clip{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
 
-.thing__outline,
-.thing__lift{
+.thing__self{
   position:absolute;
   display:block;
-  /* Position and size come from the scene, in world units. */
   pointer-events:none;
   opacity:0;
-  /* Leaving is quicker than arriving, and neither is a movement. */
-  transition:opacity 80ms ease;
+  /* From the object's own middle, a little low: things lift from where
+     they stand, not from the middle of the air. */
+  transform-origin:50% 62%;
+  transition:opacity 120ms ease, transform 160ms cubic-bezier(.2,.9,.3,1.2), filter 160ms ease;
+  will-change:transform;
 }
-/* A 5px stroke centred on the path hangs 2.5px outside the viewBox. */
-.thing__outline{overflow:visible}
+.thing__paint{
+  position:absolute;inset:0;display:block;
+  background-repeat:no-repeat;
+}
+/* Hover: forward, lit, a shadow under it. */
+.thing:hover .thing__self,
+.thing.is-active .thing__self{
+  opacity:1;
+  transform:scale(var(--lift,1.02));
+  filter:brightness(1.05) drop-shadow(0 4px 5px rgba(40,22,8,.45));
+}
+/* Keyboard focus: the same lift, and a warm glow that says "here". */
+.thing:focus-visible .thing__self{
+  opacity:1;
+  transform:scale(var(--lift,1.02));
+  filter:brightness(1.08) drop-shadow(0 0 6px rgba(255,214,140,.95)) drop-shadow(0 4px 6px rgba(40,22,8,.4));
+}
+/* Pressed: it gives under the finger. */
+.thing.is-pressed .thing__self{
+  opacity:1;
+  transform:scale(.982);
+  filter:brightness(.96) drop-shadow(0 1px 2px rgba(40,22,8,.35));
+  transition-duration:70ms;
+}
+/* Open: it stays a touch forward while its panel is up. */
+.thing.is-active .thing__self{transform:scale(calc((var(--lift,1.02) + 1) / 2))}
 
-/* Only to lift the white off a pale wall. If this is visible as a dark
-   border, it is too strong. */
-.thing__edge{
-  fill:none;
-  stroke:rgba(20,15,12,.22);
-  stroke-width:8;
-  stroke-linejoin:round;
-  stroke-linecap:round;
-}
-.thing__stroke{
-  fill:none;
-  stroke:rgba(255,255,255,.98);
-  stroke-width:5;
-  stroke-linejoin:round;
-  stroke-linecap:round;
-}
-
-/* Clipped to the object's own silhouette, so the lift is its shape. */
-.thing__lift{
-  backdrop-filter:brightness(1.04);
-  -webkit-backdrop-filter:brightness(1.04);
-}
-
-.thing:hover .thing__outline,
-.thing:hover .thing__lift,
-.thing:focus-visible .thing__outline,
-.thing:focus-visible .thing__lift,
-.thing.is-pressed .thing__outline,
-.thing.is-pressed .thing__lift{opacity:1;transition-duration:100ms}
+/* Placed things (the radio, the parcel) react as their own picture. */
+.thing__art{transform-origin:50% 80%;transition:transform 160ms cubic-bezier(.2,.9,.3,1.2), filter 160ms ease}
+.thing:hover .thing__art,.thing.is-active .thing__art{transform:scale(1.035);filter:brightness(1.06) drop-shadow(0 4px 5px rgba(40,22,8,.45))}
+.thing:focus-visible .thing__art{transform:scale(1.035);filter:brightness(1.08) drop-shadow(0 0 6px rgba(255,214,140,.95))}
+.thing.is-pressed .thing__art{transform:scale(.975);filter:brightness(.96);transition-duration:70ms}
 
 /* Touch has no hover state to leave, so nothing may linger. */
 @media (hover:none){
-  .thing:hover .thing__outline,
-  .thing:hover .thing__lift{opacity:0}
-  .thing.is-pressed .thing__outline,
-  .thing.is-pressed .thing__lift{opacity:1}
+  .thing:hover .thing__self,.thing:hover .thing__art{opacity:0;transform:none;filter:none}
+  .thing:hover .thing__art{opacity:1}
+  .thing.is-pressed .thing__self{opacity:1;transform:scale(.982)}
+  .thing.is-pressed .thing__art{transform:scale(.975)}
+}
+
+/* The doors: what a door does. Pressed, it gives inward; released, it
+   comes forward as it opens, and the light on it warms. */
+.thing--outside-door .thing__self,.thing--secret-door .thing__self{transform-origin:50% 100%}
+.thing--outside-door:hover .thing__self,.thing--secret-door:hover .thing__self{
+  transform:scale(var(--lift,1.02)) translateY(-1px);
+  filter:brightness(1.07) drop-shadow(0 5px 6px rgba(40,22,8,.5));
+}
+.thing--outside-door.is-pressed .thing__self,.thing--secret-door.is-pressed .thing__self{
+  transform:scale(.985) translateY(1px);filter:brightness(.94);
+}
+.thing--outside-door.is-active .thing__self,.thing--secret-door.is-active .thing__self{
+  animation:door-give 520ms cubic-bezier(.2,.9,.3,1.1) both;
+}
+@keyframes door-give{
+  0%{transform:scale(.985) translateY(1px);filter:brightness(.94)}
+  40%{transform:scale(calc(var(--lift,1.02) + .012)) translateY(-2px);filter:brightness(1.14) drop-shadow(0 8px 8px rgba(40,22,8,.5))}
+  100%{transform:scale(var(--lift,1.02)) translateY(-1px);filter:brightness(1.1) drop-shadow(0 6px 7px rgba(40,22,8,.45))}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .thing__self,.thing__art{transition:none}
+  .thing:hover .thing__self,.thing:focus-visible .thing__self,.thing.is-active .thing__self{transform:none}
+  .thing:hover .thing__art,.thing:focus-visible .thing__art,.thing.is-active .thing__art{transform:none}
+  .thing--outside-door.is-active .thing__self,.thing--secret-door.is-active .thing__self{animation:none}
 }
 
 /* ── Whoever is in the room ────────────────────────────────────────────── */
@@ -226,7 +257,7 @@
 .thing:hover .print,.thing:focus-visible .print{box-shadow:0 6px 14px rgba(58,42,26,.44)}
 
 @media (prefers-reduced-motion:reduce){
-  .thing__outline,.thing__lift,.print,.frame,.frame__felt{transition:none}
+  .print,.frame,.frame__felt{transition:none}
   .thing:hover .frame,.thing:focus-visible .frame{transform:none}
 }
 
@@ -611,28 +642,67 @@
 }
 
 /* ── PHASE 11: the door in the bookcase ─────────────────────────────────── */
-/* Locked, it is the cabinet it is painted as: nothing at rest, the usual
-   outline under the pointer. Touched, the seam shows for a moment — a
-   little starlight along the edges, and no message. Open, the seam stays,
-   faintly. The moment it opens: the seam bright, the face giving a little. */
+/* Locked, it is the cabinet it is painted as, and reacts as one. On its
+   face, three star sockets on a small carved plank: the games' stars, as
+   they are earned, so the rule is on the door itself. Touched while locked,
+   the seam shows for a moment — a little starlight along the edges, and no
+   message. Open, the seam stays, faintly. The moment it opens: the third
+   star lights, a pause, the handle gives, the seam bright. */
 .garage__light[data-light="bookcase"]{opacity:0}
 .garage__light[data-light="bookcase"].is-on{opacity:1;transition:opacity 500ms ease}
-.thing--secret-door .thing__lift{transition:opacity 260ms ease, box-shadow 400ms ease}
-.thing--secret-door.is-hinting .thing__lift{opacity:1;animation:secret-hint 900ms ease}
+.thing__seam{
+  position:absolute;display:block;pointer-events:none;opacity:0;
+  transition:opacity 260ms ease, box-shadow 400ms ease;
+}
+.thing--secret-door.is-hinting .thing__seam{opacity:1;animation:secret-hint 900ms ease}
 @keyframes secret-hint{
   0%,100%{box-shadow:inset 0 0 0 0 rgba(196,214,255,0)}
   35%{box-shadow:inset 0 0 22px 3px rgba(196,214,255,.5)}
 }
-.thing--secret-door.is-unlocked .thing__lift{opacity:.6;box-shadow:inset 0 0 26px 3px rgba(196,214,255,.3)}
-.thing--secret-door.is-unlocking .thing__lift{opacity:1;animation:secret-open 2600ms ease}
-.thing--secret-door.is-unlocking .thing__outline{opacity:1}
+.thing--secret-door.is-unlocked .thing__seam{opacity:.6;box-shadow:inset 0 0 26px 3px rgba(196,214,255,.3)}
+.thing--secret-door.is-unlocking .thing__seam{opacity:1;animation:secret-open 2600ms ease}
+.thing--secret-door.is-unlocking .thing__self{opacity:1;animation:secret-handle 2600ms ease}
 @keyframes secret-open{
-  0%{box-shadow:inset 0 0 0 0 rgba(196,214,255,0);translate:0 0}
-  18%{box-shadow:inset 0 0 34px 6px rgba(210,224,255,.75);translate:-2px 0}
-  32%{translate:2px 0}
-  46%{translate:-1px 0}
-  100%{box-shadow:inset 0 0 26px 3px rgba(196,214,255,.3);translate:0 0}
+  0%{box-shadow:inset 0 0 0 0 rgba(196,214,255,0)}
+  18%{box-shadow:inset 0 0 34px 6px rgba(210,224,255,.75)}
+  100%{box-shadow:inset 0 0 26px 3px rgba(196,214,255,.3)}
+}
+@keyframes secret-handle{
+  0%,10%{transform:none;filter:none}
+  16%{transform:translateX(-2px)}
+  22%{transform:translateX(2px)}
+  28%{transform:translateX(-1px)}
+  34%{transform:scale(1.02) translateY(-1px);filter:brightness(1.1)}
+  100%{transform:scale(1.02) translateY(-1px);filter:brightness(1.06)}
+}
+/* The star sockets: a plank across the lower face of the cabinet, three
+   carved hollows, and a felt star pressed into each one that is earned. */
+.thing__stars{
+  position:absolute;display:flex;align-items:center;justify-content:center;gap:9%;
+  pointer-events:none;box-sizing:border-box;padding:0 6%;
+  border-radius:3px;
+  background:linear-gradient(180deg,#5b3a21,#3d2614);
+  box-shadow:inset 0 1px 0 rgba(255,220,160,.18), inset 0 -1px 0 rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.35);
+}
+.thing__star{
+  width:22%;aspect-ratio:1;
+  clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+  background:#2a1a0e;
+  box-shadow:inset 0 1px 1px rgba(0,0,0,.6);
+  transition:background 400ms ease, filter 400ms ease;
+}
+.thing__star.is-lit{
+  background:radial-gradient(circle at 40% 35%,#ffe9a8,#e9b64a 60%,#c58a2a);
+  filter:drop-shadow(0 0 3px rgba(255,214,120,.9));
+}
+.thing__star.is-lighting{animation:star-light 900ms cubic-bezier(.2,.9,.3,1.3) both}
+@keyframes star-light{
+  0%{transform:scale(.6);filter:brightness(2) drop-shadow(0 0 0 rgba(255,214,120,0))}
+  50%{transform:scale(1.35);filter:brightness(1.6) drop-shadow(0 0 10px rgba(255,214,120,1))}
+  100%{transform:scale(1);filter:brightness(1) drop-shadow(0 0 3px rgba(255,214,120,.9))}
 }
 @media (prefers-reduced-motion:reduce){
-  .thing--secret-door.is-hinting .thing__lift,.thing--secret-door.is-unlocking .thing__lift{animation:none;opacity:1}
+  .thing--secret-door.is-hinting .thing__seam,.thing--secret-door.is-unlocking .thing__seam{animation:none;opacity:1}
+  .thing--secret-door.is-unlocking .thing__self{animation:none}
+  .thing__star.is-lighting{animation:none}
 }

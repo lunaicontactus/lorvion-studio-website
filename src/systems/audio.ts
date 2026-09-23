@@ -204,20 +204,37 @@ class AudioManager {
       if (el.src !== abs) el.src = src
       this.world = el
     }
+    const world = el
     const target = volume * this.worldDim
-    if (fadeMs > 0) this.fadeUp(el, target, fadeMs)
-    else {
-      const r = this.ramps.get(el)
-      if (r !== undefined) cancelAnimationFrame(r)
-      this.ramps.delete(el)
-      el.volume = target
+    if (!world.paused) {
+      // The same track, already on: only its level may have changed.
+      this.pending++
+      if (!this.ramps.has(world)) world.volume = target
+      return
     }
-    void el.play().catch((err: unknown) => log.debug('audio: world', err))
+    this.handoff(this.stream, () => {
+      if (fadeMs > 0) this.fadeUp(world, target, fadeMs)
+      else {
+        const r = this.ramps.get(world)
+        if (r !== undefined) cancelAnimationFrame(r)
+        this.ramps.delete(world)
+        world.volume = target
+      }
+      void world.play().catch((err: unknown) => log.debug('audio: world', err))
+    })
+  }
+
+  /** The music sounding right now — never more than one. For the tests. */
+  get musicSounding(): readonly string[] {
+    return [this.world, this.stream]
+      .filter((el): el is HTMLAudioElement => !!el && !el.paused)
+      .map((el) => el.currentSrc || el.src)
   }
 
   /** Down and out over `fadeMs`. */
   stopWorld(fadeMs = 0): void {
     this.worldOn = false
+    this.pending++
     if (!this.world) return
     if (fadeMs > 0 && !this.world.paused) this.ramp(this.world, 0, fadeMs, true)
     else this.world.pause()
@@ -398,15 +415,60 @@ class AudioManager {
   private stationVolume = 0.3
   private stationId: StationId | null = null
 
+  /** A start asked for later; a newer ask cancels it. */
+  private pending = 0
+
+  /**
+   * Run `fn` once `ms` have passed, unless another start has been asked for
+   * since — so a handoff that was overtaken never starts a stale player.
+   */
+  private after(ms: number, fn: () => void): void {
+    const token = ++this.pending
+    if (ms <= 0) {
+      fn()
+      return
+    }
+    const t0 = performance.now()
+    const wait = (): void => {
+      if (token !== this.pending) return
+      if (performance.now() - t0 < ms) {
+        requestAnimationFrame(wait)
+        return
+      }
+      fn()
+    }
+    requestAnimationFrame(wait)
+  }
+
+  /** How long the music going out takes before the next comes in. */
+  private static readonly HANDOFF = 420
+
+  /**
+   * Music is one thing at a time. If `other` is sounding, it goes down and
+   * out over the handoff and the caller's start waits for it; otherwise the
+   * start is immediate. Room tone and the loops under the music are not
+   * music and are not touched.
+   */
+  private handoff(other: HTMLMediaElement | null, start: () => void): void {
+    if (other && !other.paused) {
+      this.ramp(other, 0, AudioManager.HANDOFF, true)
+      this.after(AudioManager.HANDOFF + 20, start)
+    } else this.after(0, start)
+  }
+
   /**
    * Tune the one station stream to a looping track, or to nothing. There is
    * only ever one element: tuning replaces its source rather than starting a
-   * second player, so switching stations quickly cannot stack audio.
+   * second player, so switching stations quickly cannot stack audio; a
+   * change of station is the old one down for a moment and the new one up,
+   * and the world's music, if any is sounding, goes out before the station
+   * comes in.
    */
   tune(src: string | null, volume = 0.3): void {
     this.stationSrc = src
     this.stationVolume = volume
     if (!src) {
+      this.pending++
       this.stream?.pause()
       this.toggleAmbient(this.ambientOn)
       return
@@ -417,20 +479,38 @@ class AudioManager {
       this.stream.loop = true
       this.stream.preload = 'none'
     }
+    const stream = this.stream
     const abs = new URL(src, location.href).href
-    if (this.stream.src !== abs) this.stream.src = src
-    if (this.fadeIn) {
-      this.fadeUp(this.stream, volume, this.fadeIn.music, this.fadeIn.musicAfter)
-    } else {
-      const r = this.ramps.get(this.stream)
-      if (r !== undefined) cancelAnimationFrame(r)
-      this.ramps.delete(this.stream)
-      this.stream.volume = volume
+    const same = stream.src === abs
+    if (same && !stream.paused) {
+      // Already on the air: a reconcile, not a change. Nothing restarts.
+      this.pending++
+      if (!this.ramps.has(stream)) stream.volume = volume
+      this.toggleAmbient(this.ambientOn)
+      return
     }
-    void this.stream.play().catch((err: unknown) => log.debug('audio: station', err))
-    // NIGHT is the room's own tone: while it is on the dial the room does
-    // not also hum it underneath.
-    this.toggleAmbient(this.ambientOn)
+    const start = (): void => {
+      if (stream.src !== abs) stream.src = src
+      if (this.fadeIn) this.fadeUp(stream, volume, this.fadeIn.music, this.fadeIn.musicAfter)
+      else if (!same) this.fadeUp(stream, volume, 260)
+      else {
+        const r = this.ramps.get(stream)
+        if (r !== undefined) cancelAnimationFrame(r)
+        this.ramps.delete(stream)
+        stream.volume = volume
+      }
+      void stream.play().catch((err: unknown) => log.debug('audio: station', err))
+      // NIGHT is the room's own tone: while it is on the dial the room does
+      // not also hum it underneath.
+      this.toggleAmbient(this.ambientOn)
+    }
+    // Another station sounding: it goes down first. The world's music
+    // sounding (the way back in from outside): it goes out first.
+    const going = !same && !stream.paused ? stream : this.world && !this.world.paused ? this.world : null
+    if (going === stream) {
+      this.ramp(stream, 0, 180, true)
+      this.after(200, start)
+    } else this.handoff(going, start)
   }
 
   /** Tune by name, and remember it for next time. */
@@ -473,8 +553,19 @@ class AudioManager {
     this.fadeIn = null
   }
 
-  /** Called when the mute preference changes. */
+  /** The switch as it last was, so only a change from off to on is a click. */
+  private powerWas = pref.enabled
+
+  /**
+   * Called when the mute preference changes. The switch in the nav and the
+   * knob on the radio are one switch; going from off to on inside the room
+   * is the radio coming on, and that is the one moment its power sound
+   * plays — not when the room is entered, not when a station is changed,
+   * not when the tab comes back, and never twice.
+   */
   syncPreference(): void {
+    const turnedOn = pref.enabled && !this.powerWas
+    this.powerWas = pref.enabled
     if (!pref.enabled) {
       this.ambient?.pause()
       this.stream?.pause()
@@ -484,6 +575,7 @@ class AudioManager {
       return
     }
     this.unlocked = true
+    if (turnedOn && this.inRoom) this.play('radio_tune', 0.22)
     this.resume()
   }
 

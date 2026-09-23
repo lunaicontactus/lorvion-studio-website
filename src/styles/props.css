@@ -401,7 +401,6 @@
 .prop--outside-door.is-open .door__leaf{transform:rotateY(-62deg)}
 
 /* Under the pointer nothing lifts twice: the thing in the room is the thing. */
-.thing.is-active .thing__outline{opacity:1}
 
 /* ── Sizes: the tag over the parcel and the wall get their own widths ──── */
 @media (max-height:520px){

@@ -66,11 +66,12 @@ export const PLAYGROUND_LANDSCAPE: PlaygroundLayout = {
   // three buildings are in the first view with it.
   start: { x: 865, y: 470 },
   places: PLACES_LANDSCAPE,
-  // Three, over the water on the left, by the bridge on the right, and low
-  // by the pond: the painting already has small lights in these places.
+  // Three, at the edges: over the water on the left, in the bushes below
+  // the parcel office's steps, by the waterfall on the right. Never over a
+  // building, a doorway or the path.
   fires: [
     { x: 185, y: 515, scale: 1, period: 6.2, phase: 0 },
-    { x: 1310, y: 470, scale: 0.8, period: 7.4, phase: 2.1 },
+    { x: 1180, y: 440, scale: 0.8, period: 7.4, phase: 2.1 },
     { x: 1585, y: 560, scale: 0.65, period: 5.6, phase: 3.7 },
   ],
 }
