@@ -60,9 +60,9 @@ export const WALL_FRAMES: Readonly<Record<string, WallFrame>> = {
     win: { x: 0.0888, y: 0.1338, w: 0.8188, h: 0.721 },
     body: { x: 0.0072, y: 0.0664, w: 0.9873, h: 0.8351 },
     plate: { x: 0.1522, y: 0.8911, w: 0.7011, h: 0.1037 },
-    // Its key art is wider than this window; the mount is the deep water at
-    // the picture's own edge, so the bands read as mount, not as a stripe.
-    mat: '#173a46',
+    // Its key art is a touch narrower than this window; the mount is the deep
+    // water at the picture's own edge, so the slivers read as mount.
+    mat: '#1d4a66',
   },
 }
 
