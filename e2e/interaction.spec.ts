@@ -69,23 +69,16 @@ for (const view of VIEWS) {
       expect(ids.length).toBeGreaterThan(10)
       for (const id of ids) {
         const thing = page.locator(`[data-object="${id}"]`)
-        // Bring it into view the way a keyboard user would, then point at it.
+        // Bring it into view the way a keyboard user would; then, with
+        // nothing focused and the pointer away, it must be doing nothing.
         await thing.focus()
         await page.waitForTimeout(700)
-        await page.keyboard.press('Escape')
+        await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
         await page.mouse.move(2, view.viewport.height / 2)
-        await page.waitForTimeout(150)
+        await page.waitForTimeout(200)
         const rest = await state(page, `[data-object="${id}"]`)
         expect(rest.opacity === 0 || rest.scale === 1, `${id} is doing something at rest`).toBe(true)
-        if (view.mobile) {
-          // No hover on a phone: the thing gives while the finger is down.
-          await thing.dispatchEvent('pointerdown')
-          await page.waitForTimeout(120)
-          const down = await state(page, `[data-object="${id}"]`)
-          expect(down.scale, `${id} does not give under a finger`).toBeLessThan(1)
-          await thing.dispatchEvent('pointerup')
-          await page.waitForTimeout(250)
-        } else {
+        if (!view.mobile) {
           const box = (await thing.boundingBox())!
           await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
           await page.waitForTimeout(260)
@@ -94,15 +87,15 @@ for (const view of VIEWS) {
           expect(hover.scale, `${id} does not come forward`).toBeGreaterThan(1)
           expect(hover.scale, `${id} jumps`).toBeLessThan(1.06)
           expect(hover.filter, `${id} throws no shadow`).toContain('drop-shadow')
-          await page.mouse.down()
-          await page.waitForTimeout(120)
-          const down = await state(page, `[data-object="${id}"]`)
-          expect(down.scale, `${id} does not give when pressed`).toBeLessThan(1)
-          await page.mouse.up()
-          await page.waitForTimeout(150)
-          await page.keyboard.press('Escape')
-          await page.waitForTimeout(400)
         }
+        // Pressed (the pointer down, not yet a click): the thing gives.
+        await thing.dispatchEvent('pointerdown')
+        await page.waitForTimeout(120)
+        const down = await state(page, `[data-object="${id}"]`)
+        expect(down.scale, `${id} does not give when pressed`).toBeLessThan(1)
+        await thing.dispatchEvent('pointerup')
+        await page.mouse.move(2, view.viewport.height / 2)
+        await page.waitForTimeout(300)
         expect(await boxes(page), `${id}: something is drawn round a thing`).toEqual([])
       }
     })

@@ -24,6 +24,8 @@ export interface PlaygroundHandle extends SceneHandle<PlaygroundLayout> {
 }
 
 export function mountPlayground(root: ParentNode = document, opts: PlaygroundOptions = {}): PlaygroundHandle | null {
+  /** The games that have given their star, as last told; applied whenever the plate is built. */
+  let earned: readonly string[] = []
   const scene = mountScene<PlaygroundLayout>(root, {
     root: 'playground',
     layoutFor: playgroundFor,
@@ -42,6 +44,7 @@ export function mountPlayground(root: ParentNode = document, opts: PlaygroundOpt
         socket.dataset['game'] = p.game
         socket.setAttribute('aria-hidden', 'true')
         socket.innerHTML = '<i class="spot__star"></i>'
+        socket.classList.toggle('is-lit', earned.includes(p.game))
         spot.append(socket)
       }
       if (motion.reduced) return
@@ -67,7 +70,8 @@ export function mountPlayground(root: ParentNode = document, opts: PlaygroundOpt
   if (!scene) return null
   const socket = (gameId: string): HTMLElement | null => scene.world.querySelector<HTMLElement>(`.spot__socket[data-game="${gameId}"]`)
   return Object.assign(scene, {
-    setStars(earned: readonly string[]): void {
+    setStars(ids: readonly string[]): void {
+      earned = ids
       for (const el of scene.world.querySelectorAll<HTMLElement>('.spot__socket')) {
         el.classList.toggle('is-lit', earned.includes(el.dataset['game'] ?? ''))
       }

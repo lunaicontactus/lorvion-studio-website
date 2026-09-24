@@ -616,9 +616,11 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         const plank = document.createElement('span')
         plank.className = 'thing__stars'
         plank.setAttribute('aria-hidden', 'true')
+        // Sized on screen, like the labels, so the three sockets are read on
+        // a phone's small cabinet as well as a desktop's; placed on the lower
+        // face of the door, centred.
         Object.assign(plank.style, {
-          left: `${pad + Math.round(obj.rect.w * 0.19)}px`, top: `${pad + Math.round(obj.rect.h * 0.74)}px`,
-          width: `${Math.round(obj.rect.w * 0.62)}px`, height: `${Math.round(Math.min(obj.rect.w * 0.62 * 0.26, obj.rect.h * 0.16))}px`,
+          left: `${pad + obj.rect.w / 2}px`, top: `${pad + Math.round(obj.rect.h * 0.8)}px`,
         })
         for (let k = 0; k < 3; k++) {
           const star = document.createElement('i')
