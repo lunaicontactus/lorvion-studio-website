@@ -90,7 +90,7 @@ for (const view of VIEWS) {
         }
         // Pressed (the pointer down, not yet a click): the thing gives.
         await thing.dispatchEvent('pointerdown')
-        await page.waitForTimeout(120)
+        await page.waitForTimeout(200)
         const down = await state(page, `[data-object="${id}"]`)
         expect(down.scale, `${id} does not give when pressed`).toBeLessThan(1)
         await thing.dispatchEvent('pointerup')

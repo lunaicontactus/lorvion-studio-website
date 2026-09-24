@@ -56,7 +56,7 @@
 .spot:focus-visible .spot__self{
   opacity:1;transform:scale(var(--lift,1.02));filter:brightness(1.09) drop-shadow(0 0 8px rgba(255,220,150,.9));
 }
-.spot.is-pressed .spot__self{opacity:1;transform:scale(.982);filter:brightness(.96);transition-duration:70ms}
+.spot.is-pressed .spot__self,.spot.is-pressed:hover .spot__self,.spot.is-pressed:focus-visible .spot__self{opacity:1;transform:scale(.982);filter:brightness(.96);transition-duration:70ms}
 .spot.is-active .spot__self{transform:scale(calc((var(--lift,1.02) + 1) / 2))}
 .spot__ring{position:absolute;display:block;pointer-events:none;border-radius:18%;opacity:0}
 @media (hover:none){
