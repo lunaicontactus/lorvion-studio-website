@@ -392,20 +392,26 @@ test.describe('desktop', () => {
   test('it stops choosing errands while something is open, and starts again after', async ({
     page,
   }) => {
-    await watchStates(page)
+    // The whole crew: which of them is mid-errand when the television opens
+    // depends on the moment of the click, and one of them may be sitting
+    // or off the plate for a while. What is asserted holds for all of them:
+    // nobody chooses an errand while the thing is open, and afterwards
+    // whoever was at a thing chooses one and walks.
+    await watchStates(page, '*')
     await enter(page, '?npcseed=7')
     await page.evaluate(() =>
       document.querySelector('.thing--tv')?.dispatchEvent(new MouseEvent('click', { bubbles: true })),
     )
     await expect(page.locator('.tvset')).toBeVisible({ timeout: 6000 })
     await page.waitForTimeout(1500)
-    const a = await feet(page)
     const openedAt = await page.evaluate(() => window.__npcStates!.length)
+    const before = await page.evaluate(() => {
+      const last = new Map<string, { state: string; x: number; y: number }>()
+      for (const s of window.__npcStates!) if (s.state !== 'PAUSED') last.set(s.who, s)
+      return [...last.entries()]
+    })
     await page.waitForTimeout(6000)
-    const b = await feet(page)
-    // It may finish a step it had started, but it does not set off again:
-    // no errand is chosen while the thing is open.
-    expect(Math.hypot(b.x - a.x, b.y - a.y)).toBeLessThan(60)
+    // Nobody sets off while it is open: no errand is chosen, nobody walks.
     const whileOpen = await page.evaluate((i) => window.__npcStates!.slice(i), openedAt)
     expect(whileOpen.map((s) => s.state)).not.toContain('CHOOSE_TARGET')
     expect(whileOpen.map((s) => s.state)).not.toContain('WALK')
@@ -413,26 +419,42 @@ test.describe('desktop', () => {
     await page.keyboard.press('Escape')
     await expect(page.locator('[data-panel-root]')).toBeHidden()
     const closedAt = await page.evaluate(() => window.__npcStates!.length)
-    // It picks up where it left off — which, found at the bench, is a job
-    // of up to twelve seconds before it so much as looks for the next thing.
-    // How far the next errand is depends on which one it draws; that it
-    // chooses one and walks there is the point.
+    // Whoever was in the room when it opened — at a thing, or caught
+    // mid-walk — picks up where they left off: the rest of the walk, or a
+    // job of up to twelve seconds, then the next errand and the walk to it.
+    // Only somebody off the plate, or settled on the cushion, is not asked.
+    const candidates = before.filter(([, s]) => !['AWAY', 'SIT', 'EXIT'].includes(s.state)).map(([who]) => who)
+    expect(candidates.length, 'nobody was in the room when the television opened').toBeGreaterThan(0)
     await page.waitForFunction(
-      (i) => window.__npcStates!.slice(i).some((s) => s.state === 'WALK'),
-      closedAt,
+      ([i, who]) => window.__npcStates!.slice(i).some((s) => s.state === 'WALK' && who.includes(s.who)),
+      [closedAt, candidates] as const,
       { timeout: 32000 },
     )
     const setOff = await page.evaluate(
-      (i) => window.__npcStates!.slice(i).find((s) => s.state === 'WALK')!,
-      closedAt,
+      ([i, who]) => window.__npcStates!.slice(i).find((s) => s.state === 'WALK' && who.includes(s.who))!,
+      [closedAt, candidates] as const,
     )
+    // Their own records, in order: the walk ends when the next state comes.
     await page.waitForFunction(
-      (i) => window.__npcStates!.slice(i).some((s, n, all) => n > 0 && all[n - 1]!.state === 'WALK' && s.state !== 'WALK'),
-      closedAt,
+      ([i, who]) => {
+        const own = window.__npcStates!.slice(i).filter((s) => s.who === who)
+        return own.some((s, n) => n > 0 && own[n - 1]!.state === 'WALK' && s.state !== 'WALK')
+      },
+      [closedAt, setOff.who] as const,
       { timeout: 32000 },
     )
-    const arrived = await feet(page)
-    expect(Math.hypot(arrived.x - setOff.x, arrived.y - setOff.y)).toBeGreaterThan(8)
+    // And a walk is a walk: where it ended is not where it began. (A walk
+    // resumed mid-way may have only its last stretch left, so the distance
+    // is not the point; that there was one is.)
+    const arrived = await page.evaluate(
+      ([i, who]) => {
+        const own = window.__npcStates!.slice(i).filter((s) => s.who === who)
+        const k = own.findIndex((s) => s.state === 'WALK')
+        return own.slice(k + 1).find((s) => s.state !== 'WALK')!
+      },
+      [closedAt, setOff.who] as const,
+    )
+    expect(Math.hypot(arrived.x - setOff.x, arrived.y - setOff.y)).toBeGreaterThan(1)
   })
 
   test('it moves with the room when the camera does', async ({ page }) => {

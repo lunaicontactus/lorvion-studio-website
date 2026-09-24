@@ -123,7 +123,7 @@ which keeps each source path.
 ## Still open for the studio
 
 - LUMIORA's key art for the current game was delivered 2026-09-20 and now hangs
-  on the wall, on the PC and on its page (`lumiora-keyart`, 1122×1402); the old
+  on the wall, on the PC and on its page (`lumiora-keyart`, 941×1672 — the tall cut, replacing the 1122×1402 one that sat in its frame with bands above and below); the old
   children's-app splash is deleted. Its own line — "a musical action-adventure
   where sound shapes the world" — is what the page says in English.
 - WORM UP!'s art rights (unverified in its own release doc) and the LUMIORA
