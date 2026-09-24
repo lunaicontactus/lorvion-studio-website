@@ -118,8 +118,8 @@ test.describe('garage camera, 1440x900', () => {
       page.evaluate(() =>
         [...document.querySelectorAll('.thing')]
           .filter((t) => {
-            const o = t.querySelector('.thing__outline')
-            return o ? Number(getComputedStyle(o).opacity) > 0.5 : false
+            const o = t.querySelector('.thing__self, .thing__art')
+            return o ? Number(getComputedStyle(o).opacity) > 0.5 && getComputedStyle(o).transform !== 'none' : false
           })
           .map((t) => (t as HTMLElement).dataset['object'] ?? ''),
       )
@@ -142,7 +142,7 @@ test.describe('garage camera, 1440x900', () => {
     expect(await lit()).toEqual([])
   })
 
-  test('a keyboard focus shows the same silhouette', async ({ page }) => {
+  test('a keyboard focus lifts the thing the same way, with a glow', async ({ page }) => {
     await enterGarage(page)
     // Reaching it with real Tab presses, not .focus(): Chromium only counts a
     // focus as "visible" when the keyboard put it there, which is exactly the
@@ -157,9 +157,11 @@ test.describe('garage camera, 1440x900', () => {
     expect(reached).toBe(true)
     await page.waitForTimeout(200)
     const shown = await page
-      .locator('.thing--pc .thing__outline')
-      .evaluate((el) => getComputedStyle(el).opacity)
-    expect(Number(shown)).toBeGreaterThan(0.5)
+      .locator('.thing--pc .thing__self')
+      .evaluate((el) => ({ opacity: getComputedStyle(el).opacity, filter: getComputedStyle(el).filter }))
+    expect(Number(shown.opacity)).toBeGreaterThan(0.5)
+    // Keyboard focus is the same lift with a glow of its own — never a box.
+    expect(shown.filter).toContain('drop-shadow')
     // And no browser rectangle of its own.
     const ring = await page
       .locator('.thing--pc')

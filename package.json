@@ -14,7 +14,6 @@
     "verify": "npm run lint && npm run typecheck && npm run test && vite build",
     "e2e": "playwright test",
     "e2e:live": "playwright test --config playwright.live.config.ts",
-    "outline:proof": "node scripts/outline-proof.mjs",
     "brand": "python3 scripts/brand.py",
     "brand:scan": "node scripts/brand-scan.mjs dist"
   },

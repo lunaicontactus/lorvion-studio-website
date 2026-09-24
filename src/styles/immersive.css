@@ -83,10 +83,7 @@
 .thing.is-open .thing__art--open{opacity:1}
 .thing.is-open .thing__art--closed{opacity:0}
 .thing__art--closed{transition:opacity 140ms ease}
-/* Placed art has no silhouette path to trace, so it lifts a little instead. */
-.thing:hover .thing__art,
-.thing:focus-visible .thing__art,
-.thing.is-pressed .thing__art{filter:brightness(1.07)}
+/* Placed art reacts as its own picture: src/styles/garage.css (.thing__art). */
 
 /* The monitor's colour follows the work it is showing. */
 .panel-layer[data-kind="pc"]{--world-accent:#a8e6b8}

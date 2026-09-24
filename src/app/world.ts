@@ -16,7 +16,8 @@ import { mountPlayground, type PlaygroundHandle } from '@/scenes/playground'
 import type { Place } from '@/data/playground'
 import { mountArchive, type ArchiveHandle } from '@/scenes/archive'
 import { ARCHIVE_PROPS, type ArchivePlace } from '@/data/archive'
-import { acknowledge, secretState } from '@/systems/secret'
+import { SECRET_GAMES, acknowledge, secretState, starsAmong } from '@/systems/secret'
+import { allProgress } from '@/games/scores'
 import { GameRunner } from '@/games/runner'
 import { gameById } from '@/games/registry'
 import { Panels } from '@/ui/panels'
@@ -38,7 +39,8 @@ const REACT_SFX: Readonly<Record<string, { readonly name: string; readonly volum
   tv: { name: 'tv_channel', volume: 0.28 },
   fridge: { name: 'fridge_open', volume: 0.36 },
   cabinet: { name: 'drawer_open', volume: 0.3 },
-  radio: { name: 'radio_tune', volume: 0.26 },
+  // The radio's sound is its power coming on, once, in the audio manager —
+  // not a click on every touch of it.
   'outside-door': { name: 'door_open', volume: 0.3 },
   // The door in the bookcase is a door too, once it opens (a locked touch
   // never reaches here: it only shows its seam).
@@ -128,6 +130,8 @@ export function mountWorld(): () => void {
     rectOf: (id) => (outside ? playground?.screenRectOf(id) : inArchive ? archive?.screenRectOf(id) : garage?.screenRectOf(id)) ?? null,
   })
   const gameRoot = document.querySelector<HTMLElement>('[data-game-root]')!
+  /** The games that had a star when the last game opened. */
+  let starredBefore = new Set<string>()
   // The door between the painted site and the pixel games (WORLD 2.1).
   const wipe = new PixelWipe()
   off.push(() => wipe.destroy())
@@ -150,15 +154,24 @@ export function mountWorld(): () => void {
       garage?.setPaused(open || outside || inArchive)
       document.body.classList.toggle('is-playing', open)
       if (open) {
+        starredBefore = new Set(SECRET_GAMES.filter((id) => (allProgress(SECRET_GAMES)[id]?.stars ?? 0) >= 1))
         audio.unloop('playground', motion.reduced ? 0 : 500)
         if (track) audio.playWorld(track, 0.24, motion.reduced ? 0 : 900)
         else audio.stopWorld(motion.reduced ? 0 : 400)
       } else {
         audio.playWorld(PLAYGROUND_MUSIC, 0.3, motion.reduced ? 0 : 1200)
         audio.loop('playground', LOOPS.playground, 0.3, motion.reduced ? 0 : 1600)
-        // A round may have earned the star that opens the door; it is
-        // counted when the visitor is back in the room.
-        later(() => syncSecret(true), 400)
+        // A round may have earned this building its star: the socket on
+        // its sign lights as the building comes back into view, with the
+        // camera on it. The door in the bookcase counts it when the visitor
+        // is back in the room (comeBack → syncSecret).
+        const earned = starsAmong(allProgress(SECRET_GAMES)) > 0
+        const fresh = earned && !starredBefore.has(gameId) && (allProgress(SECRET_GAMES)[gameId]?.stars ?? 0) >= 1
+        playground?.setStars(SECRET_GAMES.filter((id) => (allProgress(SECRET_GAMES)[id]?.stars ?? 0) >= 1))
+        if (fresh && outside) later(() => {
+          playground?.lightStar(gameId)
+          audio.play('star_get', 0.16)
+        }, motion.reduced ? 0 : 700)
       }
     },
   })
@@ -450,7 +463,10 @@ export function mountWorld(): () => void {
       interaction.dismiss({ instant: true })
       garageEl.hidden = true
       garage?.setPaused(true)
-      if (!playground) playground = mountPlayground(document, { onPlace })
+      if (!playground) {
+        playground = mountPlayground(document, { onPlace })
+        playground?.setStars(SECRET_GAMES.filter((id) => (allProgress(SECRET_GAMES)[id]?.stars ?? 0) >= 1))
+      }
       playgroundEl.hidden = false
       // Arriving: close and dim, and nothing to touch yet (styles/playground.css).
       if (!quick) playgroundEl.classList.add('is-arriving', 'is-hushed')
@@ -519,9 +535,17 @@ export function mountWorld(): () => void {
   const syncSecret = (mayCelebrate: boolean): void => {
     if (!garage) return
     const s = secretState()
-    const celebrate = mayCelebrate && inside && !outside && !inArchive && s.unlocked && !s.celebrated
+    const here = mayCelebrate && inside && !outside && !inArchive
+    const celebrate = here && s.unlocked && !s.celebrated
+    // A star the room has not shown yet, short of the last: a glance at the
+    // door and the socket lighting. The last star is the opening instead.
+    const fresh = here && !s.unlocked && s.have > save.data.secretProgress
     garage.setSecret(s, celebrate)
     if (celebrate) audio.play('secret_unlock', 0.4)
+    else if (fresh) {
+      garage.glanceSecret()
+      later(() => audio.play('star_get', 0.16), motion.reduced ? 0 : 350)
+    }
     acknowledge(s.have)
   }
 

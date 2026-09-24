@@ -25,8 +25,11 @@ export interface Station {
 export const STATIONS: readonly Station[] = [
   { id: 'garage', freq: '88.1', name: 'GARAGE', track: '/assets/audio/music/garage.m4a', volume: 0.34 },
   { id: 'night', freq: '91.7', name: 'NIGHT', track: '/assets/audio/ambient.m4a', volume: 0.38 },
-  { id: 'news', freq: '96.4', name: 'DOKKA NEWS', track: '/assets/audio/sfx/radio_static.m4a', volume: 0.08 },
-  { id: 'static', freq: '103.2', name: 'STATIC', track: '/assets/audio/sfx/radio_static.m4a', volume: 0.2 },
+  // The static is the studio's own two-second clip, tiled into a seamless
+  // bed (scripts/static_bed.py): looped raw, a two-second burst restarting
+  // every two seconds sounded like the set being switched on again and again.
+  { id: 'news', freq: '96.4', name: 'DOKKA NEWS', track: '/assets/audio/sfx/radio_static_bed.m4a', volume: 0.08 },
+  { id: 'static', freq: '103.2', name: 'STATIC', track: '/assets/audio/sfx/radio_static_bed.m4a', volume: 0.2 },
 ]
 
 type Item = Omit<DiscoveryEntry, 'category' | 'cooldown' | 'oncePerSession' | 'asset'>

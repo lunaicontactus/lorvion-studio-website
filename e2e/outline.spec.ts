@@ -2,10 +2,10 @@ import { test, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 /**
- * The selection outline, checked in every engine the site claims to support.
- * Geometry is the thing that breaks across engines: objectBoundingBox clip
- * units, non-scaling strokes and an overflowing SVG are all places where one
- * browser quietly disagrees with the others.
+ * The thing under the pointer, checked in every engine the site claims to
+ * support. A thing reacts by moving — the painting's own pixels, clipped to
+ * its silhouette, coming forward — and objectBoundingBox clip units and
+ * transformed filters are where one browser quietly disagrees with another.
  */
 
 /** The camera eases in on entry; hovering before it stops misses the object. */
@@ -99,7 +99,7 @@ test('the entrance puts the week outside the door, and none of it is clickable',
   }
 })
 
-test('hover draws one heavy silhouette, sized to the object, and takes it away', async ({
+test('hover lifts the thing itself — no line, no box — and lets it down again', async ({
   page,
 }) => {
   await page.locator('[data-alley-enter]').click()
@@ -109,15 +109,15 @@ test('hover draws one heavy silhouette, sized to the object, and takes it away',
 
   const target = page.locator('.thing--pc')
   await target.hover()
+  // The one thing under the pointer is the one that has come forward.
   await expect
     .poll(
       async () =>
         page.evaluate(() =>
           [...document.querySelectorAll('.thing')]
-            // Placed art (the parcel) has no silhouette to draw; it is never lit.
             .filter((t) => {
-              const o = t.querySelector('.thing__outline')
-              return o ? Number(getComputedStyle(o).opacity) > 0.5 : false
+              const self = t.querySelector('.thing__self, .thing__art')
+              return self ? Number(getComputedStyle(self).opacity) > 0.5 && getComputedStyle(self).transform !== 'none' : false
             })
             .map((t) => (t as HTMLElement).dataset['object']),
         ),
@@ -126,37 +126,39 @@ test('hover draws one heavy silhouette, sized to the object, and takes it away',
     .toEqual(['pc'])
 
   const drawn = await target.evaluate((el) => {
-    const svg = el.querySelector('.thing__outline') as SVGElement
-    const face = getComputedStyle(svg.querySelector('.thing__stroke')!)
-    const edge = getComputedStyle(svg.querySelector('.thing__edge')!)
-    const box = svg.getBoundingClientRect()
-    const hit = el.getBoundingClientRect()
-    const room = document.querySelector('.garage__room') as HTMLElement
-    const scale = room.getBoundingClientRect().width / room.offsetWidth
+    const self = el.querySelector('.thing__self') as HTMLElement
+    const cs = getComputedStyle(self)
+    const m = new DOMMatrixReadOnly(cs.transform)
+    const paint = self.querySelector('.thing__paint') as HTMLElement
     return {
-      face: face.strokeWidth,
-      edge: edge.strokeWidth,
-      shadow: face.filter,
-      // The outline is the object's own box pushed out, not the padded hit box.
-      grownBy: Math.round((hit.width - box.width) / 2 / scale),
+      scale: m.a,
+      filter: cs.filter,
+      // The lift is the object's own pixels: the same plate, positioned on itself.
+      plate: getComputedStyle(paint).backgroundImage,
+      clipped: getComputedStyle(paint).clipPath,
+      // Nothing is stroked, nothing is outlined, nothing is boxed.
+      strokes: el.querySelectorAll('.thing__stroke, .thing__edge, .thing__outline').length,
+      outline: getComputedStyle(el).outlineStyle,
+      border: getComputedStyle(el).borderStyle,
+      ringSelf: cs.outlineStyle,
     }
   })
-
-  // Heavy enough to read as a selected object, not a focus ring.
-  expect(parseFloat(drawn.face)).toBeGreaterThanOrEqual(4.5)
-  expect(parseFloat(drawn.edge)).toBeGreaterThan(parseFloat(drawn.face))
-  // No glow, no halo: the contrast comes from the dark path behind.
-  expect(drawn.shadow === 'none' || drawn.shadow === '').toBe(true)
-  // 12px of hit padding on each side, 3px of outline offset back out.
-  expect(drawn.grownBy).toBeGreaterThanOrEqual(7)
-  expect(drawn.grownBy).toBeLessThanOrEqual(11)
+  expect(drawn.scale).toBeGreaterThan(1)
+  expect(drawn.scale).toBeLessThan(1.05)
+  expect(drawn.filter).toContain('drop-shadow')
+  expect(drawn.plate).toContain('room_')
+  expect(drawn.clipped).toContain('url(')
+  expect(drawn.strokes).toBe(0)
+  expect(drawn.outline).toBe('none')
+  expect(drawn.border).toBe('none')
+  expect(drawn.ringSelf).toBe('none')
 
   await page.mouse.move(20, 700)
   await page.waitForTimeout(300)
   const after = await page.evaluate(
     () =>
       [...document.querySelectorAll('.thing')].filter(
-        (t) => (t.querySelector('.thing__outline') ? Number(getComputedStyle(t.querySelector('.thing__outline')!).opacity) > 0.5 : false),
+        (t) => (t.querySelector('.thing__self') ? Number(getComputedStyle(t.querySelector('.thing__self')!).opacity) > 0.5 : false),
       ).length,
   )
   expect(after).toBe(0)

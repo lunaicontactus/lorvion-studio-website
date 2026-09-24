@@ -134,6 +134,23 @@ export function mountScene<L extends SceneLayout>(root: ParentNode, opts: SceneO
         left: `${p.rect.x - pad}px`, top: `${p.rect.y - pad}px`,
         width: `${p.rect.w + pad * 2}px`, height: `${p.rect.h + pad * 2}px`,
       })
+      // The place itself, as the painting: the same plate again over its
+      // own pixels, its edges softened, so under the pointer the building
+      // comes a little forward and brightens — never a ring round a box.
+      const self = document.createElement('span')
+      self.className = 'spot__self'
+      self.setAttribute('aria-hidden', 'true')
+      Object.assign(self.style, { left: `${pad}px`, top: `${pad}px`, width: `${p.rect.w}px`, height: `${p.rect.h}px` })
+      self.style.setProperty('--lift', (1 + Math.min(0.035, 6 / Math.max(p.rect.w, p.rect.h))).toFixed(4))
+      const paint = document.createElement('span')
+      paint.className = 'spot__paint'
+      paint.style.backgroundImage = `url('${layout.plate}')`
+      paint.style.backgroundSize = `${layout.width}px ${layout.height}px`
+      paint.style.backgroundPosition = `${-p.rect.x}px ${-p.rect.y}px`
+      self.append(paint)
+      el.append(self)
+      // A ring that is never shown at rest or under the pointer: the archive
+      // uses it for the jar's own glow.
       const ring = document.createElement('span')
       ring.className = 'spot__ring'
       ring.setAttribute('aria-hidden', 'true')

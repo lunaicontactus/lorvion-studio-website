@@ -744,7 +744,8 @@ export class Panels {
     const tuneTo = (i: number): void => {
       this.#station = (i + STATIONS.length) % STATIONS.length
       const st = STATIONS[this.#station]!
-      audio.play('radio_tune', 0.2)
+      // No click: the station itself is what changes (src/systems/audio.ts
+      // takes the old one down and the new one up).
       audio.tuneStation(st.id)
       if (st.id === 'news') {
         const seg = this.#draw('radio')
