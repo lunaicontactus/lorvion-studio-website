@@ -599,6 +599,9 @@ class AudioManager {
       this.ambient?.pause()
       this.world?.pause()
       for (const l of this.loops.values()) l.el.pause()
+      // And whatever short sound was mid-air: a footstep does not finish
+      // in a tab nobody is looking at.
+      for (const el of this.cache.values()) el.pause()
     } else if (pref.enabled && this.unlocked) {
       this.resume()
     }

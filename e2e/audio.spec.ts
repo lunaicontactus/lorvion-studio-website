@@ -151,6 +151,8 @@ test.describe('the radio', () => {
     })
     await page.waitForTimeout(600)
     expect(await music(page)).toEqual([])
+    // Nothing at all — not the room tone, not a footstep mid-air.
+    expect(await page.evaluate(() => [...(window.__els ?? [])].filter((e) => !e.paused).map((e) => (e.currentSrc || e.src).split('/').pop()))).toEqual([])
     await page.evaluate(() => {
       Object.defineProperty(document, 'hidden', { value: false, configurable: true })
       document.dispatchEvent(new Event('visibilitychange'))
