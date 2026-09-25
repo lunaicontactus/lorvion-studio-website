@@ -72,10 +72,10 @@ own now — nothing borrowed). Running has footfalls: one clip per step, on
 the walk cycle's own cadence (`src/games/delivery/steps.ts`: four frames at
 ten a second, a foot down every 200 ms of grounded walking, carrying or
 not), alternating a little in level, never standing still and never in the
-air. The jump keeps its one step. `test/steps.test.ts` holds the cadence;
+air. `test/steps.test.ts` holds the cadence;
 `e2e/delivery.spec.ts` listens: nothing standing, no `paper` at the pile,
 four to eight footfalls in 1.2 s of running with the parcel, nothing
-standing with it, one sound for a jump.
+standing with it, no footfall in a jump.
 
 **The jump.** The studio's own retro jump —
 `~/Desktop/eungarage-website/assets/a_videogame_retro_ju-1790301919116.wav`
