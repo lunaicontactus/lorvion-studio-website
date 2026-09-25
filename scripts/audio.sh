@@ -22,4 +22,6 @@ done
 # MOMO's jump in the parcel game (WORLD 2.4): the studio's own retro jump,
 # delivered to assets/ rather than assets/new/.
 afconvert -f m4af -d aac -b 96000 "$SRC/../a_videogame_retro_ju-1790301919116.wav" "$OUT/sfx/momo_jump.m4a"
+# MOMO's footfalls: three steps cut from the studio's walking clip.
+python3 scripts/run_steps.py
 echo "audio written"

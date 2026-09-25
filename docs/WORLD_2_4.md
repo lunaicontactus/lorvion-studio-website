@@ -90,12 +90,18 @@ press in the air is nothing until the ground, landing is not a jump
 hold, air, landing, a second press, and carrying: 1, 1, 1, 2, 3). The crew
 footstep that used to stand in for the jump is off it.
 
-**Running.** No running sound has been delivered: the jump above is the
-only new audio anywhere in the project or nearby, and it is not a run.
-`run_step` stays on the studio's crew footstep (`crew_step_01.m4a`) until
-one is; swapping it in is one line plus an `afconvert`. Effect elements
-now carry their clip name (`data-clip`), since two names may share a file
-and the tests listen by name.
+**Running.** The studio's walking clip,
+`~/Desktop/eungarage-website/FEETHmn-A_boy_walking_on_the-Elevenlabs.wav`
+(ElevenLabs, 2026-09-26 00:07, 2.0 s), is three footsteps at a walk,
+600 ms apart, each a heel strike and a short scuff of 110–150 ms with
+nothing after it. MOMO's feet come down every 200 ms, so the clip is not
+looped: `scripts/run_steps.py` cuts the three steps out
+(`momo_run_1..3.m4a`, 2 ms in, 25 ms out, one peak) and the game plays one
+per footfall, taking them in turn, left and right a touch apart (0.14 /
+0.12) — about 13 dB under the game's music and 24 dB under the jump. The
+crew's footstep that stood in (`crew_step_01.m4a`) is off the game and
+stays the crew's in the garage. Effect elements carry their clip name
+(`data-clip`), and the tests listen by name.
 
 ## 3. The telescope was the room, enlarged
 

@@ -60,11 +60,14 @@ const CLIPS = {
   broom: `${SFX}/sfx/broom.m4a`,
   crew_step: `${SFX}/sfx/crew_step_01.m4a`,
   // MOMO in the parcel game (WORLD 2.4): running is one footfall at a time
-  // at the walk's own cadence — the studio's crew footstep stands in until
-  // a running sound is delivered (docs/WORLD_2_4.md) — and the jump is the
-  // studio's own retro jump (assets/a_videogame_retro_ju-1790301919116.wav),
-  // once per jump, at the moment MOMO leaves the ground.
-  run_step: `${SFX}/sfx/crew_step_01.m4a`,
+  // at the walk's own cadence, the three footsteps of the studio's walking
+  // clip taken in turn (scripts/run_steps.py cuts them from
+  // FEETHmn-A_boy_walking_on_the-Elevenlabs.wav); the jump is the studio's
+  // own retro jump (assets/a_videogame_retro_ju-1790301919116.wav), once
+  // per jump, at the moment MOMO leaves the ground.
+  run_1: `${SFX}/sfx/momo_run_1.m4a`,
+  run_2: `${SFX}/sfx/momo_run_2.m4a`,
+  run_3: `${SFX}/sfx/momo_run_3.m4a`,
   momo_jump: `${SFX}/sfx/momo_jump.m4a`,
   // The games and the archive.
   game_start: `${SFX}/sfx/game_start.m4a`,

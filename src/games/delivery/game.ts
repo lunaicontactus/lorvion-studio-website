@@ -58,7 +58,7 @@ class DeliveryGame implements GameInstance {
   #ended = false
   #t = 0
   #walkT = 0
-  /** Which foot came down last: the two alternate a little in level. */
+  /** How many feet have come down: which of the three steps is next, and which foot. */
   #foot = 0
   #bursts: Burst[] = []
   #flash = 0
@@ -170,8 +170,11 @@ class DeliveryGame implements GameInstance {
       const was = this.#walkT
       this.#walkT += s
       if (footfalls(was, this.#walkT) > 0) {
-        this.#foot = 1 - this.#foot
-        this.#host.sfx('run_step', this.#foot ? 0.13 : 0.1)
+        // The three steps of the studio's walking clip, in turn, so no two
+        // footfalls in a row are the same sound; left and right a touch
+        // apart in level. Under the music, well under the jump.
+        this.#foot += 1
+        this.#host.sfx(`run_${(this.#foot % 3) + 1}`, this.#foot % 2 ? 0.14 : 0.12)
       }
     }
     for (const b of this.#bursts) b.t += s
