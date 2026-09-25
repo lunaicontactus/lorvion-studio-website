@@ -416,9 +416,14 @@ test.describe('desktop', () => {
     expect(whileOpen.map((s) => s.state)).not.toContain('CHOOSE_TARGET')
     expect(whileOpen.map((s) => s.state)).not.toContain('WALK')
 
+    // Counted from the key, not from the panel being gone: closing it takes
+    // the crew off pause in the same moment, and a walk taken up again right
+    // there is the first thing to see — read after the panel had hidden, it
+    // had already happened, and a dokkaebi back at the bench for its next
+    // thirty seconds looked like one that never moved again.
+    const closedAt = await page.evaluate(() => window.__npcStates!.length)
     await page.keyboard.press('Escape')
     await expect(page.locator('[data-panel-root]')).toBeHidden()
-    const closedAt = await page.evaluate(() => window.__npcStates!.length)
     // Whoever was in the room when it opened — at a thing, or caught
     // mid-walk — picks up where they left off: the rest of the walk, or a
     // job of up to twelve seconds, then the next errand and the walk to it.
@@ -430,37 +435,33 @@ test.describe('desktop', () => {
       [closedAt, candidates] as const,
       { timeout: 32000 },
     )
-    const setOff = await page.evaluate(
-      ([i, who]) => window.__npcStates!.slice(i).find((s) => s.state === 'WALK' && who.includes(s.who))!,
-      [closedAt, candidates] as const,
-    )
-    // Their own records, in order: the walk ends when the next state comes
-    // that is not part of it. GLANCE is part of it — stopped mid-walk to
-    // let somebody by, or to look at somebody eating, with the errand still
-    // on and the walk taken up again afterwards (src/scenes/npc.ts) — so a
-    // glance a moment after setting off is not an arrival where it began.
+    // And they go somewhere: one of them walks to a place that is not
+    // where the walk began. Not necessarily the first walk. A walk's end
+    // is the first state after it that is not part of it — GLANCE is part
+    // of it: stopped to let somebody by, errand still on, taken up again
+    // (src/scenes/npc.ts) — and the room allows walks that end where they
+    // began: a dokkaebi may choose the cushion it is already on (only the
+    // opening errand must be 60 units off), and one that makes no progress
+    // for four seconds gives the errand up where it stands. Both happened
+    // on the deploy gate, each read as a walk of nought.
     const walking = ['WALK', 'GLANCE']
-    await page.waitForFunction(
+    const went = await page.waitForFunction(
       ([i, who, on]) => {
-        const own = window.__npcStates!.slice(i).filter((s) => s.who === who)
-        const k = own.findIndex((s) => s.state === 'WALK')
-        return k >= 0 && own.slice(k + 1).some((s) => !on.includes(s.state))
+        for (const w of who as readonly string[]) {
+          const own = window.__npcStates!.slice(i).filter((s) => s.who === w)
+          for (let k = 0; k < own.length; k++) {
+            if (own[k]!.state !== 'WALK' || (k > 0 && own[k - 1]!.state === 'WALK')) continue
+            const end = own.slice(k + 1).find((s) => !(on as readonly string[]).includes(s.state))
+            if (end && Math.hypot(end.x - own[k]!.x, end.y - own[k]!.y) > 1) return { who: w, from: own[k]!, to: end }
+          }
+        }
+        return null
       },
-      [closedAt, setOff.who, walking] as const,
+      [closedAt, candidates, walking] as const,
       { timeout: 32000 },
-    )
-    // And a walk is a walk: where it ended is not where it began. (A walk
-    // resumed mid-way may have only its last stretch left, so the distance
-    // is not the point; that there was one is.)
-    const arrived = await page.evaluate(
-      ([i, who, on]) => {
-        const own = window.__npcStates!.slice(i).filter((s) => s.who === who)
-        const k = own.findIndex((s) => s.state === 'WALK')
-        return own.slice(k + 1).find((s) => !on.includes(s.state))!
-      },
-      [closedAt, setOff.who, walking] as const,
-    )
-    expect(Math.hypot(arrived.x - setOff.x, arrived.y - setOff.y)).toBeGreaterThan(1)
+    ).then((h) => h.jsonValue())
+    expect(went, 'nobody who was in the room walked anywhere after it closed').not.toBeNull()
+    expect(candidates).toContain(went!.who)
   })
 
   test('it moves with the room when the camera does', async ({ page }) => {
