@@ -126,13 +126,11 @@ for (const view of [
         const world = el(/music\/playground/)
         return {
           station: el(/music\/garage/)?.paused ?? null,
-          tone: el(/ambient\.m4a/)?.paused ?? null,
           world: world ? { paused: world.paused, volume: world.volume } : null,
           worldStart: window.__plays!.find((p) => /music\/playground/.test(p.src))?.volume ?? null,
         }
       })
       expect(after.station, 'the garage music kept playing outside').toBe(true)
-      expect(after.tone, 'the room tone kept playing outside').toBe(true)
       expect(after.world?.paused, 'no music outside').toBe(false)
       expect(after.worldStart!, 'the playground music cut in').toBeLessThan(0.05)
       expect(after.world!.volume).toBeGreaterThan(0.2)

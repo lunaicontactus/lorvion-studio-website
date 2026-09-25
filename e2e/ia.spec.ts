@@ -165,21 +165,25 @@ test.describe('desktop', () => {
     await expect(page.locator('[data-tv]')).toHaveAttribute('data-channel', 'contact', { timeout: 6000 })
   })
 
-  test('the radio is the sound: its power is the site\'s mute, and it stays that way', async ({ page, context }) => {
+  test('the radio brings the sound on with it, its knob is its own, and the switch stays', async ({ page, context }) => {
     await enter(page)
     await touch(page, 'radio')
     const power = page.locator('[data-radio-power]')
     await expect(power).toHaveAttribute('aria-pressed', 'false', { timeout: 6000 })
+    // Asking for a station with the site silent is asking for sound too.
     await page.locator('[data-station="2"]').click()
     await expect(power).toHaveAttribute('aria-pressed', 'true')
     await expect(page.locator('[data-radio]')).toHaveAttribute('data-station', 'news')
     await expect(page.locator('[data-radio-talk]')).not.toBeEmpty()
     await expect(page.locator('[data-sound-toggle]')).toHaveAttribute('aria-pressed', 'true')
+    // The knob is the radio's: off here is the room's own song, not silence.
     await power.click()
     await expect(power).toHaveAttribute('aria-pressed', 'false')
-    await expect(page.locator('[data-sound-toggle]')).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.locator('[data-sound-toggle]')).toHaveAttribute('aria-pressed', 'true')
     await close(page)
-    // And the nav switch is the same switch.
+    // The nav switch is the master: off, and on again.
+    await page.locator('[data-sound-toggle]').click()
+    await expect(page.locator('[data-sound-toggle]')).toHaveAttribute('aria-pressed', 'false')
     await page.locator('[data-sound-toggle]').click()
     await expect(page.locator('[data-sound-toggle]')).toHaveAttribute('aria-pressed', 'true')
     // Kept: a new page in the same browser (the init script above wipes

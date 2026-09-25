@@ -10,7 +10,8 @@ import type { Page } from '@playwright/test'
  * three have a star, the room shows the door opening — once, with its
  * sound — and a reload finds it open quietly. Behind it the archive: six
  * painted things, each with its own small answer, the sky through the
- * telescope, and Healing Mode, which anything ends.
+ * telescope (a sky of its own, WORLD 2.4), the door beside the visitor that
+ * is the way home, and Healing Mode, which anything ends.
  */
 
 declare global {
@@ -315,10 +316,11 @@ for (const view of [
       await expect(page.locator('[data-album]')).toBeVisible()
       await page.keyboard.press('Escape')
       await expect(page.locator('[data-panel-root]')).toBeHidden()
-      // The telescope: the glass fills the window, a star goes over, Escape.
+      // The telescope: a sky of its own opens, and Escape closes it (the
+      // sky itself is held to account below).
       await tap('telescope')
       await expect(page.locator('[data-archive-sky]')).toHaveClass(/is-open/, { timeout: 3000 })
-      await expect(page.locator('[data-archive-sky] .archive__shooting')).toHaveClass(/is-falling/, { timeout: 3000 })
+      await expect(page.locator('[data-archive-stars]')).toBeVisible()
       await page.keyboard.press('Escape')
       await expect(page.locator('[data-archive-sky]')).not.toHaveClass(/is-open/)
       // The cushion: Healing Mode.
@@ -335,6 +337,95 @@ for (const view of [
       await expect(page.locator('body')).not.toHaveClass(/is-healing/)
       await page.waitForTimeout(700)
       await expect(page.locator('[data-archive]')).not.toHaveClass(/is-healing/)
+    })
+
+    test('the telescope is a sky of its own, and the door beside the visitor is the way home', async ({ page }) => {
+      test.setTimeout(90_000)
+      await seed(page, ALL, 3)
+      await enter(page)
+      await goIn(page)
+      const vw = view.viewport
+      // The door back is there before anything is touched: in view, a
+      // finger wide, and it says where it goes.
+      const door = page.locator('[data-archive-door]')
+      await expect(door).toBeVisible()
+      const box = (await door.boundingBox())!
+      expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44)
+      expect(box.y + box.height).toBeLessThanOrEqual(vw.height + 1)
+      expect(box.x).toBeGreaterThanOrEqual(0)
+      await expect(door).toHaveAttribute('aria-label', '차고로 돌아가기')
+      // Up through the telescope.
+      const tel = page.locator('[data-place="telescope"]')
+      const look = async (): Promise<void> => {
+        await tel.focus()
+        await page.waitForTimeout(600)
+        await tel.press('Enter')
+      }
+      await look()
+      const sky = page.locator('[data-archive-sky]')
+      await expect(sky).toHaveClass(/is-open/, { timeout: 3000 })
+      await page.waitForTimeout(1000)
+      // The room is gone from view: the sky is opaque across the whole
+      // window, nothing of the plate is painted in it, and the stage under
+      // it is hidden.
+      const seen = await sky.evaluate((el) => {
+        const cs = getComputedStyle(el)
+        const r = el.getBoundingClientRect()
+        return {
+          opacity: Number(cs.opacity), bg: cs.backgroundImage, w: r.width, h: r.height,
+          stage: getComputedStyle(document.querySelector('[data-archive-stage]')!).visibility,
+          under: document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.className ?? '',
+          nav: Number(getComputedStyle(document.querySelector('.site-nav')!).opacity),
+        }
+      })
+      expect(seen.opacity).toBe(1)
+      expect(seen.bg, 'the plate is in the sky').not.toContain('world_')
+      expect(seen.w).toBeGreaterThanOrEqual(vw.width - 1)
+      expect(seen.h).toBeGreaterThanOrEqual(vw.height - 1)
+      expect(seen.stage).toBe('hidden')
+      expect(seen.under).toMatch(/archive__(stars|eyepiece|skyView)/)
+      expect(seen.nav).toBeLessThan(0.2)
+      // Stars: drawn, and many, at three depths.
+      const stars = page.locator('[data-archive-stars]')
+      await expect(stars).toBeVisible()
+      expect(Number(await stars.getAttribute('data-stars'))).toBeGreaterThan(500)
+      const canvas = (await stars.boundingBox())!
+      expect(canvas.width).toBeGreaterThanOrEqual(vw.width - 1)
+      // The one control: in the top corner, a finger tall, and it says what it does.
+      const close = page.locator('[data-archive-sky-close]')
+      await expect(close).toBeVisible()
+      await expect(close).toHaveText(/별 보기 닫기/)
+      const c = (await close.boundingBox())!
+      expect(c.height).toBeGreaterThanOrEqual(44)
+      expect(c.x + c.width).toBeLessThanOrEqual(vw.width + 1)
+      expect(c.y).toBeGreaterThanOrEqual(0)
+      // A star falls, after a wait: not at once, and not never.
+      expect(Number(await stars.getAttribute('data-shots') ?? 0)).toBe(0)
+      await expect.poll(async () => Number(await stars.getAttribute('data-shots') ?? 0), { timeout: 20_000 }).toBeGreaterThanOrEqual(1)
+      // Escape: the archive again, the stage back.
+      await page.keyboard.press('Escape')
+      await expect(sky).not.toHaveClass(/is-open/)
+      await expect.poll(() => page.locator('[data-archive-stage]').evaluate((el) => getComputedStyle(el).visibility)).toBe('visible')
+      await expect(page.locator('[data-garage]')).toBeHidden()
+      // Again, and out by the control.
+      await look()
+      await expect(sky).toHaveClass(/is-open/, { timeout: 3000 })
+      await page.waitForTimeout(400)
+      if (view.hasTouch) await close.tap()
+      else await close.click()
+      await expect(sky).not.toHaveClass(/is-open/)
+      await expect(sky).toBeHidden({ timeout: 3000 })
+      await expect(door).toBeVisible()
+      // The door: pressed, it gives; released, it opens; then the garage.
+      const b2 = (await door.boundingBox())!
+      await page.mouse.move(b2.x + b2.width / 2, b2.y + b2.height / 2)
+      await page.mouse.down()
+      await expect(door).toHaveClass(/is-pressed/)
+      await page.mouse.up()
+      await expect(door).toHaveClass(/is-opening/)
+      await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 8000 })
+      await expect(page.locator('[data-archive]')).toBeHidden()
+      expect(await page.evaluate(() => location.hash)).toBe('')
     })
   })
 }
@@ -386,6 +477,19 @@ test.describe('desktop only', () => {
     await expect(page.locator('[data-garage]')).toBeHidden()
     expect(await page.evaluate(() => location.hash)).toBe('#archive')
     expect(await page.evaluate(() => history.state)).toBeNull()
+  })
+
+  test('the keyboard finds the door home: Tab to it, Enter, the garage', async ({ page }) => {
+    await seed(page, ALL, 3)
+    await enter(page)
+    await goIn(page)
+    const door = page.locator('[data-archive-door]')
+    await door.focus()
+    await expect(door).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(door).toHaveClass(/is-opening/)
+    await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 8000 })
+    await expect(page.locator('[data-archive]')).toBeHidden()
   })
 
   test('with the door locked, #archive is just the room', async ({ page }) => {

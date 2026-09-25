@@ -6,35 +6,44 @@
  * that knows browsers will not play anything before a gesture, and no risk of a
  * dozen elements decoding the same file.
  *
- * Three kinds of sound, three players (PHASE 6):
+ * Three kinds of sound:
  *   effects   one element per clip, restarted rather than stacked, so a clip
  *             can never play over itself;
- *   the room  the garage's tone, looping while the visitor is inside;
- *   the radio one station stream, which is also the garage's music: the
- *             room tunes it to GARAGE when sound comes on inside, and the
- *             radio in the corner is the same dial.
+ *   music     one owner at a time (src/systems/musicOwner.ts): the garage's
+ *             own song, the radio's station, or the world's (the playground,
+ *             the archive, a game). Whatever is going out is silent before
+ *             the next comes in;
+ *   loops     the air of a place and the music box's tune, under the music.
  *
- * The mute switch in the nav and the power knob on the radio are one
- * preference (src/systems/sound.ts): whichever is used, this reacts. Nothing
- * is fetched until it is first needed, and nothing plays before a gesture.
+ * WORLD 2.4: the radio and the site's sound switch are two switches. Sound
+ * on with the radio off is the garage's own song; the radio's knob takes the
+ * song down and out and puts its station on, and off again brings the song
+ * back where it was. The room has no separate "tone": the file that used to
+ * hum under everything (ambient.m4a) is a tonal track, and it was the second
+ * song the studio kept hearing under the radio. It is NIGHT 91.7 on the dial
+ * now, and nothing else.
+ *
+ * Nothing is fetched until it is first needed, and nothing plays before a
+ * gesture.
  */
 import { sound as pref } from '@/systems/sound'
 import { save } from '@/systems/storage'
 import { STATIONS, type StationId } from '@/data/garage/radio'
+import { HANDS, ownerFor, type MusicOwner, type WorldOwner } from '@/systems/musicOwner'
 import { log } from '@/systems/log'
 
 const SFX = '/assets/audio'
 
-/** The room at night. Also NIGHT 91.7 on the radio, which is the same file. */
-const ROOM_TONE = `${SFX}/ambient.m4a`
-const ROOM_TONE_VOLUME = 0.16
+/** The garage's own song, and its level in the room. */
+export const GARAGE_TRACK = `${SFX}/music/garage.m4a`
+const GARAGE_VOLUME = 0.34
+/** What the radio plays the first time it is switched on. */
+const DEFAULT_STATION: StationId = 'night'
 
 /**
  * Every effect on the site is one the studio chose and delivered (WORLD 2.1,
  * PHASE B): nothing generic, nothing doubled. A thing with no sound of its own
- * is silent, which is better than a borrowed click. The eight stock clips
- * that were here before the delivery (click, door, drawer, bell, discovery,
- * keyboard, surprise, wrapper) are gone, and so are their files.
+ * is silent, which is better than a borrowed click.
  */
 const CLIPS = {
   // The objects, at the moment they react.
@@ -50,6 +59,10 @@ const CLIPS = {
   // The room living.
   broom: `${SFX}/sfx/broom.m4a`,
   crew_step: `${SFX}/sfx/crew_step_01.m4a`,
+  // MOMO running in the parcel game (WORLD 2.4), one footfall at a time at
+  // the walk's own cadence. The studio's crew footstep stands in until the
+  // running sound it has made is pointed at (docs/WORLD_2_4.md).
+  run_step: `${SFX}/sfx/crew_step_01.m4a`,
   // The games and the archive.
   game_start: `${SFX}/sfx/game_start.m4a`,
   game_fail: `${SFX}/sfx/game_fail.m4a`,
@@ -74,15 +87,19 @@ export const LOOPS = {
 
 export type ClipName = keyof typeof CLIPS
 
+interface Hand {
+  /** The one sounding goes down and out over this long. */
+  readonly outMs: number
+  /** The next comes up over this long, after `delay`. */
+  readonly inMs: number
+  readonly delay?: number
+}
+
 class AudioManager {
   private cache = new Map<string, HTMLAudioElement>()
-  private ambient: HTMLAudioElement | null = null
-  private ambientOn = false
-  /** The level the tone was last asked for: the room's, or lower elsewhere. */
-  private ambientVolume = ROOM_TONE_VOLUME
   /** Nothing plays before the visitor has interacted; browsers refuse anyway. */
   private unlocked = false
-  /** Inside the garage: the room's tone and its station belong on. */
+  /** Inside the garage. */
   private inRoom = false
 
   unlock(): void {
@@ -112,49 +129,251 @@ class AudioManager {
     }
   }
 
-  // ── The room ───────────────────────────────────────────────────────────
-
-  /**
-   * The visitor came into the garage. If sound is on, the room's tone comes
-   * on with them and the radio plays what it was left on — its own station,
-   * the first time. If sound is off, the same happens the moment it is
-   * turned on, from either switch.
-   *
-   * With `fade` (PHASE 7) the tone comes up over that many milliseconds and
-   * the music follows it, a little later and a little longer: the room's air
-   * first, its song under it, and no hard start on either.
-   */
-  enterRoom(fade: { readonly tone: number; readonly music: number; readonly musicAfter: number } | null = null): void {
-    this.inRoom = true
-    this.ambientOn = true
-    this.fadeIn = fade
-    this.reconcile()
-  }
-
-  /** Out through the shutter: the room's sound stays in the room. */
-  leaveRoom(fadeMs = 0): void {
-    this.inRoom = false
-    this.ambientOn = false
-    this.fadeIn = null
-    if (fadeMs > 0) {
-      if (this.ambient) this.ramp(this.ambient, 0, fadeMs, true)
-      if (this.stream) this.ramp(this.stream, 0, fadeMs, true)
-      return
-    }
-    this.ambient?.pause()
-    this.stream?.pause()
-  }
-
-  // ── The world outside (PHASE 8/9) ───────────────────────────────────────
+  // ── Music: the players ──────────────────────────────────────────────────
+  /** The garage's own song. One element for its life, so it resumes where it was. */
+  private bgm: HTMLAudioElement | null = null
+  /** The radio: one element, retuned. */
+  private stream: HTMLAudioElement | null = null
+  /** The world's: the playground's, the archive's, a game's. */
   private world: HTMLAudioElement | null = null
+  /** World elements on their way out after a change of track. */
+  private retired = new Set<HTMLAudioElement>()
+
+  private radioIsOn = save.data.radioOn
+  private stationId: StationId | null = null
+  private stationSrc: string | null = null
+  private stationVolume = 0.3
+
+  private worldOwner: WorldOwner | null = null
   private worldSrc: string | null = null
   private worldVolume = 0.3
-  private worldOn = false
   /** How far the world's music is stepped back under something (the music box). */
   private worldDim = 1
 
   /** Files fetched ahead of a door, so the crossing does not wait on the network. */
   private warmed = new Map<string, HTMLAudioElement>()
+
+  /** Every element that is music. */
+  private players(): HTMLAudioElement[] {
+    const out: HTMLAudioElement[] = []
+    for (const el of [this.bgm, this.stream, this.world, ...this.retired]) if (el) out.push(el)
+    return out
+  }
+
+  /** Who the music belongs to right now — never more than one. */
+  get musicOwner(): MusicOwner {
+    return ownerFor({ inRoom: this.inRoom, radioOn: this.radioIsOn, world: this.worldOwner })
+  }
+
+  /** The music sounding right now — never more than one. For the tests. */
+  get musicSounding(): readonly string[] {
+    return this.players()
+      .filter((el) => !el.paused)
+      .map((el) => el.currentSrc || el.src)
+  }
+
+  /**
+   * Make `el` the one music sounding. Whatever else is sounding goes down
+   * and out over `outMs` (paused where it is, so it can come back from
+   * there), and only then `el` comes up over `inMs`. Already sounding, with
+   * the same file: only its level, nothing restarts. `prepare` runs just
+   * before the start — the station's source swap, so a track never cuts
+   * another on the same element.
+   */
+  private switchTo(el: HTMLAudioElement, volume: number, hand: Hand, src?: string): void {
+    const abs = src ? new URL(src, location.href).href : null
+    const same = !abs || el.src === abs
+    if (!el.paused && same) {
+      this.pending++
+      if (!this.ramps.has(el)) el.volume = volume
+      for (const o of this.players()) if (o !== el && !o.paused) this.ramp(o, 0, hand.outMs, true)
+      return
+    }
+    let wait = 0
+    for (const o of this.players()) {
+      if (o === el && same) continue
+      if (o.paused) continue
+      this.ramp(o, 0, hand.outMs, true)
+      wait = Math.max(wait, hand.outMs + 20)
+    }
+    this.after(wait, () => {
+      if (abs && el.src !== abs) el.src = src!
+      if (hand.inMs > 0 || (hand.delay ?? 0) > 0) this.fadeUp(el, volume, hand.inMs, hand.delay ?? 0)
+      else {
+        const r = this.ramps.get(el)
+        if (r !== undefined) cancelAnimationFrame(r)
+        this.ramps.delete(el)
+        el.volume = volume
+      }
+      void el.play().catch((err: unknown) => log.debug('audio: music', err))
+      for (const r of this.retired) if (r.paused) this.retired.delete(r)
+    })
+  }
+
+  /** Everything that is music, down and out over `ms` (0: at once). */
+  private silence(ms: number): void {
+    this.pending++
+    for (const el of this.players()) {
+      if (el.paused) continue
+      if (ms > 0) this.ramp(el, 0, ms, true)
+      else {
+        const r = this.ramps.get(el)
+        if (r !== undefined) cancelAnimationFrame(r)
+        this.ramps.delete(el)
+        el.pause()
+      }
+    }
+  }
+
+  // ── The room ───────────────────────────────────────────────────────────
+
+  /**
+   * The visitor came into the garage. If sound is on, the room's song comes
+   * on with them — or the radio's station, if the radio was left on. If
+   * sound is off, the same happens the moment it is turned on.
+   *
+   * With `fade` (PHASE 7) the music comes up over that many milliseconds,
+   * after `after`: no hard start under the door.
+   */
+  enterRoom(fade: { readonly music: number; readonly after: number } | null = null): void {
+    this.inRoom = true
+    this.fadeIn = fade
+    this.reconcile()
+  }
+
+  /** Out through the shutter, or a door: the room's music stays in the room, where it was. */
+  leaveRoom(fadeMs = 0): void {
+    this.inRoom = false
+    this.fadeIn = null
+    this.pending++
+    for (const el of [this.bgm, this.stream]) {
+      if (!el || el.paused) continue
+      if (fadeMs > 0) this.ramp(el, 0, fadeMs, true)
+      else el.pause()
+    }
+  }
+
+  /** The garage's own song, from where it left off. */
+  private playGarage(hand: Hand): void {
+    if (!this.unlocked || !pref.enabled || !this.inRoom) return
+    if (!this.bgm) {
+      this.bgm = new Audio()
+      this.bgm.loop = true
+      this.bgm.preload = 'auto'
+      this.bgm.src = GARAGE_TRACK
+    }
+    this.switchTo(this.bgm, GARAGE_VOLUME, hand)
+  }
+
+  // ── The radio: its own switch, one station at a time ────────────────────
+
+  /** Whether the radio is on. Sound off with the radio on is a radio waiting. */
+  get radioOn(): boolean {
+    return this.radioIsOn
+  }
+
+  /** The station on the dial, by name. */
+  get station(): StationId | null {
+    return this.stationId ?? (STATIONS.some((s) => s.id === save.data.radioStation) ? (save.data.radioStation as StationId) : null)
+  }
+
+  get tunedTo(): string | null {
+    return this.stationSrc
+  }
+
+  /** Whether anything is actually coming out of the radio. */
+  get stationPlaying(): boolean {
+    if (!this.radioIsOn || !this.stationSrc) return false
+    const el = this.stationSrc === GARAGE_TRACK ? this.bgm : this.stream
+    return !!el && !el.paused
+  }
+
+  /**
+   * The knob. On: the power sound, once, then the garage's song down and
+   * out, then the station up — the station asked for, or the one it was
+   * left on. Off: the station down and out, then the song back from where
+   * it was. Nothing crosses; nothing restarts that need not.
+   */
+  setRadio(on: boolean, station?: StationId): void {
+    const was = this.radioIsOn
+    this.radioIsOn = on
+    save.update((d) => {
+      d.radioOn = on
+    })
+    if (on) {
+      const id = station ?? this.station ?? DEFAULT_STATION
+      const st = STATIONS.find((s) => s.id === id) ?? STATIONS[1]!
+      this.stationId = st.id
+      this.stationSrc = st.track
+      this.stationVolume = st.volume
+      save.update((d) => {
+        d.radioStation = st.id
+      })
+      if (!this.inRoom || !this.unlocked || !pref.enabled) return
+      if (!was) this.play('radio_tune', 0.22)
+      this.tune(st.track, st.volume, { outMs: HANDS.garageOut, inMs: HANDS.radioIn })
+      return
+    }
+    if (!this.inRoom || !this.unlocked || !pref.enabled) return
+    this.playGarage({ outMs: HANDS.radioOut, inMs: HANDS.garageIn })
+  }
+
+  /**
+   * Put a track on the air: the one sounding down first, then this one up.
+   * GARAGE 88.1 is the room's own song, on its own element: on that station
+   * the radio is simply where the song is coming from, and nothing restarts.
+   */
+  private tune(src: string | null, volume: number, hand: Hand): void {
+    if (!src) return
+    if (!this.unlocked || !pref.enabled || !this.inRoom) return
+    if (src === GARAGE_TRACK) {
+      if (!this.bgm) {
+        this.bgm = new Audio()
+        this.bgm.loop = true
+        this.bgm.preload = 'auto'
+        this.bgm.src = GARAGE_TRACK
+      }
+      this.switchTo(this.bgm, volume, hand)
+      return
+    }
+    if (!this.stream) {
+      this.stream = new Audio()
+      this.stream.loop = true
+      this.stream.preload = 'auto'
+    }
+    this.switchTo(this.stream, volume, hand, src)
+  }
+
+  /** Tune by name, and remember it for next time. The radio must be on. */
+  tuneStation(id: StationId): void {
+    const st = STATIONS.find((s) => s.id === id)
+    if (!st) return
+    this.stationId = st.id
+    this.stationSrc = st.track
+    this.stationVolume = st.volume
+    save.update((d) => {
+      d.radioStation = st.id
+    })
+    if (!this.radioIsOn) return
+    this.tune(st.track, st.volume, { outMs: HANDS.stationOut, inMs: HANDS.stationIn })
+  }
+
+  /** Put the room's music where the state says it should be. */
+  private reconcile(): void {
+    if (!this.inRoom || !this.unlocked || !pref.enabled) return
+    const f = this.fadeIn
+    this.fadeIn = null
+    const hand: Hand = { outMs: HANDS.world, inMs: f?.music ?? 0, delay: f?.after ?? 0 }
+    if (this.radioIsOn) {
+      const st = STATIONS.find((s) => s.id === (this.stationId ?? this.station ?? DEFAULT_STATION)) ?? STATIONS[1]!
+      this.stationId = st.id
+      this.stationSrc = st.track
+      this.stationVolume = st.volume
+      this.tune(st.track, st.volume, hand)
+    } else this.playGarage(hand)
+  }
+
+  // ── The world outside (PHASE 8/9) ───────────────────────────────────────
 
   /**
    * Fetch a world's music ahead of the door. On its own element, never the
@@ -172,28 +391,22 @@ class AudioManager {
   }
 
   /**
-   * A world's music, looping, up from silence over `fadeMs` (0 for at once).
-   *
-   * Another track while one is playing is a crossfade (PHASE 14): the one
-   * playing goes down on its own element while the new one comes up on a
-   * fresh one (the warmed element, if the file was fetched ahead), so no
-   * track is ever cut by a source swap. Same track: nothing is restarted.
+   * A world's music, looping, up from silence over `fadeMs` (0 for at once),
+   * once whatever was sounding has gone out. Another track while one is
+   * playing: the old one goes out on its own element and the new one comes
+   * up on a fresh one (the warmed element, if the file was fetched ahead),
+   * one after the other. Same track: nothing is restarted.
    */
-  playWorld(src: string, volume: number, fadeMs = 0): void {
+  playWorld(src: string, volume: number, fadeMs = 0, owner: WorldOwner = 'playground'): void {
     this.worldSrc = src
     this.worldVolume = volume
-    this.worldOn = true
+    this.worldOwner = owner
     if (!this.unlocked || !pref.enabled) return
     const abs = new URL(src, location.href).href
     let el = this.world
     if (el && el.src !== abs) {
-      if (!el.paused && fadeMs > 0) this.ramp(el, 0, Math.min(fadeMs, 700), true)
-      else {
-        const r = this.ramps.get(el)
-        if (r !== undefined) cancelAnimationFrame(r)
-        this.ramps.delete(el)
-        el.pause()
-      }
+      if (!el.paused) this.retired.add(el)
+      else el.pause()
       el = null
     }
     if (!el) {
@@ -204,49 +417,28 @@ class AudioManager {
       if (el.src !== abs) el.src = src
       this.world = el
     }
-    const world = el
-    const target = volume * this.worldDim
-    if (!world.paused) {
-      // The same track, already on: only its level may have changed.
-      this.pending++
-      if (!this.ramps.has(world)) world.volume = target
-      return
-    }
-    this.handoff(this.stream, () => {
-      if (fadeMs > 0) this.fadeUp(world, target, fadeMs)
-      else {
-        const r = this.ramps.get(world)
-        if (r !== undefined) cancelAnimationFrame(r)
-        this.ramps.delete(world)
-        world.volume = target
-      }
-      void world.play().catch((err: unknown) => log.debug('audio: world', err))
-    })
-  }
-
-  /** The music sounding right now — never more than one. For the tests. */
-  get musicSounding(): readonly string[] {
-    return [this.world, this.stream]
-      .filter((el): el is HTMLAudioElement => !!el && !el.paused)
-      .map((el) => el.currentSrc || el.src)
+    this.switchTo(el, volume * this.worldDim, { outMs: HANDS.world, inMs: fadeMs })
   }
 
   /** Down and out over `fadeMs`. */
   stopWorld(fadeMs = 0): void {
-    this.worldOn = false
+    this.worldOwner = null
     this.pending++
-    if (!this.world) return
-    if (fadeMs > 0 && !this.world.paused) this.ramp(this.world, 0, fadeMs, true)
-    else this.world.pause()
+    for (const el of [this.world, ...this.retired]) {
+      if (!el || el.paused) continue
+      if (fadeMs > 0) this.ramp(el, 0, fadeMs, true)
+      else el.pause()
+    }
   }
 
   get worldPlaying(): boolean {
-    return this.worldOn && !!this.world && !this.world.paused
+    return !!this.worldOwner && !!this.world && !this.world.paused
   }
 
   /**
    * Hold the world's music lower (a fraction of its level) until asked back
-   * to 1: the music box plays its tune over the archive's song, not beside it.
+   * to 1: the music box plays its tune over the archive's song, not beside
+   * it; the sky through the telescope is a little quieter.
    */
   dimWorld(factor: number, ms = 600): void {
     this.worldDim = Math.max(0, Math.min(1, factor))
@@ -258,8 +450,8 @@ class AudioManager {
 
   /**
    * Start a loop under the music — the air of a place, the music box's tune —
-   * by key, so the same one is never started twice. Silent before a gesture
-   * and while muted; comes back with the sound.
+   * up from silence over `fadeMs`. One element per key; asking again for the
+   * same file only changes its level.
    */
   loop(key: string, src: string, volume: number, fadeMs = 0): void {
     let l = this.loops.get(key)
@@ -267,20 +459,20 @@ class AudioManager {
       const el = new Audio()
       el.loop = true
       el.preload = 'auto'
-      l = { el, src: '', volume, on: true }
+      l = { el, src: '', volume, on: false }
       this.loops.set(key, l)
     }
-    l.on = true
+    l.src = src
     l.volume = volume
-    if (!this.unlocked || !pref.enabled) {
-      l.src = src
-      return
-    }
+    l.on = true
+    if (!this.unlocked || !pref.enabled) return
     const abs = new URL(src, location.href).href
     if (l.el.src !== abs) l.el.src = src
-    l.src = src
-    if (fadeMs > 0 && l.el.paused) this.fadeUp(l.el, volume, fadeMs)
-    else if (fadeMs > 0) this.ramp(l.el, volume, fadeMs)
+    if (!l.el.paused) {
+      if (!this.ramps.has(l.el)) l.el.volume = volume
+      return
+    }
+    if (fadeMs > 0) this.fadeUp(l.el, volume, fadeMs)
     else {
       const r = this.ramps.get(l.el)
       if (r !== undefined) cancelAnimationFrame(r)
@@ -290,7 +482,7 @@ class AudioManager {
     void l.el.play().catch((err: unknown) => log.debug('audio: loop', key, err))
   }
 
-  /** Down and out over `fadeMs`. */
+  /** The loop down and out over `fadeMs`. */
   unloop(key: string, fadeMs = 0): void {
     const l = this.loops.get(key)
     if (!l) return
@@ -306,13 +498,13 @@ class AudioManager {
 
   /**
    * Step the music back for a moment (about −4 dB) so a cue can be heard
-   * over it, then bring it back. Not a compressor: one dip, one recovery.
+   * over it, and bring it back.
    */
   duck(ms = 1200): void {
-    const el = this.world && !this.world.paused ? this.world : this.stream && !this.stream.paused ? this.stream : null
+    const el = this.players().find((p) => !p.paused) ?? null
     if (!el) return
-    const full = el === this.world ? this.worldVolume : this.stationVolume
-    this.ramp(el, full * 0.62, 160)
+    const full = el === this.world ? this.worldVolume * this.worldDim : el === this.bgm ? (this.radioIsOn && this.stationSrc === GARAGE_TRACK ? this.stationVolume : GARAGE_VOLUME) : this.stationVolume
+    this.ramp(el, full * 0.6, 160)
     const t0 = performance.now()
     const back = (): void => {
       if (performance.now() - t0 < ms) {
@@ -326,7 +518,7 @@ class AudioManager {
 
   // ── Fades ───────────────────────────────────────────────────────────────
   /** The fade asked for by `enterRoom`, spent by the first play after it. */
-  private fadeIn: { readonly tone: number; readonly music: number; readonly musicAfter: number } | null = null
+  private fadeIn: { readonly music: number; readonly after: number } | null = null
   private ramps = new Map<HTMLMediaElement, number>()
 
   /**
@@ -373,48 +565,6 @@ class AudioManager {
     this.ramp(el, volume, ms)
   }
 
-  /**
-   * Looping room tone. Fetches the track the first time it is switched on.
-   * The radio's 91.7 NIGHT station plays the same file through `tune`, and
-   * while it does, this one stays quiet: one file, one player.
-   */
-  toggleAmbient(on: boolean, volume = ROOM_TONE_VOLUME): void {
-    this.ambientOn = on
-    this.ambientVolume = volume
-    if (!on) {
-      this.ambient?.pause()
-      return
-    }
-    if (!this.unlocked || !pref.enabled) return
-    if (this.stationSrc === ROOM_TONE && this.stream && !this.stream.paused) {
-      this.ambient?.pause()
-      return
-    }
-    if (!this.ambient) {
-      this.ambient = new Audio(ROOM_TONE)
-      this.ambient.loop = true
-      this.ambient.preload = 'none'
-    }
-    if (this.fadeIn) this.fadeUp(this.ambient, volume, this.fadeIn.tone)
-    else {
-      const r = this.ramps.get(this.ambient)
-      if (r !== undefined) cancelAnimationFrame(r)
-      this.ramps.delete(this.ambient)
-      this.ambient.volume = volume
-    }
-    void this.ambient.play().catch(() => undefined)
-  }
-
-  get ambientPlaying(): boolean {
-    return this.ambientOn && !!this.ambient && !this.ambient.paused
-  }
-
-  // ── The radio: one station at a time ───────────────────────────────────
-  private stream: HTMLAudioElement | null = null
-  private stationSrc: string | null = null
-  private stationVolume = 0.3
-  private stationId: StationId | null = null
-
   /** A start asked for later; a newer ask cancels it. */
   private pending = 0
 
@@ -440,164 +590,37 @@ class AudioManager {
     requestAnimationFrame(wait)
   }
 
-  /** How long the music going out takes before the next comes in. */
-  private static readonly HANDOFF = 420
+  // ── The switch, and the tab ────────────────────────────────────────────
 
   /**
-   * Music is one thing at a time. If `other` is sounding, it goes down and
-   * out over the handoff and the caller's start waits for it; otherwise the
-   * start is immediate. Room tone and the loops under the music are not
-   * music and are not touched.
-   */
-  private handoff(other: HTMLMediaElement | null, start: () => void): void {
-    if (other && !other.paused) {
-      this.ramp(other, 0, AudioManager.HANDOFF, true)
-      this.after(AudioManager.HANDOFF + 20, start)
-    } else this.after(0, start)
-  }
-
-  /**
-   * Tune the one station stream to a looping track, or to nothing. There is
-   * only ever one element: tuning replaces its source rather than starting a
-   * second player, so switching stations quickly cannot stack audio; a
-   * change of station is the old one down for a moment and the new one up,
-   * and the world's music, if any is sounding, goes out before the station
-   * comes in.
-   */
-  tune(src: string | null, volume = 0.3): void {
-    this.stationSrc = src
-    this.stationVolume = volume
-    if (!src) {
-      this.pending++
-      this.stream?.pause()
-      this.toggleAmbient(this.ambientOn)
-      return
-    }
-    if (!this.unlocked || !pref.enabled) return
-    if (!this.stream) {
-      this.stream = new Audio()
-      this.stream.loop = true
-      this.stream.preload = 'none'
-    }
-    const stream = this.stream
-    const abs = new URL(src, location.href).href
-    const same = stream.src === abs
-    if (same && !stream.paused) {
-      // Already on the air: a reconcile, not a change. Nothing restarts.
-      this.pending++
-      if (!this.ramps.has(stream)) stream.volume = volume
-      this.toggleAmbient(this.ambientOn)
-      return
-    }
-    const start = (): void => {
-      if (stream.src !== abs) stream.src = src
-      if (this.fadeIn) this.fadeUp(stream, volume, this.fadeIn.music, this.fadeIn.musicAfter)
-      else if (!same) this.fadeUp(stream, volume, 260)
-      else {
-        const r = this.ramps.get(stream)
-        if (r !== undefined) cancelAnimationFrame(r)
-        this.ramps.delete(stream)
-        stream.volume = volume
-      }
-      void stream.play().catch((err: unknown) => log.debug('audio: station', err))
-      // NIGHT is the room's own tone: while it is on the dial the room does
-      // not also hum it underneath.
-      this.toggleAmbient(this.ambientOn)
-    }
-    // Another station sounding: it goes down first. The world's music
-    // sounding (the way back in from outside): it goes out first.
-    const going = !same && !stream.paused ? stream : this.world && !this.world.paused ? this.world : null
-    if (going === stream) {
-      this.ramp(stream, 0, 180, true)
-      this.after(200, start)
-    } else this.handoff(going, start)
-  }
-
-  /** Tune by name, and remember it for next time. */
-  tuneStation(id: StationId | null): void {
-    const st = id ? STATIONS.find((s) => s.id === id) : undefined
-    this.stationId = st?.id ?? null
-    save.update((d) => {
-      d.radioStation = this.stationId
-    })
-    this.tune(st?.track ?? null, st?.volume)
-  }
-
-  /** What the radio is tuned to, and whether anything is actually coming out. */
-  get stationPlaying(): boolean {
-    return !!this.stationSrc && !!this.stream && !this.stream.paused
-  }
-
-  get tunedTo(): string | null {
-    return this.stationSrc
-  }
-
-  /** The station on the dial, by name. */
-  get station(): StationId | null {
-    return this.stationId
-  }
-
-  /** Put the room's sound where the state says it should be. */
-  private reconcile(): void {
-    if (!this.inRoom || !this.unlocked || !pref.enabled) return
-    if (!this.stationId) {
-      const saved = save.data.radioStation
-      const id = STATIONS.some((s) => s.id === saved) ? (saved as StationId) : 'garage'
-      this.tuneStation(id)
-    } else if (this.stationSrc) {
-      this.tune(this.stationSrc, this.stationVolume)
-    }
-    this.toggleAmbient(this.ambientOn)
-    // One fade per entrance, spent now that both players have had it:
-    // retuning the radio afterwards is immediate.
-    this.fadeIn = null
-  }
-
-  /** The switch as it last was, so only a change from off to on is a click. */
-  private powerWas = pref.enabled
-
-  /**
-   * Called when the mute preference changes. The switch in the nav and the
-   * knob on the radio are one switch; going from off to on inside the room
-   * is the radio coming on, and that is the one moment its power sound
-   * plays — not when the room is entered, not when a station is changed,
-   * not when the tab comes back, and never twice.
+   * Called when the site's sound preference changes. Off: everything stops
+   * where it is. On: whatever the state says is on plays again — the room's
+   * song or the radio's station inside, the world's music outside. The
+   * radio's power sound belongs to the radio's own knob (`setRadio`), not to
+   * this switch, and not to the tab coming back.
    */
   syncPreference(): void {
-    const turnedOn = pref.enabled && !this.powerWas
-    this.powerWas = pref.enabled
     if (!pref.enabled) {
-      this.ambient?.pause()
-      this.stream?.pause()
-      this.world?.pause()
+      this.silence(0)
       for (const el of this.cache.values()) el.pause()
       for (const l of this.loops.values()) l.el.pause()
       return
     }
     this.unlocked = true
-    if (turnedOn && this.inRoom) this.play('radio_tune', 0.22)
     this.resume()
   }
 
-  /**
-   * Sound came back (the switch, or the tab): whatever the state says is on
-   * plays again. In the room that is the tone and the station; elsewhere
-   * the world's music, and the tone too if it was on there (the archive
-   * keeps the same night air, lower).
-   */
+  /** Sound came back (the switch, or the tab): what the state says is on, again. */
   private resume(): void {
-    this.reconcile()
-    if (!this.inRoom && this.ambientOn) this.toggleAmbient(true, this.ambientVolume)
-    if (this.worldOn && this.worldSrc) this.playWorld(this.worldSrc, this.worldVolume)
+    if (this.worldOwner && this.worldSrc) this.playWorld(this.worldSrc, this.worldVolume, 0, this.worldOwner)
+    else this.reconcile()
     for (const [key, l] of this.loops) if (l.on && l.src) this.loop(key, l.src, l.volume)
   }
 
   /** The tab went away: nothing keeps playing to an empty room. */
   onHidden(hidden: boolean): void {
     if (hidden) {
-      this.stream?.pause()
-      this.ambient?.pause()
-      this.world?.pause()
+      this.silence(0)
       for (const l of this.loops.values()) l.el.pause()
       // And whatever short sound was mid-air: a footstep does not finish
       // in a tab nobody is looking at.

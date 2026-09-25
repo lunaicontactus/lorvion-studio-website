@@ -28,6 +28,7 @@ export function createDefaultSave(): SaveData {
     collection: [],
     games: {},
     radioStation: null,
+    radioOn: false,
   }
 }
 
@@ -91,6 +92,7 @@ export function migrate(raw: unknown): SaveData {
     // written — a game that no longer exists just carries a harmless entry.
     games: scores(o['games']),
     radioStation: str(o['radioStation']) ? o['radioStation'] : null,
+    radioOn: o['radioOn'] === true,
   }
 }
 

@@ -6,17 +6,21 @@
  *
  *   - a few stars in the glass that breathe, each on its own beat;
  *   - the shooting star (the user's overlay, whole) — never on by itself:
- *     it goes over when you look up through the telescope, now and then in
- *     Healing Mode, and rarely on its own;
+ *     it goes over now and then in Healing Mode, and rarely on its own;
  *   - the lantern's light, a warm few percent, on or off;
  *   - the jar: a handful of tiny stars when it is touched, then still;
- *   - looking up: the glass fills the window, the plate's own sky brought
- *     close;
+ *   - looking up (WORLD 2.4): the telescope is a way into a sky of its own
+ *     (src/scenes/sky.ts), with the room gone from view and one plain way
+ *     back;
+ *   - the door beside the visitor (WORLD 2.4): the felt door they came
+ *     through, from this side — the way back to the garage, always in
+ *     view, never a button;
  *   - Healing Mode: the labels and the nav go, the stars stay, the camera
  *     drifts a little, a star falls now and then. Any touch or key ends it.
  */
 import { mountScene, type SceneHandle } from '@/scenes/scene'
 import { archiveFor, type ArchiveLayout, type ArchivePlace, SHOOTING_STAR } from '@/data/archive'
+import { mountSky, type SkyHandle } from '@/scenes/sky'
 import { motion } from '@/systems/motion'
 import { ticker } from '@/systems/tick'
 
@@ -26,6 +30,8 @@ export interface ArchiveOptions {
   readonly onHealing?: (on: boolean) => void
   /** Looking up began or ended. */
   readonly onSky?: (open: boolean) => void
+  /** The door: the visitor is going back to the garage. */
+  readonly onExit?: () => void
 }
 
 export interface ArchiveHandle extends SceneHandle<ArchiveLayout> {
@@ -40,6 +46,8 @@ export interface ArchiveHandle extends SceneHandle<ArchiveLayout> {
   openSky(): void
   closeSky(): void
   readonly skyOpen: boolean
+  /** The sky: how many stars, how many have fallen. */
+  readonly sky: { readonly stars: number; readonly shots: number } | null
   /** Healing Mode. */
   setHealing(on: boolean): void
   readonly healing: boolean
@@ -50,6 +58,9 @@ const RARE_STAR = { min: 60_000, max: 120_000 }
 const HEALING_STAR = { min: 12_000, max: 25_000 }
 /** How far the camera drifts in Healing Mode, in world units, and how slowly. */
 const DRIFT = { x: 26, y: 12, period: 26_000 }
+/** The sky's fade, in and out, and the door's opening before the crossing. */
+const SKY_FADE = 700
+const DOOR_OPEN = 460
 
 export function mountArchive(root: ParentNode = document, opts: ArchiveOptions = {}): ArchiveHandle | null {
   let shooting: HTMLElement | null = null
@@ -115,7 +126,9 @@ export function mountArchive(root: ParentNode = document, opts: ArchiveOptions =
   if (!scene) return null
   sceneEl = root.querySelector<HTMLElement>('[data-archive]')
   const skyEl = root.querySelector<HTMLElement>('[data-archive-sky]')
+  const starsEl = root.querySelector<HTMLCanvasElement>('[data-archive-stars]')
   const restEl = root.querySelector<HTMLElement>('[data-archive-rest]')
+  const doorEl = root.querySelector<HTMLButtonElement>('[data-archive-door]')
 
   const gap = (r: { min: number; max: number }): number => r.min + Math.random() * (r.max - r.min)
   nextStar = gap(RARE_STAR)
@@ -128,17 +141,8 @@ export function mountArchive(root: ParentNode = document, opts: ArchiveOptions =
     laterFn?.(() => shooting?.classList.remove('is-falling'), 2800)
   }
 
-  const fitSky = (): void => {
-    if (!skyEl) return
-    const { sky, plate, width, height } = scene.layout
-    const vw = innerWidth
-    const vh = innerHeight
-    // Cover: the sky rect fills the window, at the plate's own pixels.
-    const s = Math.max(vw / sky.w, vh / sky.h)
-    skyEl.style.backgroundImage = `url('${plate}')`
-    skyEl.style.backgroundSize = `${width * s}px ${height * s}px`
-    skyEl.style.backgroundPosition = `${-(sky.x * s) + (vw - sky.w * s) / 2}px ${-(sky.y * s) + (vh - sky.h * s) / 2}px`
-  }
+  // ── The sky (WORLD 2.4) ─────────────────────────────────────────────────
+  const sky: SkyHandle | null = starsEl ? mountSky(starsEl, { reduced: () => motion.reduced }) : null
 
   const off = ticker.subscribe((info) => {
     if (!sceneEl || sceneEl.hidden) return
@@ -161,9 +165,43 @@ export function mountArchive(root: ParentNode = document, opts: ArchiveOptions =
     }
   }
   document.addEventListener('keydown', onSkyKey)
-  skyEl?.addEventListener('click', () => handle.closeSky())
-  const onResize = (): void => { if (skyOpen) fitSky() }
+  skyEl?.querySelector<HTMLElement>('[data-archive-sky-close]')?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    handle.closeSky()
+  })
+  const onResize = (): void => { if (skyOpen) sky?.resize() }
   addEventListener('resize', onResize)
+
+  // ── The door back (WORLD 2.4) ───────────────────────────────────────────
+  let exiting = false
+  if (doorEl) {
+    // The scene's drag must not start on the door, and a press is a press.
+    doorEl.addEventListener('pointerdown', (e) => {
+      e.stopPropagation()
+      doorEl.classList.add('is-pressed')
+    })
+    const release = (): void => doorEl.classList.remove('is-pressed')
+    doorEl.addEventListener('pointerup', release)
+    doorEl.addEventListener('pointercancel', release)
+    doorEl.addEventListener('pointerleave', release)
+    doorEl.addEventListener('click', (e) => {
+      e.stopPropagation()
+      if (exiting || healing || skyOpen) return
+      exiting = true
+      // The handle turns, the leaf swings, the garage's light comes through;
+      // then the crossing.
+      doorEl.classList.add('is-opening')
+      doorEl.classList.remove('is-pressed')
+      laterFn?.(() => {
+        opts.onExit?.()
+        // Ready for next time, once the room is out of view.
+        laterFn?.(() => {
+          doorEl.classList.remove('is-opening')
+          exiting = false
+        }, 1400)
+      }, motion.reduced ? 0 : DOOR_OPEN)
+    })
+  }
 
   const handle: ArchiveHandle = {
     ...scene,
@@ -202,31 +240,37 @@ export function mountArchive(root: ParentNode = document, opts: ArchiveOptions =
     openSky(): void {
       if (!skyEl || skyOpen) return
       skyOpen = true
-      fitSky()
       skyEl.hidden = false
       void skyEl.offsetWidth
-      skyEl.classList.add('is-open')
+      skyEl.classList.add('is-open', 'is-entering')
+      sceneEl?.classList.add('is-sky')
+      document.body.classList.add('is-sky')
+      sky?.start()
       scene.setPaused(true)
       opts.onSky?.(true)
-      // A star, for having looked up.
-      laterFn?.(() => {
-        const s = skyEl.querySelector<HTMLElement>('.archive__shooting')
-        if (!s) return
-        s.classList.remove('is-falling')
-        void s.offsetWidth
-        s.classList.add('is-falling')
-      }, 900)
+      laterFn?.(() => skyEl.classList.remove('is-entering'), motion.reduced ? 0 : 900)
       skyEl.querySelector<HTMLElement>('[data-archive-sky-close]')?.focus()
     },
     closeSky(): void {
       if (!skyEl || !skyOpen) return
       skyOpen = false
-      skyEl.classList.remove('is-open')
-      laterFn?.(() => { if (!skyOpen && skyEl) skyEl.hidden = true }, motion.reduced ? 0 : 720)
+      skyEl.classList.remove('is-open', 'is-entering')
+      sceneEl?.classList.remove('is-sky')
+      document.body.classList.remove('is-sky')
+      const done = (): void => {
+        if (skyOpen || !skyEl) return
+        skyEl.hidden = true
+        sky?.stop()
+      }
+      if (motion.reduced) done()
+      else laterFn?.(done, SKY_FADE + 20)
       scene.setPaused(false)
       opts.onSky?.(false)
+      // Back on the telescope, so the keyboard is where it was.
+      worldEl?.querySelector<HTMLElement>('[data-place="telescope"]')?.focus({ preventScroll: true })
     },
     get skyOpen() { return skyOpen },
+    get sky() { return sky ? { stars: sky.stars, shots: sky.shots } : null },
     setHealing(on: boolean): void {
       if (healing === on) return
       healing = on
@@ -255,9 +299,10 @@ export function mountArchive(root: ParentNode = document, opts: ArchiveOptions =
     get healing() { return healing },
     destroy(): void {
       off()
+      sky?.stop()
       document.removeEventListener('keydown', onSkyKey)
       removeEventListener('resize', onResize)
-      document.body.classList.remove('is-healing')
+      document.body.classList.remove('is-healing', 'is-sky')
       scene.destroy()
     },
   }

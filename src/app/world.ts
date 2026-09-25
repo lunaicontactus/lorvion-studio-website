@@ -156,10 +156,10 @@ export function mountWorld(): () => void {
       if (open) {
         starredBefore = new Set(SECRET_GAMES.filter((id) => (allProgress(SECRET_GAMES)[id]?.stars ?? 0) >= 1))
         audio.unloop('playground', motion.reduced ? 0 : 500)
-        if (track) audio.playWorld(track, 0.24, motion.reduced ? 0 : 900)
+        if (track) audio.playWorld(track, 0.24, motion.reduced ? 0 : 900, 'game')
         else audio.stopWorld(motion.reduced ? 0 : 400)
       } else {
-        audio.playWorld(PLAYGROUND_MUSIC, 0.3, motion.reduced ? 0 : 1200)
+        audio.playWorld(PLAYGROUND_MUSIC, 0.3, motion.reduced ? 0 : 1200, 'playground')
         audio.loop('playground', LOOPS.playground, 0.3, motion.reduced ? 0 : 1600)
         // A round may have earned this building its star: the socket on
         // its sign lights as the building comes back into view, with the
@@ -475,7 +475,7 @@ export function mountWorld(): () => void {
       outside = true
       // The air first, in the dark; the song a moment after it.
       audio.loop('playground', LOOPS.playground, 0.3, quick ? 0 : 2400)
-      audio.playWorld(PLAYGROUND_MUSIC, 0.3, quick ? 0 : 2800)
+      audio.playWorld(PLAYGROUND_MUSIC, 0.3, quick ? 0 : 2800, 'playground')
       if (!o.fromHistory) {
         // The door's own entry (pushed when it was touched) becomes the
         // playground's: Back from outside is the room, not the door again.
@@ -516,7 +516,7 @@ export function mountWorld(): () => void {
       garageEl.hidden = false
       garage?.setPaused(false)
       outside = false
-      audio.enterRoom(quick ? null : { tone: 900, music: 1400, musicAfter: 300 })
+      audio.enterRoom(quick ? null : { music: 1400, after: 300 })
       if (!o.fromHistory && (history.state as { world?: string } | null)?.world === 'playground') {
         history.replaceState({}, '', location.pathname)
       }
@@ -564,14 +564,20 @@ export function mountWorld(): () => void {
       interaction.dismiss({ instant: true })
       garageEl.hidden = true
       garage?.setPaused(true)
-      if (!archive) archive = mountArchive(document, { onPlace: onArchivePlace })
+      if (!archive) {
+        archive = mountArchive(document, {
+          onPlace: onArchivePlace,
+          // The door beside the visitor: the way back to the room (WORLD 2.4).
+          onExit: () => backFromArchive(),
+          // Looking up: the archive's song a little quieter, and back.
+          onSky: (open) => { if (!audio.loopPlaying('musicBox')) audio.dimWorld(open ? 0.72 : 1, 900) },
+        })
+      }
       archiveEl.hidden = false
       archive?.setPaused(false)
       document.body.classList.add('is-in-archive')
       inArchive = true
-      audio.playWorld(ARCHIVE_MUSIC, 0.26, quick ? 0 : 1600)
-      // The same night air as the room, lower: it is the same building.
-      audio.toggleAmbient(true, 0.1)
+      audio.playWorld(ARCHIVE_MUSIC, 0.26, quick ? 0 : 1600, 'archive')
       if (!o.fromHistory) {
         const st = history.state as { garageObject?: string } | null
         if (st?.garageObject === 'secret-door') history.replaceState({ world: 'archive' }, '', '#archive')
@@ -604,8 +610,8 @@ export function mountWorld(): () => void {
       garageEl.hidden = false
       garage?.setPaused(false)
       inArchive = false
-      audio.enterRoom(quick ? null : { tone: 900, music: 1400, musicAfter: 300 })
-      if (!o.fromHistory && (history.state as { world?: string } | null)?.world === 'archive') {
+      audio.enterRoom(quick ? null : { music: 1400, after: 300 })
+      if (!o.fromHistory && ((history.state as { world?: string } | null)?.world === 'archive' || location.hash === '#archive')) {
         history.replaceState({}, '', location.pathname)
       }
       log.debug('world: back from the archive')
@@ -888,7 +894,7 @@ export function mountWorld(): () => void {
           audio.unloop('alley', beat === 'skip' ? 300 : 1800)
           if (soundUnderDoor) return
           soundUnderDoor = true
-          audio.enterRoom({ tone: 1400, music: 2200, musicAfter: 700 })
+          audio.enterRoom({ music: 2200, after: 700 })
         }
       },
       onEntered: () => {

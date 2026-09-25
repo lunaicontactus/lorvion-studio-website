@@ -100,31 +100,126 @@
 /* The foreground, as everywhere: over everything, never a target. */
 .archive__front{position:absolute;left:0;bottom:0;max-width:none;pointer-events:none;z-index:40}
 
-/* ── The telescope: looking up ─────────────────────────────────────────── */
-/* The glass fills the window. The plate itself, cropped to its sky and
-   brought up close; nothing drawn that the painting does not have. */
+/* ── The telescope: looking up (WORLD 2.4) ────────────────────────────── */
+/* A sky of its own: the room is gone from view (the stage is hidden once
+   the sky is up), the stars are drawn (src/scenes/sky.ts), the round of
+   the eyepiece is a soft dark at the corners — most of the window is sky —
+   and one plain way back sits in the top corner. */
 .archive__sky{
   position:fixed;
   inset:0;
   z-index:900;
-  background-repeat:no-repeat;
+  background:radial-gradient(ellipse 80% 70% at 50% 40%,#0b1034 0%,#070a24 55%,#03041a 100%);
   opacity:0;
   transition:opacity 700ms ease;
   pointer-events:none;
   overflow:hidden;
 }
-.archive__sky.is-open{opacity:1;pointer-events:auto;cursor:zoom-out}
-.archive__sky .archive__shooting{position:absolute;left:0;top:10%;width:100%}
-.archive__skyHint{
-  position:absolute;left:50%;bottom:max(24px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);
-  margin:0;padding:8px 14px;border-radius:999px;
-  background:rgba(18,16,34,.6);color:rgba(255,246,232,.9);font-size:.76rem;letter-spacing:.06em;white-space:nowrap;
+.archive__sky.is-open{opacity:1;pointer-events:auto}
+.archive__sky[hidden]{display:none}
+.archive.is-sky .archive__stage{visibility:hidden;transition:visibility 0s linear 700ms}
+.archive.is-sky .archive__door{opacity:0;pointer-events:none}
+/* The nav goes with the room: under the sky the one control is the way back. */
+body.is-sky .site-nav{opacity:0;pointer-events:none;transition:opacity 500ms ease}
+.archive__skyView{
+  position:absolute;inset:0;
+  transform:scale(1);
+  transition:transform 900ms cubic-bezier(.2,.8,.2,1);
+}
+.archive__sky.is-entering .archive__skyView{transform:scale(1.06)}
+.archive__stars{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* The round of the eyepiece: dark at the corners, clear across the middle. */
+.archive__eyepiece{
+  position:absolute;inset:0;display:block;pointer-events:none;
+  --r:max(46vw,46vh);
+  background:
+    radial-gradient(circle at 50% 50%,transparent calc(var(--r) - 12%),rgba(2,3,12,.55) calc(var(--r) - 3%),#020310 var(--r)),
+    radial-gradient(circle at 50% 50%,transparent calc(var(--r) - 13%),rgba(255,246,232,.05) calc(var(--r) - 12%),rgba(255,246,232,.05) calc(var(--r) - 11.4%),transparent calc(var(--r) - 11%));
 }
 .archive__skyClose{
-  position:absolute;top:max(14px,env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));
-  width:44px;height:44px;border:0;border-radius:50%;background:rgba(18,16,34,.6);color:#fff6e4;font-size:1.1rem;cursor:pointer;
+  position:absolute;
+  top:max(14px,env(safe-area-inset-top,0px));
+  right:max(14px,env(safe-area-inset-right,0px));
+  display:inline-flex;align-items:center;gap:8px;
+  min-height:44px;min-width:44px;padding:0 14px 0 12px;
+  border:1px solid rgba(255,246,232,.28);border-radius:999px;
+  background:rgba(8,10,28,.66);color:#fff6e4;
+  font:600 13px/1 var(--sans);letter-spacing:.02em;white-space:nowrap;
+  cursor:pointer;
+  transition:background 160ms ease,border-color 160ms ease,transform 160ms ease;
 }
-.archive__skyClose:focus-visible{outline:2px solid #ffd27a;outline-offset:2px}
+.archive__skyClose:hover,.archive__skyClose:focus-visible{background:rgba(24,26,52,.86);border-color:rgba(255,246,232,.6);transform:translateY(-1px)}
+.archive__skyClose:focus-visible{outline:2px solid #ffd27a;outline-offset:3px}
+.archive__skyX{font-size:15px;line-height:1}
+
+/* ── The door back (WORLD 2.4) ─────────────────────────────────────────── */
+/* The felt door the visitor came through, from this side, in the corner
+   nearest them: the frame and the leaf are the one picture; the leaf is
+   the same picture again, cut to itself, so it can swing on its hinge
+   with the garage's warm light in the gap under it. */
+.archive__door{
+  --door-h:clamp(104px,19vmin,168px);
+  --door-w:calc(var(--door-h) * 560 / 660);
+  position:fixed;
+  left:max(10px,env(safe-area-inset-left,0px));
+  bottom:max(14px,env(safe-area-inset-bottom,0px));
+  width:var(--door-w);height:var(--door-h);
+  padding:0;border:0;background:none;cursor:pointer;
+  z-index:60;
+  transform-origin:50% 100%;
+  transition:transform 180ms cubic-bezier(.2,.9,.3,1.2),filter 180ms ease,opacity 500ms ease;
+  filter:drop-shadow(0 10px 14px rgba(4,5,18,.6));
+  -webkit-tap-highlight-color:transparent;
+}
+.archive__door:focus{outline:none}
+.archive__doorArt,.archive__doorLeaf,.archive__doorLight{position:absolute;inset:0;width:100%;height:100%;display:block}
+.archive__doorArt{max-width:none;object-fit:fill;pointer-events:none}
+.archive__doorLeaf{
+  background:url('/assets/images/garage/secret_door.webp') 0 0 / 100% 100% no-repeat;
+  clip-path:inset(27.3% 31.3% 10.9% 25.5% round calc(var(--door-w) * .215) calc(var(--door-w) * .215) 0 0);
+  transform-origin:25.5% 50%;
+  transition:transform 460ms cubic-bezier(.3,.8,.3,1);
+}
+.archive__doorLight{
+  clip-path:inset(27.3% 31.3% 10.9% 25.5% round calc(var(--door-w) * .215) calc(var(--door-w) * .215) 0 0);
+  background:radial-gradient(ellipse 60% 70% at 55% 50%,#ffe3a0 0%,#f0a64a 55%,#b8641e 100%);
+  opacity:.0;
+  transition:opacity 420ms ease;
+}
+/* The garage's warm light, behind the door: a little at rest so the door
+   reads as a lit doorway, more under the pointer, full as it opens. */
+.archive__doorGlow{
+  position:absolute;left:50%;top:60%;width:170%;height:150%;transform:translate(-50%,-50%);
+  border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(255,196,120,.34),rgba(255,170,80,.12) 55%,transparent 75%);
+  opacity:.55;
+  transition:opacity 220ms ease;
+  z-index:-1;
+}
+.archive__doorLabel{
+  position:absolute;left:50%;bottom:calc(100% + 6px);transform:translate(-50%,4px);
+  padding:6px 10px;border:1px solid rgba(255,255,255,.22);border-radius:999px;
+  background:rgba(24,20,34,.8);color:rgba(255,246,232,.96);
+  font:600 12px/1.2 var(--sans);letter-spacing:.02em;white-space:nowrap;
+  opacity:0;pointer-events:none;
+  transition:opacity 120ms ease,transform 120ms ease;
+}
+.archive__door:hover,.archive__door:focus-visible{transform:scale(1.03)}
+.archive__door:hover .archive__doorGlow,.archive__door:focus-visible .archive__doorGlow{opacity:1}
+.archive__door:hover .archive__doorLabel,.archive__door:focus-visible .archive__doorLabel{opacity:1;transform:translate(-50%,0)}
+.archive__door:focus-visible{filter:drop-shadow(0 0 10px rgba(255,220,150,.9)) drop-shadow(0 10px 14px rgba(4,5,18,.6))}
+.archive__door.is-pressed,.archive__door.is-pressed:hover{transform:scale(.98);transition-duration:70ms}
+.archive__door.is-opening,.archive__door.is-opening:hover{transform:scale(1.04)}
+.archive__door.is-opening .archive__doorLeaf{transform:perspective(calc(var(--door-w) * 2.2)) rotateY(-58deg)}
+.archive__door.is-opening .archive__doorLight{opacity:1}
+.archive__door.is-opening .archive__doorGlow{opacity:1;transform:translate(-50%,-50%) scale(1.25)}
+.archive__door.is-opening .archive__doorLabel{opacity:0}
+@media (hover:none){
+  .archive__door:hover{transform:none}
+  .archive__door:hover .archive__doorLabel{opacity:0}
+  .archive__door.is-pressed{transform:scale(.98)}
+}
+.archive.is-healing .archive__door{opacity:0;pointer-events:none}
 
 /* ── Healing Mode ──────────────────────────────────────────────────────── */
 /* What goes: the nav, the labels, the rings. What stays: the room, the
@@ -145,7 +240,8 @@ body.is-healing .site-nav{opacity:0;pointer-events:none;transition:opacity 900ms
   .archive__shooting.is-falling{animation:archive-shoot-still 1600ms linear 1}
   @keyframes archive-shoot-still{0%{opacity:0}30%{opacity:.9}100%{opacity:0}}
   .archive__mote{animation-duration:900ms}
-  .archive__sky,.archive__lamp,.archive__rest{transition:none}
+  .archive__sky,.archive__lamp,.archive__rest,.archive__skyView,.archive__door,.archive__doorLeaf,.archive__doorLight{transition:none}
+  .archive.is-sky .archive__stage{transition:none}
 }
 /* The memory box and the music box, as things that grew out of their place. */
 .prop--archive .memory{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:.4em;padding:3%;container-type:inline-size;align-items:center;justify-items:center}

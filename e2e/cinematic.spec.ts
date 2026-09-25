@@ -116,7 +116,7 @@ test.describe('desktop', () => {
     await garageShown(page)
   })
 
-  test('the sound rides the picture: shutter, then the room\'s air, then its song, nothing cut in', async ({ page }) => {
+  test('the sound rides the picture: shutter, then the room\'s song, nothing cut in', async ({ page }) => {
     await spyOnPlay(page)
     await returning(page, true)
     await page.goto('/', { waitUntil: 'load' })
@@ -134,31 +134,25 @@ test.describe('desktop', () => {
       return {
         order: plays.map((p) => name(p.src)),
         shutterAt: first(/shutter_open/)?.at ?? null,
-        toneAt: first(/ambient\.m4a/)?.at ?? null,
         musicAt: first(/music\/garage/)?.at ?? null,
-        toneStartVolume: first(/ambient\.m4a/)?.volume ?? null,
         musicStartVolume: first(/music\/garage/)?.volume ?? null,
-        toneNow: el(/ambient\.m4a/)?.volume ?? null,
         musicNow: el(/music\/garage/)?.volume ?? null,
       }
     })
     expect(early.shutterAt, 'no shutter').not.toBeNull()
-    expect(early.toneAt, 'no room tone').not.toBeNull()
     expect(early.musicAt, 'no music').not.toBeNull()
-    expect(early.shutterAt!).toBeLessThan(early.toneAt!)
     expect(early.shutterAt!).toBeLessThan(early.musicAt!)
-    // Neither the air nor the song starts at full volume: they come up.
-    expect(early.toneStartVolume!).toBeLessThan(0.05)
+    // The song does not start at full volume: it comes up. And nothing hums
+    // under it (WORLD 2.4): the room has one song, not a tone as well.
+    expect(early.order.filter((n) => n === 'ambient.m4a')).toHaveLength(0)
     expect(early.musicStartVolume!).toBeLessThan(0.05)
-    // Just after the room appears the air is up and the song still on its way.
-    expect(early.toneNow!).toBeGreaterThan(0.05)
+    // Just after the room appears the song is still on its way.
     expect(early.musicNow!).toBeLessThan(0.34)
     await page.waitForTimeout(2600)
     const settled = await page.evaluate(() => {
       const el = (re: RegExp) => window.__media!.find((m) => re.test(m.currentSrc || m.src))
-      return { tone: el(/ambient\.m4a/)?.volume, music: el(/music\/garage/)?.volume }
+      return { music: el(/music\/garage/)?.volume }
     })
-    expect(settled.tone).toBeCloseTo(0.16, 2)
     expect(settled.music).toBeCloseTo(0.34, 2)
   })
 

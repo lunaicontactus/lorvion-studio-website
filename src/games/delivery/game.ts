@@ -10,6 +10,7 @@
  * drawn in code.
  */
 import { DeliveryRound, DEPOT, DOORS, GROUND, LEDGES, starsFor } from '@/games/delivery/round'
+import { footfalls } from '@/games/delivery/steps'
 import { PixelStage, SCREEN } from '@/games/pixel/stage'
 import { mirrored, pixelize, type PixelSprite } from '@/games/pixel/sprites'
 import { GHOST, GHOST_B, HEART, HEART_EMPTY, LANTERN, PAL, SPARK } from '@/games/pixel/art'
@@ -57,6 +58,8 @@ class DeliveryGame implements GameInstance {
   #ended = false
   #t = 0
   #walkT = 0
+  /** Which foot came down last: the two alternate a little in level. */
+  #foot = 0
   #bursts: Burst[] = []
   #flash = 0
 
@@ -135,7 +138,9 @@ class DeliveryGame implements GameInstance {
           this.#host.sfx('crew_step', 0.18)
           break
         case 'pickup':
-          this.#host.sfx('paper', 0.16)
+          // No sound of its own yet: the three-second page-rustle that used
+          // to play here (`paper`) went on over the whole run to the door,
+          // and was heard as pages turning while MOMO ran (WORLD 2.4).
           break
         case 'deliver': {
           // The door that was waiting: it opens, and the parcel is in.
@@ -157,7 +162,16 @@ class DeliveryGame implements GameInstance {
           break
       }
     }
-    if (r.vx !== 0 && r.grounded) this.#walkT += s
+    if (r.vx !== 0 && r.grounded) {
+      // Running, on the ground: a footfall each time a foot comes down in
+      // the walk cycle — never in the air, never standing still.
+      const was = this.#walkT
+      this.#walkT += s
+      if (footfalls(was, this.#walkT) > 0) {
+        this.#foot = 1 - this.#foot
+        this.#host.sfx('run_step', this.#foot ? 0.13 : 0.1)
+      }
+    }
     for (const b of this.#bursts) b.t += s
     this.#bursts = this.#bursts.filter((b) => b.t < 1.1)
     this.#flash = Math.max(0, this.#flash - s)

@@ -202,7 +202,7 @@ test.describe('the fridge, the cabinet and the door move as things', () => {
     await expect(page.locator(panel)).toBeHidden()
   })
 
-  test('the radio is tuned on its dial, and the nav switch agrees', async ({ page }) => {
+  test('the radio is tuned on its dial, and its knob is its own', async ({ page }) => {
     await enter(page)
     await touch(page, 'radio')
     await expect(page.locator('.prop--radio')).toBeVisible({ timeout: 6000 })
@@ -213,10 +213,10 @@ test.describe('the fridge, the cabinet and the door move as things', () => {
     await expect.poll(() => needle.evaluate((el) => parseFloat(el.style.getPropertyValue('--at')))).toBeGreaterThan(90)
     await page.locator('[data-station="0"]').click()
     await expect.poll(() => needle.evaluate((el) => parseFloat(el.style.getPropertyValue('--at')))).toBeLessThan(5)
-    // The knob is the power. Off here is off in the nav.
+    // The knob is the radio's own (WORLD 2.4): off here leaves the site's sound on.
     await page.locator('[data-radio-power]').click()
     await expect(page.locator('[data-radio-power]')).toHaveAttribute('aria-pressed', 'false')
-    await expect(page.locator('[data-sound-toggle]')).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.locator('[data-sound-toggle]')).toHaveAttribute('aria-pressed', 'true')
   })
 
   test('the room stops using a thing the visitor has open', async ({ page }) => {

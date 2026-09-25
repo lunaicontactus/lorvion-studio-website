@@ -221,30 +221,33 @@ test.describe('desktop', () => {
     await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 20_000 })
     await page.waitForTimeout(1500)
     const after = await page.evaluate(() => window.__plays!.map((p) => p.src))
-    // The room's own sound came on with the room: its station and its tone.
+    // The room's own song came on with the room, and nothing hummed under it.
     expect(after.some((s) => s.includes('/music/garage'))).toBe(true)
-    expect(after.some((s) => s.includes('/ambient'))).toBe(true)
+    expect(after.some((s) => s.includes('/ambient'))).toBe(false)
   })
 
-  test('the nav switch and the radio are one switch, and it survives a reload', async ({ page, context }) => {
+  test('the nav switch is the master, the radio has its own knob, and both survive a reload', async ({ page, context }) => {
     await enter(page)
     const nav = page.locator(NAV_SOUND)
     await expect(nav).toHaveAttribute('data-state', 'off')
     await nav.click()
     await expect(nav).toHaveAttribute('data-state', 'on')
-    // The radio in the room says the same, and shows what came on with it.
+    // Sound on is the room's own song; the radio in the corner is still off.
     await page.locator('[data-object="radio"]').click()
     await expect(page.locator('[data-panel-root].is-open')).toBeVisible({ timeout: 8000 })
+    await expect(page.locator('[data-radio-power]')).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.locator('[data-radio-freq]')).toHaveText('OFF')
+    // Tune to NIGHT: that turns the radio on, and the nav stays as it was.
+    await page.locator('[data-station="1"]').click()
     await expect(page.locator('[data-radio-power]')).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.locator('[data-radio-freq]')).toContainText('88.1')
-    // Off at the radio is off in the nav.
+    await expect(page.locator('[data-radio-freq]')).toContainText('91.7')
+    await expect(nav).toHaveAttribute('data-state', 'on')
+    // Off at the radio is the radio only: the site's sound is still on.
     await page.locator('[data-radio-power]').click()
     await expect(page.locator('[data-radio-power]')).toHaveAttribute('aria-pressed', 'false')
-    await expect(nav).toHaveAttribute('data-state', 'off')
-    // Tune to NIGHT with the power off: that turns it on, from the radio.
-    await page.locator('[data-station="1"]').click()
     await expect(nav).toHaveAttribute('data-state', 'on')
-    await expect(page.locator('[data-radio-freq]')).toContainText('91.7')
+    await page.locator('[data-radio-power]').click()
+    await expect(page.locator('[data-radio-power]')).toHaveAttribute('aria-pressed', 'true')
     await page.keyboard.press('Escape')
     // A fresh page in the same browser: the init script that wipes storage
     // is per page, so this one keeps what was saved.
@@ -255,6 +258,7 @@ test.describe('desktop', () => {
     await expect(again.locator('[data-garage]')).toBeVisible({ timeout: 20_000 })
     await again.locator('[data-object="radio"]').click()
     await expect(again.locator('[data-panel-root].is-open')).toBeVisible({ timeout: 8000 })
+    await expect(again.locator('[data-radio-power]')).toHaveAttribute('aria-pressed', 'true')
     await expect(again.locator('[data-radio-freq]')).toContainText('91.7')
     await again.close()
   })

@@ -723,15 +723,15 @@ export class Panels {
     const needle = this.#body.querySelector<HTMLElement>('[data-radio-needle]')!
     const power = this.#body.querySelector<HTMLButtonElement>('[data-radio-power]')!
 
-    // The set is already on if the room turned it on (src/systems/audio.ts
-    // tunes the garage's own station when sound comes on inside), so the
-    // dial shows what is actually playing rather than OFF.
+    // The radio has its own switch (WORLD 2.4): the site's sound switch is
+    // the master, the knob on the left is the radio's. The dial shows the
+    // station it is on, or was left on.
     const playing = STATIONS.findIndex((s) => s.id === audio.station)
     if (playing >= 0) this.#station = playing
     const paint = (): void => {
-      const on = sound.enabled
+      const on = audio.radioOn
       power.setAttribute('aria-pressed', String(on))
-      power.setAttribute('aria-label', on ? '소리 끄기' : '소리 켜기')
+      power.setAttribute('aria-label', on ? '라디오 끄기' : '라디오 켜기')
       radio.dataset['on'] = String(on)
       const st = STATIONS[this.#station]
       radio.dataset['station'] = st?.id ?? ''
@@ -739,15 +739,11 @@ export class Panels {
         b.setAttribute('aria-checked', String(Number(b.dataset['station']) === this.#station))
       }
       if (st) needle.style.setProperty('--at', `${(dialPosition(Number(st.freq)) * 100).toFixed(1)}%`)
-      freq.textContent = st ? `FM ${st.freq} · ${st.name}` : on ? 'FM · · ·' : 'OFF'
+      freq.textContent = on && st ? `FM ${st.freq} · ${st.name}` : on ? 'FM · · ·' : 'OFF'
     }
-    const tuneTo = (i: number): void => {
-      this.#station = (i + STATIONS.length) % STATIONS.length
-      const st = STATIONS[this.#station]!
-      // No click: the station itself is what changes (src/systems/audio.ts
-      // takes the old one down and the new one up).
-      audio.tuneStation(st.id)
-      if (st.id === 'news') {
+    const segment = (): void => {
+      const st = STATIONS[this.#station]
+      if (st?.id === 'news') {
         const seg = this.#draw('radio')
         talk.textContent = seg ? `${seg.title} — ${seg.description}` : ''
         talk.dataset['segment'] = seg?.id ?? ''
@@ -755,24 +751,42 @@ export class Panels {
         talk.textContent = ''
         delete talk.dataset['segment']
       }
+    }
+    // Asking to hear the radio is asking for sound: the master switch comes
+    // on with it if it was off.
+    const withSound = (fn: () => void): void => {
+      if (sound.enabled) fn()
+      else void sound.setEnabled(true).then(fn)
+    }
+    const tuneTo = (i: number): void => {
+      this.#station = (i + STATIONS.length) % STATIONS.length
+      const st = STATIONS[this.#station]!
+      // No click for a station: the station itself is what changes (the
+      // old one down, the new one up). The knob's click is the knob's.
+      if (audio.radioOn) audio.tuneStation(st.id)
+      else audio.setRadio(true, st.id)
+      segment()
       paint()
     }
     for (const b of this.#body.querySelectorAll<HTMLElement>('[data-station]')) {
-      b.addEventListener('click', () => {
-        const i = Number(b.dataset['station'])
-        // Choosing a station is also asking to hear it.
-        if (!sound.enabled) void sound.setEnabled(true).then(() => tuneTo(i))
-        else tuneTo(i)
-      })
+      b.addEventListener('click', () => withSound(() => tuneTo(Number(b.dataset['station']))))
     }
-    this.#body.querySelector('[data-radio-next]')!.addEventListener('click', () => {
-      if (!sound.enabled) void sound.setEnabled(true).then(() => tuneTo(this.#station + 1))
-      else tuneTo(this.#station + 1)
-    })
+    this.#body.querySelector('[data-radio-next]')!.addEventListener('click', () => withSound(() => tuneTo(this.#station + 1)))
     power.addEventListener('click', () => {
-      void sound.toggle().then(() => {
-        if (sound.enabled && this.#station < 0) tuneTo(0)
-        else paint()
+      if (audio.radioOn) {
+        audio.setRadio(false)
+        talk.textContent = ''
+        delete talk.dataset['segment']
+        paint()
+        return
+      }
+      withSound(() => {
+        // On: the station it was left on, or the first time, NIGHT.
+        const id = STATIONS[this.#station]?.id
+        audio.setRadio(true, id)
+        this.#station = STATIONS.findIndex((s) => s.id === audio.station)
+        segment()
+        paint()
       })
     })
     paint()

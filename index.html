@@ -168,11 +168,23 @@
     <div class="archive__stage" data-archive-stage>
       <div class="archive__world" data-archive-world></div>
     </div>
-    <!-- Looking up through the telescope: the glass fills the window. -->
+    <!-- The door beside the visitor: the felt door they came through, from
+         this side. The way back to the garage, always in view (WORLD 2.4). -->
+    <button class="archive__door" type="button" data-archive-door aria-label="차고로 돌아가기">
+      <span class="archive__doorGlow" aria-hidden="true"></span>
+      <img class="archive__doorArt" src="/assets/images/garage/secret_door.webp" alt="" width="560" height="660" decoding="async" loading="lazy">
+      <span class="archive__doorLight" aria-hidden="true"></span>
+      <span class="archive__doorLeaf" aria-hidden="true"></span>
+      <span class="archive__doorLabel" aria-hidden="true">차고로 돌아가기</span>
+    </button>
+    <!-- Looking up through the telescope: a night sky of its own
+         (src/scenes/sky.ts), nothing of the room in it, one way back. -->
     <div class="archive__sky" data-archive-sky hidden role="dialog" aria-label="별 보기">
-      <img class="archive__shooting" src="/assets/images/archive/shooting_star.webp" alt="" decoding="async" loading="lazy">
-      <p class="archive__skyHint">아무 곳이나 누르면 돌아옵니다</p>
-      <button class="archive__skyClose" type="button" data-archive-sky-close aria-label="돌아가기">✕</button>
+      <div class="archive__skyView" aria-hidden="true">
+        <canvas class="archive__stars" data-archive-stars></canvas>
+        <span class="archive__eyepiece"></span>
+      </div>
+      <button class="archive__skyClose" type="button" data-archive-sky-close aria-label="별 보기 닫기"><span class="archive__skyX" aria-hidden="true">✕</span><span class="archive__skyCloseText">별 보기 닫기</span></button>
     </div>
     <p class="archive__rest" data-archive-rest hidden aria-live="polite">조용히 쉬는 중 · 아무 키나 누르면 돌아옵니다</p>
   </section>

@@ -49,6 +49,12 @@ export interface SaveDataV3 extends Omit<SaveDataV2, 'v'> {
    * own. Still v3: a save without it reads as null, and nothing else moved.
    */
   radioStation: string | null
+  /**
+   * Whether the radio was left on (WORLD 2.4). The radio and the site's
+   * sound switch are two switches: sound on with the radio off is the
+   * garage's own song. Still v3: absent reads as off.
+   */
+  radioOn: boolean
 }
 
 /** The current schema. */
