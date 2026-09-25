@@ -135,7 +135,9 @@ class DeliveryGame implements GameInstance {
     for (const e of r.step(s)) {
       switch (e.kind) {
         case 'jump':
-          this.#host.sfx('crew_step', 0.18)
+          // Once per jump: the round raises this only on the frame MOMO
+          // leaves the ground, however long the key is held.
+          this.#host.sfx('momo_jump', 0.26)
           break
         case 'pickup':
           // No sound of its own yet: the three-second page-rustle that used
@@ -179,6 +181,7 @@ class DeliveryGame implements GameInstance {
     this.#host.root.dataset['x'] = String(Math.round(r.x))
     this.#host.root.dataset['y'] = String(Math.round(r.y))
     this.#host.root.dataset['carrying'] = String(r.carrying)
+    this.#host.root.dataset['air'] = String(!r.grounded)
     this.#host.root.dataset['lives'] = String(r.lives)
     this.#host.root.dataset['delivered'] = String(r.delivered)
     this.#draw()

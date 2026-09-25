@@ -59,10 +59,13 @@ const CLIPS = {
   // The room living.
   broom: `${SFX}/sfx/broom.m4a`,
   crew_step: `${SFX}/sfx/crew_step_01.m4a`,
-  // MOMO running in the parcel game (WORLD 2.4), one footfall at a time at
-  // the walk's own cadence. The studio's crew footstep stands in until the
-  // running sound it has made is pointed at (docs/WORLD_2_4.md).
+  // MOMO in the parcel game (WORLD 2.4): running is one footfall at a time
+  // at the walk's own cadence — the studio's crew footstep stands in until
+  // a running sound is delivered (docs/WORLD_2_4.md) — and the jump is the
+  // studio's own retro jump (assets/a_videogame_retro_ju-1790301919116.wav),
+  // once per jump, at the moment MOMO leaves the ground.
   run_step: `${SFX}/sfx/crew_step_01.m4a`,
+  momo_jump: `${SFX}/sfx/momo_jump.m4a`,
   // The games and the archive.
   game_start: `${SFX}/sfx/game_start.m4a`,
   game_fail: `${SFX}/sfx/game_fail.m4a`,
@@ -119,6 +122,9 @@ class AudioManager {
       if (!el) {
         el = new Audio(src)
         el.preload = 'auto'
+        // Which clip this element is, by name: two names may share a file
+        // (the crew's footstep and MOMO's run), and the tests listen by name.
+        el.dataset['clip'] = name
         this.cache.set(name, el)
       }
       el.currentTime = 0

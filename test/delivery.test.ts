@@ -22,6 +22,32 @@ function jump(r: DeliveryRound, dir: 'left' | 'right' | null, log: string[]): vo
 }
 
 describe('모모의 택배 배달', () => {
+  it('a jump is one event, however long the key is held, and none in the air; a second press is a second', () => {
+    const r = new DeliveryRound({ empty: true })
+    const log: string[] = []
+    hold(r, 0.5, [], log)
+    expect(log.filter((k) => k === 'jump')).toHaveLength(0)
+    // Held for two whole seconds: up, down, and standing on the ground with
+    // the key still down — one jump.
+    hold(r, 2, ['jump'], log)
+    expect(r.grounded).toBe(true)
+    expect(log.filter((k) => k === 'jump')).toHaveLength(1)
+    expect(log.filter((k) => k === 'land')).toHaveLength(1)
+    // Let go, press again: the second.
+    hold(r, 0.2, [], log)
+    hold(r, 0.05, ['jump'], log)
+    expect(r.grounded).toBe(false)
+    expect(log.filter((k) => k === 'jump')).toHaveLength(2)
+    // In the air, pressing again does nothing until the ground.
+    hold(r, 0.1, [], log)
+    hold(r, 0.1, ['jump'], log)
+    hold(r, 0.1, [], log)
+    expect(log.filter((k) => k === 'jump')).toHaveLength(2)
+    for (let i = 0; i < 120 && !r.grounded; i++) hold(r, 1 / 60, [], log)
+    expect(r.grounded).toBe(true)
+    expect(log.filter((k) => k === 'jump')).toHaveLength(2)
+  })
+
   it('every ledge is in reach of a jump, even carrying', () => {
     const tops = [GROUND, ...LEDGES.map((l) => l.y)].sort((a, b) => b - a)
     let biggest = 0

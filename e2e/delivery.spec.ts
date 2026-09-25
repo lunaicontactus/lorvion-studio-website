@@ -21,10 +21,10 @@ async function open(page: Page, seed = 3): Promise<void> {
   await expect(page.locator('[data-game-overlay]')).toBeHidden({ timeout: 6000 })
 }
 
-const at = async (page: Page): Promise<{ x: number; y: number; carrying: string; lives: string }> =>
+const at = async (page: Page): Promise<{ x: number; y: number; carrying: string; lives: string; air: string }> =>
   page.locator(root).evaluate((el) => {
     const d = (el as HTMLElement).dataset
-    return { x: Number(d['x']), y: Number(d['y']), carrying: d['carrying'] ?? '', lives: d['lives'] ?? '' }
+    return { x: Number(d['x']), y: Number(d['y']), carrying: d['carrying'] ?? '', lives: d['lives'] ?? '', air: d['air'] ?? '' }
   })
 
 test.describe('desktop', () => {
@@ -69,7 +69,9 @@ test.describe('desktop, listening', () => {
       window.__sfx = []
       const play = HTMLMediaElement.prototype.play
       HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
-        window.__sfx!.push((this.currentSrc || this.src).split('/').pop() ?? '')
+        // By clip name where the site gives one: the crew's footstep and
+        // MOMO's run share a file, and only one of them is being listened for.
+        window.__sfx!.push(this.dataset['clip'] ?? ((this.currentSrc || this.src).split('/').pop() ?? ''))
         return play.call(this)
       }
     })
@@ -82,34 +84,90 @@ test.describe('desktop, listening', () => {
     const count = (n: string): Promise<number> => page.evaluate((n) => (window.__sfx ?? []).filter((s) => s === n).length, n)
     await expect.poll(async () => (await at(page)).x, { timeout: 3000 }).toBe(30)
     await page.waitForTimeout(1000)
-    expect(await count('crew_step_01.m4a'), 'steps while standing').toBe(0)
+    expect(await count('run_step'), 'steps while standing').toBe(0)
     // To the pile: the parcel, and no page turning for picking it up.
     await page.keyboard.down('ArrowLeft')
     await expect.poll(async () => (await at(page)).carrying, { timeout: 4000 }).toBe('true')
     await page.keyboard.up('ArrowLeft')
-    expect(await count('paper.m4a'), 'pages turning at the pile').toBe(0)
+    expect(await count('paper'), 'pages turning at the pile').toBe(0)
     await page.waitForTimeout(800)
-    const before = await count('crew_step_01.m4a')
+    const before = await count('run_step')
     // Carrying, running: footfalls at the walk's cadence, about five a second.
     await page.keyboard.down('ArrowRight')
     await page.waitForTimeout(1200)
     await page.keyboard.up('ArrowRight')
-    const ran = (await count('crew_step_01.m4a')) - before
+    const ran = (await count('run_step')) - before
     expect(ran, 'no footfalls running with the parcel').toBeGreaterThanOrEqual(4)
     expect(ran, 'a machine gun').toBeLessThanOrEqual(8)
-    expect(await count('paper.m4a'), 'pages turning while running').toBe(0)
+    expect(await count('paper'), 'pages turning while running').toBe(0)
     // Standing with the parcel: nothing. (The frame that takes the key up
     // may still carry the last step; the count is read once MOMO has stopped.)
     await expect.poll(async () => (await at(page)).x, { timeout: 1000 }).toBe((await at(page)).x)
     await page.waitForTimeout(300)
-    const still = await count('crew_step_01.m4a')
+    const still = await count('run_step')
     await page.waitForTimeout(1000)
-    expect(await count('crew_step_01.m4a')).toBe(still)
-    // A jump from standing is one sound, and no steps in the air.
+    expect(await count('run_step')).toBe(still)
+    // A jump from standing is the jump's own sound, once, and no steps in the air.
     await page.keyboard.press(' ')
     await page.waitForTimeout(900)
-    expect((await count('crew_step_01.m4a')) - still).toBe(1)
-    expect(await count('paper.m4a')).toBe(0)
+    expect(await count('run_step'), 'steps in the air').toBe(still)
+    expect(await count('momo_jump')).toBe(1)
+    expect(await count('paper')).toBe(0)
+  })
+
+  test('the jump is one sound per jump: held, in the air, landed, again, and carrying', async ({ page }) => {
+    await page.addInitScript(() => {
+      try { localStorage.clear(); sessionStorage.clear() } catch { /* */ }
+      window.__sfx = []
+      const play = HTMLMediaElement.prototype.play
+      HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
+        // By clip name where the site gives one: the crew's footstep and
+        // MOMO's run share a file, and only one of them is being listened for.
+        window.__sfx!.push(this.dataset['clip'] ?? ((this.currentSrc || this.src).split('/').pop() ?? ''))
+        return play.call(this)
+      }
+    })
+    await page.goto('/?play=parcel&parcelseed=3', { waitUntil: 'load' })
+    await page.locator('[data-sound-toggle]').click()
+    await page.locator('[data-alley-enter]').click()
+    await expect(page.locator('[data-game-start]')).toBeVisible({ timeout: 15_000 })
+    await page.locator('[data-game-start]').click()
+    await expect(page.locator('[data-game-overlay]')).toBeHidden({ timeout: 6000 })
+    const count = (n: string): Promise<number> => page.evaluate((n) => (window.__sfx ?? []).filter((s) => s === n).length, n)
+    await expect.poll(async () => (await at(page)).x, { timeout: 3000 }).toBe(30)
+    await page.waitForTimeout(800)
+    // Standing: nothing.
+    expect(await count('momo_jump')).toBe(0)
+    // Press and hold: one, as MOMO leaves the ground; still one in the air.
+    await page.keyboard.down(' ')
+    await expect.poll(async () => (await at(page)).air, { timeout: 1000, intervals: [16] }).toBe('true')
+    expect(await count('momo_jump')).toBe(1)
+    await page.waitForTimeout(250)
+    expect(await count('momo_jump'), 'again in the air').toBe(1)
+    // Landed (on the ground, or the ledge above the start) with the key
+    // still down: still one.
+    await expect.poll(async () => (await at(page)).air, { timeout: 2000 }).toBe('false')
+    await page.waitForTimeout(700)
+    expect(await count('momo_jump'), 'holding the key jumped again').toBe(1)
+    await page.keyboard.up(' ')
+    await page.waitForTimeout(200)
+    // A second press: the second.
+    await page.keyboard.press(' ')
+    await expect.poll(async () => (await at(page)).air, { timeout: 1000, intervals: [16] }).toBe('true')
+    expect(await count('momo_jump')).toBe(2)
+    await expect.poll(async () => (await at(page)).air, { timeout: 2000 }).toBe('false')
+    await page.waitForTimeout(300)
+    expect(await count('momo_jump'), 'landing is not a jump').toBe(2)
+    // Carrying: the same, once.
+    await page.keyboard.down('ArrowLeft')
+    await expect.poll(async () => (await at(page)).carrying, { timeout: 4000 }).toBe('true')
+    await page.keyboard.up('ArrowLeft')
+    await page.waitForTimeout(400)
+    await page.keyboard.press(' ')
+    await expect.poll(async () => (await at(page)).air, { timeout: 1000, intervals: [16] }).toBe('true')
+    await page.waitForTimeout(900)
+    expect(await count('momo_jump')).toBe(3)
+    expect(await count('paper'), 'pages turning').toBe(0)
   })
 })
 

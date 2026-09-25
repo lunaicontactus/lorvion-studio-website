@@ -77,16 +77,25 @@ air. The jump keeps its one step. `test/steps.test.ts` holds the cadence;
 four to eight footfalls in 1.2 s of running with the parcel, nothing
 standing with it, one sound for a jump.
 
-**The file.** The brief says the studio added a new running sound to the
-project. Nothing new is in the repository, `eungarage-website/assets`, or
-the crew folder; the one audio file made in the last days is
-`~/Downloads/a_videogame_retro_ju-1790301919116.wav` (ElevenLabs, today
-11:05, 1.07 s: three quick taps in 190 ms, then silence). Its name reads as
-"jump", not "run", and its shape fits a jump too, so it was not used —
-picking it would have been a guess. Until the running file is pointed at,
-`run_step` in `src/systems/audio.ts` is the studio's own crew footstep
-(`crew_step_01.m4a`, 0.19 s); swapping in the real file is that one line
-plus an `afconvert` to `.m4a`.
+**The jump.** The studio's own retro jump —
+`~/Desktop/eungarage-website/assets/a_videogame_retro_ju-1790301919116.wav`
+(ElevenLabs, 2026-09-25 11:05, 1.07 s, audible for 0.3 s: a clean rise from
+234 Hz to 3.3 kHz, loud for the first 130 ms) — is the one new audio file
+in the project, and it is a jump. Encoded to
+`public/assets/audio/sfx/momo_jump.m4a` (`scripts/audio.sh`) and bound as
+`momo_jump` to the delivery game's `jump` event, which the round raises
+only on the frame MOMO leaves the ground: holding the key is one jump, a
+press in the air is nothing until the ground, landing is not a jump
+(`test/delivery.test.ts`; `e2e/delivery.spec.ts` listens through press,
+hold, air, landing, a second press, and carrying: 1, 1, 1, 2, 3). The crew
+footstep that used to stand in for the jump is off it.
+
+**Running.** No running sound has been delivered: the jump above is the
+only new audio anywhere in the project or nearby, and it is not a run.
+`run_step` stays on the studio's crew footstep (`crew_step_01.m4a`) until
+one is; swapping it in is one line plus an `afconvert`. Effect elements
+now carry their clip name (`data-clip`), since two names may share a file
+and the tests listen by name.
 
 ## 3. The telescope was the room, enlarged
 
@@ -138,7 +147,7 @@ Enter and Space open it. It steps aside under the sky and in Healing Mode.
 ## 5. Tests
 
 - Unit: `test/music.test.ts` (the owner rule, the hand timings),
-  `test/steps.test.ts`, `test/sky.test.ts`; 259 → 272 passing.
+  `test/steps.test.ts`, `test/sky.test.ts`; 260 passing (with the jump's own).
 - Playwright: `e2e/audio.spec.ts` rewritten (the song alone; knob on → out
   → station, 30 s, four changes, off → back where it was; the power sound
   once and not from the master switch; the static bed; out and back through
