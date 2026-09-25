@@ -98,7 +98,10 @@ test.describe('desktop, listening', () => {
     expect(ran, 'no footfalls running with the parcel').toBeGreaterThanOrEqual(4)
     expect(ran, 'a machine gun').toBeLessThanOrEqual(8)
     expect(await count('paper.m4a'), 'pages turning while running').toBe(0)
-    // Standing with the parcel: nothing.
+    // Standing with the parcel: nothing. (The frame that takes the key up
+    // may still carry the last step; the count is read once MOMO has stopped.)
+    await expect.poll(async () => (await at(page)).x, { timeout: 1000 }).toBe((await at(page)).x)
+    await page.waitForTimeout(300)
     const still = await count('crew_step_01.m4a')
     await page.waitForTimeout(1000)
     expect(await count('crew_step_01.m4a')).toBe(still)
