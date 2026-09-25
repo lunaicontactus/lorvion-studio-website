@@ -154,12 +154,23 @@ test('hover lifts the thing itself — no line, no box — and lets it down agai
   expect(drawn.ringSelf).toBe('none')
 
   await page.mouse.move(20, 700)
-  await page.waitForTimeout(300)
-  const after = await page.evaluate(
-    () =>
-      [...document.querySelectorAll('.thing')].filter(
-        (t) => (t.querySelector('.thing__self') ? Number(getComputedStyle(t.querySelector('.thing__self')!).opacity) > 0.5 : false),
-      ).length,
-  )
-  expect(after).toBe(0)
+  // Where the pointer came to rest is not another thing: if it were, that
+  // thing lifting would be right, and this test would be measuring it.
+  const under = await page.evaluate(() => (document.elementFromPoint(20, 700)?.closest('.thing') as HTMLElement | null)?.dataset['object'] ?? null)
+  expect(under, 'the pointer came to rest on another thing').toBeNull()
+  // And everything settles: the lift fades out over its own 120 ms, which
+  // a fixed wait raced on a loaded runner. Waited for as an end state, not
+  // sampled at one moment; a thing that stays lifted still fails, by name.
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() =>
+          [...document.querySelectorAll('.thing')]
+            .map((t) => ({ t: t as HTMLElement, self: t.querySelector('.thing__self') }))
+            .filter(({ self }) => (self ? Number(getComputedStyle(self).opacity) > 0.5 : false))
+            .map(({ t, self }) => `${t.dataset['object']} [${t.className}] hover=${t.matches(':hover')} focus=${t.matches(':focus-visible')} opacity=${getComputedStyle(self!).opacity}`),
+        ),
+      { timeout: 2000, message: 'a thing stayed lifted after the pointer left' },
+    )
+    .toEqual([])
 })
