@@ -102,7 +102,10 @@ test.describe('the radio', () => {
     await expect(power).toHaveAttribute('aria-pressed', 'true')
     const hand = await neverTwo(page, 2200, 100)
     expect(hand[0]).toEqual(['garage.m4a'])
-    expect(hand.some((m) => m.length === 0), 'no silence between the song and the station').toBe(true)
+    // In order: the song, then the station, and the song never after it.
+    const firstStation = hand.findIndex((m) => m.includes('ambient.m4a'))
+    expect(firstStation, 'the station never came').toBeGreaterThan(0)
+    expect(hand.slice(firstStation).some((m) => m.includes('garage.m4a')), 'the song came back under the station').toBe(false)
     expect(hand[hand.length - 1]).toEqual(['ambient.m4a'])
     expect(await page.locator('[data-radio-freq]').textContent()).toContain('91.7')
     expect(await plays(page, 'radio_tune.m4a'), 'the knob, once').toBe(1)
@@ -134,6 +137,9 @@ test.describe('the radio', () => {
     await expect(power).toHaveAttribute('aria-pressed', 'false')
     const back = await neverTwo(page, 2000, 100)
     expect(back[0]).toEqual(['ambient.m4a'])
+    const firstSong = back.findIndex((m) => m.includes('garage.m4a'))
+    expect(firstSong, 'the song never came back').toBeGreaterThan(0)
+    expect(back.slice(firstSong).some((m) => m.includes('ambient.m4a')), 'the station stayed under the song').toBe(false)
     expect(back[back.length - 1]).toEqual(['garage.m4a'])
     expect(await at(page, 'garage.m4a')).toBeGreaterThanOrEqual(left - 0.5)
     expect(await at(page, 'garage.m4a')).toBeLessThan(left + 3)
@@ -203,6 +209,8 @@ test.describe('the radio', () => {
     expect(await music(page)).toEqual(['ambient.m4a'])
     await page.keyboard.press('Escape')
     await expect(page.locator('[data-panel-root]')).toBeHidden()
+    // Choosing that first station was the knob: its click, once.
+    expect(await plays(page, 'radio_tune.m4a')).toBe(1)
     // Out through the door: the station goes before the playground's music
     // comes; never both. Sampled through the whole crossing.
     const door = page.locator('[data-object="outside-door"]')
@@ -218,7 +226,7 @@ test.describe('the radio', () => {
     await neverTwo(page, 7000)
     await page.waitForTimeout(1500)
     expect(await music(page)).toEqual(['ambient.m4a'])
-    expect(await plays(page, 'radio_tune.m4a'), 'coming back in is not switching it on').toBe(0)
+    expect(await plays(page, 'radio_tune.m4a'), 'coming back in is not switching it on').toBe(1)
   })
 
   test('a hidden tab is silent, and a visible one has exactly what it had', async ({ page }) => {
