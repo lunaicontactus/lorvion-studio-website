@@ -434,25 +434,31 @@ test.describe('desktop', () => {
       ([i, who]) => window.__npcStates!.slice(i).find((s) => s.state === 'WALK' && who.includes(s.who))!,
       [closedAt, candidates] as const,
     )
-    // Their own records, in order: the walk ends when the next state comes.
+    // Their own records, in order: the walk ends when the next state comes
+    // that is not part of it. GLANCE is part of it — stopped mid-walk to
+    // let somebody by, or to look at somebody eating, with the errand still
+    // on and the walk taken up again afterwards (src/scenes/npc.ts) — so a
+    // glance a moment after setting off is not an arrival where it began.
+    const walking = ['WALK', 'GLANCE']
     await page.waitForFunction(
-      ([i, who]) => {
+      ([i, who, on]) => {
         const own = window.__npcStates!.slice(i).filter((s) => s.who === who)
-        return own.some((s, n) => n > 0 && own[n - 1]!.state === 'WALK' && s.state !== 'WALK')
+        const k = own.findIndex((s) => s.state === 'WALK')
+        return k >= 0 && own.slice(k + 1).some((s) => !on.includes(s.state))
       },
-      [closedAt, setOff.who] as const,
+      [closedAt, setOff.who, walking] as const,
       { timeout: 32000 },
     )
     // And a walk is a walk: where it ended is not where it began. (A walk
     // resumed mid-way may have only its last stretch left, so the distance
     // is not the point; that there was one is.)
     const arrived = await page.evaluate(
-      ([i, who]) => {
+      ([i, who, on]) => {
         const own = window.__npcStates!.slice(i).filter((s) => s.who === who)
         const k = own.findIndex((s) => s.state === 'WALK')
-        return own.slice(k + 1).find((s) => s.state !== 'WALK')!
+        return own.slice(k + 1).find((s) => !on.includes(s.state))!
       },
-      [closedAt, setOff.who] as const,
+      [closedAt, setOff.who, walking] as const,
     )
     expect(Math.hypot(arrived.x - setOff.x, arrived.y - setOff.y)).toBeGreaterThan(1)
   })
