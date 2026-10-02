@@ -54,8 +54,9 @@ const REACT_SFX: Readonly<Record<string, { readonly name: string; readonly volum
 const NAV_TARGETS: Readonly<Record<string, string>> = {
   works: 'pc',
   // STUDIO keeps its own page: the workbench is work in progress now, not
-  // the studio's introduction.
-  contact: 'tv',
+  // the studio's introduction. CONTACT is its own page too (SITE UPGRADE
+  // PHASE B): the nav goes where it says on every page, and the television's
+  // contact channel stays for whoever finds it in the room.
 }
 
 export function mountWorld(): () => void {
@@ -831,8 +832,6 @@ export function mountWorld(): () => void {
     const onClick = (e: MouseEvent): void => {
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
       e.preventDefault()
-      // CONTACT is a channel on the television, not the television's first one.
-      if (key === 'contact') panels.preferChannel('contact')
       goTo(target)
     }
     link.addEventListener('click', onClick)

@@ -159,10 +159,21 @@ test.describe('desktop', () => {
     await expect(page.locator('[data-tv-cam]')).toBeVisible({ timeout: 3000 })
   })
 
-  test('the nav CONTACT opens the TV on the contact channel', async ({ page }) => {
+  test('the nav CONTACT is the contact page; the TV keeps its contact channel', async ({ page }) => {
     await enter(page)
+    await touch(page, 'tv')
+    await expect(page.locator('[data-tv]')).toBeVisible({ timeout: 6000 })
+    await page.locator('[data-tv-go="3"]').click()
+    await expect(page.locator('[data-tv]')).toHaveAttribute('data-channel', 'contact', { timeout: 3000 })
+    await page.keyboard.press('Escape')
     await page.locator('.nav-links a', { hasText: /contact/i }).click()
-    await expect(page.locator('[data-tv]')).toHaveAttribute('data-channel', 'contact', { timeout: 6000 })
+    await expect(page).toHaveURL(/\/contact\.html$/)
+    // Four ways in, each with its subject already written.
+    for (const kind of ['game-support', 'business', 'press', 'other']) {
+      const mail = page.locator(`[data-contact="${kind}"] a[href^="mailto:"]`)
+      await expect(mail).toHaveCount(1)
+      expect(await mail.getAttribute('href')).toMatch(/^mailto:eungarage@gmail\.com\?subject=%5B/)
+    }
   })
 
   test('the radio brings the sound on with it, its knob is its own, and the switch stays', async ({ page, context }) => {

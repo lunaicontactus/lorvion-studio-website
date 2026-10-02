@@ -17,6 +17,10 @@
 .support-card{border:1px solid var(--line);padding:25px;border-radius:18px;background:rgba(255,255,255,.025)}
 .support-card h2{font-size:1.24rem}
 .support-card p{margin-bottom:0}
+/* Contact (SITE UPGRADE PHASE B): the same cards, with what to press. */
+.contact-card__kind{margin:0 0 6px;color:#8e95a6;font:600 .66rem/1 var(--mono);letter-spacing:.14em}
+.contact-card__links{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:14px !important}
+.contact-card__links a{display:inline-flex;align-items:center;min-height:44px;color:#f3ead9;text-decoration:underline;text-underline-offset:4px}
 .cta-box{border:1px solid var(--line);border-radius:22px;padding:30px;margin-top:35px;background:linear-gradient(135deg,rgba(120,132,160,.07),rgba(255,255,255,.02))}
 .cta-button{display:inline-flex;padding:13px 18px;border-radius:99px;background:#fff;color:#07080d;font-weight:650;margin-top:14px}
 

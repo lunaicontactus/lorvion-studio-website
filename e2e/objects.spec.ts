@@ -156,15 +156,14 @@ test.describe('desktop', () => {
 
     // Studio is a page of its own: the workbench is work in progress, not
     // the studio's introduction.
-    await expect(page.locator('.nav-links a', { hasText: 'Studio' })).toHaveAttribute('href', './studio.html')
-
-    await page.locator('.nav-links a', { hasText: 'Contact' }).click()
-    await expect(page.locator('.tvrow__value')).toHaveCount(1, { timeout: 5000 })
+    await expect(page.locator('.nav-links a', { hasText: 'Studio' })).toHaveAttribute('href', '/studio.html')
     // Support is a page, not a thing in the room, and stays one.
-    await expect(page.locator('.nav-links a', { hasText: 'Support' })).toHaveAttribute(
-      'href',
-      './support.html',
-    )
+    await expect(page.locator('.nav-links a', { hasText: 'Support' })).toHaveAttribute('href', '/support.html')
+    // And CONTACT is a page now (SITE UPGRADE PHASE B): the nav goes where it
+    // says on every page; the television's contact channel is still in the room.
+    await page.locator('.nav-links a', { hasText: 'Contact' }).click()
+    await expect(page).toHaveURL(/\/contact\.html$/)
+    await expect(page.locator('[data-contact]')).toHaveCount(4)
   })
 
   test('the nav works from outside, entering the room on the way', async ({ page }) => {

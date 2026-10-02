@@ -62,10 +62,7 @@ for (const vp of [
         await expect(page.locator(`.file__tab[href="${href}"]`)).toHaveCount(1)
       }
       // Nothing here is hidden behind a discovery: the nav still goes direct.
-      await expect(page.locator('.nav-links a', { hasText: 'Support' })).toHaveAttribute(
-        'href',
-        './support.html',
-      )
+      await expect(page.locator('.nav-links a', { hasText: 'Support' })).toHaveAttribute('href', '/support.html')
       await page.keyboard.press('Escape')
       await expect(page.locator(panel)).toBeHidden()
     })

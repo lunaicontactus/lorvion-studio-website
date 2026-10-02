@@ -1,3 +1,4 @@
+import { renderNav } from '@/data/sitemap'
 import { describe, expect, it } from 'vitest'
 import { readdirSync, readFileSync } from 'node:fs'
 // @ts-expect-error — a plain .mjs script, shared with CI
@@ -23,7 +24,9 @@ describe('the brand', () => {
   it('puts the v02 logo, icons and share tags on every page', () => {
     for (const page of pages) {
       const html = readFileSync(page, 'utf8')
-      expect(html, `${page}: nav logo`).toMatch(/class="brand-logo" src="\/assets\/images\/brand\/eungarage_logo_nav(_light)?\.webp"/)
+      // The nav is built from src/data/sitemap.ts into each page's marker.
+      const nav = html.includes('<!--@nav-->') ? renderNav(page === 'index.html' ? '/' : `/${page}`) : html
+      expect(nav, `${page}: nav logo`).toMatch(/class="brand-logo" src="\/assets\/images\/brand\/eungarage_logo_nav(_light)?\.webp"/)
       expect(html, `${page}: no text wordmark`).not.toContain('brand-wordmark')
       expect(html, `${page}: favicon`).toContain('/assets/images/favicon-48.png')
       expect(html, `${page}: apple icon`).toContain('/apple-touch-icon.png')

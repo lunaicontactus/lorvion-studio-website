@@ -1,3 +1,4 @@
+import { sitemapXml } from '@/data/sitemap'
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { PROJECTS, getProject, updatesOf, workPicture } from '@/data/projects'
@@ -175,7 +176,8 @@ describe('the pages', () => {
   })
 
   it('lists the works in the sitemap', () => {
-    const map = read('public/sitemap.xml')
+    // Written at build time from src/data/sitemap.ts (SITE UPGRADE PHASE B).
+    const map = sitemapXml(PROJECTS.map((p) => p.id))
     expect(map).toContain('https://eungarage.com/works.html')
     for (const p of PROJECTS) expect(map).toContain(`https://eungarage.com/works/${p.id}.html`)
   })
