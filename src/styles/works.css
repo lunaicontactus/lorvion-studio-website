@@ -93,8 +93,9 @@ html:has(body.works-page){background:#170f0a}
 .record__body{position:relative;z-index:1;display:grid;gap:7px;align-content:start}
 .record__kind{font:700 .64rem/1.3 var(--mono);letter-spacing:.16em;opacity:.8}
 .record__title{font-size:1.7rem;font-weight:800;line-height:1.05;letter-spacing:-.01em}
-.record__line{font-size:.98rem;line-height:1.6}
-.record__meta{font-size:.8rem;opacity:.78}
+.record__line{font-size:.98rem;line-height:1.6;word-break:keep-all}
+.record__meta{font-size:.8rem;opacity:.78;word-break:keep-all}
+.record__meta span{white-space:nowrap}
 .record__status{
   justify-self:start;margin-top:6px;padding:.45em .8em;border-radius:4px;
   font:700 .66rem/1 var(--mono);letter-spacing:.14em;color:#fbeccb;background:#6a4426;
@@ -137,23 +138,25 @@ html:has(body.works-page){background:#170f0a}
   color:rgba(210,80,70,.9);font:800 .9rem/1 sans-serif;letter-spacing:.3em;transform:rotate(-8deg);
 }
 
-/* WORM UP! — a trail map, folded, the route marked in red, two stickers. */
+/* WORM UP! (Steam) — a worm's life on paper: watercolour cream, soil
+   along its foot, a sprout coming up through it (PHASE C). */
 .record--wormup{
   --tilt:-.6deg;color:#3a2a17;
   background:
-    linear-gradient(90deg,transparent 32.8%,rgba(90,60,20,.14) 33.3%,transparent 33.9%,transparent 66.2%,rgba(90,60,20,.14) 66.7%,transparent 67.2%),
-    repeating-radial-gradient(ellipse at 70% 60%,rgba(90,130,70,.14) 0 2px,transparent 2px 14px),
-    linear-gradient(170deg,#f3e6c4,#e2cf9f);
+    repeating-radial-gradient(ellipse at 30% 40%,rgba(120,90,50,.06) 0 2px,transparent 2px 16px),
+    linear-gradient(170deg,#f5ead0,#e8d6ad);
 }
-.record--wormup .record__route{left:18px;bottom:10px;width:190px;height:54px;border:3px dashed rgba(206,78,70,.7);border-color:transparent transparent rgba(206,78,70,.7) rgba(206,78,70,.7);border-radius:0 0 0 70%}
-.record--wormup .record__badge{
-  display:grid;place-items:center;width:46px;height:46px;border-radius:50%;
-  font:800 .8rem/1 var(--mono);color:#fff;box-shadow:0 3px 6px rgba(0,0,0,.25),inset 0 0 0 3px rgba(255,255,255,.5);
-}
-/* Stuck on over the top edge, clear of the writing. */
-.record--wormup .record__badge--a{right:20px;top:-16px;background:#dc665f;transform:rotate(-10deg)}
-.record--wormup .record__badge--b{right:72px;top:-10px;background:#e0a93b;transform:rotate(8deg)}
-.record--wormup .record__status{color:#fbeccb}
+.record--wormup .record__soil{left:0;right:0;bottom:0;height:26px;border-radius:0 0 6px 6px;
+  background:
+    radial-gradient(circle at 12% 40%,rgba(60,38,20,.55) 0 3px,transparent 4px),
+    radial-gradient(circle at 63% 70%,rgba(60,38,20,.5) 0 2px,transparent 3px),
+    radial-gradient(circle at 86% 30%,rgba(60,38,20,.45) 0 3px,transparent 4px),
+    linear-gradient(180deg,#8a5a34,#6b4325)}
+.record--wormup .record__sprout{right:26px;bottom:22px;width:26px;height:30px;
+  background:
+    radial-gradient(ellipse 7px 5px at 30% 30%,#7fa85a 98%,transparent),
+    radial-gradient(ellipse 7px 5px at 72% 22%,#94bb6b 98%,transparent),
+    linear-gradient(90deg,transparent 46%,#6f8f4a 46% 56%,transparent 56%) 0 10px / 100% 20px no-repeat}
 
 /* LUMIORA — a score book that gives off its own light. */
 .record--lumiora{
@@ -199,7 +202,10 @@ html:has(body.works-page){background:#170f0a}
 }
 .work-hero__kicker{margin:4px 0 10px;font:700 .72rem/1.3 var(--mono);letter-spacing:.2em;color:#e8c48a}
 .work-hero__title{margin:0 0 12px;font-size:clamp(2.4rem,5vw,4rem);line-height:1;font-weight:850;letter-spacing:-.01em;color:#fff4e0}
-.work-hero__ko{margin:0 0 4px;font-size:1.18rem;line-height:1.6;color:var(--wk-cream)}
+.work-hero__ko{margin:0 0 4px;font-size:1.18rem;line-height:1.6;color:var(--wk-cream);word-break:keep-all}
+/* A work's one strongest sentence, once (PHASE C). */
+.work-hero__line{margin:0 0 14px;font-size:clamp(1.3rem,2.4vw,1.7rem);line-height:1.35;font-weight:750;color:#fff4e0}
+.work-hero__note{margin:8px 0 0;max-width:34em;font-size:.88rem;line-height:1.6;color:var(--wk-muted)}
 .work-hero__en{margin:0 0 22px;font-size:.95rem;color:var(--wk-muted);font-style:italic}
 /* The facts, on fabric labels. */
 .work-tags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 20px}
@@ -222,6 +228,8 @@ html:has(body.works-page){background:#170f0a}
 }
 a.work-link:hover{background:#5a3c22}
 .work-link--note{background:transparent;color:var(--wk-muted);box-shadow:inset 0 0 0 1.5px rgba(205,185,148,.4);border:0}
+/* A plan is not a button (PHASE C): plain words, no frame to press. */
+.work-plan{margin:0 0 6px;font:600 .78rem/1.4 var(--mono);letter-spacing:.08em;color:var(--wk-muted)}
 
 .work-sec{margin-top:58px;animation:worksIn 760ms var(--ease) both;animation-delay:300ms}
 .work-sec__h{
@@ -240,7 +248,7 @@ a.work-link:hover{background:#5a3c22}
   content:"";position:absolute;left:50%;top:-9px;width:18px;height:18px;margin-left:-9px;border-radius:50%;
   background:radial-gradient(circle at 35% 30%,#e8665c,#9b2a24);box-shadow:0 3px 4px rgba(0,0,0,.4);
 }
-.work-note__paper p{margin:0}
+.work-note__paper p{margin:0;word-break:keep-all}
 
 /* CORE EXPERIENCE — index cards. */
 .work-cards{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
@@ -255,7 +263,7 @@ a.work-link:hover{background:#5a3c22}
 .work-card:nth-child(3n+1){transform:rotate(-.7deg)}
 .work-card:nth-child(3n+2){transform:rotate(.5deg)}
 .work-card__t{font-size:1rem;line-height:1.1}
-.work-card__x{font-size:.92rem;line-height:1.6}
+.work-card__x{font-size:.92rem;line-height:1.6;word-break:keep-all}
 
 /* A list of its own (LUMIORA's composers, RUBATO's cast). */
 .work-list{list-style:none;margin:0;padding:18px 20px;display:grid;gap:4px;border-radius:10px;
@@ -273,7 +281,7 @@ a.work-link:hover{background:#5a3c22}
 /* FEATURES — what the work already promises, on stitched lines. */
 .work-features{list-style:none;margin:0;padding:18px 22px;max-width:820px;display:grid;gap:2px;border-radius:10px;
   background:linear-gradient(160deg,#3a2616,#24170e);box-shadow:0 12px 24px rgba(0,0,0,.45),inset 0 0 0 1.5px rgba(236,196,128,.14)}
-.work-features li{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;padding:11px 0;border-bottom:1px dashed rgba(236,196,128,.18);line-height:1.55}
+.work-features li{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;padding:11px 0;border-bottom:1px dashed rgba(236,196,128,.18);line-height:1.55;word-break:keep-all}
 .work-features li:last-child{border-bottom:0}
 .work-features li::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--accent);transform:translateY(-1px)}
 
@@ -286,6 +294,12 @@ a.work-link:hover{background:#5a3c22}
 .work-update ul{margin:0;padding-left:1.1em;line-height:1.7}
 
 /* GALLERY — prints, pulled out one at a time. */
+/* CHARACTERS — the work's own cut-outs, standing on the page. */
+.work-chars{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px}
+.work-char{display:grid;justify-items:center;gap:4px;padding:16px 10px 14px;border-radius:12px;background:rgba(245,234,208,.06);box-shadow:inset 0 0 0 1px rgba(236,196,128,.16)}
+.work-char img{width:auto;height:auto;max-width:100%;max-height:120px;object-fit:contain}
+.work-char__n{color:var(--wk-cream);font-size:.98rem}
+.work-char__r{color:var(--wk-muted);font-size:.8rem}
 .work-gallery{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:22px}
 /* One picture on its own is shown at a size worth looking at, not as a
    thumbnail with an empty row beside it. */
@@ -343,7 +357,6 @@ body.is-viewing{overflow:hidden}
   .record--lunai{padding-left:34px}
   .record__title{font-size:1.4rem}
   .record__line{font-size:.92rem}
-  .record--wormup .record__route{display:none}
   .record--rubato .record__seal{left:96px;top:150px}
   .work-tags{grid-template-columns:1fr 1fr}
   .work-list__row{grid-template-columns:30px 1fr;gap:4px 12px}

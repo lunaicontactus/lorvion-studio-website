@@ -11,6 +11,7 @@ so each one can be traced. Two sizes each, in public/assets/images/works/<id>/:
 Prints each picture's full size, for src/data/projects.ts.
 """
 import os
+import sys
 from PIL import Image
 
 HOME = os.path.expanduser('~')
@@ -18,6 +19,8 @@ LUNAI = f'{HOME}/Desktop/lunai'
 LUNAI_QA = f'{HOME}/Desktop/lunai-qa/web-preview-1.1.0'
 LIMINAL = f'{HOME}/Desktop/리미널_게임기획/game'
 WORM = f'{HOME}/Projects/worm-up'
+WORM_RUN = f'{WORM}/steam/.qa/run_plain'
+WORM_CH = f'{WORM}/steam/assets/ch'
 LUMIORA = f'{HOME}/Desktop/LUMIORA_GAME/docs/aquarium_build_shots'
 LUMIORA_CONCEPT = f'{HOME}/Desktop/lumiora/new photo'
 RUBATO = f'{HOME}/Desktop/RUBATO/RUBATO'
@@ -39,12 +42,23 @@ PICTURES = {
         ('case04-3d-landing', f'{LIMINAL}/qa/3d/c04/prod_c/01_r1_landing.png'),
         ('case04-3d-window', f'{LIMINAL}/qa/3d/c04/prod_c/14_r4_window.png'),
     ],
+    # The Steam narrative game (SITE UPGRADE PHASE C): frames of the build
+    # played start to finish on 2026-10-03, and the characters' own cut-outs.
+    # The mobile runner's pictures are kept apart, for the archive's Early
+    # Prototype (assets/archive/early-prototype/wormup/).
     'wormup': [
-        ('climb', f'{WORM}/assets/images/story/story_06_climb.jpg'),
-        ('couple', f'{WORM}/assets/images/story/story_01_couple.jpg'),
-        ('kidnap', f'{WORM}/assets/images/story/story_03_kidnap.jpg'),
-        ('crow-boss', f'{WORM}/assets/images/story/cg_crow_boss_intro_v01.jpg'),
-        ('icon', f'{WORM}/assets/icon/worm_up_app_icon_v01.png'),
+        ('c01-why-worm', f'{WORM_RUN}/0010_v6_c01_C01-S01.png'),
+        ('c05b-nobody-came', f'{WORM_RUN}/0088_v6_c05b_C05B-S01.png'),
+        ('c05c-music-room', f'{WORM_RUN}/0102_v6_c05c_C05C-S01.png'),
+        ('c05n-dawn', f'{WORM_RUN}/0180_v6_c05n_C05N-S01.png'),
+        ('c05o-univ', f'{WORM_RUN}/0194_v6_c05o_C05O-S01.png'),
+        ('c14-same-road', f'{WORM_RUN}/0270_v6_c14_C14-S00.png'),
+        ('c17-bridge', f'{WORM_RUN}/0308_v6_c17_C17-S01.png'),
+        ('c26-student', f'{WORM_RUN}/0362_v6_c26_C26-S01.png'),
+        ('char-worm-child', f'{WORM_CH}/ch_u_worm_child__idle.webp'),
+        ('char-worm-teen', f'{WORM_CH}/ch_u_worm_teen__idle.webp'),
+        ('char-worm-office', f'{WORM_CH}/ch_u_worm_office__idle.webp'),
+        ('char-mom', f'{WORM_CH}/ch_u_mom__idle.webp'),
     ],
     'lumiora': [
         ('aquarium-concept', f'{LUMIORA_CONCEPT}/ChatGPT Image 2026년 9월 16일 오전 09_20_40 (1).png'),
@@ -71,12 +85,18 @@ def fit(im: Image.Image, w: int, h: int) -> Image.Image:
 
 
 def main() -> None:
+    # `python3 scripts/works_images.py wormup` makes one work's pictures only,
+    # so the others are not remade from sources that may have moved on.
+    only = set(sys.argv[1:])
     root = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'images', 'works')
     for pid, pics in PICTURES.items():
+        if only and pid not in only:
+            continue
         out = os.path.join(root, pid)
         os.makedirs(out, exist_ok=True)
         for name, src in pics:
-            im = Image.open(src).convert('RGB')
+            # A character is a cut-out: it keeps its transparency.
+            im = Image.open(src).convert('RGBA' if name.startswith('char-') else 'RGB')
             full = fit(im, 1600, 1600)
             full.save(f'{out}/{name}-full.webp', 'WEBP', quality=82, method=6)
             fit(im, 640, 800).save(f'{out}/{name}-thumb.webp', 'WEBP', quality=78, method=6)

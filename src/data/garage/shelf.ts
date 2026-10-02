@@ -2,7 +2,8 @@
  * THE ARCHIVE CABINET — what is on the shelf, and what is in its drawers.
  *
  * Not a cabinet of pretty things. Everything on it came out of the studio's
- * own work: the top shelf is WORM UP!, the middle is LIMINAL and LUNAI, the
+ * own work: the top shelf is WORM UP! (its first life, the mobile runner — kept
+ * as what it was since the Steam game took its place), the middle is LIMINAL and LUNAI, the
  * bottom is RUBATO and LUMIORA, and the two drawers are the working records —
  * the tools and drafts, and the printed photos of the work. The cabinet is the
  * studio's own painting of it (garage/archive_cabinet.webp, cut out of the
@@ -40,13 +41,13 @@ export const CABINET_ITEMS: readonly CabinetItem[] = [
     id: 'wormup-crown', shelf: 'top', projectId: 'wormup',
     box: { x: 0.443, y: 0.255, w: 0.121, h: 0.076 },
     title: '아주 작은 왕관',
-    note: 'WORM UP! 꾸미기 상점에 있는 왕관. 끝까지 올라간 날을 위해 올려 두었다.',
+    note: 'WORM UP!이 산을 오르는 러너였던 시절, 꾸미기 상점에 있던 왕관. 그때의 짐과 함께 올려 두었다.',
   },
   {
     id: 'wormup-gear', shelf: 'top', projectId: 'wormup',
     box: { x: 0.569, y: 0.181, w: 0.219, h: 0.15 },
     title: '산길 팻말과 등반 장비',
-    note: '배낭, 곡괭이, 위를 가리키는 팻말. 오르고, 떨어지고, 다시 오른다 — 모바일 클라이밍 러너 WORM UP!.',
+    note: '배낭, 곡괭이, 위를 가리키는 팻말. WORM UP!이 모바일 러너였던 첫 모습의 짐. 지금의 WORM UP!은 지렁이의 삶을 따라가는 이야기다.',
   },
   // The middle shelf: LIMINAL, and LUNAI.
   {

@@ -83,6 +83,15 @@ export interface ProjectConfig {
   readonly lists?: readonly ProjectList[]
   /** Shown only once the work is out, and only if there are any. */
   readonly updates?: readonly UpdateNote[]
+  /**
+   * The work's one strongest sentence, shown once, in the hero (SITE UPGRADE
+   * PHASE C). Only where the work has one; never repeated elsewhere.
+   */
+  readonly line?: string
+  /** One honest line about where the work is, under its state. No dates. */
+  readonly statusNote?: string
+  /** CHARACTERS — only where the work has its own pictures of them. */
+  readonly characters?: readonly { readonly name: string; readonly role: string; readonly picture: string; readonly w: number; readonly h: number }[]
   /** The picture the work's page opens on, if not the key art. */
   readonly hero?: { readonly name: string; readonly w: number; readonly h: number; readonly caption: string }
 }

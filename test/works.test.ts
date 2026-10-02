@@ -44,7 +44,7 @@ describe('the works, as their records say', () => {
       const record = JSON.stringify(p)
       // The words a development record is made of.
       expect(record, `${p.id}: internal wording`).not.toMatch(
-        /그레이박스|greybox|vertical slice|버티컬|커밋|commit|빌드 \d|build \d|QA|테스트플라이트|TestFlight|프로토타입 \d|리팩터|구현 중|구현했|개발 중인/i)
+        /개발 빌드|그레이박스|greybox|vertical slice|버티컬|커밋|commit|빌드 \d|build \d|QA|테스트플라이트|TestFlight|프로토타입 \d|리팩터|구현 중|구현했|개발 중인/i)
       // A commit's short hash: seven or eight hex digits standing alone.
       expect(record, `${p.id}: a commit hash`).not.toMatch(/\b[0-9a-f]{7,8}\b(?![^"]*\.webp)/)
       for (const key of ['build', 'devLog', 'asOf', 'milestone', 'engine', 'status']) {
@@ -82,7 +82,7 @@ describe('the works, as their records say', () => {
   it('shows only pictures that are there, in both sizes', () => {
     for (const p of PROJECTS) {
       expect(p.gallery.length, p.id).toBeGreaterThanOrEqual(1)
-      expect(p.gallery.length, p.id).toBeLessThanOrEqual(8)
+      expect(p.gallery.length, p.id).toBeLessThanOrEqual(10)
       const shown = [...p.gallery.map((g) => g.name), ...(p.hero ? [p.hero.name] : [])]
       for (const name of shown) {
         for (const size of ['thumb', 'full'] as const) {
@@ -99,6 +99,60 @@ describe('the works, as their records say', () => {
       for (const t of own) expect(existsSync(`public${t.src}`), t.id).toBe(true)
     }
     expect(new Set(POLAROIDS.map((p) => p.id)).size).toBe(POLAROIDS.length)
+  })
+})
+
+describe('the works, PHASE C', () => {
+  it('keeps the core to three things a player does, at most', () => {
+    for (const p of PROJECTS) expect(p.core.length, p.id).toBeLessThanOrEqual(3)
+  })
+
+  it('makes no plan look like a button: no COMING SOON, and a note is never a link', () => {
+    for (const p of PROJECTS) {
+      for (const l of p.links) expect(l.label, p.id).not.toMatch(/COMING SOON/i)
+    }
+  })
+
+  it('shows each character from the work\'s own pictures, in both sizes', () => {
+    for (const p of PROJECTS) {
+      for (const c of p.characters ?? []) {
+        for (const size of ['thumb', 'full'] as const) {
+          expect(existsSync(`public${workPicture(p.id, c.picture, size)}`), `${p.id}/${c.picture}-${size}`).toBe(true)
+        }
+        expect(c.w * c.h, c.picture).toBeGreaterThan(0)
+      }
+    }
+  })
+})
+
+describe('WORM UP!, as the Steam game it is now', () => {
+  const w = PROJECTS.find((p) => p.id === 'wormup')!
+
+  it('is a narrative adventure on PC (Steam), still being made, with no store button', () => {
+    expect(w.kind).toBe('Narrative Adventure')
+    expect(w.genre).toBe('내러티브 어드벤처')
+    expect(w.platforms).toEqual(['PC (Steam)'])
+    expect(w.releaseState).toBe('inDevelopment')
+    expect(w.links).toEqual([])
+  })
+
+  it('carries the game\'s own subtitles, and its strongest line once', () => {
+    expect(w.taglineKo).toBe('봄은 모두에게 같은 날 오지 않았다')
+    expect(w.tagline).toBe('Not Every Spring Arrives at Once')
+    expect(w.line).toBe('지렁이는 계속 앞으로 간다.')
+    const text = JSON.stringify({ ...w, line: undefined })
+    expect(text).not.toContain('지렁이는 계속 앞으로 간다')
+  })
+
+  it('keeps nothing of the mobile runner in what it says or shows', () => {
+    const text = JSON.stringify(w)
+    expect(text).not.toMatch(/200|스테이지|러너|[Rr]unner|iOS|보스|등산|산꼭대기|Mobile/)
+    for (const old of ['climb', 'couple', 'kidnap', 'crow-boss', 'icon']) {
+      expect(existsSync(`public/assets/images/works/wormup/${old}-full.webp`), old).toBe(false)
+    }
+    expect(existsSync('public/assets/images/worm-up-keyart.webp')).toBe(false)
+    // Kept apart, for the archive's Early Prototype.
+    expect(existsSync('assets/archive/early-prototype/wormup/worm-up-keyart-runner.webp')).toBe(true)
   })
 })
 

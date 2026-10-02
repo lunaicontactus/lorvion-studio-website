@@ -38,7 +38,9 @@ FULL_EDGE = 1600
 PIECES = [
     ('lunai-keyart', 'lunai', 'repo:public/assets/images/lunai-keyart.webp', 'keyart'),
     ('liminal-keyart', 'liminal', 'repo:public/assets/images/liminal-keyart.webp', 'keyart'),
-    ('wormup-keyart', 'wormup', 'repo:public/assets/images/worm-up-keyart.webp', 'keyart'),
+    # WORM UP! (Steam), put together from the game's own pictures by
+    # scripts/wormup_keyart.py. The runner's poster is kept for the archive.
+    ('wormup-keyart', 'wormup', 'repo:public/assets/images/wormup-steam-keyart.webp', 'keyart'),
     ('rubato-opera', 'rubato',
      'RUBATO/RUBATO/game/assets/bg/bg_court_opera_auditorium.jpg', 'still'),
     # The studio's key art for the current 3D game (the tall cut, delivered 2026-09-24).
@@ -74,7 +76,10 @@ def main() -> int:
     os.makedirs(OUT, exist_ok=True)
     rows = []
     missing = []
+    only = set(sys.argv[1:])
     for pid, project, src, kind in PIECES:
+        if only and pid not in only:
+            continue
         path = resolve(src)
         if not os.path.exists(path):
             missing.append((pid, path))
