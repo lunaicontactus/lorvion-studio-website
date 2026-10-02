@@ -46,8 +46,9 @@ for (const vp of [
       for (const gone of ['.marquee', '.manifesto', '.project', '.site-footer']) {
         await expect(page.locator(gone)).toHaveCount(0)
       }
-      // But every page it held is still reachable from here.
-      for (const href of ['./works.html', './studio.html', './support.html', './privacy.html']) {
+      // But every page it held is still reachable from here. (Links are
+      // absolute since the site map became one table, src/data/sitemap.ts.)
+      for (const href of ['/works.html', '/studio.html', '/support.html', '/privacy.html', '/contact.html']) {
         await expect(page.locator(`a[href="${href}"]`).first()).toHaveCount(1)
       }
 
