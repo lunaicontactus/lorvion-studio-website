@@ -34,8 +34,12 @@ async function enter(page: Page, query = '?npcseed=7', touch = false): Promise<v
 }
 
 interface Sample {
-  npcs: { id: string; state: string; away: boolean; x: number; y: number; src: string; routine: string | null }[]
+  /** The page's clock when this was read. */
+  t: number
+  npcs: { id: string; state: string; away: boolean; x: number; y: number; src: string; routine: string | null; seen: boolean }[]
   blocked: string[]
+  /** Dokkaebi on screen whose own hit box, at its middle, gives the touch to something else. */
+  unreachable: string[]
 }
 
 /** Everything the tests below look at, read in one go. */
@@ -48,6 +52,12 @@ async function sample(page: Page): Promise<Sample> {
         x: m ? Number(m[1]) : NaN, y: m ? Number(m[2]) : NaN,
         src: el.querySelector('.npc__art')?.getAttribute('src') ?? '',
         routine: el.dataset['routine'] ?? null,
+        // On screen. Off it the room stops writing positions (setOnscreen),
+        // so the stored one is stale and catches up when it comes back.
+        seen: (() => {
+          const r = el.querySelector('.npc__art')!.getBoundingClientRect()
+          return r.right > 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight
+        })(),
       }
     })
     const blocked: string[] = []
@@ -58,7 +68,18 @@ async function sample(page: Page): Promise<Sample> {
       const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
       if (hit?.closest('[data-npc]')) blocked.push(t.dataset['object']!)
     }
-    return { npcs, blocked }
+    const unreachable: string[] = []
+    for (const el of document.querySelectorAll<HTMLElement>('.npc:not(.is-away)')) {
+      const hit = el.querySelector<HTMLElement>('.npc__hit')
+      if (!hit || Number(el.style.opacity || 1) < 0.5) continue
+      const r = hit.getBoundingClientRect()
+      const cx = r.x + r.width / 2
+      const cy = r.y + r.height / 2
+      if (cx < 0 || cx > innerWidth || cy < 60 || cy > innerHeight) continue
+      const got = document.elementFromPoint(cx, cy)
+      if (!got?.closest('[data-npc]')) unreachable.push(`${el.dataset['npc']}→${(got?.closest('[data-object]') as HTMLElement | null)?.dataset['object'] ?? got?.className ?? 'nothing'}`)
+    }
+    return { t: performance.now(), npcs, blocked, unreachable }
   })
 }
 
@@ -74,8 +95,11 @@ test.describe('OBSERVER — a visitor who only watches', () => {
       seen.push(await sample(page))
       await page.waitForTimeout(300)
     }
+    const unreachable = new Set(seen.flatMap((s) => s.unreachable))
+    expect([...unreachable], 'a touch on these dokkaebi went to something else').toEqual([])
+    expect([...new Set(seen.flatMap((s) => s.blocked))], 'a dokkaebi covered the middle of these').toEqual([])
     const routines = new Set<string>()
-    const prev = new Map<string, { x: number; y: number; away: boolean }>()
+    const prev = new Map<string, { x: number; y: number; away: boolean; t: number; seen: boolean }>()
     for (const s of seen) {
       const walking = s.npcs.filter((n) => !n.away && n.state === 'WALK').length
       expect(walking, 'more than two of them walking at once').toBeLessThanOrEqual(2)
@@ -88,10 +112,18 @@ test.describe('OBSERVER — a visitor who only watches', () => {
         }
         // A wave is for somebody: never while just standing about.
         if (n.state === 'LOOK') expect(n.src, `${n.id} waved at nobody`).not.toMatch(/\/wave\//)
-        // Nobody covers more ground in 0.3s than a walk does (no teleports).
+        // Nobody the visitor can see covers more ground than walking can in
+        // the time between two looks (no teleports). Only between two looks
+        // where it was on screen: off it, the position is not kept up. Measured against the page's own clock: on a
+        // busy machine two looks can be seconds apart, and a walk covers
+        // hundreds of units in that time. The fastest walk is 87 units a
+        // second; being steered round somebody adds at most as much again.
         const p = prev.get(n.id)
-        if (p && !p.away) expect(Math.hypot(n.x - p.x, n.y - p.y), `${n.id} jumped`).toBeLessThan(60)
-        prev.set(n.id, { x: n.x, y: n.y, away: n.away })
+        if (p && !p.away && p.seen && n.seen) {
+          const secs = (s.t - p.t) / 1000
+          expect(Math.hypot(n.x - p.x, n.y - p.y), `${n.id} jumped in ${secs.toFixed(2)}s`).toBeLessThan(180 * secs + 30)
+        }
+        prev.set(n.id, { x: n.x, y: n.y, away: n.away, t: s.t, seen: n.seen })
       }
     }
     expect(routines.size, `only these jobs were done: ${[...routines].join(', ')}`).toBeGreaterThanOrEqual(2)
@@ -144,6 +176,7 @@ test.describe('MOBILE — 390×844', () => {
     while (Date.now() - t0 < 40_000) {
       const s = await sample(page)
       for (const b of s.blocked) blocked.add(b)
+      for (const u of s.unreachable) blocked.add(`unreachable ${u}`)
       for (const n of s.npcs) {
         if (n.away) continue
         for (const b of BOXES.portrait) {

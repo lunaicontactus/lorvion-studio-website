@@ -386,12 +386,30 @@ export function mountNpc(
       const min = MIN_TOUCH / Math.max(opts.scale ?? 1, 0.01)
       const w = Math.max(frameWidth * (metrics?.bodyWidth ?? 0.9) * HIT_BOX.body, min)
       const h = Math.max(frameHeight * HIT_BOX.height, min)
+      // Standing in front of the middle of a thing, the thing gets that part
+      // of the touch and the dokkaebi keeps the rest of itself (PHASE E): the
+      // box is cut back to the stretch of the body above or below the
+      // thing's middle, whichever is bigger. Only when neither is a usable
+      // target does it stop taking touches altogether.
+      let top = y - h
+      let bottom = y
+      let off = false
+      const keep = Math.max(h * 0.3, min * 0.6)
+      for (const r of opts.keepClear ?? []) {
+        if (!(x - w / 2 < r.x1 && x + w / 2 > r.x0 && top < r.y1 && bottom > r.y0)) continue
+        const above = r.y0 - top
+        const below = bottom - r.y1
+        if (above >= below && above >= keep) bottom = r.y0
+        else if (below >= keep) top = r.y1
+        else {
+          off = true
+          break
+        }
+      }
       hit.style.width = `${w}px`
-      hit.style.height = `${h}px`
-      // Standing in front of the middle of a thing, the thing gets the touch.
-      const over = opts.keepClear?.some((r) =>
-        x - w / 2 < r.x1 && x + w / 2 > r.x0 && y - h < r.y1 && y > r.y0) ?? false
-      const want = over ? 'none' : ''
+      hit.style.height = `${bottom - top}px`
+      hit.style.bottom = `${y - bottom}px`
+      const want = off ? 'none' : ''
       if (hit.style.pointerEvents !== want) hit.style.pointerEvents = want
     }
   }
