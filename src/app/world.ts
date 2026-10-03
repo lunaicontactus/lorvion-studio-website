@@ -665,9 +665,10 @@ export function mountWorld(): () => void {
         archive.focusPlace(place.id)
         archive.setPaused(true)
         if (place.id === 'music-box') {
-          // Its own tune, wound and playing, with the archive's song
-          // stepped back under it until the lid is closed.
-          audio.dimWorld(0.3, 700)
+          // Its own tune, wound and playing. Music is one thing at a time
+          // (PHASE F): the archive's song goes out while the box plays and
+          // comes back, from where it was, when the lid is closed.
+          audio.holdWorld(true, 700)
           audio.loop('musicBox', LOOPS.musicBox, 0.34, 900)
           panels.openMusicBox(place, def)
         } else {
@@ -683,7 +684,7 @@ export function mountWorld(): () => void {
   const closeArchivePlace = (): void => {
     if (audio.loopPlaying('musicBox')) {
       audio.unloop('musicBox', 700)
-      audio.dimWorld(1, 900)
+      audio.holdWorld(false, 900)
     }
     if (!archive) return
     archive.setActive(null)

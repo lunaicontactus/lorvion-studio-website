@@ -3,7 +3,9 @@
  *
  * Four stations, each tuned to something that really exists:
  *   88.1 GARAGE     the garage's own music (the user's Garage track)
- *   91.7 NIGHT      the room at night (the existing room tone)
+ *   91.7 NIGHT      a slow night track (ambient.m4a — the name is old: the
+ *                   file is tonal music, not room tone, and is on the MUSIC
+ *                   bus like every station; PHASE F audit)
  *   96.4 DOKKA NEWS headlines, read off the dial, over a quiet static bed
  *   103.2 STATIC    static
  * No station plays anything that was not delivered. The mute switch on the
@@ -29,7 +31,9 @@ export const STATIONS: readonly Station[] = [
   // bed (scripts/static_bed.py): looped raw, a two-second burst restarting
   // every two seconds sounded like the set being switched on again and again.
   { id: 'news', freq: '96.4', name: 'DOKKA NEWS', track: '/assets/audio/sfx/radio_static_bed.m4a', volume: 0.08 },
-  { id: 'static', freq: '103.2', name: 'STATIC', track: '/assets/audio/sfx/radio_static_bed.m4a', volume: 0.2 },
+  // 0.15, from 0.2 (PHASE F): broadband noise at 0.2 measured louder than any
+  // song on the dial, and static should not be the loudest thing the radio does.
+  { id: 'static', freq: '103.2', name: 'STATIC', track: '/assets/audio/sfx/radio_static_bed.m4a', volume: 0.15 },
 ]
 
 type Item = Omit<DiscoveryEntry, 'category' | 'cooldown' | 'oncePerSession' | 'asset'>

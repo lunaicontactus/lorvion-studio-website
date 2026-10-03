@@ -25,12 +25,19 @@
  *
  * Nothing is fetched until it is first needed, and nothing plays before a
  * gesture.
+ *
+ * SITE UPGRADE PHASE F: every element belongs to one of four buses — AMBIENT,
+ * MUSIC, SFX, UI — under a master (src/systems/mixer.ts), and every level is
+ * written through the mixer, so a level means the same on a phone as on a
+ * desk. The files' own loudness differs by twenty decibels; `TRIM` evens
+ * that out at playback, without touching the files.
  */
 import { sound as pref } from '@/systems/sound'
 import { save } from '@/systems/storage'
 import { STATIONS, type StationId } from '@/data/garage/radio'
 import { HANDS, ownerFor, type MusicOwner, type WorldOwner } from '@/systems/musicOwner'
 import { log } from '@/systems/log'
+import { Mixer, type Bus } from '@/systems/mixer'
 
 const SFX = '/assets/audio'
 
@@ -93,6 +100,42 @@ export const LOOPS = {
 
 export type ClipName = keyof typeof CLIPS
 
+/**
+ * Which bus each clip is on. UI is the machines answering a touch — the
+ * PC, the television, the radio's knob — and kept small; SFX is everything
+ * that happens in the room and in the games.
+ */
+const UI_CLIPS: ReadonlySet<string> = new Set(['pc_on', 'pc_click', 'tv_channel', 'radio_tune'])
+const LOOP_BUS: Readonly<Record<keyof typeof LOOPS, Bus>> = { alley: 'ambient', playground: 'ambient', musicBox: 'music' }
+
+/**
+ * Loudness correction per file, applied at playback (PHASE F audit,
+ * docs/SITE_UPGRADE_PHASE_F.md). Measured as BS.1770 momentary peak at the
+ * level each call site asks for, against the garage's song in the room
+ * (about −22.5 LUFS): the PC's power sound came out five decibels over the
+ * music, the fridge door fifteen under it, the music box louder than any
+ * song. A file not listed is played as asked.
+ */
+export const TRIM: Readonly<Record<string, number>> = {
+  [`${SFX}/sfx/pc_on.m4a`]: 0.41,
+  [`${SFX}/sfx/radio_tune.m4a`]: 0.73,
+  [`${SFX}/sfx/fridge_open.m4a`]: 3.8,
+  [`${SFX}/sfx/lantern.m4a`]: 2.6,
+  [`${SFX}/sfx/game_start.m4a`]: 2.7,
+  [`${SFX}/sfx/shutter_open.m4a`]: 1.8,
+  [`${SFX}/sfx/momo_jump.m4a`]: 0.59,
+  [`${SFX}/sfx/poko_turn.m4a`]: 0.76,
+  [`${SFX}/music/music_box.m4a`]: 0.47,
+  [`${SFX}/ambient.m4a`]: 0.72,
+  [`${SFX}/ambience/playground_night.m4a`]: 0.39,
+}
+const trim = (src: string): number => TRIM[src] ?? 1
+
+/** The same clip again this soon is a double trigger, not a second sound. */
+const CLIP_GAP_MS = 80
+/** Short sounds at once, across the site. A fifth waits its turn (is dropped). */
+const VOICES = 4
+
 interface Hand {
   /** The one sounding goes down and out over this long. */
   readonly outMs: number
@@ -107,9 +150,45 @@ class AudioManager {
   private unlocked = false
   /** Inside the garage. */
   private inRoom = false
+  /** Where every element's sound goes (PHASE F). */
+  private mix = AudioManager.balanced()
 
+  /**
+   * The buses' standing levels. Measured through the room (scenarios A–C,
+   * docs/SITE_UPGRADE_PHASE_F.md), the things' own sounds — the drawer, the
+   * door, the fridge once it could be heard at all — came out seven to nine
+   * decibels over the song at the same moment; two decibels off the SFX bus
+   * puts them five to seven over, clear without jumping out. Music, ambience
+   * and the machines' small UI sounds stay as they are.
+   */
+  private static balanced(): Mixer {
+    const m = new Mixer()
+    m.setBus('sfx', 0.8)
+    return m
+  }
+  /** When each clip last started, for the double-trigger gap. */
+  private lastPlayed = new Map<string, number>()
+
+  get mixer(): Mixer {
+    return this.mix
+  }
+
+  /**
+   * A gesture happened (ENTER, a door, a game). Called from inside it, so
+   * the site's context can be resumed there too — iOS suspends it after an
+   * interruption — and everything made so far is routed through the buses.
+   */
   unlock(): void {
     this.unlocked = true
+    if (!pref.enabled) return
+    void pref.unlock().then(() => this.mix.attach(pref.context))
+  }
+
+  /** An element for music: the MUSIC bus. */
+  private musicEl(): HTMLAudioElement {
+    const el = new Audio()
+    this.mix.assign(el, 'music')
+    return el
   }
 
   get enabled(): boolean {
@@ -120,18 +199,32 @@ class AudioManager {
     if (!this.unlocked || !pref.enabled) return
     const src = CLIPS[name as ClipName]
     if (!src) return
+    // A double trigger — the same click twice in one frame, a door that
+    // fires on two events — is one sound (PHASE F).
+    const now = performance.now()
+    if (now - (this.lastPlayed.get(name) ?? -Infinity) < CLIP_GAP_MS) return
     try {
       let el = this.cache.get(name)
+      // Never more than a handful of short sounds at once: a fifth while
+      // four are still ringing is dropped rather than piled on.
+      if (!el || el.paused) {
+        let ringing = 0
+        for (const o of this.cache.values()) if (!o.paused && !o.ended) ringing++
+        if (ringing >= VOICES) return
+      }
       if (!el) {
         el = new Audio(src)
         el.preload = 'auto'
         // Which clip this element is, by name: two names may share a file
         // (the crew's footstep and MOMO's run), and the tests listen by name.
         el.dataset['clip'] = name
+        el.dataset['bus'] = UI_CLIPS.has(name) ? 'ui' : 'sfx'
+        this.mix.assign(el, UI_CLIPS.has(name) ? 'ui' : 'sfx')
         this.cache.set(name, el)
       }
+      this.lastPlayed.set(name, now)
       el.currentTime = 0
-      el.volume = volume
+      this.mix.level(el, volume * trim(src))
       void el.play().catch(() => undefined)
     } catch (err) {
       log.debug('audio: play failed', err)
@@ -156,6 +249,8 @@ class AudioManager {
   private worldOwner: WorldOwner | null = null
   private worldSrc: string | null = null
   private worldVolume = 0.3
+  /** The level the world's music was asked for, before its file's trim. */
+  private worldAsk = 0.3
   /** How far the world's music is stepped back under something (the music box). */
   private worldDim = 1
 
@@ -176,7 +271,8 @@ class AudioManager {
 
   /** The music sounding right now — never more than one. For the tests. */
   get musicSounding(): readonly string[] {
-    return this.players()
+    const loops = [...this.loops.values()].map((l) => l.el).filter((el) => this.mix.busOf(el) === 'music')
+    return [...this.players(), ...loops]
       .filter((el) => !el.paused)
       .map((el) => el.currentSrc || el.src)
   }
@@ -194,7 +290,7 @@ class AudioManager {
     const same = !abs || el.src === abs
     if (!el.paused && same) {
       this.pending++
-      if (!this.ramps.has(el)) el.volume = volume
+      if (!this.ramps.has(el)) this.mix.level(el, volume)
       for (const o of this.players()) if (o !== el && !o.paused) this.ramp(o, 0, hand.outMs, true)
       return
     }
@@ -212,7 +308,7 @@ class AudioManager {
         const r = this.ramps.get(el)
         if (r !== undefined) cancelAnimationFrame(r)
         this.ramps.delete(el)
-        el.volume = volume
+        this.mix.level(el, volume)
       }
       void el.play().catch((err: unknown) => log.debug('audio: music', err))
       for (const r of this.retired) if (r.paused) this.retired.delete(r)
@@ -266,12 +362,12 @@ class AudioManager {
   private playGarage(hand: Hand): void {
     if (!this.unlocked || !pref.enabled || !this.inRoom) return
     if (!this.bgm) {
-      this.bgm = new Audio()
+      this.bgm = this.musicEl()
       this.bgm.loop = true
       this.bgm.preload = 'auto'
       this.bgm.src = GARAGE_TRACK
     }
-    this.switchTo(this.bgm, GARAGE_VOLUME, hand)
+    this.switchTo(this.bgm, GARAGE_VOLUME * trim(GARAGE_TRACK), hand)
   }
 
   // ── The radio: its own switch, one station at a time ────────────────────
@@ -314,7 +410,7 @@ class AudioManager {
       const st = STATIONS.find((s) => s.id === id) ?? STATIONS[1]!
       this.stationId = st.id
       this.stationSrc = st.track
-      this.stationVolume = st.volume
+      this.stationVolume = st.volume * (st.track ? trim(st.track) : 1)
       save.update((d) => {
         d.radioStation = st.id
       })
@@ -337,20 +433,20 @@ class AudioManager {
     if (!this.unlocked || !pref.enabled || !this.inRoom) return
     if (src === GARAGE_TRACK) {
       if (!this.bgm) {
-        this.bgm = new Audio()
+        this.bgm = this.musicEl()
         this.bgm.loop = true
         this.bgm.preload = 'auto'
         this.bgm.src = GARAGE_TRACK
       }
-      this.switchTo(this.bgm, volume, hand)
+      this.switchTo(this.bgm, volume * trim(src), hand)
       return
     }
     if (!this.stream) {
-      this.stream = new Audio()
+      this.stream = this.musicEl()
       this.stream.loop = true
       this.stream.preload = 'auto'
     }
-    this.switchTo(this.stream, volume, hand, src)
+    this.switchTo(this.stream, volume * trim(src), hand, src)
   }
 
   /** Tune by name, and remember it for next time. The radio must be on. */
@@ -359,7 +455,7 @@ class AudioManager {
     if (!st) return
     this.stationId = st.id
     this.stationSrc = st.track
-    this.stationVolume = st.volume
+    this.stationVolume = st.volume * (st.track ? trim(st.track) : 1)
     save.update((d) => {
       d.radioStation = st.id
     })
@@ -377,7 +473,7 @@ class AudioManager {
       const st = STATIONS.find((s) => s.id === (this.stationId ?? this.station ?? DEFAULT_STATION)) ?? STATIONS[1]!
       this.stationId = st.id
       this.stationSrc = st.track
-      this.stationVolume = st.volume
+      this.stationVolume = st.volume * (st.track ? trim(st.track) : 1)
       this.tune(st.track, st.volume, hand)
     } else this.playGarage(hand)
   }
@@ -392,7 +488,7 @@ class AudioManager {
    */
   preloadWorld(src: string): void {
     if (this.warmed.has(src)) return
-    const el = new Audio()
+    const el = this.musicEl()
     el.preload = 'auto'
     el.src = src
     el.load()
@@ -408,7 +504,8 @@ class AudioManager {
    */
   playWorld(src: string, volume: number, fadeMs = 0, owner: WorldOwner = 'playground'): void {
     this.worldSrc = src
-    this.worldVolume = volume
+    this.worldAsk = volume
+    this.worldVolume = volume * trim(src)
     this.worldOwner = owner
     if (!this.unlocked || !pref.enabled) return
     const abs = new URL(src, location.href).href
@@ -419,14 +516,15 @@ class AudioManager {
       el = null
     }
     if (!el) {
-      el = this.warmed.get(src) ?? new Audio()
+      el = this.warmed.get(src) ?? this.musicEl()
       this.warmed.delete(src)
       el.loop = true
       el.preload = 'auto'
       if (el.src !== abs) el.src = src
       this.world = el
     }
-    this.switchTo(el, volume * this.worldDim, { outMs: HANDS.world, inMs: fadeMs })
+    if (this.worldHeld) return
+    this.switchTo(el, this.worldVolume * this.worldDim, { outMs: HANDS.world, inMs: fadeMs })
   }
 
   /** Down and out over `fadeMs`. */
@@ -454,6 +552,26 @@ class AudioManager {
     if (this.world && !this.world.paused) this.ramp(this.world, this.worldVolume * this.worldDim, ms)
   }
 
+  /**
+   * The music box (PHASE F): its tune is music, and music is one thing at a
+   * time. It used to play over the archive's song held at 0.3 — two songs at
+   * once, the box six decibels louder than any song on the site. Now the
+   * archive's song goes out while the box plays and comes back after, from
+   * where it was.
+   */
+  private worldHeld = false
+  holdWorld(held: boolean, ms = 600): void {
+    this.worldHeld = held
+    if (held) {
+      this.pending++
+      if (this.world && !this.world.paused) this.ramp(this.world, 0, ms, true)
+      return
+    }
+    if (this.worldOwner && this.worldSrc && this.unlocked && pref.enabled) {
+      this.playWorld(this.worldSrc, this.worldAsk, ms, this.worldOwner)
+    }
+  }
+
   // ── Loops that are not music (WORLD 2.1) ────────────────────────────────
   private loops = new Map<string, { el: HTMLAudioElement; src: string; volume: number; on: boolean }>()
 
@@ -468,17 +586,19 @@ class AudioManager {
       const el = new Audio()
       el.loop = true
       el.preload = 'auto'
+      this.mix.assign(el, LOOP_BUS[key as keyof typeof LOOPS] ?? 'ambient')
       l = { el, src: '', volume, on: false }
       this.loops.set(key, l)
     }
     l.src = src
     l.volume = volume
     l.on = true
+    volume *= trim(src)
     if (!this.unlocked || !pref.enabled) return
     const abs = new URL(src, location.href).href
     if (l.el.src !== abs) l.el.src = src
     if (!l.el.paused) {
-      if (!this.ramps.has(l.el)) l.el.volume = volume
+      if (!this.ramps.has(l.el)) this.mix.level(l.el, volume)
       return
     }
     if (fadeMs > 0) this.fadeUp(l.el, volume, fadeMs)
@@ -486,7 +606,7 @@ class AudioManager {
       const r = this.ramps.get(l.el)
       if (r !== undefined) cancelAnimationFrame(r)
       this.ramps.delete(l.el)
-      l.el.volume = volume
+      this.mix.level(l.el, volume)
     }
     void l.el.play().catch((err: unknown) => log.debug('audio: loop', key, err))
   }
@@ -512,7 +632,7 @@ class AudioManager {
   duck(ms = 1200): void {
     const el = this.players().find((p) => !p.paused) ?? null
     if (!el) return
-    const full = el === this.world ? this.worldVolume * this.worldDim : el === this.bgm ? (this.radioIsOn && this.stationSrc === GARAGE_TRACK ? this.stationVolume : GARAGE_VOLUME) : this.stationVolume
+    const full = el === this.world ? this.worldVolume * this.worldDim : el === this.bgm ? (this.radioIsOn && this.stationSrc === GARAGE_TRACK ? this.stationVolume : GARAGE_VOLUME * trim(GARAGE_TRACK)) : this.stationVolume
     this.ramp(el, full * 0.6, 160)
     const t0 = performance.now()
     const back = (): void => {
@@ -539,11 +659,11 @@ class AudioManager {
   private ramp(el: HTMLMediaElement, to: number, ms: number, thenPause = false): void {
     const old = this.ramps.get(el)
     if (old !== undefined) cancelAnimationFrame(old)
-    const from = el.volume
+    const from = this.mix.levelOf(el)
     const t0 = performance.now()
     const tick = (): void => {
       const k = Math.min(1, (performance.now() - t0) / Math.max(ms, 1))
-      el.volume = from + (to - from) * k
+      this.mix.level(el, from + (to - from) * k)
       if (k < 1) {
         this.ramps.set(el, requestAnimationFrame(tick))
         return
@@ -558,7 +678,7 @@ class AudioManager {
   private fadeUp(el: HTMLMediaElement, volume: number, ms: number, delay = 0): void {
     const old = this.ramps.get(el)
     if (old !== undefined) cancelAnimationFrame(old)
-    el.volume = 0
+    this.mix.level(el, 0)
     if (delay > 0) {
       const t0 = performance.now()
       const wait = (): void => {
@@ -616,12 +736,13 @@ class AudioManager {
       return
     }
     this.unlocked = true
+    this.mix.attach(pref.context)
     this.resume()
   }
 
   /** Sound came back (the switch, or the tab): what the state says is on, again. */
   private resume(): void {
-    if (this.worldOwner && this.worldSrc) this.playWorld(this.worldSrc, this.worldVolume, 0, this.worldOwner)
+    if (this.worldOwner && this.worldSrc) this.playWorld(this.worldSrc, this.worldAsk, 0, this.worldOwner)
     else this.reconcile()
     for (const [key, l] of this.loops) if (l.on && l.src) this.loop(key, l.src, l.volume)
   }
@@ -641,6 +762,11 @@ class AudioManager {
 }
 
 export const audio = new AudioManager()
+// `?audiodebug`: the manager on the window, for the PHASE F tests to read
+// what is sounding and where it is routed. Nothing else uses it.
+if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('audiodebug')) {
+  ;(globalThis as Record<string, unknown>)['__audio'] = audio
+}
 // One subscription for the life of the page: the preference is the switch.
 pref.subscribe(() => audio.syncPreference())
 if (typeof document !== 'undefined') {
