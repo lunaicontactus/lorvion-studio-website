@@ -281,7 +281,7 @@
 
 /* ── First visit, touch only ───────────────────────────────────────────────
    No cursor on a phone, so the room says once — quietly, low, and small —
-   that it answers. Once a session, then never again. Not a panel, not a
+   that it answers. Once per browser, then never again. Not a panel, not a
    marker, nothing to dismiss. */
 .garage__hint{
   position:absolute;
@@ -305,6 +305,14 @@
 @media (prefers-reduced-motion:reduce){
   .garage__hint{transition:opacity 200ms ease}
   .garage__hint.is-in{transform:translate(-50%,0)}
+}
+/* While the hint is up, the PC, the TV and the door glow as themselves —
+   the painting's own pixels, lifted, never a ring or a marker — twice, and
+   stop (PHASE D). Three things at most: the room is not a checklist. */
+.thing.is-beckoning .thing__self{animation:beckon 2.2s ease-in-out 2}
+@keyframes beckon{
+  0%,100%{opacity:0;transform:none;filter:none}
+  50%{opacity:.85;transform:scale(var(--lift,1.02));filter:brightness(1.14) drop-shadow(0 0 8px rgba(255,214,140,.75))}
 }
 
 /* The only part of a dokkaebi that takes a pointer. The frame is wide enough

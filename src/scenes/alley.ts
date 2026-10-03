@@ -93,6 +93,8 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
   const enterBtn = scene.querySelector<HTMLButtonElement>('[data-alley-enter]')
   const skipBtn = scene.querySelector<HTMLButtonElement>('[data-alley-skip]')
   const loadingEl = scene.querySelector<HTMLElement>('[data-alley-loading]')
+  const taglineEl = scene.querySelector<HTMLElement>('[data-alley-tagline]')
+  const mailboxEl = scene.querySelector<HTMLAnchorElement>('[data-alley-mailbox]')
 
   const timers = new Set<ReturnType<typeof setTimeout>>()
   const off: (() => void)[] = []
@@ -172,9 +174,22 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
       el.style.height = `${d.h}%`
     }
 
-    if (enterBtn) {
-      const plateTop = (r.height - h) / 2
-      enterBtn.style.top = `${plateTop + (h * plate.enterY) / 100}px`
+    const plateTop = (r.height - h) / 2
+    const plateLeft = (r.width - w) / 2
+    if (enterBtn) enterBtn.style.top = `${plateTop + (h * plate.enterY) / 100}px`
+    // The line that says what this is sits just above the button — below it
+    // on a tall screen, where the pavement above is the parcels' and the
+    // shopping's and the open pavement is under the button.
+    if (taglineEl) taglineEl.style.top = `${plateTop + (h * plate.enterY) / 100 + (portrait ? 40 : -40)}px`
+    // The mailbox link lies over the painted mailbox, never smaller than a fingertip.
+    if (mailboxEl) {
+      const m = plate.mailbox
+      const mw = Math.max(44, (w * m.width) / 100)
+      const mh = Math.max(44, (h * m.height) / 100)
+      mailboxEl.style.left = `${plateLeft + (w * (m.left + m.width / 2)) / 100 - mw / 2}px`
+      mailboxEl.style.top = `${plateTop + (h * (m.top + m.height / 2)) / 100 - mh / 2}px`
+      mailboxEl.style.width = `${mw}px`
+      mailboxEl.style.height = `${mh}px`
     }
   }
 

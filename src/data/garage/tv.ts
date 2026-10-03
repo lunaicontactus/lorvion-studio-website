@@ -1,22 +1,73 @@
 /**
  * EUNGARAGE BROADCAST — the TV.
  *
- * Not a second PC. Five channels, each its own thing: news from the garage,
- * a camera on another corner of the room, a teaser of one work (a picture and
- * a name; the details stay on the PC), the contact card (from SITE_CONFIG, the
- * one place contact details live), and no signal.
+ * SITE UPGRADE PHASE D: the first five channels are the five works, each a
+ * few of its own pictures from its page (nothing made for the TV: no trailer
+ * exists, so none is pretended), its state, and the way to its page. Then the
+ * garage's own channels: news, a camera on another corner, the contact card
+ * (from SITE_CONFIG, the one place contact details live), and no signal.
+ *
+ * A programme is data. Each frame says what kind of thing it is; today every
+ * frame is an `image`, and when a work has a video the frame becomes a
+ * `video` with its file — the set plays either (src/ui/panels.ts).
  */
 import type { DiscoveryEntry } from '@/systems/discovery'
+import { PROJECTS, workPicture } from '@/data/projects'
+import { artworkFor, wallSrc } from '@/data/artwork'
 
-export type ChannelId = 'news' | 'cam' | 'teaser' | 'contact' | 'nosignal'
+export type ChannelId = `work-${string}` | 'news' | 'cam' | 'contact' | 'nosignal'
+
+export interface TvFrame {
+  readonly kind: 'image' | 'video'
+  readonly src: string
+  /** For `video`: the still shown before it plays, and while motion is reduced. */
+  readonly poster?: string
+  readonly caption: string
+}
+
+export interface WorkProgramme {
+  readonly work: string
+  /** One to three, in order. */
+  readonly frames: readonly TvFrame[]
+}
+
+const shot = (work: string, name: string): TvFrame => {
+  const caption = PROJECTS.find((p) => p.id === work)?.gallery.find((g) => g.name === name)?.caption ?? ''
+  return { kind: 'image', src: workPicture(work, name, 'thumb'), caption }
+}
+const keyart = (work: string): TvFrame => {
+  const piece = artworkFor(work)
+  return { kind: 'image', src: piece ? wallSrc(piece) : '', caption: '키 아트' }
+}
+
+/** What each work's channel shows: pictures already on its page, nothing else. */
+export const WORK_PROGRAMMES: readonly WorkProgramme[] = [
+  { work: 'lunai', frames: [shot('lunai', 'room-dal-tokki'), shot('lunai', 'album'), shot('lunai', 'room-winter')] },
+  { work: 'liminal', frames: [shot('liminal', 'bureau'), shot('liminal', 'crossroads'), shot('liminal', 'approach')] },
+  { work: 'wormup', frames: [shot('wormup', 'c01-why-worm'), shot('wormup', 'c05c-music-room'), shot('wormup', 'c14-same-road')] },
+  // LUMIORA has one picture of its own on its page so far, and its key art.
+  { work: 'lumiora', frames: [shot('lumiora', 'aquarium-concept'), keyart('lumiora')] },
+  { work: 'rubato', frames: [shot('rubato', 'opera'), shot('rubato', 'cafe-scene'), shot('rubato', 'street')] },
+]
+
+const pad = (n: number): string => `CH${String(n).padStart(2, '0')}`
 
 export const CHANNELS: readonly { readonly id: ChannelId; readonly number: string; readonly name: string }[] = [
-  { id: 'news', number: 'CH01', name: 'GARAGE NEWS' },
-  { id: 'cam', number: 'CH02', name: 'DOKKA CAM' },
-  { id: 'teaser', number: 'CH03', name: 'PROJECT TEASER' },
-  { id: 'contact', number: 'CH04', name: 'CONTACT' },
-  { id: 'nosignal', number: 'CH05', name: 'NO SIGNAL' },
+  ...WORK_PROGRAMMES.map((w, i) => ({
+    id: `work-${w.work}` as ChannelId,
+    number: pad(i + 1),
+    name: PROJECTS.find((p) => p.id === w.work)?.title ?? w.work,
+  })),
+  { id: 'news', number: pad(WORK_PROGRAMMES.length + 1), name: 'GARAGE NEWS' },
+  { id: 'cam', number: pad(WORK_PROGRAMMES.length + 2), name: 'DOKKA CAM' },
+  { id: 'contact', number: pad(WORK_PROGRAMMES.length + 3), name: 'CONTACT' },
+  { id: 'nosignal', number: 'CH00', name: 'NO SIGNAL' },
 ]
+
+/** The programme on a work's channel, if this is one. */
+export function programmeOf(id: ChannelId): WorkProgramme | null {
+  return id.startsWith('work-') ? WORK_PROGRAMMES.find((w) => `work-${w.work}` === id) ?? null : null
+}
 
 type Item = Omit<DiscoveryEntry, 'category' | 'cooldown' | 'oncePerSession' | 'asset'>
 

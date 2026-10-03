@@ -1309,30 +1309,38 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
     off.push(() => ro.disconnect())
   }
 
-  // Touch has no cursor to change, so the first visit of a session says once,
-  // quietly, that the room answers. Never twice, and never on a pointer that
-  // can hover.
+  // Touch has no cursor to change, so the first visit says once, quietly,
+  // that the room answers — and for that moment the three things most worth
+  // touching (the PC, the TV, the door out) glow as themselves, twice, and
+  // stop. Once per browser, not per session (SITE UPGRADE PHASE D); never on
+  // a pointer that can hover, which has the room's own hover for this.
   const HINT_KEY = 'eungarage:garageHinted'
+  const BECKON = ['pc', 'tv', 'outside-door']
   const coarse = matchMedia('(pointer: coarse)').matches
   let hinted = true
   try {
-    hinted = sessionStorage.getItem(HINT_KEY) === 'true'
+    hinted = localStorage.getItem(HINT_KEY) === 'true'
   } catch {
     hinted = true // storage refused: say nothing rather than say it every time
   }
   if (coarse && !hinted) {
     try {
-      sessionStorage.setItem(HINT_KEY, 'true')
+      localStorage.setItem(HINT_KEY, 'true')
     } catch {
       /* nothing to do */
     }
     const hint = document.createElement('p')
     hint.className = 'garage__hint'
-    hint.textContent = '물건을 눌러 둘러보세요'
+    hint.textContent = '반짝이는 물건을 눌러보세요.'
     scene.append(hint)
     requestAnimationFrame(() => hint.classList.add('is-in'))
-    later(() => hint.classList.remove('is-in'), 2600)
-    later(() => hint.remove(), 3200)
+    const beckoning = BECKON.map((id) => roomEl.querySelector<HTMLElement>(`[data-object="${id}"]`)).filter((el): el is HTMLElement => !!el)
+    if (!motion.reduced) for (const el of beckoning) el.classList.add('is-beckoning')
+    later(() => hint.classList.remove('is-in'), 4200)
+    later(() => {
+      hint.remove()
+      for (const el of beckoning) el.classList.remove('is-beckoning')
+    }, 4800)
   }
 
   log.debug('garage: mounted')

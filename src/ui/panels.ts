@@ -15,17 +15,19 @@
  * discovery pools — never from strings typed into a component.
  */
 import { PROJECTS, STATE_LABEL, coverOf, workHref } from '@/data/projects'
-import { artworkFor, fullSrc, orientationOf } from '@/data/artwork'
+import { artworkFor, fullSrc, orientationOf, wallSrc } from '@/data/artwork'
 import { contactRows } from '@/data/site'
 import { ROOM_ART } from '@/data/world'
 import { DOCUMENTS } from '@/data/documents'
 import { CABINET_ITEMS } from '@/data/garage/shelf'
 import type { CabinetItem } from '@/data/garage/shelf'
 import { PARCEL_ENTRIES } from '@/data/garage/parcels'
+import { nextNews } from '@/data/news'
 import { FRIDGE_FOOD, FRIDGE_MEMOS, FRIDGE_SHOWN, fridgeDay } from '@/data/garage/fridge'
 import { CABINET_ENTRIES } from '@/data/garage/cabinet'
-import { CHANNELS, CAM_ANGLES, TV_ENTRIES } from '@/data/garage/tv'
-import type { ChannelId } from '@/data/garage/tv'
+import { LIMINAL_CASE_FILE } from '@/data/garage/caseFile'
+import { CHANNELS, CAM_ANGLES, TV_ENTRIES, programmeOf } from '@/data/garage/tv'
+import type { ChannelId, TvFrame } from '@/data/garage/tv'
 import { RADIO_ENTRIES, STATIONS } from '@/data/garage/radio'
 import { PLACE_PROPS, SIGNPOST_ARMS, type Place, type PlaceId } from '@/data/playground'
 import type { ArchivePlace } from '@/data/archive'
@@ -468,35 +470,81 @@ export class Panels {
     else this.#later(showList, 300)
   }
 
-  /** The works library, straight from PROJECTS. The five real games and
-   *  nothing else: the site's own mini-games live outside, not on this
-   *  monitor, and no other object in the room repeats this list. */
+  /**
+   * The monitor's desktop (SITE UPGRADE PHASE D): the five works, then the
+   * studio's three things — ARCHIVE, MAIL, TRASH. Not any real system's
+   * desktop: felt icons on the studio's own screen. A work's icon goes to its
+   * page (the tube folds first); MAIL goes to the contact page; ARCHIVE has
+   * no page yet (PHASE G), so it says so in a word and goes nowhere; TRASH is
+   * a joke. The works' pictures are the small wall prints, fetched only now
+   * that the monitor is on.
+   */
   #pcList(view: HTMLElement): void {
     this.#host.onWorldChange?.(null)
-    view.innerHTML = `<p class="hub__head">WORKS</p><div class="hub" data-works>${PROJECTS.map(
-      (p) => `
-      <button class="hub__row" type="button" data-game="${p.id}">
-        <span class="hub__thumb"${coverOf(p) ? ` style="background-image:url('${coverOf(p)}')"` : ' data-empty'}></span>
-        <span class="hub__meta">
-          <span class="hub__name">${p.title}</span>
-          <span class="hub__tag">${p.taglineKo}</span>
-          <span class="hub__facts">${p.genre} · ${p.platforms.join(' · ')}</span>
-        </span>
-        <span class="hub__right">
-          <span class="hub__status" data-state="${p.releaseState}">${STATE_LABEL[p.releaseState]}</span>
-          <span class="hub__more">OPEN <span aria-hidden="true">›</span></span>
-        </span>
-      </button>`,
-    ).join('')}</div>`
-    for (const btn of view.querySelectorAll<HTMLElement>('[data-game]')) {
-      btn.addEventListener('click', () => {
-        const project = PROJECTS.find((p) => p.id === btn.dataset['game'])
-        if (project) {
-          audio.play('pc_click', 0.22)
-          this.#pcDetail(view, project)
-        }
-      })
+    const pic = (p: ProjectConfig): string => {
+      const piece = artworkFor(p.id)
+      return piece ? wallSrc(piece) : coverOf(p) ?? ''
     }
+    view.innerHTML = `<p class="hub__head">EUNGARAGE</p>
+      <div class="desk" data-desk data-works>
+        ${PROJECTS.map((p) => `
+        <a class="desk__icon desk__icon--work" href="${workHref(p.id)}" data-game="${p.id}">
+          <span class="desk__pic"${pic(p) ? ` style="background-image:url('${pic(p)}')"` : ' data-empty'}></span>
+          <span class="desk__name">${esc(p.title)}</span>
+        </a>`).join('')}
+        <button class="desk__icon desk__icon--sys" type="button" data-desk-item="archive">
+          <span class="desk__glyph desk__glyph--folder" aria-hidden="true"></span><span class="desk__name">ARCHIVE</span>
+        </button>
+        <a class="desk__icon desk__icon--sys" href="/contact.html" data-desk-item="mail">
+          <span class="desk__glyph desk__glyph--mail" aria-hidden="true"></span><span class="desk__name">MAIL</span>
+        </a>
+        <button class="desk__icon desk__icon--sys" type="button" data-desk-item="trash">
+          <span class="desk__glyph desk__glyph--trash" aria-hidden="true"></span><span class="desk__name">TRASH</span>
+        </button>
+      </div>
+      <p class="desk__say" data-desk-say aria-live="polite"></p>`
+    const say = view.querySelector<HTMLElement>('[data-desk-say]')!
+    const speak = (line: string): void => {
+      audio.play('pc_click', 0.2)
+      say.textContent = ''
+      say.classList.remove('is-in')
+      void say.offsetWidth
+      say.textContent = line
+      say.classList.add('is-in')
+    }
+    view.querySelector('[data-desk-item="archive"]')?.addEventListener('click', () => speak('자료 정리 중.'))
+    view.querySelector('[data-desk-item="trash"]')?.addEventListener('click', () => speak('그건 진짜 버린 거야.'))
+    // Out of the room through the monitor: the screen folds to a line, then
+    // the page. A modified click is the visitor's own (a new tab).
+    const leave = (a: HTMLAnchorElement, e: MouseEvent, before?: () => void): void => {
+      before?.()
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0 || motion.reduced) return
+      e.preventDefault()
+      audio.play('pc_click', 0.22)
+      view.closest('.crt')?.classList.add('is-leaving')
+      this.#later(() => location.assign(a.href), 420)
+    }
+    for (const a of view.querySelectorAll<HTMLAnchorElement>('[data-game]')) {
+      // The work's own light over the room while its icon is pointed at or
+      // has the keyboard (the monitor's old "showing a game" wash, kept).
+      const world = PROJECTS.find((p) => p.id === a.dataset['game'])?.world ?? null
+      const on = (): void => this.#host.onWorldChange?.(world)
+      const offWorld = (): void => this.#host.onWorldChange?.(null)
+      a.addEventListener('pointerenter', on)
+      a.addEventListener('focus', on)
+      a.addEventListener('pointerleave', offWorld)
+      a.addEventListener('blur', offWorld)
+      a.addEventListener('click', (e) => leave(a, e, () => {
+        on()
+        const id = a.dataset['game']!
+        if (!save.data.visitedProjects.includes(id)) {
+          save.update((d) => { d.visitedProjects.push(id) })
+          this.#host.onProgress?.()
+        }
+      }))
+    }
+    const mail = view.querySelector<HTMLAnchorElement>('[data-desk-item="mail"]')
+    mail?.addEventListener('click', (e) => leave(mail, e))
   }
 
   /** One work, still inside the monitor. Leaving the room is a deliberate act. */
@@ -602,7 +650,14 @@ export class Panels {
       set.dataset['channel'] = ch.id
       label.textContent = `${ch.number} ${ch.name}`
       for (const b of this.#body.querySelectorAll<HTMLElement>('[data-tv-go]')) {
-        b.setAttribute('aria-pressed', String(Number(b.dataset['tvGo']) === this.#tvChannel))
+        const on = Number(b.dataset['tvGo']) === this.#tvChannel
+        b.setAttribute('aria-pressed', String(on))
+        // On a phone the dial is wider than the bezel and slides; keep the
+        // channel that is on in the middle of it (the dial only, never the page).
+        const dial = b.parentElement!
+        if (on && dial.scrollWidth > dial.clientWidth) {
+          dial.scrollLeft = b.offsetLeft - (dial.clientWidth - b.offsetWidth) / 2
+        }
       }
       if (ch.id === 'news') {
         const n = this.#draw('tv')
@@ -625,20 +680,8 @@ export class Panels {
           </div>`
         const t = view.querySelector<HTMLElement>('[data-tv-time]')
         if (t) t.textContent = new Date().toTimeString().slice(0, 8)
-      } else if (ch.id === 'teaser') {
-        const withArt = PROJECTS.filter((p) => p.keyArt)
-        const p = withArt[Math.floor(Math.random() * withArt.length)]
-        view.innerHTML = p ? `<div class="tvteaser" data-tv-teaser="${p.id}" style="--accent:${p.accent}">
-            <span class="tvteaser__art" style="background-image:url('${p.keyArt}')"></span>
-            <span class="tvteaser__name">${esc(p.title)}</span>
-            <span class="tvteaser__tag">${esc(p.taglineKo)}</span>
-            <button class="tvteaser__go" type="button" data-tv-pc="${p.id}">PC에서 자세히 보기 <span aria-hidden="true">›</span></button>
-          </div>` : ''
-        view.querySelector('[data-tv-pc]')?.addEventListener('click', () => {
-          if (!p) return
-          this.queueProject(p.id)
-          this.#host.onGoTo?.('pc')
-        })
+      } else if (programmeOf(ch.id)) {
+        this.#tvProgramme(view, programmeOf(ch.id)!)
       } else if (ch.id === 'contact') {
         const rows = contactRows()
         view.innerHTML = rows.length
@@ -688,6 +731,64 @@ export class Panels {
       b.addEventListener('click', () => tune(Number(b.dataset['tvGo'])))
     }
     tune(this.#tvChannel, true)
+  }
+
+  /**
+   * One work on the air (PHASE D): its pictures in turn, its state, the way
+   * to its page. A frame is fetched when it comes up, not before; with less
+   * motion asked for, the set does not change picture by itself — the
+   * visitor does, with the dots.
+   */
+  #tvProgramme(view: HTMLElement, prog: { readonly work: string; readonly frames: readonly TvFrame[] }): void {
+    const p = PROJECTS.find((x) => x.id === prog.work)
+    if (!p) return
+    const frames = prog.frames.filter((f) => f.src)
+    view.innerHTML = `<div class="tvwork" data-tv-work="${p.id}" style="--accent:${p.accent}">
+        <div class="tvwork__frames" data-tv-frames></div>
+        <div class="tvwork__info">
+          <span class="tvwork__name">${esc(p.title)}</span>
+          <span class="tvwork__meta">${esc(p.genre)} · ${STATE_LABEL[p.releaseState]}</span>
+          <a class="tvwork__go" href="${workHref(p.id)}" data-tv-view-project>VIEW PROJECT <span aria-hidden="true">›</span></a>
+        </div>
+        ${frames.length > 1 ? `<div class="tvwork__dots" role="group" aria-label="장면">${frames.map((f, i) =>
+          `<button class="tvwork__dot" type="button" data-tv-frame="${i}" aria-label="${esc(f.caption || `장면 ${i + 1}`)}"></button>`).join('')}</div>` : ''}
+      </div>`
+    const host = view.querySelector<HTMLElement>('[data-tv-frames]')!
+    let at = -1
+    const show = (i: number): void => {
+      at = (i + frames.length) % frames.length
+      const f = frames[at]!
+      // Each frame is made when it comes up: the set never fetches a work's
+      // whole programme just because it was switched on.
+      const el = f.kind === 'video'
+        ? Object.assign(document.createElement('video'), { src: f.src, muted: true, loop: true, playsInline: true, autoplay: !motion.reduced, poster: f.poster ?? '' })
+        : Object.assign(document.createElement('img'), { src: f.src, alt: f.caption, decoding: 'async' })
+      el.className = 'tvwork__frame'
+      host.replaceChildren(el)
+      for (const d of view.querySelectorAll<HTMLElement>('[data-tv-frame]')) {
+        d.setAttribute('aria-pressed', String(Number(d.dataset['tvFrame']) === at))
+      }
+    }
+    for (const d of view.querySelectorAll<HTMLElement>('[data-tv-frame]')) {
+      d.addEventListener('click', () => show(Number(d.dataset['tvFrame'])))
+    }
+    show(0)
+    if (frames.length > 1 && !motion.reduced) {
+      const step = (): void => {
+        if (!view.isConnected || !view.querySelector(`[data-tv-work="${p.id}"]`)) return
+        show(at + 1)
+        this.#later(step, 3500)
+      }
+      this.#later(step, 3500)
+    }
+    // Into the work's page the way the PC does it: the tube folds, then the page.
+    const go = view.querySelector<HTMLAnchorElement>('[data-tv-view-project]')
+    go?.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0 || motion.reduced) return
+      e.preventDefault()
+      this.#body.querySelector('[data-prop="tv"]')?.classList.add('is-leaving')
+      this.#later(() => location.assign(go.href), 380)
+    })
   }
 
   // ── The radio: the dial is the tuner, the left knob is the power ─────────
@@ -847,8 +948,30 @@ export class Panels {
   // ── The parcel: the box opens in the room; what was in it comes up ──────
   openParcel(): void {
     this.#touch('parcel')
-    const got = this.#draw('parcel')
     this.#host.onThingOpen?.('parcel', true)
+    // WHAT'S NEW (PHASE D): real news, when there is any, comes in the box
+    // first; until then (and after it has all been read) it is the week's
+    // shopping. Nothing is made up to fill it (src/data/news.ts).
+    const news = nextNews(save.data.easterEggs.filter((e) => e.startsWith('news:')).map((e) => e.slice(5)))
+    if (news) {
+      save.update((d) => { d.easterEggs.push(`news:${news.id}`) })
+      this.#show(
+        'parcel',
+        '택배',
+        `<div class="prop prop--parcel delivery" data-prop="parcel" data-delivery="news:${esc(news.id)}">
+           <div class="delivery__out delivery__out--news">
+             <span class="delivery__date">${esc(news.date)}</span>
+             <b class="delivery__name">${esc(news.title)}</b>
+             <span class="delivery__note">${esc(news.body)}</span>
+             ${news.href ? `<a class="delivery__go" href="${news.href}">보러 가기 <span aria-hidden="true">›</span></a>` : ''}
+           </div>
+           <span class="delivery__tail" aria-hidden="true"></span>
+         </div>`,
+        { id: 'parcel', anchor: 'above' },
+      )
+      return
+    }
+    const got = this.#draw('parcel')
     this.#show(
       'parcel',
       '택배',
@@ -887,18 +1010,38 @@ export class Panels {
       '캐비닛',
       Panels.#furniture('cabinet', def, `
         ${Panels.#region(parts['doors']!, 'drawer drawer__folder', `
+           <p class="drawer__label">사건 파일 · LIMINAL</p>
+           <ul class="drawer__files"><li class="file"><button class="file__tab file__tab--case" type="button" data-case-file>
+             <span class="file__name">「${esc(LIMINAL_CASE_FILE.title)}」</span><span class="file__go" aria-hidden="true">›</span>
+           </button></li></ul>
            <p class="drawer__label">서류철 · 고객지원과 약관</p>
            <ul class="drawer__files">${files}</ul>`, 'data-drawer')}
         ${Panels.#slice(def, parts['drawer']!, 'drawer__pull', 'data-cabinet-drawer')}
-        ${paper ? Panels.#region(def.surface, 'prop__surface drawer__lift', `
+        ${Panels.#region(def.surface, 'prop__surface drawer__lift', paper ? `
            <article class="paper paper--${paper.kind}" data-paper="${paper.id}">
              <h3 class="paper__title">${esc(paper.title)}</h3>
              <p class="paper__body">${esc(paper.description)}</p>
-           </article>`) : ''}`,
+           </article>` : '', 'data-cabinet-lift')}`,
       ),
       { id: 'cabinet', def },
     )
     const prop = this.#body.querySelector<HTMLElement>('[data-prop="cabinet"]')!
+    // LIMINAL's case file (PHASE D): out of the drawer on the paper's place,
+    // one case and the way to the work — not the work's world.
+    const lift = this.#body.querySelector<HTMLElement>('[data-cabinet-lift]')
+    this.#body.querySelector('[data-case-file]')?.addEventListener('click', () => {
+      if (!lift) return
+      const c = LIMINAL_CASE_FILE
+      lift.innerHTML = `<article class="paper paper--case" data-paper="liminal-case">
+          <p class="paper__office">${esc(c.office)}</p>
+          <h3 class="paper__title">「${esc(c.title)}」</h3>
+          <img class="paper__photo" src="${c.picture}" alt="${esc(c.caption)}" decoding="async">
+          <p class="paper__body">${esc(c.line)}</p>
+          <a class="paper__go" href="${c.href}" data-case-go>VIEW LIMINAL <span aria-hidden="true">›</span></a>
+        </article>`
+      audio.play('paper', 0.18)
+      lift.querySelector<HTMLElement>('[data-case-go]')?.focus({ preventScroll: true })
+    })
     const out = (): void => {
       prop.classList.add('is-open')
       this.#body.querySelector('[data-drawer]')?.classList.add('is-open')

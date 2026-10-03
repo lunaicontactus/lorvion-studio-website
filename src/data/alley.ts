@@ -101,6 +101,10 @@ export interface AlleyPlate {
   readonly props: Readonly<Record<PropName, LayerPlacement>>
   /** Where the ENTER button sits, as a percentage down the plate. */
   readonly enterY: number
+  /** The mailbox painted on the wall, as percentages of the plate: the way
+   *  to write to the studio (SITE UPGRADE PHASE D). Measured off the base
+   *  images on a 1% grid. */
+  readonly mailbox: { readonly left: number; readonly top: number; readonly width: number; readonly height: number }
   /** Centre of the painted doorway. The camera pushes in towards this point
    *  and the interior light and silhouette are staged around it. */
   readonly doorway: { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
@@ -128,6 +132,7 @@ export const ALLEY_LANDSCAPE: AlleyPlate = {
     waterPack: { left: 64.4, bottom: 21.2, width: 6.2, tilt: 3 },
   },
   enterY: 84,
+  mailbox: { left: 66.6, top: 37.5, width: 5.2, height: 12 },
   doorway: { x: 49.95, y: 45.15, w: 19.7, h: 48.9 },
 }
 
@@ -145,6 +150,7 @@ export const ALLEY_PORTRAIT: AlleyPlate = {
     waterPack: { left: 67, bottom: 20.6, width: 12, tilt: 3 },
   },
   enterY: 82,
+  mailbox: { left: 78.3, top: 47, width: 9.8, height: 6.7 },
   doorway: { x: 50, y: 52.25, w: 34, h: 32.5 },
 }
 

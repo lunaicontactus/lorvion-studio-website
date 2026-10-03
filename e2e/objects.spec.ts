@@ -71,13 +71,18 @@ for (const vp of [
       expect(samePlace(await roomAt(page), before)).toBe(false)
       await expect(page.locator('[data-panel]')).toContainText('EUNGARAGE OS')
 
-      await page.locator('[data-game="liminal"]').click()
-      await expect(page.locator('.crtgame__name')).toHaveText('LIMINAL')
-      await expect(page.locator('.crtgame__facts')).toContainText('Narrative Mystery / Investigation')
-      // Still inside the monitor: the full page is a link, not the first stop.
-      await expect(page.locator('.crtgame__full')).toHaveAttribute('href', /^\/works\/[a-z]+\.html$/)
-
-      await page.locator('[data-crt-back]').click()
+      // The monitor's desktop (SITE UPGRADE PHASE D): each work's icon is
+      // its page; MAIL is the contact page; ARCHIVE has no page yet and says
+      // so; TRASH is a joke. No link to a page that does not exist.
+      for (const id of ['lunai', 'liminal', 'wormup', 'lumiora', 'rubato']) {
+        await expect(page.locator(`[data-game="${id}"]`)).toHaveAttribute('href', `/works/${id}.html`)
+      }
+      await expect(page.locator('[data-desk-item="mail"]')).toHaveAttribute('href', '/contact.html')
+      await page.locator('[data-desk-item="archive"]').click()
+      await expect(page.locator('[data-desk-say]')).toHaveText('자료 정리 중.')
+      await page.locator('[data-desk-item="trash"]').click()
+      await expect(page.locator('[data-desk-say]')).toHaveText('그건 진짜 버린 거야.')
+      await expect(page.locator('[data-panel] a[href="/archive.html"]')).toHaveCount(0)
       await expect(page.locator('[data-game]')).toHaveCount(5)
 
       await page.keyboard.press('Escape')
@@ -99,11 +104,12 @@ for (const vp of [
       await expect(page.locator(panel)).toBeHidden()
 
       await touch(page, 'tv')
-      await expect(page.locator('[data-tv]')).toHaveAttribute('data-channel', 'news', { timeout: 5000 })
-      await page.locator('[data-tv-go="3"]').click()
+      // The set comes on at the first work's channel (PHASE D).
+      await expect(page.locator('[data-tv]')).toHaveAttribute('data-channel', 'work-lunai', { timeout: 5000 })
+      await page.locator('[data-tv-go="7"]').click()
       await expect(page.locator('.tvrow__value')).toHaveText('eungarage@gmail.com', { timeout: 5000 })
       await expect(page.locator('.tvrow__value')).toHaveAttribute('href', /^mailto:/)
-      await page.locator('[data-tv-go="4"]').click()
+      await page.locator('[data-tv-go="8"]').click()
       await expect(page.locator('[data-tv-nosignal]')).toBeVisible({ timeout: 5000 })
       await expect(page.locator('.tvrow__value')).toHaveCount(0)
       await page.keyboard.press('Escape')
@@ -138,7 +144,7 @@ test.describe('desktop', () => {
   test('back closes what is open instead of leaving the site', async ({ page }) => {
     await enter(page)
     await touch(page, 'pc')
-    await expect(page.locator('.hub__row').first()).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('.desk__icon').first()).toBeVisible({ timeout: 5000 })
     expect(await page.evaluate(() => location.hash)).toBe('#pc')
     await page.goBack()
     await expect(page.locator(panel)).toBeHidden()

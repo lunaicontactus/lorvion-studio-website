@@ -138,24 +138,30 @@ test.describe('desktop', () => {
     expect(await reveal.getAttribute('data-delivery')).not.toBe(first)
   })
 
-  test('the TV is five channels, and none of them is the PC\'s list', async ({ page }) => {
+  test('the TV is the five works\' channels, then the garage\'s; none of them is the PC\'s list', async ({ page }) => {
     await enter(page)
     await touch(page, 'tv')
     const set = page.locator('[data-tv]')
-    await expect(set).toHaveAttribute('data-channel', 'news', { timeout: 6000 })
-    await expect(page.locator('[data-tv-news]')).toBeVisible()
+    await expect(set).toHaveAttribute('data-channel', 'work-lunai', { timeout: 6000 })
     const seen: string[] = []
-    for (let i = 0; i < 5; i++) {
-      seen.push((await set.getAttribute('data-channel'))!)
-      await expect(page.locator('[data-works], .hub__row'), 'the TV repeats the works list').toHaveCount(0)
+    for (let i = 0; i < 9; i++) {
+      const ch = (await set.getAttribute('data-channel'))!
+      seen.push(ch)
+      await expect(page.locator('[data-works], .desk'), 'the TV repeats the works list').toHaveCount(0)
+      if (ch.startsWith('work-')) {
+        // A work's own pictures, and the way to its page — no trailer, no PC.
+        const id = ch.slice(5)
+        await expect(page.locator(`[data-tv-work="${id}"] .tvwork__frame`)).toHaveCount(1, { timeout: 3000 })
+        await expect(page.locator('[data-tv-view-project]')).toHaveAttribute('href', `/works/${id}.html`)
+      }
       await page.locator('[data-tv-next]').click()
       await expect(set).not.toHaveAttribute('data-channel', seen[seen.length - 1]!, { timeout: 3000 })
     }
-    expect(seen).toEqual(['news', 'cam', 'teaser', 'contact', 'nosignal'])
-    await page.locator('[data-tv-go="3"]').click()
+    expect(seen).toEqual(['work-lunai', 'work-liminal', 'work-wormup', 'work-lumiora', 'work-rubato', 'news', 'cam', 'contact', 'nosignal'])
+    await page.locator('[data-tv-go="7"]').click()
     await expect(page.locator('.tvrow__value')).toHaveText('eungarage@gmail.com', { timeout: 3000 })
     await expect(page.locator('.tvrow__value')).toHaveAttribute('href', 'mailto:eungarage@gmail.com')
-    await page.locator('[data-tv-go="1"]').click()
+    await page.locator('[data-tv-go="6"]').click()
     await expect(page.locator('[data-tv-cam]')).toBeVisible({ timeout: 3000 })
   })
 
@@ -163,7 +169,7 @@ test.describe('desktop', () => {
     await enter(page)
     await touch(page, 'tv')
     await expect(page.locator('[data-tv]')).toBeVisible({ timeout: 6000 })
-    await page.locator('[data-tv-go="3"]').click()
+    await page.locator('[data-tv-go="7"]').click()
     await expect(page.locator('[data-tv]')).toHaveAttribute('data-channel', 'contact', { timeout: 3000 })
     await page.keyboard.press('Escape')
     await page.locator('.nav-links a', { hasText: /contact/i }).click()

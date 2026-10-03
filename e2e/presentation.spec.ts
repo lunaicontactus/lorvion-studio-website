@@ -15,8 +15,8 @@ const panel = '[data-panel-root]'
 /** The things, what they open, and where the content has to be. */
 const THINGS = [
   // The list scrolls inside the screen by design; the first row is what has to be in it.
-  { id: 'pc', prop: 'pc', surface: '.prop--pc .crt', content: '.prop--pc .hub__row', sfx: 'pc_on', light: 'pc' },
-  { id: 'tv', prop: 'tv', surface: '.prop--tv .tvset__screen', content: '.prop--tv .tvnews__line', sfx: 'tv_channel', light: 'tv' },
+  { id: 'pc', prop: 'pc', surface: '.prop--pc .crt', content: '.prop--pc .desk__icon', sfx: 'pc_on', light: 'pc' },
+  { id: 'tv', prop: 'tv', surface: '.prop--tv .tvset__screen', content: '.prop--tv .tvwork__name', sfx: 'tv_channel', light: 'tv' },
   { id: 'fridge', prop: 'fridge', surface: '.prop--fridge .fridge__inside', content: '.prop--fridge .fridge__shelves--low', sfx: 'fridge_open', light: 'fridge' },
   // PHASE 6: the open drawer gets a faint warm light of its own.
   { id: 'cabinet', prop: 'cabinet', surface: '.prop--cabinet .drawer__lift', content: '.prop--cabinet .paper', sfx: 'drawer_open', light: 'cabinet' },

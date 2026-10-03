@@ -246,17 +246,28 @@ test.describe('garage camera, 390x844', () => {
     await page.screenshot({ path: `${SHOTS}/mobile-04-drag-no-open.png` })
   })
 
-  test('the first visit says once how to look around', async ({ page }) => {
+  test('the first visit says once how to look around, and three things glow', async ({ page, context }) => {
     await enterGarage(page)
     const hint = page.locator('.garage__hint')
     await expect(hint).toBeVisible()
+    await expect(hint).toHaveText('반짝이는 물건을 눌러보세요.')
+    // The PC, the TV and the door out glow as themselves while it is up —
+    // three, never more — and stop with it.
+    await expect(page.locator('.thing.is-beckoning')).toHaveCount(3)
+    for (const id of ['pc', 'tv', 'outside-door']) await expect(page.locator(`.thing--${id}`)).toHaveClass(/is-beckoning/)
     await page.screenshot({ path: `${SHOTS}/mobile-05-hint.png` })
     await expect(hint).toHaveCount(0, { timeout: 8_000 })
+    await expect(page.locator('.thing.is-beckoning')).toHaveCount(0)
 
-    // Same session, second time in: silence.
-    await page.goto('/')
-    await page.locator('[data-alley-enter]').click()
-    await page.waitForTimeout(1500)
-    await expect(page.locator('.garage__hint')).toHaveCount(0)
+    // Another visit in the same browser (PHASE D: kept, not per session):
+    // silence. A fresh page, so the test's own storage wipe does not run.
+    const again = await context.newPage()
+    await again.goto('/')
+    await again.locator('[data-alley-enter]').click()
+    await again.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
+    await again.waitForTimeout(1500)
+    await expect(again.locator('.garage__hint')).toHaveCount(0)
+    await expect(again.locator('.thing.is-beckoning')).toHaveCount(0)
+    await again.close()
   })
 })

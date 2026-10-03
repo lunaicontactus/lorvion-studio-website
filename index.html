@@ -128,10 +128,16 @@
     <!-- Where the camera lands: warm interior. STEP 3's garage takes over here. -->
     <div class="alley__inside" aria-hidden="true"></div>
 
+    <!-- What this place is, in a line (SITE UPGRADE PHASE D): above the
+         door's button, small, gone once the shutter starts to rise. -->
+    <p class="alley__tagline" data-alley-tagline>게임을 만드는 도깨비들의 밤 작업실<span class="alley__tagline-en" lang="en">Games made after dark</span></p>
     <button class="alley__enter" type="button" data-alley-enter>
       <span class="alley__enter-dot" aria-hidden="true"></span>
       ENTER
     </button>
+    <!-- The mailbox painted on the wall is the way to write to the studio:
+         a link laid over it (the painting itself is hidden from readers). -->
+    <a class="alley__mailbox" data-alley-mailbox href="/contact.html" aria-label="우편함 — 문의하기"><span class="alley__mailbox-tag" aria-hidden="true">편지 쓰기 · CONTACT</span></a>
     <!-- While the door is opening: a way to be inside now. Shown only
          during the sequence; any click, tap, Enter or Escape does the same. -->
     <button class="alley__skip" type="button" data-alley-skip hidden>건너뛰기</button>

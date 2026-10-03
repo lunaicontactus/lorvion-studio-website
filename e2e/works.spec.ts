@@ -128,7 +128,7 @@ test.describe('desktop', () => {
     await expect(page.locator('.work-view')).toBeHidden()
   })
 
-  test('the garage PC leads to the work it is showing', async ({ page }) => {
+  test('the garage PC\'s icon leads to the work', async ({ page }) => {
     await page.addInitScript(() => {
       try { sessionStorage.clear(); localStorage.clear() } catch { /* private mode */ }
     })
@@ -136,9 +136,9 @@ test.describe('desktop', () => {
     await page.locator('[data-alley-enter]').click()
     await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
     await page.locator('.nav-links a', { hasText: 'Works' }).click()
-    await page.locator('[data-game="lumiora"]').click({ timeout: 8000 })
-    const open = page.locator('[data-crt-open]')
-    await expect(open).toHaveAttribute('href', '/works/lumiora.html')
+    // The desktop's icon is the work's page (PHASE D): the tube folds, then the page.
+    const open = page.locator('[data-game="lumiora"]')
+    await expect(open).toHaveAttribute('href', '/works/lumiora.html', { timeout: 8000 })
     await open.click()
     await expect(page).toHaveURL(/\/works\/lumiora\.html$/, { timeout: 8000 })
     await expect(page.locator('h1')).toHaveText('LUMIORA')

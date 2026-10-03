@@ -168,6 +168,37 @@
 }
 @keyframes alleyPulse{50%{box-shadow:0 0 0 7px rgba(201,127,74,0)}}
 
+/* What this place is (PHASE D): one small line above the button, on the
+   pavement, warm and quiet — not a banner. Gone once the door starts. */
+.alley__tagline{
+  position:absolute;left:50%;transform:translate(-50%,-100%);z-index:6;
+  margin:0;display:grid;justify-items:center;gap:3px;
+  width:max-content;max-width:calc(100% - 32px);text-align:center;word-break:keep-all;
+  color:#fbf4e6;font-size:.95rem;font-weight:600;letter-spacing:.04em;
+  text-shadow:0 1px 2px rgba(60,40,24,.55),0 0 14px rgba(60,40,24,.45);
+  transition:opacity 300ms ease;pointer-events:none;
+}
+.alley[data-orientation="portrait"] .alley__tagline{transform:translate(-50%,0)}
+.alley__tagline-en{font-size:.7rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;opacity:.85}
+.alley:not(.alley--dressed) .alley__tagline,
+.alley[data-phase="entering"] .alley__tagline,
+.alley[data-phase="inside"] .alley__tagline{opacity:0}
+
+/* The mailbox on the wall (PHASE D): nothing over it at rest — the painting
+   is the sign. Under the pointer or the keyboard, a warm glow behind it and
+   a small tag; a touch goes straight to the contact page. */
+.alley__mailbox{position:absolute;z-index:6;display:block;border-radius:12px;-webkit-tap-highlight-color:transparent}
+.alley__mailbox::before{content:"";position:absolute;inset:-30%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,214,150,.42),transparent);opacity:0;transition:opacity 180ms ease;pointer-events:none}
+.alley__mailbox:hover::before,.alley__mailbox:focus-visible::before{opacity:1}
+.alley__mailbox:focus{outline:none}
+.alley__mailbox:focus-visible{outline:2px solid #ffd27a;outline-offset:4px}
+.alley__mailbox-tag{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translate(-50%,4px);padding:6px 10px;border-radius:999px;background:rgba(250,244,234,.94);color:#5c4e42;font:600 .7rem/1 var(--sans,system-ui);letter-spacing:.08em;white-space:nowrap;opacity:0;transition:opacity 140ms ease,transform 140ms ease;pointer-events:none;box-shadow:0 4px 12px rgba(120,96,70,.2)}
+.alley__mailbox:hover .alley__mailbox-tag,.alley__mailbox:focus-visible .alley__mailbox-tag{opacity:1;transform:translate(-50%,0)}
+@media (hover:none){.alley__mailbox:hover::before,.alley__mailbox:hover .alley__mailbox-tag{opacity:0}}
+.alley:not(.alley--dressed) .alley__mailbox,
+.alley[data-phase="entering"] .alley__mailbox,
+.alley[data-phase="inside"] .alley__mailbox{opacity:0;pointer-events:none;visibility:hidden}
+
 /* ── Entrance sequence ─────────────────────────────────────────────────── */
 
 /* The shutter goes up, the inside shows, the camera goes through. Nothing

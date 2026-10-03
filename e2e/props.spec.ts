@@ -123,36 +123,36 @@ test.describe('desktop', () => {
       return { from: { fx: parseFloat(el.style.getPropertyValue('--fx')), fy: parseFloat(el.style.getPropertyValue('--fy')) },
         pc: { x: r.x, y: r.y, width: r.width, height: r.height } }
     })
-    await expect(page.locator('.hub__row').first()).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('.desk__icon').first()).toBeVisible({ timeout: 5000 })
     await page.waitForTimeout(600) // the prop arrives
     const vp = page.viewportSize()!
     expect(Math.abs(vp.width / 2 + from.fx - (pc.x + pc.width / 2))).toBeLessThan(80)
     expect(Math.abs(vp.height / 2 + from.fy - (pc.y + pc.height / 2))).toBeLessThan(80)
     // And the list is inside the screen, not on a card next to it.
     const screen = (await page.locator('.prop--pc .crt').boundingBox())!
-    const list = (await page.locator('.prop--pc .hub').boundingBox())!
+    const list = (await page.locator('.prop--pc .desk').boundingBox())!
     expect(list.x).toBeGreaterThanOrEqual(screen.x - 1)
     expect(list.x + list.width).toBeLessThanOrEqual(screen.x + screen.width + 1)
     expect(list.y).toBeGreaterThanOrEqual(screen.y - 1)
     await expect(page.locator('.panel__portrait')).toHaveCount(0)
   })
 
-  test('one game lights the room while the monitor shows it', async ({ page }) => {
+  test('one game lights the room while the monitor points at it', async ({ page }) => {
     await enter(page)
     const garage = page.locator('[data-garage]')
     await page.locator('.thing--pc').click()
     await expect(page.locator('[data-game="lunai"]')).toBeVisible({ timeout: 5000 })
     await expect(garage).not.toHaveAttribute('data-world', /./)
-    await page.locator('[data-game="lunai"]').click()
-    await expect(page.locator('.crtgame__name')).toHaveText('LUNAI')
+    // On the desktop (PHASE D) a work's icon pointed at is that work's light.
+    await page.locator('[data-game="lunai"]').hover()
     await expect(garage).toHaveAttribute('data-world', 'lunai')
     await expect(page.locator('[data-panel-root]')).toHaveAttribute('data-world', 'lunai')
     await expect(page.locator('.garage__wash')).toHaveCSS('opacity', '1')
-    // Back to the list: the light goes with the game.
-    await page.locator('[data-crt-back]').click()
+    // Off the icon: the light goes with the game.
+    await page.locator('[data-desk-say]').hover()
     await expect(garage).not.toHaveAttribute('data-world', /./)
     // And a game that lives behind the door lights the door.
-    await page.locator('[data-game="liminal"]').click()
+    await page.locator('[data-game="liminal"]').hover()
     await expect(garage).toHaveAttribute('data-world', 'liminal')
     await expect(page.locator('.garage__doorlight')).toHaveCSS('opacity', '1')
     await page.keyboard.press('Escape')
@@ -220,7 +220,7 @@ test.describe('phone', () => {
   test('the monitor panel is still centred on a phone', async ({ page }) => {
     await enter(page)
     await page.locator('.thing--pc').tap()
-    await expect(page.locator('.hub__row').first()).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('.desk__icon').first()).toBeVisible({ timeout: 5000 })
     const panel = (await page.locator('.panel').boundingBox())!
     const vp = page.viewportSize()!
     expect(Math.abs(panel.x + panel.width / 2 - vp.width / 2)).toBeLessThan(4)

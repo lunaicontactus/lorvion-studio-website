@@ -139,9 +139,9 @@ for (const w of WINDOWS) {
       // The television → the studio's address, as a real mailto link.
       await page.waitForTimeout(600)
       await touch(page, '.thing--tv', w.mobile)
-      // The set comes on at the news; the address is channel 4.
-      await expect(page.locator('[data-tv-go="3"]')).toBeVisible({ timeout: 6000 })
-      await touch(page, '[data-tv-go="3"]', w.mobile)
+      // The set comes on at the first work; the address is channel 8.
+      await expect(page.locator('[data-tv-go="7"]')).toBeVisible({ timeout: 6000 })
+      await touch(page, '[data-tv-go="7"]', w.mobile)
       const mail = page.locator('.tvrow__value[href^="mailto:"]')
       await expect(mail).toBeVisible({ timeout: 6000 })
       await expect(mail).toHaveAttribute('href', 'mailto:eungarage@gmail.com')
@@ -204,10 +204,9 @@ test('a visitor who does not want motion gets the same journey, without the wait
   await enter(page, false)
   await page.locator('.thing--pc').click()
   await expect(page.locator('[data-game="lunai"]')).toBeVisible({ timeout: 3000 })
+  // With less motion the monitor does not fold: the icon is the page, at once.
   await page.locator('[data-game="lunai"]').click()
-  await expect(page.locator('[data-garage]')).toHaveAttribute('data-world', 'lunai')
-  await page.keyboard.press('Escape')
-  await expect(page.locator('[data-panel-root]')).toBeHidden()
-  await expect(page.locator('[data-garage]')).not.toHaveAttribute('data-world', /./)
+  await expect(page).toHaveURL(/\/works\/lunai\.html$/, { timeout: 4000 })
+  await expect(page.locator('h1')).toHaveText('LUNAI')
   await ctx.close()
 })
