@@ -1458,6 +1458,9 @@ export function mountNpc(
           : state === 'INTERACT'
             ? { state, wait, action: 'idle', dir: direction }
             : null
+    // Under reduced motion it goes back to exactly the picture it was
+    // showing, whatever it was doing: nothing else will change it back.
+    if (!back && still) back = { state: state === 'SPAWN' ? 'IDLE' : state, wait: 0, action: showing, dir: direction }
     if (!back) {
       unbook()
       target = null
