@@ -869,7 +869,10 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
             // Spread round the cycle so five of them do not breathe in unison.
             phase: i / Math.max(here.length, 1),
             order: i,
-            onStep: (on) => steps.stride(on),
+            // Not while a panel or a game is up (PHASE F): the room is
+            // paused behind it, and a dokkaebi finishing its walk back there
+            // is not something to hear over the game.
+            onStep: (on) => steps.stride(on && !paused),
             // Touching one stops it and makes it look up; the room's part is
             // to acknowledge that quietly. No bubble, no name tag, no panel —
             // the dokkaebi are not another menu.

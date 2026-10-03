@@ -206,10 +206,16 @@ class AudioManager {
     try {
       let el = this.cache.get(name)
       // Never more than a handful of short sounds at once: a fifth while
-      // four are still ringing is dropped rather than piled on.
+      // four are still ringing is dropped rather than piled on. Ringing is
+      // judged by the clock — started less than its own length ago — not by
+      // the element's flags: an element the browser stalls never reports
+      // `ended`, and four of those would have silenced every effect after.
       if (!el || el.paused) {
         let ringing = 0
-        for (const o of this.cache.values()) if (!o.paused && !o.ended) ringing++
+        for (const [n, o] of this.cache) {
+          const since = now - (this.lastPlayed.get(n) ?? -Infinity)
+          if (!o.paused && since < (Number.isFinite(o.duration) ? o.duration * 1000 : 1500)) ringing++
+        }
         if (ringing >= VOICES) return
       }
       if (!el) {

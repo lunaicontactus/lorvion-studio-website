@@ -289,6 +289,27 @@ test.describe('desktop', () => {
     await expect(page.locator('[data-sound-toggle]').first()).toHaveAttribute('aria-pressed', 'false')
   })
 
+  test('the crew\'s footsteps stop while a panel is up, even if somebody is still walking behind it', async ({ page }) => {
+    await instrument(page, [])
+    await page.goto('/?audiodebug&npcseed=7', { waitUntil: 'load' })
+    await soundOn(page)
+    await enter(page)
+    // Somebody walking, on screen.
+    await page.waitForFunction(() => [...document.querySelectorAll<HTMLElement>('.npc')].some((el) => {
+      if (el.dataset['state'] !== 'WALK' || el.classList.contains('is-away')) return false
+      const r = el.querySelector('.npc__art')!.getBoundingClientRect()
+      return r.right > 0 && r.left < innerWidth
+    }), null, { timeout: 60_000, polling: 100 })
+    const t = page.locator('[data-object="tv"]')
+    await t.focus()
+    await t.press('Enter')
+    await expect(page.locator('[data-panel-root]')).toBeVisible({ timeout: 6000 })
+    const n = await page.evaluate(() => window.__a.plays.length)
+    await page.waitForTimeout(4000)
+    const steps = await page.evaluate((n) => window.__a.plays.slice(n).filter((p) => /crew_step/.test(p.src)).length, n)
+    expect(steps, 'footsteps under an open panel').toBe(0)
+  })
+
   test('going to a work\'s page ends the garage\'s sound with the page', async ({ page }) => {
     await instrument(page, [])
     await page.goto('/?audiodebug&npcseed=7', { waitUntil: 'load' })
