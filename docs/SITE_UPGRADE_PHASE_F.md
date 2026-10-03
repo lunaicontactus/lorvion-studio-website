@@ -97,9 +97,9 @@ ffmpeg가 없어 macOS `afinfo`(형식)·`afconvert`(디코드)와 numpy로 측�
 |---|---|---|---|
 | 1 | **iOS Safari에서 모든 레벨 · 페이드 · 덕킹이 무효** | 모든 레벨이 `HTMLMediaElement.volume`으로만 설정됨 — iOS는 이 값을 무시(읽으면 항상 1) | 4버스 믹서로 Web Audio 경유(아래). 데스크톱은 동작 동일 |
 | 2 | **두 곡 동시 재생: 오르골 + 창고 음악** | `world.ts`: 오르골을 열면 창고 음악을 0.3으로만 낮추고 오르골 루프를 그 위에 재생. 오르골은 측정상 사이트에서 가장 큰 곡(M −16 LUFS) | 오르골 = MUSIC. 창고 음악은 나갔다가 닫으면 그 자리부터 복귀(`holdWorld`) |
-| 3 | 효과음이 음악보다 튀거나 묻힘 | 방 안 실측(BS.1770 momentary, 요청 레벨 기준): PC 전원 음악보다 +5 dB, 오르골 +6–9 dB, MOMO 점프 +6 dB, 냉장고 −15 dB(거의 안 들림), 등불 −11 dB, 게임 시작 −10 dB | 파일별 runtime trim(재인코딩 0) + SFX 버스 −2 dB |
+| 3 | 효과음이 음악보다 튀거나 묻힘 | file-based reference(파일의 BS.1770 momentary × 코드 요청 volume, 브라우저 출력 아님): PC 전원 음악보다 +5 dB, 오르골 +6–9 dB, MOMO 점프 +6 dB, 냉장고 −15 dB(거의 안 들림), 등불 −11 dB, 게임 시작 −10 dB | 파일별 runtime trim(재인코딩 0) + SFX 버스 −2 dB |
 | 4 | 밖의 환경음이 밖의 음악보다 큼 | playground_night −22.4 vs playground 음악 −24.7 LUFS | 환경음 trim 0.39(음악 아래 약 6 dB) |
-| 5 | 라디오 STATIC이 노래보다 시끄러움 | 실측 렌더 레벨 노래 −28 dBFS RMS, STATIC −23 | 0.2 → 0.15 |
+| 5 | 라디오 STATIC이 노래보다 시끄러움 | browser-rendered: 노래 방송국 약 −28 dBFS RMS, STATIC 약 −23 | 0.2 → 0.15 |
 | 6 | "ambient" 이름의 파일이 실제로는 음악 | tonal 0.96 · hf 0.03 · 134 BPM | 이미 라디오 전용 — 역할 MUSIC 기록, 주석 수정 |
 | 7 | 같은 클립의 이중 트리거 방지 장치 없음 | `play()`는 같은 엘리먼트를 다시 처음부터 재생할 뿐 | 같은 클립 80 ms 안 재호출 무시, 짧은 소리 동시 4개 제한 |
 | 8 | 미사용 파일 1개 | `sfx/radio_static.m4a` — src 참조 0, 스크립트(static_bed.py) 원본 | 삭제하지 않고 목록만 |
@@ -146,33 +146,49 @@ MASTER (GainNode, 음소거 = 컨텍스트 suspend)
 
 라디오 곡은 라디오를 켤 때, 창고 음악은 비밀문 앞에서(의도 시), 게임 곡은 게임 앞에서만 받는다(기존 lazy 구조 유지).
 
-## LOUDNESS — 고친 항목 (원본 재인코딩 0, 런타임 trim)
+## LOUDNESS — 측정 방식과 조정
 
-| 파일 | 고치기 전(방 안, momentary) | trim | 이유 |
-|---|---|---|---|
-| sfx/pc_on | 음악 +5 dB | ×0.41 | UI는 작게 |
-| sfx/radio_tune | 음악과 같음 | ×0.73 | UI는 작게 |
-| sfx/fridge_open | 음악 −15 dB | ×3.8 | 거의 안 들림 |
-| sfx/lantern | 창고 음악 −11 dB | ×2.6 | 안 들림 |
-| sfx/game_start | 게임 음악 −10 dB | ×2.7 | 안 들림 |
-| sfx/shutter_open | 골목 공기 −7 dB | ×1.8 | ENTER의 순간 |
-| sfx/momo_jump | 게임 음악 +6 dB | ×0.59 | 튐 |
-| sfx/poko_turn | +5 dB(신호음 + 덕킹) | ×0.76 | 신호는 남기되 덜 튀게 |
-| music/music_box | 다른 모든 곡 +6–9 dB | ×0.47 | 곡 레벨에 맞춤 |
-| ambient.m4a(NIGHT) | 차고 노래 +3 dB | ×0.72 | 방송국 간 레벨 |
-| ambience/playground_night | 밖 음악보다 큼 | ×0.39 | 환경은 음악 아래 |
-| 라디오 STATIC | 노래보다 큼(렌더 실측) | 0.2 → 0.15 | 잡음이 가장 크면 안 됨 |
-| SFX 버스 | 물건 소리 음악 +7–9 dB(렌더 실측) | 0.8 | 버스 균형 |
+두 측정은 방법이 다르므로 **서로 빼서 "몇 dB 개선"으로 읽지 않는다.**
 
-결과(렌더 실측, SFX/UI 버스 피크 − 차고 노래의 평균 레벨, MUSIC 버스): **PC +1.9 dB · TV +2.9 dB(UI), 냉장고 +5.7 dB · 서랍 +5.3 dB(SFX).** 고치기 전 계산값: PC +5, 냉장고 −15(안 들림). 원본 파일을 정규화할 필요는 없었다.
+- **PHASE E 레벨 — file-based reference.** 파일을 디코드해 BS.1770 momentary 최대값을 재고, 코드가 요청하는 volume을 곱해 계산한 값. 브라우저 출력이 아니다. 무엇을 조정할지 정하는 기준으로만 썼다.
+- **PHASE F — browser-rendered runtime balance.** 실제 Chromium이 렌더한 출력을 버스별 분석기로 50 ms마다 잰 값(RMS). 지금 균형이 안전한지 확인하는 용도로만 쓴다.
 
-측정 주의: 마스터 출력만으로 보면 노래 자체의 강약(45–50초 부근 조용한 구간)이 섞여 효과음 크기가 들쭉날쭉하게 나온다. 그래서 효과음은 버스별 분석기로 따로 쟀다.
+### 조정 내용 (원본 재인코딩 0, 런타임 trim)
+
+| 파일 | file-based reference에서 본 문제(PHASE E 레벨) | trim |
+|---|---|---|
+| sfx/pc_on | 차고 노래보다 약 5 dB 큼 | ×0.41 |
+| sfx/radio_tune | 노래와 비슷 — UI로는 큼 | ×0.73 |
+| sfx/fridge_open | 노래보다 약 15 dB 작음(거의 안 들림) | ×3.8 |
+| sfx/lantern | 창고 음악보다 약 11 dB 작음 | ×2.6 |
+| sfx/game_start | 게임 음악보다 약 10 dB 작음 | ×2.7 |
+| sfx/shutter_open | 골목 공기보다 약 7 dB 작음 | ×1.8 |
+| sfx/momo_jump | 게임 음악보다 약 6 dB 큼 | ×0.59 |
+| sfx/poko_turn | 신호음 + 덕킹으로 약 5 dB 큼 | ×0.76 |
+| music/music_box | 다른 곡보다 6–9 dB 큼 | ×0.47 |
+| ambient.m4a(NIGHT) | 차고 노래보다 약 3 dB 큼 | ×0.72 |
+| ambience/playground_night | 밖 음악보다 큼 | ×0.39 |
+| 라디오 STATIC | (browser-rendered) 노래 방송국보다 큼 | 0.2 → 0.15 |
+| SFX 버스 | (browser-rendered) 물건 소리가 노래 위로 7–9 dB | 버스 0.8 |
+
+### PHASE F 런타임 균형 (browser-rendered, 현재 상태 확인용)
+
+SFX/UI 버스 피크 − 차고 노래의 평균 레벨(MUSIC 버스, 처음 30초):
+
+| | 값 |
+|---|---|
+| PC(UI) | +1.9 dB |
+| TV(UI) | +2.9 dB |
+| 냉장고(SFX) | +5.7 dB |
+| 캐비닛(SFX) | +5.3 dB |
+
+마스터 출력만으로 재면 노래 자체의 강약(45–50초 부근 조용한 구간)이 섞여 값이 흔들리므로, 효과음은 버스별로 따로 쟀다. 원본 파일을 정규화할 필요는 없었다. 최종 판단은 HUMAN LISTENING.
 
 ## LOOP — SOURCE ISSUE (이번에 편집하지 않음)
 
 | 파일 | 문제 |
 |---|---|
-| `ambient.m4a`(NIGHT) | 끝 0.43초 무음(−71 dB) 후 처음(−11.8 dB)으로 — 122초마다 끊겼다가 갑자기 시작. 루프용이 아니라 끝이 있는 곡 |
+| `ambient.m4a`(NIGHT) | **SOURCE ISSUE.** 끝 약 0.43초 무음(−71 dB) 후 처음(−11.8 dB)으로 바로 — 122초마다 끊겼다가 hard restart. 루프용이 아니라 끝이 있는 곡. 자르거나 재인코딩하지 않았다. **LISTEN B에서 반복점이 분명히 거슬리면 `REQUIRED AUDIO FIX`로 승격**(루프용 NIGHT 곡 또는 반복점 편집, 사용자 결정) |
 | `music/archive.m4a` | 이음매 샘플 점프가 주변의 6.4배(−15 dB 구간) — 약한 클릭 가능성 |
 | `ambience/alley.m4a` | 이음매 점프 4.9배지만 −27 dB의 조용한 잡음 — 들릴 가능성 낮음 |
 | 공통 | 브라우저의 AAC 루프는 인코더 프라이밍 때문에 완전 gapless가 아님(형식의 한계) |
@@ -205,13 +221,60 @@ SAFE TO REMOVE 0 · UNKNOWN 0.
 
 ## REAL BROWSER — 시나리오 A–D
 
-사람의 귀 대신, 실제 Chromium이 렌더하는 출력을 버스별 분석기로 50 ms마다 기록했다(`listen.mjs`). **음색 · "음악처럼 들리는가"의 최종 판단은 HUMAN LISTENING REQUIRED.**
+사람의 귀 대신, 실제 Chromium이 렌더하는 출력을 버스별 분석기로 50 ms마다 기록했다(`listen.mjs`). 이것은 자동 측정이다. **음색 · "음악처럼 들리는가" · 거슬림의 판단은 HUMAN LISTENING REQUIRED**(아래 체크리스트).
 
 | 시나리오 | 측정 결과 |
 |---|---|
-| A 진입 → ENTER → 30초 → 라디오 ON → 방송국 변경 → PC → TV → 냉장고 → 서랍 → 라디오 OFF | 음악 동시 최대 1곡(0.05초 간격). 차고 안 AMBIENT 버스 무음(차고 자체 환경음 없음 — 음악처럼 들리는 환경음 없음). 효과음은 노래 평균보다 UI +2–3 dB · SFX +5–6 dB. 마스터 기준 PC 피크: 전 +10.4 dB → 후 +6.1 dB(노래 강약 포함) |
+| A 진입 → ENTER → 30초 → 라디오 ON → 방송국 변경 → PC → TV → 냉장고 → 서랍 → 라디오 OFF | 음악 동시 최대 1곡(0.05초 간격). 차고 안 AMBIENT 버스 무음(차고 자체 환경음 없음 — 음악처럼 들리는 환경음 없음). 효과음은 노래 평균보다 UI +2–3 dB · SFX +5–6 dB(browser-rendered, 현재 균형 확인용) |
 | B 음소거 → PC · TV · 냉장고 · 라디오 · 서랍 | 새 재생 0, 컨텍스트 suspended, 렌더 0 |
 | C 라디오 ON → 닫기 → 열기 → 방송국 변경 × 5 | 플레이어 누적 없음, 방송국마다 레벨 일정(누적 증가 없음), 항상 1곡 |
 | D 터치(휴대폰 에뮬레이션) | ENTER 탭 전 재생 0, 소리 스위치를 켜도 골목에서 재생 0, 이후 모든 재생이 탭에서 시작 |
 
-WebKit(데스크톱)에서도 확인: 버스 연결됨 · 컨텍스트 running · 라디오 전환 · 음소거 시 suspended · 콘솔 오류 0. iOS Safari 실기기는 이 환경에서 검증할 수 없다(Xcode 없음). **iOS 실기기에서 레벨 차이 · 페이드 · 음소거 확인 필요(HUMAN).**
+## WebKit (데스크톱) — 별도 기록
+
+`?audiodebug`로 확인: 4버스 연결됨(routed) · AudioContext running · 차고 노래 → 라디오 NIGHT 전환에서 음악 1곡 · 음소거 시 컨텍스트 suspended · 음악 0 · 콘솔 오류 0.
+
+## DEVICE QA REQUIRED — iPhone Safari
+
+이 환경에서는 실기기를 쓸 수 없다(Xcode 없음). BLOCKER가 아니다. iPhone Safari에서 확인할 것:
+1. 효과음과 음악의 크기 차이가 데스크톱과 비슷한가(전에는 iOS가 volume을 무시해 모두 최대 크기였다).
+2. 라디오 켜기/끄기 · 방송국 바꾸기 때 페이드가 있는가(갑자기 끊기지 않는가).
+3. 음소거가 모든 소리를 끄는가.
+4. ENTER 전에 아무 소리도 나지 않는가.
+
+## HUMAN LISTENING CHECKLIST (3–5분)
+
+헤드폰 권장. 데스크톱 브라우저에서 사이트를 열고 오른쪽 위 소리 스위치를 켠다.
+
+**LISTEN A — 기본 차고**
+ENTER → 30초 가만히 듣기 → 냉장고 → 캐비닛 → PC → TV
+- [ ] 배경에 음악 두 개가 겹쳐 들리지 않는다(차고는 노래 하나 + 효과음뿐)
+- [ ] 냉장고 · 캐비닛 소리가 지나치게 크지 않다(들리기는 한다)
+- [ ] PC · TV 소리가 음악 위로 튀지 않는다
+
+**LISTEN B — RADIO**
+라디오 열기 → 켜기(NIGHT 91.7) → 다른 방송국(예: 88.1) → NIGHT 복귀 → 패널 닫기 → 다시 열기 → 끄기
+- [ ] 음악 두 곡이 겹치지 않는다
+- [ ] 방송국을 바꾸는 순간 두 곡이 동시에 들리지 않는다
+- [ ] 패널을 다시 열어도 음량이 커지지 않는다
+- [ ] NIGHT를 2분 넘게 틀어 두었을 때 반복점(약 0.4초 끊김 후 다시 시작)이 거슬리는가 → 거슬리면 `REQUIRED AUDIO FIX`
+
+**LISTEN C — SECRET STORAGE**
+별 3개로 비밀문 열기 → 비밀 창고 음악 듣기 → 오르골 열기 → 오르골 닫기
+- [ ] 창고 음악과 오르골이 겹치지 않는다
+- [ ] 오르골을 닫으면 창고 음악이 멈췄던 자리부터 자연스럽게 돌아온다
+
+**LISTEN D — MUTE**
+소리 스위치 끄기 → PC → TV → 냉장고 → 캐비닛 → 라디오
+- [ ] 단 하나의 소리도 나지 않는다
+
+결과에 따라서만 코드를 고친다. 결과가 없는 동안은 자동 측정상 안전한 지금 상태를 유지한다.
+
+## TEST
+
+| 순서 | 검사 | 결과 |
+|---|---|---|
+| 1–12 | targeted: 단위 `test/audio-f.test.ts` 11개(믹서 라우팅 · iOS 경로 · 버스/마스터 gain · 역할 표가 디스크의 37개와 일치 · trim 대상 존재 · 호버 소리 없음 · 방송국에 게임 곡 없음) + e2e `e2e/audio-f.spec.ts` 11개(제스처 전 무음 · MASTER mute · 음악 최대 1곡(오르골 포함) · 라디오 5회 재오픈 · 이중 트리거/동시 4개 · 버스 소속 · 탭 숨김 · 소리 스위치 기억 · 페이지 이동 정리 · reduced motion과 독립 · 터치 첫 탭 unlock · 콘솔 오류 0) | 단위 312 / 312 · e2e 11 / 11 |
+| 2 | 관련 audio/garage e2e(chromium, `8708923`): audio-f · audio · cinematic · archive · outside · sneak · delivery · living · garage-e · garage-d · garage · objects · props | **143 / 143** (27분) |
+| 3 | WebKit 확인(버스 · 컨텍스트 · 라디오 · 음소거 · 오류) | 정상 |
+| 최종 | GitHub 러너 전체 e2e | (진행 중) |
