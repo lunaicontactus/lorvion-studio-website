@@ -257,6 +257,8 @@ export interface GarageHandle {
    * ambient flickers, which may come and go underneath.
    */
   reactObject(id: string, on: boolean): void
+  /** The visitor opened this: somebody near may look over (PHASE E). */
+  crewNotice(id: string): string | null
   /** Where a thing is on screen right now, for whatever grows out of it. */
   screenRectOf(id: string): DOMRect | null
   /**
@@ -849,6 +851,12 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         // walking is a little more sound than one and never a drum roll.
         footsteps = new Footsteps({ play: (v) => audio.play('crew_step', v) })
         const steps = footsteps
+        // The middle of every thing, which a dokkaebi in front of it must not
+        // take a touch from (PHASE E): the central three fifths of each.
+        const keepClear = world.objects.map((o) => ({
+          x0: o.rect.x + o.rect.w * 0.2, x1: o.rect.x + o.rect.w * 0.8,
+          y0: o.rect.y + o.rect.h * 0.2, y1: o.rect.y + o.rect.h * 0.8,
+        }))
         crew = here.map((c, i) =>
           mountNpc(roomEl, c, portrait, {
             debug: params.get('npc') === 'debug',
@@ -872,9 +880,13 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
                 }
               })
             },
-            // The seed pins one route, so it goes to the one the tests watch.
-            ...(Number.isFinite(seed) && seed > 0 && i === 0
-              ? { random: seededRandom(seed) }
+            keepClear,
+            // The seed pins the routes. The first of the crew keeps the seed
+            // itself, so the route the older tests watch is unchanged; the
+            // others get their own from it (PHASE E), so a watched room
+            // plays the same way twice.
+            ...(Number.isFinite(seed) && seed > 0
+              ? { random: seededRandom(i === 0 ? seed : seed * 31 + i) }
               : {}),
           }))
         cast = new Stage(crew, {
@@ -1366,6 +1378,9 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       // Remember where the visitor was looking before we moved them.
       if (parked === null) parked = { x: camera.x, y: camera.y }
       camera.moveTo(obj.rect.x + obj.rect.w / 2, obj.rect.y + obj.rect.h / 2)
+    },
+    crewNotice(id: string): string | null {
+      return scenes?.visitorOpened(id) ?? null
     },
     setThingOpen(id: string, open: boolean): void {
       setOpen(id, open)

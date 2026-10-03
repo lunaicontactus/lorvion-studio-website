@@ -62,6 +62,10 @@ export class Stage {
     this.#clock += dt
     const here = this.#crew.filter((c) => !c.away)
     const away = this.#crew.filter((c) => c.away)
+    // Coming on and going off are walks, and they used to go past the
+    // walking budget: three crossing the floor at once, 4% of a watch
+    // (PHASE E). The stage waits for the floor to clear a little instead.
+    if (here.filter((c) => c.walking).length >= 2) return
 
     // Somebody due back.
     if (here.length < this.#present && away.length > 0 && this.#clock >= this.#returnAt) {

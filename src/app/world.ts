@@ -251,6 +251,9 @@ export function mountWorld(): () => void {
       garage?.reactObject(id, true)
       const sfx = REACT_SFX[id.replace(/^(poster|picture)-.*/, 'wall')]
       if (sfx) audio.play(sfx.name, sfx.volume)
+      // Somebody near it may look over first (PHASE E), before the room
+      // goes calm — a glance, and then back to what they were doing.
+      garage?.crewNotice(id)
       // The visitor comes first: whoever is standing at that thing moves off,
       // and nobody starts a new errand while it is open.
       for (const one of garage?.crew ?? []) {

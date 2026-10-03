@@ -50,6 +50,22 @@ export interface SitPoint {
   readonly weight: number
 }
 
+/**
+ * A box standing on the walkway: the radio, the parcel (SITE UPGRADE PHASE E).
+ * Feet between `x0` and `x1` further forward than `behind` would be inside
+ * it; a walker passing keeps to `behind` or further back, so the box is in
+ * front of its legs. Read off the world rect with the rule the living test
+ * already uses for standing places: across it (with a third of a half-body
+ * either side) and more than a third of a standing figure below its top is
+ * inside.
+ */
+export interface FloorObstacle {
+  readonly id: string
+  readonly x0: number
+  readonly x1: number
+  readonly behind: number
+}
+
 export interface NavGraph {
   /**
    * The band the feet stay inside — both lanes, not just the front one.
@@ -74,6 +90,8 @@ export interface NavGraph {
    */
   readonly speed: number
   readonly sits: readonly SitPoint[]
+  /** Boxes on the walkway, to be passed behind. */
+  readonly obstacles: readonly FloorObstacle[]
 }
 
 /**
@@ -156,6 +174,13 @@ const LANDSCAPE: NavGraph = {
     { id: 'by-the-bench', x: 1740, y: 1036, facing: 'front', weight: 2 },
     { id: 'right-boards', x: 2740, y: 1042, facing: 'left', weight: 1 },
   ],
+  // The radio (world rect 1258–1374 × 978–1080) and the parcel (3030–3160 ×
+  // 1004–1112). The parcel's line is a little further forward so the place
+  // beside it, where somebody summoned stands looking at it, stays outside.
+  obstacles: [
+    { id: 'radio', x0: 1241, x1: 1391, behind: 1026 },
+    { id: 'parcel', x0: 3013, x1: 3177, behind: 1065 },
+  ],
 }
 
 /**
@@ -196,6 +221,11 @@ const PORTRAIT: NavGraph = {
     // the booking is concerned: claiming the seat locked the floor beside it,
     // and looking up either by name found whichever came first.
     { id: 'left-cushion', x: 232, y: 1636, facing: 'right', weight: 1 },
+  ],
+  // The radio (405–481 × 1566–1633). The parcel is on the lower floor here,
+  // off the walkway.
+  obstacles: [
+    { id: 'radio', x0: 388, x1: 498, behind: 1614 },
   ],
 }
 

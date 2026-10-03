@@ -108,6 +108,15 @@ const CAUSES: Readonly<Record<string, Cause>> = {
   pcBeep: { about: 'pc', prefer: ['momo'], go: false },
 }
 
+/** The things whose opening somebody nearby looks up at (PHASE E). */
+const VISITOR_THINGS: readonly string[] = ['pc', 'tv', 'fridge', 'radio']
+/**
+ * How near, along the boards. Not closer than a body and a half to one side:
+ * somebody standing right at the thing is told to step aside, and turning to
+ * look at it from in front of it would be turning to look at the visitor.
+ */
+const VISITOR_REACH = { min: 140, max: 900 }
+
 /** How often the preferred one takes it over whoever is nearest. */
 const PREFERENCE = 0.8
 
@@ -222,6 +231,27 @@ export class CrewInteractions {
   yieldTo(objectId: string): void {
     this.#held = objectId
     if (this.#running?.objectId === objectId) this.#running = null
+  }
+
+  /**
+   * The visitor opened something (PHASE E). The one of the crew nearest it —
+   * near, free, and to one side of it rather than standing at it — looks
+   * over for a second, the way you look up when somebody switches the
+   * television on. One at most, never somebody busy with a job they would
+   * have to put down, and only for the things that make a sound or a light.
+   * Returns who looked, if anybody.
+   */
+  visitorOpened(objectId: string): string | null {
+    if (!VISITOR_THINGS.includes(objectId)) return null
+    const place = Object.values(this.#places ?? {}).find((p) => p?.objectId === objectId)
+    if (!place) return null
+    const who = this.#members
+      .filter((m) => m.openTo && m.state !== 'WORK'
+        && Math.abs(m.at.x - place.at.x) >= VISITOR_REACH.min
+        && Math.hypot(m.at.x - place.at.x, m.at.y - place.at.y) <= VISITOR_REACH.max)
+      .sort((a, b) => Math.abs(a.at.x - place.at.x) - Math.abs(b.at.x - place.at.x))[0]
+    if (!who) return null
+    return who.glanceAt(place.at, 1100 + this.#random() * 500) ? who.id : null
   }
 
   /** What the visitor has, if anything. */
@@ -353,7 +383,9 @@ export class CrewInteractions {
       .filter((p): p is Place => !!p && p.objectId !== this.#held)
     if (!screens.length) return
     const where = screens[Math.floor(this.#random() * screens.length) % screens.length]!
-    const who = this.#nearestOpen(where.at, NEAR.watcher)
+    // Not whoever is standing at it (PHASE E): from in front of a screen on
+    // the back wall a glance at it is a turn towards the visitor instead.
+    const who = this.#nearestOpen(where.at, NEAR.watcher, VISITOR_REACH.min)
     if (!who) return
     if (!who.glanceAt(where.at, 900 + this.#random() * 700)) return
     this.#begin('screen', [who.id], 1900, where.objectId)
@@ -369,7 +401,10 @@ export class CrewInteractions {
   #fridge(): void {
     const fridge = this.#places?.fridge
     if (!fridge?.spot || fridge.objectId === this.#held) return
-    const goer = this.#pick(this.#members.filter((m) => m.openTo && m.state !== 'WALK'))
+    // Somebody standing about, never somebody in the middle of a job or
+    // sitting down (PHASE E): the fridge is a reason to get up from nothing,
+    // and a job left for it is a job dropped.
+    const goer = this.#pick(this.#members.filter((m) => m.openTo && (m.state === 'IDLE' || m.state === 'LOOK')))
     if (!goer || !goer.summon(fridge.spot)) return
     const who = [goer.id]
     // One watcher, never two. Three of them round a fridge door is a queue.
@@ -398,9 +433,10 @@ export class CrewInteractions {
     return Math.hypot(a.at.x - b.at.x, a.at.y - b.at.y)
   }
 
-  #nearestOpen(to: { x: number; y: number }, within: number): InteractionMember | undefined {
+  #nearestOpen(to: { x: number; y: number }, within: number, aside = 0): InteractionMember | undefined {
     return this.#members
-      .filter((m) => m.openTo && Math.hypot(m.at.x - to.x, m.at.y - to.y) < within)
+      .filter((m) => m.openTo && Math.hypot(m.at.x - to.x, m.at.y - to.y) < within
+        && Math.abs(m.at.x - to.x) >= aside)
       .sort((a, b) =>
         Math.hypot(a.at.x - to.x, a.at.y - to.y) - Math.hypot(b.at.x - to.x, b.at.y - to.y))[0]
   }

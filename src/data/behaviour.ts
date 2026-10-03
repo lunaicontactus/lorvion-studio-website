@@ -20,11 +20,11 @@ const DEFAULT: BehaviourProfile = {
 }
 
 const PROFILES: Readonly<Record<string, BehaviourProfile>> = {
-  // Curious. The screen, the box that arrived, whatever machine is new. Goes
-  // to look at what everyone else is doing, and at the visitor.
+  // The maker (docs/CREW_REBOOT.md): the bench and the screen, and the box
+  // that arrived. First to say hello, and does not put the job down for long.
   momo: {
     idle: 3, wander: 5, work: 3, sit: 1, look: 4,
-    favours: ['pc', 'parcel'], pace: 1, idleFor: [2600, 8000], waveChance: 0.45,
+    favours: ['workbench', 'pc', 'parcel'], pace: 1, idleFor: [2600, 8000], waveChance: 0.45,
     workFor: [5000, 12000], sitFor: [7000, 15000],
     // Goes over to see what somebody else is doing. Usually says something.
     social: 0.8, stubborn: 0.1, talkative: 4, home: 'pc-front',

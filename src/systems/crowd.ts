@@ -80,6 +80,8 @@ const CROSSING = 150
  * are just doing them where they stand.
  */
 const WALKERS = 2
+/** How often a would-be second walker goes rather than waiting a beat. */
+const SECOND_WALKER = 0.3
 /** Near enough to say hello: a couple of body widths, close enough to pass. */
 const GREET_RADIUS = 320
 /** How often the crowd looks for a meeting worth having. */
@@ -186,6 +188,19 @@ export class Crowd {
     return this.walking.has(id) || this.walking.size < WALKERS
   }
 
+  /**
+   * May this one set off on an errand of its own now (PHASE E)? The first
+   * walker always may; a second only sometimes, and otherwise waits a beat
+   * and asks again. Two is the limit; one at a time is what the room should
+   * mostly look like, with the others at a job or resting. Forced walks —
+   * stepping aside for the visitor, coming on stage — do not ask.
+   */
+  maySetOff(id: string): boolean {
+    if (!this.mayWalk(id)) return false
+    if (this.walking.has(id) || this.walking.size === 0) return true
+    return this.random() < SECOND_WALKER
+  }
+
   startWalk(id: string): void {
     this.walking.add(id)
   }
@@ -204,7 +219,10 @@ export class Crowd {
    * is twitching.
    */
   mayFidget(id: string): boolean {
-    return this.fidgeting.has(id) || this.fidgeting.size < 2
+    // One while anybody is crossing the floor (PHASE E): a walker and a
+    // fidget is already two things moving, and the room's own ambience is
+    // the third.
+    return this.fidgeting.has(id) || this.fidgeting.size < (this.walking.size > 0 ? 1 : 2)
   }
 
   startFidget(id: string): void {

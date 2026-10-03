@@ -1,9 +1,10 @@
 /**
  * DOKKA CREW.
  *
- * Personality lives in these numbers, not in dialogue: Yomi drifts toward the
- * fridge, Nunu is asleep more often than not, Poko sits at the desk. A visitor
- * should be able to tell them apart by watching, without reading anything.
+ * Names, art and the one line the no-script fallback page shows. Who does
+ * what is the crew canon (docs/CREW_REBOOT.md); how that shows in the room is
+ * src/data/behaviour.ts and src/data/routines.ts. The activity weights, zones
+ * and click reactions below predate both and are not read by anything.
  */
 import type { CharacterConfig } from '@/types/character'
 
@@ -14,7 +15,7 @@ export const CHARACTERS: readonly CharacterConfig[] = [
     id: 'momo',
     name: 'MOMO',
     nameKo: '모모',
-    trait: 'Leads the crew. Collects small pretty things.',
+    trait: 'Makes things at the bench. First to say hello.',
     art: {
       front: `${ART}/momo_front.webp`,
       side: `${ART}/momo_side.webp`,
@@ -32,7 +33,7 @@ export const CHARACTERS: readonly CharacterConfig[] = [
     id: 'ruki',
     name: 'RUKI',
     nameKo: '루키',
-    trait: 'Never still. Drags the outdoors back in.',
+    trait: 'Repairs the machines. Says little; keeps noodles by the cushions.',
     art: {
       front: `${ART}/ruki_front.webp`,
       side: `${ART}/ruki_side.webp`,
@@ -50,7 +51,7 @@ export const CHARACTERS: readonly CharacterConfig[] = [
     id: 'yomi',
     name: 'YOMI',
     nameKo: '요미',
-    trait: 'Thinks about snacks. Is usually near one.',
+    trait: 'Opens the fridge, peers at the locked door. Touches first.',
     art: {
       front: `${ART}/yomi_front.webp`,
       side: `${ART}/yomi_side.webp`,
@@ -68,7 +69,7 @@ export const CHARACTERS: readonly CharacterConfig[] = [
     id: 'poko',
     name: 'POKO',
     nameKo: '포코',
-    trait: 'Builds the games. Rarely leaves the desk.',
+    trait: 'The television is its place. Looks before it acts.',
     art: {
       front: `${ART}/poko_front.webp`,
       side: `${ART}/poko_side.webp`,
@@ -86,7 +87,7 @@ export const CHARACTERS: readonly CharacterConfig[] = [
     id: 'nunu',
     name: 'NUNU',
     nameKo: '누누',
-    trait: 'Asleep. Will be asleep again shortly.',
+    trait: 'The big cushion is its place. In no hurry.',
     art: {
       front: `${ART}/nunu_front.webp`,
       side: `${ART}/nunu_side.webp`,
