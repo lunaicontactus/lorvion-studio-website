@@ -189,7 +189,7 @@ test.describe('the fridge, the cabinet and the door move as things', () => {
     await expect.poll(() => page.locator('[data-cabinet-drawer]').evaluate((el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).m42), { timeout: 3000 })
       .toBeGreaterThan(4)
     await expect(page.locator('[data-paper]')).toHaveCSS('opacity', '1')
-    await expect(page.locator('.file')).toHaveCount(5)
+    await expect(page.locator('.file:not(.file--case)')).toHaveCount(5)
     await page.keyboard.press('Escape')
     await expect(page.locator(panel)).toBeHidden()
 

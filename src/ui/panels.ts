@@ -530,7 +530,16 @@ export class Panels {
       const world = PROJECTS.find((p) => p.id === a.dataset['game'])?.world ?? null
       const on = (): void => this.#host.onWorldChange?.(world)
       const offWorld = (): void => this.#host.onWorldChange?.(null)
-      a.addEventListener('pointerenter', on)
+      // Pointed at means moved onto: the desktop opens where the PC was
+      // clicked, and an icon that merely appears under a resting cursor gets a
+      // hover it was never given. Only a pointer that moves lights the room.
+      a.addEventListener('pointermove', (e) => {
+        if ((e.movementX || e.movementY) && !a.matches('[data-lit]')) {
+          a.dataset['lit'] = ''
+          on()
+        }
+      })
+      a.addEventListener('pointerleave', () => { delete a.dataset['lit'] })
       a.addEventListener('focus', on)
       a.addEventListener('pointerleave', offWorld)
       a.addEventListener('blur', offWorld)
@@ -1011,7 +1020,7 @@ export class Panels {
       Panels.#furniture('cabinet', def, `
         ${Panels.#region(parts['doors']!, 'drawer drawer__folder', `
            <p class="drawer__label">사건 파일 · LIMINAL</p>
-           <ul class="drawer__files"><li class="file"><button class="file__tab file__tab--case" type="button" data-case-file>
+           <ul class="drawer__files"><li class="file file--case"><button class="file__tab file__tab--case" type="button" data-case-file>
              <span class="file__name">「${esc(LIMINAL_CASE_FILE.title)}」</span><span class="file__go" aria-hidden="true">›</span>
            </button></li></ul>
            <p class="drawer__label">서류철 · 고객지원과 약관</p>

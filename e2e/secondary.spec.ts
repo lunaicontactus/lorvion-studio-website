@@ -50,7 +50,7 @@ for (const vp of [
     test('the cabinet holds the paperwork, and every page is a real link', async ({ page }) => {
       await enter(page)
       await touch(page, 'cabinet')
-      await expect(page.locator('.file')).toHaveCount(5, { timeout: 6000 })
+      await expect(page.locator('.file:not(.file--case)')).toHaveCount(5, { timeout: 6000 })
       const wanted = [
         './support.html',
         './privacy.html',
@@ -226,7 +226,7 @@ test.describe('desktop', () => {
     await page.keyboard.press('Escape')
     await expect(page.locator(panel)).toBeHidden()
     await touch(page, 'cabinet')
-    await expect(page.locator('.file')).toHaveCount(5, { timeout: 6000 })
+    await expect(page.locator('.file:not(.file--case)')).toHaveCount(5, { timeout: 6000 })
     await page.goBack()
     await expect(page.locator(panel)).toBeHidden()
     await expect(page.locator('[data-garage]')).toBeVisible()

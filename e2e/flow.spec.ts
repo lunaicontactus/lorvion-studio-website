@@ -99,11 +99,12 @@ test.describe('desktop', () => {
     await enter(page)
     await touch(page, 'pc')
     await expect(page.locator('[data-game]')).toHaveCount(5, { timeout: 6000 })
-    // The works are the only list on the monitor: the site's mini-games are
-    // not on the PC.
+    // The works are the only programs on the desktop: the site's mini-games
+    // are not on the PC.
     for (const title of ['LUNAI', 'LIMINAL', 'WORM UP!', 'LUMIORA', 'RUBATO']) {
-      await expect(page.locator('.hub').last()).toContainText(title)
+      await expect(page.locator('[data-works]').last()).toContainText(title)
     }
+    await expect(page.locator('[data-works] .desk__icon--work')).toHaveCount(5)
     await page.goto('/works.html', { waitUntil: 'load' })
     await expect(page.locator('[data-record]')).toHaveCount(5)
   })

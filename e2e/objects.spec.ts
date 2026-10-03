@@ -242,7 +242,11 @@ test('a visitor who does not want motion still gets the whole thing', async ({ b
   await page.keyboard.press('Escape')
   await expect(page.locator(panel)).toBeHidden()
   await touch(page, 'tv')
-  // No warm-up: the first channel is simply on.
-  await expect(page.locator('[data-tv-news]')).toBeVisible({ timeout: 2000 })
+  // No warm-up: the first channel (LUNAI's) is simply on, and stays on the
+  // picture it opened with — nothing advances by itself.
+  await expect(page.locator('[data-tv-work="lunai"] .tvwork__frame')).toBeVisible({ timeout: 2000 })
+  const shown = await page.locator('.tvwork__frame').getAttribute('src')
+  await page.waitForTimeout(4000)
+  expect(await page.locator('.tvwork__frame').getAttribute('src')).toBe(shown)
   await context.close()
 })
