@@ -153,10 +153,11 @@
    the bottom, the way to its page. Nothing drawn for the TV. */
 .prop--tv .tvwork{position:absolute;inset:0;color:#fff;overflow:hidden}
 .prop--tv .tvwork__frames{position:absolute;inset:0;background:#0d1117}
-.prop--tv .tvwork__frame{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 35%;filter:brightness(.78);animation:tvFrameIn 520ms ease both}
+.prop--tv .tvwork__frame{position:absolute;inset:0 0 auto;width:100%;height:112%;object-fit:cover;object-position:center 35%;filter:brightness(.78);animation:tvFrameIn 520ms ease both}
 @keyframes tvFrameIn{from{opacity:0}to{opacity:1}}
 .prop--tv .tvwork__info{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:1fr auto;align-items:end;gap:.6cqi 2cqi;padding:10cqi 5cqi 4.4cqi;
-  background:linear-gradient(transparent,rgba(5,8,12,.82) 55%)}
+  /* Solid at the bottom: game captures carry their own subtitles there. */
+  background:linear-gradient(transparent,rgba(5,8,12,.9) 42%,rgba(5,8,12,.97))}
 .prop--tv .tvwork__name{grid-column:1;font:700 4.6cqi/1 var(--mono);letter-spacing:.14em}
 .prop--tv .tvwork__meta{grid-column:1;font-size:2.5cqi;opacity:.85;word-break:keep-all}
 .prop--tv .tvwork__go{grid-column:2;grid-row:1/3;align-self:end;display:inline-flex;align-items:center;min-height:44px;padding:0 2.6cqi;border-radius:999px;background:rgba(255,255,255,.2);color:#fff;font:700 2.2cqi/1 var(--mono);letter-spacing:.12em;text-decoration:none;white-space:nowrap}
