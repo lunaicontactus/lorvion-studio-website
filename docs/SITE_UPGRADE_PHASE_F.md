@@ -281,4 +281,6 @@ ENTER → 30초 가만히 듣기 → 냉장고 → 캐비닛 → PC → TV
 | 3 | WebKit 확인(버스 · 컨텍스트 · 라디오 · 음소거 · 오류) | 정상 |
 | 최종 1차 | GitHub 러너 전체 e2e, run 37120592388 (`ffb095e`) | 362 통과 · 1 실패(`delivery.spec:66`, 위 9번) |
 | 수정 후 | 단위 312 / 312 · delivery · audio-f(12개) · living · audio · sneak | 42 / 42 · 발소리 테스트 12회 반복 12 / 12 |
-| 최종 2차 | GitHub 러너 전체 e2e | (진행 중) |
+| 최종 2차 | **GitHub 러너 전체 e2e, run 37126843849 (`ea7681c`, verify만 · deploy skipped)** | **364 / 364** (1.1시간) · 단위 312 / 312 |
+
+상태: **READY FOR HUMAN LISTENING** — 위 체크리스트와 iPhone Safari 기기 확인이 남아 있다. PHASE F 완료 판정은 그 뒤.
