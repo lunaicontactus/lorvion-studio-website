@@ -19,3 +19,12 @@
 - `presentation.spec.ts:93` pc · tv 열고 닫기
 
 교훈: 로컬 게이트 전에 `uptime`으로 부하를 확인한다. 부하가 높으면 전체 게이트를 반복하지 않고 GitHub 러너로 넘긴다.
+
+## PHASE D 최종 기준 — 승인 2026-10-03
+
+- GitHub 러너 전체 e2e **346 / 346** (PR #17, run 37095402573, `5b58bf8`, verify만 · deploy skipped)
+- 단위 284 / 284
+- Secret Storage · 별 · 미니게임 · 기존 차고 기능 회귀 없음
+- PC(작품 바탕화면)와 TV(작품 채널) 역할 분리 유지
+- NEW_ASSET_REQUIRED 0
+- 라이브 배포 없음
