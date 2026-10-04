@@ -362,7 +362,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         const free = crew
           .filter((c) => !c.away && (c.state === 'IDLE' || c.state === 'LOOK' || c.state === 'CHOOSE_TARGET' || c.state === 'INTERACT'))
           .sort((a, b) => Math.abs(a.at.x - cx) - Math.abs(b.at.x - cx))
-        for (const one of free) if (Math.abs(one.at.x - cx) < 1100 && one.summon(spot)) break
+        for (const one of free) if (Math.abs(one.at.x - cx) < 1100 && one.summon(spot, true)) break
       }
     }
   }

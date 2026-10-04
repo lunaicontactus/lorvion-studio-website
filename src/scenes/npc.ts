@@ -124,8 +124,12 @@ export interface NpcHandle {
   readonly away: boolean
   /** Something happened at `from`: hop, and turn to look. */
   startle(from: { x: number; y: number }): void
-  /** Go and look at a thing. False when it is busy or away. */
-  summon(to: Waypoint): boolean
+  /**
+   * Go and look at a thing. False when it is busy or away, or when two are
+   * already walking and the room itself is asking. The visitor's own moment
+   * (opening the parcel) passes `forVisitor` and is not kept waiting.
+   */
+  summon(to: Waypoint, forVisitor?: boolean): boolean
   /** The visitor has just come in: notice them. */
   greetVisitor(): void
   /** Stop choosing and moving; the current pose is held. */
@@ -504,6 +508,8 @@ export function mountNpc(
   let lookAt: { x: number; y: number } | null = null
   /** Held up by the walking budget, with the errand still to run. */
   let waiting = false
+  /** What it is waiting to do is carry on, not start: the clock is not reset. */
+  let resuming = false
   /** How long it has been walking without getting anywhere. */
   let stuck = 0
   /**
@@ -601,6 +607,24 @@ export function mountNpc(
    * a beat and ask again — the errand is not cancelled, only deferred, which
    * is why a busy room still gets everything done, just not all at once.
    */
+  /**
+   * Carry on with a walk that stopped for a moment — a glance, a hello, a
+   * startle. Stopping gave its place in the budget back (go() ends the walk),
+   * so somebody else may have set off meanwhile; going on regardless was the
+   * third pair of feet on the floor the runner saw (PHASE F gate). Two is a
+   * hard limit, so this waits for a gap, but it does not roll for the second
+   * place again: the errand was already under way.
+   */
+  const resumeWalk = (): void => {
+    if (crowd && !crowd.mayWalk(id)) {
+      waiting = true
+      resuming = true
+      go('IDLE', 400 + rng() * 600)
+      return
+    }
+    beginWalk(true, false)
+  }
+
   const beginWalk = (force = false, fresh = true): void => {
     if (!force && crowd && !crowd.maySetOff(id)) {
       // Wait for a gap and go anyway. Throwing the errand away and rolling
@@ -614,6 +638,7 @@ export function mountNpc(
       return
     }
     waiting = false
+    resuming = false
     crowd?.startWalk(id)
     // Only a new errand starts the patience clock again. Carrying on after
     // standing aside for somebody is the same walk, and resetting it there is
@@ -943,10 +968,12 @@ export function mountNpc(
         // Still owed a trip that the budget held up. Take it now rather than
         // deciding again, or the errand never happens.
         if (waiting && target) {
-          beginWalk()
+          if (resuming) resumeWalk()
+          else beginWalk()
           return
         }
         waiting = false
+        resuming = false
         // Per idle spell, not per tick — this line is past the `wait` guard.
         // The crowd's budget and cooldowns do the real limiting; this only
         // decides which of them is the chatty one.
@@ -1080,7 +1107,7 @@ export function mountNpc(
           partner = null
           // Back to wherever it was going, if it was going anywhere.
           if (target) {
-            beginWalk(true, false)
+            resumeWalk()
           } else {
             pose('idle', 'front')
             go('IDLE', idleSpell())
@@ -1098,7 +1125,7 @@ export function mountNpc(
             const b = back
             back = null
             if (b.state === 'WALK') {
-              if (target) beginWalk(true, false)
+              if (target) resumeWalk()
               else go('IDLE', idleSpell())
             } else {
               pose(b.action, b.dir)
@@ -1112,9 +1139,9 @@ export function mountNpc(
 
       case 'GLANCE':
         // Stopped mid-walk. The errand is still on; carry on when the moment
-        // has passed, past the budget — the walk was already counted.
+        // has passed, once there is room on the floor (resumeWalk).
         if (wait <= 0) {
-          if (target) beginWalk(true, false)
+          if (target) resumeWalk()
           else go('IDLE', idleSpell())
         }
         return
@@ -1641,9 +1668,14 @@ export function mountNpc(
         go('REACT', 1300 + rng() * 600)
       }
     },
-    summon(to: Waypoint): boolean {
+    summon(to: Waypoint, forVisitor = false): boolean {
       if (still || away || state === 'PAUSED' || calm || !mayInterrupt('WALK')) return false
       if (crowd && !crowd.free(to.id, id)) return false
+      // The room's own reasons — a trip to the fridge, a look at a noise —
+      // wait for the floor like any errand. Summoned past the budget, these
+      // were the third pair of feet the runner kept catching (PHASE F gate);
+      // every caller takes no for an answer (a glance instead, or nobody).
+      if (!forVisitor && crowd && !crowd.mayWalk(id)) return false
       unbook()
       sitAt = null
       partner = null
