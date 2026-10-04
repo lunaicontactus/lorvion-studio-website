@@ -158,12 +158,15 @@ for (const size of SIZES) {
       const tab = page.locator('[data-case-file]')
       await expect(tab).toBeVisible()
       await fingertip('.prop--cabinet .file__tab')
-      // Reachable: nothing in the drawer lies over the tab.
-      const reach = await tab.evaluate((el) => {
+      // Reachable: nothing in the drawer lies over the tab — once the drawer
+      // has finished arriving. Read until it holds (a slow machine can still
+      // be moving the camera and the cut-out for a moment); what is over it,
+      // if anything stays over it, is named.
+      await expect.poll(() => tab.evaluate((el) => {
         const r = el.getBoundingClientRect()
-        return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('[data-case-file]') === el
-      })
-      expect(reach, 'the case tab is under something').toBe(true)
+        const at = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
+        return at?.closest('[data-case-file]') === el ? 'reachable' : `under ${at ? `${at.tagName.toLowerCase()}.${at.className}` : 'nothing (off screen)'}`
+      }), { message: 'the case tab is under something', timeout: 4000 }).toBe('reachable')
       if (size.hasTouch) await tab.tap()
       else await tab.click()
       const paper = page.locator('[data-paper="liminal-case"]')
