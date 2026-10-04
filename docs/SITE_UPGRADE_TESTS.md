@@ -49,3 +49,10 @@ run 37103634360(`eb9bd89`): 350 통과 · 2 실패.
 - 모바일 NPC-물건 가림 회귀 해결(양방향 클릭 검사)
 - reduced-motion 행동 정상화(자세만 변화, 클릭 후 원래 그림)
 - 라이브 배포 없음
+
+## PHASE F 이후 수정 (포스터 · 도깨비불 · 전환 · 냉장고 · 차고문) — `2dfabb2`
+
+- 관련 e2e 165 / 165 + outside · interaction 30 / 30, 단위 312 / 312
+- GitHub 러너 전체 e2e **364 / 364** (PR #17, run 37165639813, verify만 · deploy skipped)
+- 캡처: `docs/shots/postF/`
+- 라이브 배포 없음
