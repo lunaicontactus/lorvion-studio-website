@@ -119,6 +119,10 @@ function hangFrame(piece: Artwork, frame: WallFrame, rect: { w: number; h: numbe
     h = win.h
     w = h * aspect
   }
+  if (frame.fill?.max !== undefined && h > win.h / (1 - frame.fill.max)) {
+    h = win.h / (1 - frame.fill.max)
+    w = h * aspect
+  }
   const img = document.createElement('img')
   img.className = 'frame__img'
   img.src = wallSrc(piece)

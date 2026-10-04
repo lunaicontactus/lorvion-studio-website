@@ -32,11 +32,12 @@ export interface WallFrame {
   /**
    * Fill the window rather than sit in it (asked for after PHASE F): the
    * picture keeps its own shape — never stretched — and is cut only from the
-   * far side of `y` (0 keeps the top, 1 the bottom). For a picture whose
+   * far side of `y` (0 keeps the top, 1 the bottom), and never by more than
+   * `max` of its height when given (the rest stays mount). For a picture whose
    * shape leaves mount bars wide enough to read as a smaller print beside its
    * neighbours. At most 15% is cut (e2e/gallery.spec.ts).
    */
-  readonly fill?: { readonly y: number }
+  readonly fill?: { readonly y: number; readonly max?: number }
 }
 
 const F = '/assets/images/garage/frames'
@@ -76,6 +77,11 @@ export const WALL_FRAMES: Readonly<Record<string, WallFrame>> = {
     // Its key art is a touch narrower than this window; the mount is the deep
     // water at the picture's own edge, so the slivers read as mount.
     mat: '#1d4a66',
+    // Filled like WORM UP! beside it (asked for after PHASE F), but only by
+    // 9%: the logo starts 7% from the top and the line of small type ends
+    // 4.5% from the bottom, so the cut is the water above the one and the
+    // floor below the other, and the last slivers stay water-blue mount.
+    fill: { y: 0.55, max: 0.09 },
   },
 }
 
