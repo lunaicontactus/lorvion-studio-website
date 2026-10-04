@@ -165,6 +165,31 @@ for (const phone of [false, true]) {
   })
 }
 
+test.describe('STACKING — a dokkaebi drawn in front takes its own touch', () => {
+  test.use({ viewport: { width: 1440, height: 900 } })
+
+  // The runner once gave a touch on RUKI to the fridge: it had walked in at
+  // the back of the boards, drawn over the fridge's feet, while the fridge's
+  // touch layer stacked above it (its base, 977, reaches into the boards).
+  // Where anybody is standing is chance; the order is not, so it is read here.
+  test('nothing but the boxes on the walkway stacks over somebody at the back of the boards', async ({ page }) => {
+    await enter(page)
+    const got = await page.evaluate(() => {
+      // The room's own rule, read off a dokkaebi rather than restated.
+      const npc = [...document.querySelectorAll<HTMLElement>('.npc')].find((n) => /translate3d/.test(n.style.transform))!
+      const y = Number(/translate3d\((?:-?[\d.]+)px, (-?[\d.]+)px/.exec(npc.style.transform)![1])
+      const ownZ = Number(npc.style.zIndex)
+      const back = 100 + Math.round(960 / 8)
+      const over = [...document.querySelectorAll<HTMLElement>('.thing')]
+        .filter((t) => !['radio', 'parcel'].includes(t.dataset['object']!) && Number(t.style.zIndex) >= back)
+        .map((t) => `${t.dataset['object']} z${t.style.zIndex}`)
+      return { rule: ownZ === 100 + Math.round(y / 8), back, over }
+    })
+    expect(got.rule, 'a dokkaebi no longer stacks by its feet: this test reads the wrong rule').toBe(true)
+    expect(got.over, `over somebody standing at the back of the boards (z${got.back})`).toEqual([])
+  })
+})
+
 test.describe('MOBILE — 390×844', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 

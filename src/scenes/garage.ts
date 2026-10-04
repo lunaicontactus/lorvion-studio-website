@@ -548,6 +548,19 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       roomEl.append(spill)
     }
 
+    // A dokkaebi on the boards is drawn over the painted room, so a touch on
+    // one must not go to the furniture it is standing in front of. A thing
+    // whose base reaches into the boards (the fridge's feet, the door's
+    // step) takes its place in the stack from the back of the boards, under
+    // anybody standing on them; the boxes on the walkway keep their own
+    // base, because the crew really do pass behind those.
+    const nav = navFor(world.height > world.width)
+    const stackBase = (obj: (typeof world.objects)[number]): number => {
+      const base = obj.rect.y + obj.rect.h
+      if (nav.obstacles.some((b) => b.id === obj.id)) return base
+      return base > nav.floor.top && base <= nav.floor.bottom ? nav.floor.top - 8 : base
+    }
+
     // Zones are grouping in the data (src/data/world.ts), not elements: they
     // carry no pixels and no hit area, so nothing is built for them here.
     for (const obj of world.objects) {
@@ -576,7 +589,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         top: `${obj.rect.y - pad}px`,
         width: `${obj.rect.w + pad * 2}px`,
         height: `${obj.rect.h + pad * 2}px`,
-        zIndex: String(Math.min(699, 100 + Math.round((obj.rect.y + obj.rect.h) / 8))),
+        zIndex: String(depthOf(stackBase(obj))),
       })
 
       if (obj.outline) {
