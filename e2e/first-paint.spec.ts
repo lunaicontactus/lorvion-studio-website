@@ -169,21 +169,29 @@ test('the door is never shown open before the shutter arrives', async ({ page })
   })
   await page.goto('/', { waitUntil: 'commit' })
 
-  const readings: string[] = []
+  // Read against the page's own clock. The entrance shows whatever arrived
+  // once its deadline passes (1.6s after the script runs, src/scenes/alley.ts)
+  // so a slow image never leaves it blank; on a slow runner the 900ms hold
+  // can outlast that, and a reading after it is the fallback, not the bug.
+  // The clock starts at navigation, before the script, so anything read
+  // before 1600 is before the deadline too.
+  const readings: { r: string; at: number }[] = []
   for (let i = 0; i < 14; i++) {
     await page.waitForTimeout(90)
     const r = await page.evaluate(() => {
       const plate = document.querySelector('[data-alley-plate]')
       const shutter = document.querySelector<HTMLImageElement>('[data-alley-shutter-img]')
-      if (!plate || !shutter) return 'not built'
-      return `${Number(getComputedStyle(plate).opacity) > 0.02 ? 'shown' : 'held'}:${
+      if (!plate || !shutter) return { r: 'not built', at: performance.now() }
+      return { r: `${Number(getComputedStyle(plate).opacity) > 0.02 ? 'shown' : 'held'}:${
         shutter.complete ? 'shutter' : 'no-shutter'
-      }`
+      }`, at: performance.now() }
     })
     readings.push(r)
   }
+  const early = readings.filter((x) => x.at < 1600)
+  expect(early.length, 'too few looks before the deadline to say anything').toBeGreaterThanOrEqual(3)
   // Never shown while the shutter is still missing.
-  expect(readings.filter((r) => r === 'shown:no-shutter')).toEqual([])
+  expect(early.filter((x) => x.r === 'shown:no-shutter').map((x) => `${x.r}@${Math.round(x.at)}ms`)).toEqual([])
   // And it does appear.
   await expect(page.locator('[data-alley]')).toHaveClass(/alley--dressed/, { timeout: 4000 })
   await expect(page.locator('[data-alley-base]')).toBeVisible()
