@@ -66,8 +66,10 @@ export const OUTLINE_PATHS: Readonly<Record<OutlineShape, string>> = {
    * That step is what stops it reading as a rounded rectangle.
    */
   fridge:
-    'M0.125,0 H0.85 Q0.95,0 0.95,0.05 V0.95 H1 V0.975 Q1,1 0.96,1 ' +
-    'H0.04 Q0,1 0,0.975 V0.95 H0.025 V0.05 Q0.025,0 0.125,0 Z',
+    // Re-read after PHASE F, with the rect fitted to the painted fridge's
+    // own edges (it used to miss the right edge by thirty units).
+    'M0.1,0 H0.9 Q0.99,0 0.99,0.06 V0.95 Q0.99,0.975 0.95,0.975 ' +
+    'H0.05 Q0.01,0.975 0.01,0.95 V0.06 Q0.01,0 0.1,0 Z',
   /** The secret door: the arch springs a quarter of the way up. */
   arch: 'M0,1 V0.25 Q0,0 0.5,0 Q1,0 1,0.25 V1 Z',
   /** A chest of drawers. */

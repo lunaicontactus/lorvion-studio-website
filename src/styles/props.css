@@ -196,16 +196,35 @@
 
 /* ── Fridge: the doors swing, the inside is lit ───────────────────────── */
 .prop--fridge{perspective:1400px}
+/* The inside (after PHASE F): the cavity of this fridge, not a panel on it.
+   Its corners are the front face's own curve less the felt rim — 56px of the
+   cut-out's 560, so 14% of the cavity's width by 7.9% of its height — and it
+   is the warm dark of a felt box with the light off, deepest at the top
+   where the rim shades it. The felt divider sits where the two doors meet
+   (the cut-out's 0.42, 41% down the cavity), so the inside has the two
+   compartments the doors say it has. */
 .prop--fridge .fridge__inside{
-  background:linear-gradient(180deg,#3b2f26,#2c231c);border-radius:4% / 3%;overflow:hidden;
-  box-shadow:inset 0 0 0 2px #1f1813,inset 0 0 40px rgba(0,0,0,.6);
+  background:linear-gradient(180deg,#2c2119 0%,#251c15 55%,#1f1712 100%);
+  border-radius:14% / 7.9%;overflow:hidden;
+  box-shadow:inset 0 0 0 .5cqi rgba(20,12,8,.55),inset 0 4cqi 7cqi rgba(0,0,0,.55),inset 0 -1.5cqi 3cqi rgba(0,0,0,.35);
+}
+/* Shut, the doors are the front: the cavity reaches a little past their
+   edges (it is the opening, rim to rim) and would show as dark seams
+   between them. It is there from the moment they start to swing. */
+.prop--fridge:not(.is-open) .fridge__inside{visibility:hidden}
+.prop--fridge .fridge__inside::after{
+  content:"";position:absolute;left:0;right:0;top:41.2%;height:2.6%;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,#e2c9a0,#cdb08a);
+  box-shadow:0 .8cqi 1.6cqi rgba(0,0,0,.45),inset 0 -.25cqi 0 rgba(90,60,35,.35);
 }
 .prop--fridge .fridge__light{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 20%,rgba(255,240,200,.55),transparent 65%);opacity:0;transition:opacity 320ms ease 120ms}
 .prop--fridge.is-open .fridge__light{opacity:1}
-.prop--fridge .fridge__shelves{position:absolute;left:4%;right:4%;display:flex;gap:2%;justify-content:center;align-items:flex-end;list-style:none;margin:0;padding:0 0 1.5%;
+/* Laid out in the cavity's two compartments, with an even margin either
+   side now that the doors swing clear of it. */
+.prop--fridge .fridge__shelves{position:absolute;left:7%;right:7%;z-index:2;display:flex;gap:2%;justify-content:center;align-items:flex-end;list-style:none;margin:0;padding:0 0 1.5%;
   border-bottom:1.2cqi solid #d9cbb0;box-shadow:0 .6cqi 0 rgba(0,0,0,.35)}
-.prop--fridge .fridge__shelves--top{top:9%;height:26%}
-.prop--fridge .fridge__shelves--low{top:47%;height:34%}
+.prop--fridge .fridge__shelves--top{top:10%;height:27%}
+.prop--fridge .fridge__shelves--low{top:55%;height:30%}
 .prop--fridge .fridge__shelves li{flex:1 1 0;max-width:34%;min-width:0}
 .prop--fridge .chill{display:grid;justify-items:center;gap:.6cqi;width:100%;padding:.8cqi .4cqi;border:0;border-radius:1cqi;background:rgba(255,246,220,.08);color:#f6ecd8;cursor:pointer;min-height:44px}
 .prop--fridge .chill:hover,.prop--fridge .chill:focus-visible{background:rgba(255,246,220,.2)}
@@ -215,10 +234,23 @@
 .prop--fridge .fridge__say{position:absolute;left:5%;right:5%;bottom:3%;margin:0;padding:1.2cqi 1.6cqi;border-radius:.8cqi;background:rgba(255,246,220,.14);color:#f6ecd8;font-size:2.8cqi;line-height:1.4;text-align:center;min-height:1.4em;opacity:0}
 .prop--fridge .fridge__say.is-said{opacity:1;animation:said .2s}
 @keyframes said{from{transform:translateY(4px)}}
-.prop--fridge .fridge__door{transform-origin:100% 50%;transform:rotateY(0);transition:transform 520ms cubic-bezier(.3,.8,.3,1);backface-visibility:hidden;z-index:2}
+/* Each door hangs on its outer edge — the right, where the front meets the
+   side (the handles are on the left) — and swings out past square, the way
+   a fridge door does, so it never crosses the cavity. Past 90° it shows its
+   inside: a felt liner with the door's own shelf strips. */
+.prop--fridge .fridge__door{transform-origin:100% 50%;transform:rotateY(0);transition:transform 560ms cubic-bezier(.3,.8,.3,1);backface-visibility:hidden;transform-style:preserve-3d;z-index:3}
+.prop--fridge .fridge__liner{position:absolute;inset:0;transform:rotateY(180deg);backface-visibility:hidden;border-radius:12% / 9%;
+  background:
+    linear-gradient(180deg,transparent 30%,rgba(120,84,52,.35) 30%,rgba(120,84,52,.35) 34%,transparent 34%,transparent 66%,rgba(120,84,52,.35) 66%,rgba(120,84,52,.35) 70%,transparent 70%),
+    linear-gradient(180deg,#ead5b0,#dcc39b);
+  box-shadow:inset 0 0 0 1.2cqi rgba(205,176,136,.9),inset 0 0 2cqi rgba(80,52,30,.35)}
 .prop--fridge .fridge__door--lower{transition-delay:70ms}
-.prop--fridge.is-open .fridge__door{transform:rotateY(-72deg)}
-.prop--fridge .fridge__memo{position:absolute;left:6%;right:6%;top:37%;z-index:1;margin:0;padding:1.4cqi 1.8cqi;border-radius:.4cqi;background:#fff6c9;color:#4a3828;font-size:2.6cqi;line-height:1.4;
+/* Open: out past square to the right (after PHASE F; −72° crossed the
+   cavity and hid a third of it). A little less on a narrow screen, where
+   the swung door would otherwise reach past the window's edge. */
+.prop--fridge.is-open .fridge__door{transform:rotateY(-115deg)}
+@media (max-width:600px){.prop--fridge.is-open .fridge__door{transform:rotateY(-104deg)}}
+.prop--fridge .fridge__memo{position:absolute;left:8%;right:8%;top:45%;z-index:2;margin:0;padding:1.4cqi 1.8cqi;border-radius:.4cqi;background:#fff6c9;color:#4a3828;font-size:2.6cqi;line-height:1.4;
   transform:rotate(-1.5deg);box-shadow:0 2px 6px rgba(60,44,28,.25)}
 /* The memo is stuck on the inside wall, between the shelves, and reads once the doors are open. */
 
@@ -447,6 +479,14 @@
 .prop--outside-door .door__leaf{transform-origin:0 50%;transform:rotateY(0);transition:transform 640ms cubic-bezier(.3,.8,.3,1);z-index:2;backface-visibility:hidden;
   border-radius:45% 45% 3% 3% / 32% 32% 2% 2%}
 .prop--outside-door.is-open .door__leaf{transform:rotateY(-62deg)}
+/* Going through (after PHASE F): the door comes forward into its own dark
+   opening — the origin is set to the opening's middle as it starts
+   (src/app/world.ts) — easing in like a step forward, while the night
+   (styles/playground.css, .crossing.is-dusk) settles over it. */
+.panel-layer.is-open .prop--outside-door.is-entering{
+  transform:translate(calc(-50% + var(--tx,0px)),calc(-50% + var(--ty,0px))) scale(2.6);
+  transition:transform 1300ms cubic-bezier(.55,0,.8,.45),opacity 220ms ease;
+}
 
 /* Under the pointer nothing lifts twice: the thing in the room is the thing. */
 

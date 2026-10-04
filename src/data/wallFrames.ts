@@ -29,6 +29,14 @@ export interface WallFrame {
   readonly plate: Frac
   /** The felt round a picture that does not fill its window. */
   readonly mat: string
+  /**
+   * Fill the window rather than sit in it (asked for after PHASE F): the
+   * picture keeps its own shape — never stretched — and is cut only from the
+   * far side of `y` (0 keeps the top, 1 the bottom). For a picture whose
+   * shape leaves mount bars wide enough to read as a smaller print beside its
+   * neighbours. At most 15% is cut (e2e/gallery.spec.ts).
+   */
+  readonly fill?: { readonly y: number }
 }
 
 const F = '/assets/images/garage/frames'
@@ -54,6 +62,11 @@ export const WALL_FRAMES: Readonly<Record<string, WallFrame>> = {
     body: { x: 0.0074, y: 0.0622, w: 0.9851, h: 0.8386 },
     plate: { x: 0.1413, y: 0.8903, w: 0.7063, h: 0.1055 },
     mat: '#29304a',
+    // 9:16 in a 0.655 window: contained, it filled 86% of the width with
+    // navy bars either side and hung like a smaller print than LUNAI and
+    // LIMINAL. Filled, it loses the strip of soil under the worm's path at
+    // the bottom (about 14%); the logo and the worm stay.
+    fill: { y: 0 },
   },
   'lumiora-keyart': {
     src: `${F}/lumiora.webp`, w: 276, h: 482,

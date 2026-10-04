@@ -463,6 +463,18 @@ export function mountWorld(): () => void {
     crossing = true
     const quick = motion.reduced || o.instant === true
     audio.leaveRoom(quick ? 0 : OUT.dark + 500)
+    // Through the doorway (after PHASE F): the open door comes forward into
+    // its own dark opening, scaled from the middle of that opening, so the
+    // night that fills the screen is the night in the door rather than a
+    // layer laid over the room.
+    if (!quick) {
+      const prop = document.querySelector<HTMLElement>('.prop--outside-door')
+      const hole = prop?.querySelector<HTMLElement>('[data-dark]')
+      if (prop && hole) {
+        prop.style.transformOrigin = `${hole.offsetLeft + hole.offsetWidth / 2}px ${hole.offsetTop + hole.offsetHeight / 2}px`
+        prop.classList.add('is-entering')
+      }
+    }
     void dark(quick, OUT.dark, true).then(() => {
       interaction.dismiss({ instant: true })
       garageEl.hidden = true
@@ -513,7 +525,32 @@ export function mountWorld(): () => void {
     }
     audio.stopWorld(quick ? 0 : 500)
     audio.unloop('playground', quick ? 0 : 600)
-    void dark(quick).then(() => {
+    // Into the garage door (after PHASE F): the playground comes forward
+    // into the door's own leaves — the same box the hover and the camera use
+    // (src/data/playground.ts `visual`) — as the dark comes in.
+    const stage = playgroundEl.querySelector<HTMLElement>('[data-playground-stage]')
+    const leaves = playgroundEl.querySelector<HTMLElement>('[data-place="garage-door"] .spot__self')
+    if (!quick && stage && leaves) {
+      const s = stage.getBoundingClientRect()
+      const d = leaves.getBoundingClientRect()
+      const cx = d.left + d.width / 2
+      const cy = d.top + d.height / 2
+      stage.style.transformOrigin = `${cx - s.left}px ${cy - s.top}px`
+      // …and into the middle of the screen as it comes: the leaves' centre
+      // travels to the centre of the view while it grows.
+      stage.style.setProperty('--zx', `${(s.left + s.width / 2 - cx).toFixed(1)}px`)
+      stage.style.setProperty('--zy', `${(s.top + s.height / 2 - cy).toFixed(1)}px`)
+      playgroundEl.classList.add('is-leaving')
+      crossingEl?.classList.add('is-homeward')
+    }
+    void dark(quick, 760).then(() => {
+      playgroundEl.classList.remove('is-leaving')
+      crossingEl?.classList.remove('is-homeward')
+      if (stage) {
+        stage.style.transformOrigin = ''
+        stage.style.removeProperty('--zx')
+        stage.style.removeProperty('--zy')
+      }
       playgroundEl.hidden = true
       playground?.setPaused(true)
       document.body.classList.remove('is-outside')

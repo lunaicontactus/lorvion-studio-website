@@ -148,12 +148,45 @@ for (const view of VIEWS) {
         }).map((p) => p.dataset['place'])
         return { w: r.width, opacity: Number(cs.opacity), pointer: cs.pointerEvents, over }
       }))
-      expect(fires.length).toBeLessThanOrEqual(3)
+      // About four (asked for after PHASE F: two of three were hidden and
+      // three was too few), spread out.
+      expect(fires.length).toBeGreaterThanOrEqual(3)
+      expect(fires.length).toBeLessThanOrEqual(4)
       for (const f of fires) {
         expect(f.pointer).toBe('none')
         expect(f.opacity).toBeLessThan(0.7)
         expect(f.over, `a fire sits over ${f.over.join(',')}`).toEqual([])
       }
+      // And every one is seen: a fire under the foreground plate must stand
+      // where the plate is clear, read off the plate's own alpha.
+      const hidden = await page.evaluate(async () => {
+        const front = document.querySelector<HTMLImageElement>('.playground__front')!
+        await front.decode().catch(() => undefined)
+        const fb = front.getBoundingClientRect()
+        const c = document.createElement('canvas')
+        c.width = Math.round(fb.width)
+        c.height = Math.round(fb.height)
+        const g = c.getContext('2d')!
+        g.drawImage(front, 0, 0, c.width, c.height)
+        const out: string[] = []
+        for (const f of document.querySelectorAll<HTMLElement>('.playground__fire:not(.playground__fire--front)')) {
+          const r = f.getBoundingClientRect()
+          let covered = 0
+          let n = 0
+          for (let i = 1; i < 6; i++) {
+            for (let j = 2; j < 9; j++) {
+              const x = Math.round(r.left + (r.width * i) / 6 - fb.left)
+              const y = Math.round(r.top + (r.height * j) / 10 - fb.top)
+              n++
+              if (x < 0 || y < 0 || x >= c.width || y >= c.height) continue
+              if (g.getImageData(x, y, 1, 1).data[3]! > 128) covered++
+            }
+          }
+          if (covered / n > 0.2) out.push(`${f.dataset['fire']} ${Math.round((covered / n) * 100)}%`)
+        }
+        return out
+      })
+      expect(hidden, 'a fire is hidden behind the foreground').toEqual([])
     })
   })
 }

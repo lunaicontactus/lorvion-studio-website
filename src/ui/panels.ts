@@ -388,7 +388,19 @@ export class Panels {
     el.style.setProperty('--w', `${Math.round(w)}px`)
     el.style.setProperty('--tx', `${tx.toFixed(1)}px`)
     el.style.setProperty('--ty', `${ty.toFixed(1)}px`)
-    el.style.setProperty('--fs', '0.32')
+    if (def.body && at && at.height > 0) {
+      // Out of the painted thing (after PHASE F): its body starts at the
+      // thing's own height and over the thing's own middle.
+      const b = def.body
+      const fs = Math.max(0.08, Math.min(1, at.height / (w * ratio * b.h)))
+      const bx = (b.x + b.w / 2 - 0.5) * w * fs
+      const by = (b.y + b.h / 2 - 0.5) * w * ratio * fs
+      el.style.setProperty('--fx', `${(fx - bx).toFixed(1)}px`)
+      el.style.setProperty('--fy', `${(fy - by).toFixed(1)}px`)
+      el.style.setProperty('--fs', fs.toFixed(3))
+    } else {
+      el.style.setProperty('--fs', '0.32')
+    }
     el.classList.toggle('is-zoomed', w > availW || w * ratio > availH)
   }
 
@@ -408,11 +420,11 @@ export class Panels {
   }
 
   /** A slice of the cut-out, for a part that moves on its own (a door). */
-  static #slice(def: PropDef, part: Frac, cls: string, extra = ''): string {
+  static #slice(def: PropDef, part: Frac, cls: string, extra = '', inner = ''): string {
     const pos = (v: number, size: number): number => (size >= 1 ? 0 : (v / (1 - size)) * 100)
     return `<div class="prop__part ${cls}" style="left:${part.x * 100}%;top:${part.y * 100}%;width:${part.w * 100}%;height:${part.h * 100}%;`
       + `background-image:url('${def.art}');background-size:${(100 / part.w).toFixed(2)}% ${(100 / part.h).toFixed(2)}%;`
-      + `background-position:${pos(part.x, part.w).toFixed(2)}% ${pos(part.y, part.h).toFixed(2)}%" ${extra}></div>`
+      + `background-position:${pos(part.x, part.w).toFixed(2)}% ${pos(part.y, part.h).toFixed(2)}%" ${extra}>${inner}</div>`
   }
 
   /** A region of the cut-out to lay content into. */
@@ -928,8 +940,8 @@ export class Panels {
            ${memo ? `<p class="fridge__memo" data-fridge-memo="${memo.id}">${esc(memo.description)}</p>` : ''}
            <ul class="fridge__shelves fridge__shelves--low">${lower.map(tile).join('')}</ul>
            <p class="fridge__say" data-fridge-say aria-live="polite"></p>`, 'data-fridge')}
-        ${Panels.#slice(def, parts['upper']!, 'fridge__door fridge__door--upper', 'data-fridge-door="upper"')}
-        ${Panels.#slice(def, parts['lower']!, 'fridge__door fridge__door--lower', 'data-fridge-door="lower"')}
+        ${Panels.#slice(def, parts['upper']!, 'fridge__door fridge__door--upper', 'data-fridge-door="upper"', '<span class="fridge__liner" aria-hidden="true"></span>')}
+        ${Panels.#slice(def, parts['lower']!, 'fridge__door fridge__door--lower', 'data-fridge-door="lower"', '<span class="fridge__liner" aria-hidden="true"></span>')}
 `,
       ),
       { id: 'fridge', def },

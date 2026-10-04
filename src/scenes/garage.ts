@@ -91,6 +91,7 @@ function hangFrame(piece: Artwork, frame: WallFrame, rect: { w: number; h: numbe
   sheet.className = 'frame'
   sheet.dataset['artwork'] = piece.id
   sheet.dataset['mount'] = piece.mount
+  if (frame.fill) sheet.dataset['fill'] = String(frame.fill.y)
   sheet.setAttribute('aria-hidden', 'true')
   // The felt below the ornament, as fractions of the frame: what has to cover
   // the painted poster underneath (checked in e2e/gallery.spec.ts).
@@ -109,11 +110,12 @@ function hangFrame(piece: Artwork, frame: WallFrame, rect: { w: number; h: numbe
   Object.assign(mount.style, {
     left: `${win.x}px`, top: `${win.y}px`, width: `${win.w}px`, height: `${win.h}px`, background: frame.mat,
   })
-  // Contain: the largest box at the picture's own shape that fits the window.
+  // Contain: the largest box at the picture's own shape that fits the window
+  // — or, for a frame that asks to be filled, the smallest that covers it.
   const aspect = aspectOf(piece)
   let w = win.w
   let h = w / aspect
-  if (h > win.h) {
+  if (frame.fill ? h < win.h : h > win.h) {
     h = win.h
     w = h * aspect
   }
@@ -123,7 +125,9 @@ function hangFrame(piece: Artwork, frame: WallFrame, rect: { w: number; h: numbe
   img.alt = ''
   img.decoding = 'async'
   Object.assign(img.style, {
-    left: `${(win.w - w) / 2}px`, top: `${(win.h - h) / 2}px`, width: `${w}px`, height: `${h}px`,
+    left: `${(win.w - w) / 2}px`,
+    top: `${frame.fill ? (win.h - h) * frame.fill.y : (win.h - h) / 2}px`,
+    width: `${w}px`, height: `${h}px`,
   })
   mount.append(img)
 

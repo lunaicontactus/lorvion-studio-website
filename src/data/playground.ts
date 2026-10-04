@@ -34,6 +34,13 @@ export interface Fire {
   /** Seconds, so no two breathe together. */
   readonly period: number
   readonly phase: number
+  /**
+   * Drawn over the foreground plate rather than under it. The plate covers
+   * most of the lower half of the picture — lanterns, bushes, fences — and a
+   * fire placed among them under it is a fire nobody sees (two of the three
+   * were 98% and 100% hidden). These float in front of the plants instead.
+   */
+  readonly front?: boolean
 }
 
 export interface PlaygroundLayout extends SceneLayout {
@@ -46,7 +53,12 @@ const PLACES_LANDSCAPE: readonly Place[] = [
   { id: 'snack-stall', label: '간식 노점', caption: '간식 노점 · 야식 심부름', rect: { x: 610, y: 205, w: 380, h: 175 }, game: 'snack' },
   { id: 'parcel-office', label: '택배 사무소', caption: '택배 사무소 · 모모의 택배 배달', rect: { x: 1250, y: 160, w: 400, h: 250 }, game: 'parcel' },
   { id: 'signpost', label: '이정표', caption: '이정표', rect: { x: 415, y: 615, w: 90, h: 110 } },
-  { id: 'garage-door', label: '차고로 돌아가기', caption: '차고 문 · 돌아가기', rect: { x: 700, y: 540, w: 330, h: 220 } },
+  // The hit area takes in the toolbox and the notice beside the door, which
+  // is fine for a finger. What comes forward under it, what the camera
+  // centres on and what the way home zooms into is the door itself: the two
+  // leaves, beam to threshold — not the transom, the lamp, the posts or the
+  // floor (measured off the plate at 3x, after PHASE F).
+  { id: 'garage-door', label: '차고로 돌아가기', caption: '차고 문 · 돌아가기', rect: { x: 700, y: 540, w: 330, h: 220 }, visual: { x: 710, y: 598, w: 213, h: 152 } },
 ]
 
 const PLACES_PORTRAIT: readonly Place[] = [
@@ -54,7 +66,7 @@ const PLACES_PORTRAIT: readonly Place[] = [
   { id: 'snack-stall', label: '간식 노점', caption: '간식 노점 · 야식 심부름', rect: { x: 235, y: 565, w: 360, h: 165 }, game: 'snack' },
   { id: 'parcel-office', label: '택배 사무소', caption: '택배 사무소 · 모모의 택배 배달', rect: { x: 700, y: 445, w: 240, h: 195 }, game: 'parcel' },
   { id: 'signpost', label: '이정표', caption: '이정표', rect: { x: 100, y: 1120, w: 90, h: 105 } },
-  { id: 'garage-door', label: '차고로 돌아가기', caption: '차고 문 · 돌아가기', rect: { x: 345, y: 1030, w: 270, h: 240 } },
+  { id: 'garage-door', label: '차고로 돌아가기', caption: '차고 문 · 돌아가기', rect: { x: 345, y: 1030, w: 270, h: 240 }, visual: { x: 364, y: 1108, w: 201, h: 137 } },
 ]
 
 export const PLAYGROUND_LANDSCAPE: PlaygroundLayout = {
@@ -66,13 +78,17 @@ export const PLAYGROUND_LANDSCAPE: PlaygroundLayout = {
   // three buildings are in the first view with it.
   start: { x: 865, y: 470 },
   places: PLACES_LANDSCAPE,
-  // Three, at the edges: over the water on the left, in the bushes below
-  // the parcel office's steps, by the waterfall on the right. Never over a
-  // building, a doorway or the path.
+  // Four, spread across the picture and never over a building, a doorway
+  // or the path: above the left lantern by the signpost steps, by the little
+  // lantern on the left fence, in the bushes below the parcel office's
+  // steps, and by the right lantern over the fence. Each one checked against
+  // the foreground plate's alpha (e2e/interaction.spec.ts): either clear of
+  // it, or drawn in front of it.
   fires: [
-    { x: 185, y: 515, scale: 1, period: 6.2, phase: 0 },
+    { x: 250, y: 485, scale: 0.9, period: 6.2, phase: 0, front: true },
+    { x: 560, y: 470, scale: 0.72, period: 7.0, phase: 1.3 },
     { x: 1180, y: 440, scale: 0.8, period: 7.4, phase: 2.1 },
-    { x: 1585, y: 560, scale: 0.65, period: 5.6, phase: 3.7 },
+    { x: 1470, y: 560, scale: 0.85, period: 5.6, phase: 3.7, front: true },
   ],
 }
 
@@ -82,10 +98,12 @@ export const PLAYGROUND_PORTRAIT: PlaygroundLayout = {
   foreground: `${ART}/foreground.webp`,
   start: { x: 470, y: 1090 },
   places: PLACES_PORTRAIT,
+  // Inside the phone's first view (world x ≈ 84–856), not at its edges.
   fires: [
-    { x: 70, y: 545, scale: 0.85, period: 6.2, phase: 0 },
-    { x: 870, y: 1080, scale: 0.8, period: 7.4, phase: 2.1 },
-    { x: 780, y: 1000, scale: 0.6, period: 5.6, phase: 3.7 },
+    { x: 160, y: 560, scale: 0.85, period: 6.2, phase: 0 },
+    { x: 600, y: 900, scale: 0.7, period: 7.0, phase: 1.3 },
+    { x: 790, y: 1060, scale: 0.8, period: 7.4, phase: 2.1 },
+    { x: 240, y: 1350, scale: 0.8, period: 5.6, phase: 3.7, front: true },
   ],
 }
 

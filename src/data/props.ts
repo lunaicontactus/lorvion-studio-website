@@ -38,6 +38,15 @@ export interface PropDef {
    * about the thing picked (the shelf's note goes there, not over the shelf).
    */
   readonly reserveBelow?: number
+  /**
+   * The part of the cut-out that is the thing as painted in the room (after
+   * PHASE F). Given, the cut-out opens out of the painted thing itself — that
+   * part starts at the thing's own height on screen and over its own middle —
+   * rather than out of the middle of its hit area at a fixed third of its
+   * size. The fridge's felt horns and feet, the door's carved arch, are not
+   * in the painting and are not what it grows from.
+   */
+  readonly body?: Frac
 }
 
 const G = '/assets/images/garage'
@@ -59,8 +68,12 @@ export const PROPS: Readonly<Record<string, PropDef>> = {
   },
   fridge: {
     art: `${G}/fridge.webp`, w: 560, h: 870,
-    // Both doors: the inside is what shows when they swing.
-    surface: { x: 0.04, y: 0.1, w: 0.72, h: 0.78 },
+    // The cavity behind both doors (after PHASE F, measured off the cut-out):
+    // the front face — x 0.01–0.78, y 0.065–0.92, its corners a 73px curve —
+    // inset by an even felt rim of 17px (0.03 of the width) all round.
+    surface: { x: 0.04, y: 0.084, w: 0.71, h: 0.816 },
+    // The fridge without its horns and feet (measured off the cut-out's alpha).
+    body: { x: 0.005, y: 0.078, w: 0.988, h: 0.853 },
     min: { w: 260, h: 300 },
     parts: {
       upper: { x: 0.02, y: 0.09, w: 0.76, h: 0.32 },
@@ -113,6 +126,8 @@ export const PROPS: Readonly<Record<string, PropDef>> = {
     art: `${G}/secret_door.webp`, w: 560, h: 660,
     surface: { x: 0.26, y: 0.32, w: 0.45, h: 0.54 },
     min: { w: 220, h: 260 },
+    // The painted door in the room is the leaf; the carved arch is the cut-out's.
+    body: { x: 0.26, y: 0.32, w: 0.45, h: 0.54 },
     parts: {
       leaf: { x: 0.26, y: 0.32, w: 0.45, h: 0.54 },
     },

@@ -50,7 +50,7 @@ async function enter(page: Page): Promise<void> {
 
 /** Every hung piece: what it is, the shape drawn, the shape decoded, its window. */
 async function prints(page: Page): Promise<{
-  id: string; drawn: number; natural: number; inside: boolean; src: string
+  id: string; drawn: number; natural: number; inside: boolean; src: string; fill: number | null; shown: number; top: number
 }[]> {
   return page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-artwork]')].map((sheet) => {
     // In a felt frame the picture sits in the window's mount; in the wooden
@@ -68,6 +68,15 @@ async function prints(page: Page): Promise<{
         && img.offsetLeft + img.offsetWidth <= box.offsetWidth + 1
         && img.offsetTop + img.offsetHeight <= box.offsetHeight + 1,
       src: img.getAttribute('src') ?? '',
+      // A frame that fills its window (data-fill): how much of the picture
+      // shows, and where it is cut from.
+      fill: sheet.dataset['fill'] !== undefined ? Number(sheet.dataset['fill']) : null,
+      shown: (() => {
+        const w = Math.min(img.offsetLeft + img.offsetWidth, box.offsetWidth) - Math.max(img.offsetLeft, 0)
+        const h = Math.min(img.offsetTop + img.offsetHeight, box.offsetHeight) - Math.max(img.offsetTop, 0)
+        return (Math.max(0, w) * Math.max(0, h)) / Math.max(1, img.offsetWidth * img.offsetHeight)
+      })(),
+      top: img.offsetTop,
     }
   }))
 }
@@ -89,13 +98,21 @@ for (const view of [
       }
     })
 
-    test('no picture on the wall is cropped, whatever shape it is', async ({ page }) => {
+    test('no picture on the wall is cropped, whatever shape it is — unless its frame asks to be filled, and then barely', async ({ page }) => {
       await enter(page)
       for (const p of await prints(page)) {
         expect(p.natural, `${p.id} never decoded`).toBeGreaterThan(0)
+        // Never stretched, filled or not.
         expect(Math.abs(p.drawn - p.natural) / p.natural, `${p.id} is not its own shape`)
           .toBeLessThan(0.03)
-        expect(p.inside, `${p.id} hangs off its own paper`).toBe(true)
+        if (p.fill === null) {
+          expect(p.inside, `${p.id} hangs off its own paper`).toBe(true)
+          continue
+        }
+        // Filled (WORM UP!, asked for after PHASE F): most of it shows, and
+        // the cut is on the side it asked for — y 0 keeps the top (the logo).
+        expect(p.shown, `${p.id} loses too much to fill its window`).toBeGreaterThan(0.85)
+        if (p.fill === 0) expect(Math.abs(p.top), `${p.id} is cut at the top`).toBeLessThan(1.5)
       }
     })
 

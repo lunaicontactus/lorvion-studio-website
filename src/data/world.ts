@@ -59,7 +59,7 @@ export const DESKTOP_WORLD: WorldLayout = {
     { id: 'cabinet', label: 'Records', zone: 'archive', kind: 'storage', enabled: true, action: { kind: 'panel', panelId: 'cabinet' }, rect: { x: 850, y: 761, w: 143, h: 130 }, outline: 'cabinet', inMenu: true },
     { id: 'pc', label: 'Works', zone: 'mainDesk', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'pc' }, rect: { x: 1462, y: 563, w: 233, h: 200 }, outline: 'monitor', inMenu: true },
     { id: 'workbench', label: 'Work in progress', zone: 'workbench', kind: 'desk', enabled: true, action: { kind: 'panel', panelId: 'building' }, rect: { x: 2048, y: 256, w: 274, h: 344 }, outline: 'rect', inMenu: true },
-    { id: 'fridge', label: 'Fridge', zone: 'fridgeArea', kind: 'appliance', enabled: true, action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 2362, y: 573, w: 200, h: 397 }, outline: 'fridge' },
+    { id: 'fridge', label: 'Fridge', zone: 'fridgeArea', kind: 'appliance', enabled: true, action: { kind: 'panel', panelId: 'fridge' }, rect: { x: 2344, y: 565, w: 252, h: 412 }, outline: 'fridge' },
     { id: 'tv', label: 'EUNGARAGE TV', zone: 'tvArea', kind: 'screen', enabled: true, action: { kind: 'panel', panelId: 'tv' }, rect: { x: 2680, y: 585, w: 305, h: 203 }, outline: 'tv', inMenu: true },
     { id: 'outside-door', label: 'Outside door', zone: 'secretDoor', kind: 'door', enabled: true, action: { kind: 'panel', panelId: 'outside' }, rect: { x: 3212, y: 603, w: 210, h: 372 }, outline: 'arch' },
     // Not in the painting: the radio, on the floor at the end of NUNU's rug,

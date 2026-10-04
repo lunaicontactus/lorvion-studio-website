@@ -113,10 +113,15 @@ for (const view of [
       const arrivedAt = await page.evaluate(() => performance.now())
       expect(arrivedAt - t0, 'the way out was a jump cut').toBeGreaterThan(3500)
       expect(arrivedAt - t0, 'the way out dragged').toBeLessThan(6000)
-      // The world outside: five places, three fires, the foreground over all.
+      // The world outside: five places, about four fires, the foreground over all.
       await expect(page.locator('.spot')).toHaveCount(5)
       expect(await page.locator('.playground__fire').count()).toBeGreaterThanOrEqual(2)
       expect(await page.locator('.playground__fire').count()).toBeLessThanOrEqual(4)
+      // Every fire in the first view, where the visitor arrives.
+      const outOfView = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.playground__fire')]
+        .filter((f) => { const r = f.getBoundingClientRect(); const cx = r.left + r.width / 2; const cy = r.top + r.height / 2; return cx < 0 || cx > innerWidth || cy < 0 || cy > innerHeight })
+        .map((f) => f.dataset['fire']))
+      expect(outOfView, 'fires outside the first view').toEqual([])
       await expect(page.locator('.playground__front')).toBeVisible()
       // 4. The sound crossed with it: the room's music down and paused, the
       // playground's up from silence.

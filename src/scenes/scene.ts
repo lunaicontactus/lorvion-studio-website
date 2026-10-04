@@ -24,6 +24,12 @@ export interface ScenePlace {
   /** What the label under the pointer says. */
   readonly caption: string
   readonly rect: { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
+  /**
+   * The thing as painted, where the hit area is bigger than it (after PHASE
+   * F). The finger keeps the whole `rect`; what comes forward under the
+   * pointer, what the camera centres on and what its name sits over is this.
+   */
+  readonly visual?: { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
 }
 
 export interface SceneLayout {
@@ -137,16 +143,22 @@ export function mountScene<L extends SceneLayout>(root: ParentNode, opts: SceneO
       // The place itself, as the painting: the same plate again over its
       // own pixels, its edges softened, so under the pointer the building
       // comes a little forward and brightens — never a ring round a box.
+      // The painted thing's own box where one is given, inside the hit area.
+      const v = p.visual ?? p.rect
+      const vx = pad + v.x - p.rect.x
+      const vy = pad + v.y - p.rect.y
       const self = document.createElement('span')
       self.className = 'spot__self'
       self.setAttribute('aria-hidden', 'true')
-      Object.assign(self.style, { left: `${pad}px`, top: `${pad}px`, width: `${p.rect.w}px`, height: `${p.rect.h}px` })
-      self.style.setProperty('--lift', (1 + Math.min(0.035, 6 / Math.max(p.rect.w, p.rect.h))).toFixed(4))
+      Object.assign(self.style, { left: `${vx}px`, top: `${vy}px`, width: `${v.w}px`, height: `${v.h}px` })
+      self.style.setProperty('--lift', (1 + Math.min(0.035, 6 / Math.max(v.w, v.h))).toFixed(4))
+      // A painted thing of its own comes forward from its own middle.
+      if (p.visual) self.style.transformOrigin = '50% 50%'
       const paint = document.createElement('span')
       paint.className = 'spot__paint'
       paint.style.backgroundImage = `url('${layout.plate}')`
       paint.style.backgroundSize = `${layout.width}px ${layout.height}px`
-      paint.style.backgroundPosition = `${-p.rect.x}px ${-p.rect.y}px`
+      paint.style.backgroundPosition = `${-v.x}px ${-v.y}px`
       self.append(paint)
       el.append(self)
       // A ring that is never shown at rest or under the pointer: the archive
@@ -154,12 +166,14 @@ export function mountScene<L extends SceneLayout>(root: ParentNode, opts: SceneO
       const ring = document.createElement('span')
       ring.className = 'spot__ring'
       ring.setAttribute('aria-hidden', 'true')
-      Object.assign(ring.style, { left: `${pad}px`, top: `${pad}px`, width: `${p.rect.w}px`, height: `${p.rect.h}px` })
+      Object.assign(ring.style, { left: `${vx}px`, top: `${vy}px`, width: `${v.w}px`, height: `${v.h}px` })
       el.append(ring)
       const caption = document.createElement('span')
       caption.className = 'spot__label'
       caption.setAttribute('aria-hidden', 'true')
       caption.textContent = p.caption
+      // Its name over the painted thing, not over the middle of the hit area.
+      if (p.visual) caption.style.left = `${vx + v.w / 2}px`
       el.append(caption)
       el.addEventListener('click', (e) => {
         e.stopPropagation()
@@ -294,8 +308,9 @@ export function mountScene<L extends SceneLayout>(root: ParentNode, opts: SceneO
     if (!t?.classList.contains(spotClass) || paused) return
     const p = layout.places.find((q) => q.id === t.dataset['place'])
     if (!p) return
-    const cx = p.rect.x + p.rect.w / 2
-    const cy = p.rect.y + p.rect.h / 2
+    const fv = p.visual ?? p.rect
+    const cx = fv.x + fv.w / 2
+    const cy = fv.y + fv.h / 2
     const inView = cx >= camera.viewX + 40 && cx <= camera.viewX + viewW - 40
       && cy >= camera.viewY + 40 && cy <= camera.viewY + viewH - 40
     if (!inView) camera.moveTo(cx, cy)
@@ -359,7 +374,8 @@ export function mountScene<L extends SceneLayout>(root: ParentNode, opts: SceneO
       const p = layout.places.find((q) => q.id === id)
       if (!p) return
       if (parked === null) parked = { x: camera.x, y: camera.y }
-      camera.moveTo(p.rect.x + p.rect.w / 2, p.rect.y + p.rect.h / 2)
+      const v = p.visual ?? p.rect
+      camera.moveTo(v.x + v.w / 2, v.y + v.h / 2)
     },
     driftTo(x: number, y: number): void {
       camera.moveTo(x, y)
@@ -373,7 +389,9 @@ export function mountScene<L extends SceneLayout>(root: ParentNode, opts: SceneO
       parked = null
     },
     screenRectOf(id: string): DOMRect | null {
-      return worldEl.querySelector(`[data-place="${id}"]`)?.getBoundingClientRect() ?? null
+      // The painted thing, not the looser hit area round it.
+      const el = worldEl.querySelector(`[data-place="${id}"]`)
+      return (el?.querySelector('.spot__self') ?? el)?.getBoundingClientRect() ?? null
     },
     setActive(id: string | null): void {
       for (const el of worldEl.querySelectorAll<HTMLElement>(`.${spotClass}`)) {

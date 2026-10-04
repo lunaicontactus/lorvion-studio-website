@@ -128,6 +128,7 @@
   transform-origin:50% 90%;
   animation:fire-float 10s ease-in-out infinite;
 }
+.playground__fire--front{z-index:41}
 @keyframes fire-float{
   0%{translate:0 0}
   50%{translate:3px -6px}
@@ -166,16 +167,15 @@
 /* The way out (WORLD 2.1): the night is blue, not black, and the doorway's
    warm light is still in the middle of it, fading as the dark settles. */
 .crossing.is-dusk{
-  background:
-    radial-gradient(ellipse 34% 42% at 50% 60%,rgba(255,196,128,.34),rgba(255,196,128,0) 70%),
-    linear-gradient(180deg,#0c0e22 0%,#161a36 55%,#1c2140 100%);
+  /* No glow of its own any more (after PHASE F): a lit ellipse fixed to the
+     middle of the screen read as a layer floating over the room, wherever
+     the door was. The light is the door's, and the door comes forward into
+     its own opening (styles/props.css, .is-entering); this is only the night
+     it opens on, the doorway's own blue, and it comes in late. */
+  background:linear-gradient(180deg,#0d1530 0%,#141b3c 55%,#1a2146 100%);
 }
-.crossing.is-dusk::after{
-  content:"";position:absolute;inset:0;
-  background:radial-gradient(ellipse 34% 42% at 50% 60%,rgba(255,214,160,.28),transparent 70%);
-  animation:crossing-doorlight var(--cross-ms,1300ms) ease-out both;
-}
-@keyframes crossing-doorlight{from{opacity:1;transform:scale(.7)}to{opacity:.15;transform:scale(1.25)}}
+/* Late on the way in; the way out on the far side keeps the even fade. */
+.crossing.is-dusk.is-dark{transition-timing-function:cubic-bezier(.7,0,.85,.55)}
 
 /* Arriving outside: the playground is there a little close and dim, and
    settles back to itself; its places show only once it has. */
@@ -185,10 +185,15 @@
   transition:transform 2600ms cubic-bezier(.22,.8,.3,1),filter 2200ms ease-out;
 }
 .playground.is-hushed .spot{opacity:0;pointer-events:none}
+/* Leaving (after PHASE F): into the garage door, from its own middle (the
+   origin is set as it starts, src/app/world.ts), while the dark comes in. */
+/* The door comes forward first and fast, while it can still be seen; the
+   dark (below) comes in after it. */
+.playground.is-leaving .playground__stage{transform:translate(var(--zx,0px),var(--zy,0px)) scale(1.7);transition:transform 760ms cubic-bezier(.25,.1,.3,1)}
+.crossing.is-homeward.is-dark{transition-timing-function:cubic-bezier(.75,0,.9,.6)}
 .playground .spot{transition:opacity 600ms ease}
 @media (prefers-reduced-motion:reduce){
   .crossing{transition:opacity 160ms linear}
-  .crossing.is-dusk::after{animation:none}
   .playground.is-arriving .playground__stage{transform:none;filter:none}
 }
 

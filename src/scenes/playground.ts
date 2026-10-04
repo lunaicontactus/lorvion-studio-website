@@ -49,10 +49,11 @@ export function mountPlayground(root: ParentNode = document, opts: PlaygroundOpt
       }
       if (motion.reduced) return
       // The dokkaebi fires: ambient, small, and never in front of anything
-      // the visitor is here to look at. Two to three, low, at the edges.
+      // the visitor is here to look at. Four, spread out; the ones among the
+      // foreground's plants are drawn over it so they are not hidden by it.
       for (const [i, f] of layout.fires.entries()) {
         const img = document.createElement('img')
-        img.className = 'playground__fire'
+        img.className = f.front ? 'playground__fire playground__fire--front' : 'playground__fire'
         img.src = '/assets/images/playground/fire.webp'
         img.alt = ''
         img.decoding = 'async'
