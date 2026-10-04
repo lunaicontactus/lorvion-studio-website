@@ -76,8 +76,15 @@ for (const view of VIEWS) {
         await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
         await page.mouse.move(2, view.viewport.height / 2)
         await page.waitForTimeout(200)
-        const rest = await state(page, `[data-object="${id}"]`)
-        expect(rest.opacity === 0 || rest.scale === 1, `${id} is doing something at rest`).toBe(true)
+        // At rest — read until it holds for a moment's ambient event to pass:
+        // the parcel knocks by itself every half minute or so for 0.9s (the
+        // room's own life, src/scenes/garage.ts), and a sample taken in that
+        // moment is the room, not a reaction. Something that stays busy at
+        // rest still fails.
+        await expect.poll(async () => {
+          const rest = await state(page, `[data-object="${id}"]`)
+          return rest.opacity === 0 || rest.scale === 1
+        }, { message: `${id} is doing something at rest`, timeout: 2500 }).toBe(true)
         if (!view.mobile) {
           const box = (await thing.boundingBox())!
           await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
