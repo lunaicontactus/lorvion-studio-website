@@ -12,15 +12,19 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
+# No workflow-wide concurrency (docs/OPERATIONS.md §4): it was one group for
+# pull requests and main, so a push to a PR could cancel a production deploy.
+# Each job says what it may cancel.
 
 jobs:
   # Runs on pull requests too, so a broken build is caught before it can reach
-  # the live domain rather than after.
+  # the live domain rather than after. A newer push to the same branch makes an
+  # older verify pointless, so that one is cancelled — per branch, never across.
   verify:
     runs-on: ubuntu-latest
+    concurrency:
+      group: verify-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,39 +50,41 @@ jobs:
           path: e2e/shots/
           if-no-files-found: warn
       - name: Check the artifact still contains every frozen URL
-        run: |
-          set -e
-          for f in index.html privacy.html terms.html support.html \
-                   account-deletion.html community-guidelines.html 404.html \
-                   robots.txt sitemap.xml manifest.webmanifest \
-                   apple-touch-icon.png CNAME .nojekyll; do
-            if [ ! -f "dist/$f" ]; then
-              echo "::error::dist/$f is missing — a published URL would 404"
-              exit 1
-            fi
-          done
-          echo "All frozen URLs present."
+        run: scripts/check-frozen.sh dist
+      # The build that was tested is the build that ships: deploy downloads
+      # this, it does not build again. Hidden files are kept (.nojekyll); the
+      # default leaves them out.
       - uses: actions/upload-artifact@v4
         with:
           name: dist-${{ github.sha }}
           path: dist
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 7
 
   deploy:
     needs: verify
     if: github.event_name != 'pull_request'
+    # One production deploy at a time, and a started one always finishes.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      # Only for the check script; nothing is built here.
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "npm"
-      - run: npm ci
-      - run: npx vite build
+          sparse-checkout: scripts/check-frozen.sh
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist
+      - name: The downloaded build still has every frozen URL
+        run: scripts/check-frozen.sh dist
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

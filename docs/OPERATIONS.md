@@ -48,15 +48,23 @@ git push origin rollback/<사유>
 2. **검증한 빌드와 배포한 빌드가 다르다** — `deploy` job이 `npm ci && vite build`를 다시 한다. 이번 배포는 hash가 같았지만(`main-Dkj-2oVo.js`), verify가 올린 `dist-${sha}` artifact를 그대로 배포하는 것이 맞다.
 3. **force-push 가능** — rollback 규칙(3)을 사람의 습관에만 맡기고 있다.
 
-**권장안 (승인 후 적용)**
+**적용 (사용자 승인 2026-10-05)**
 
-- `main` ruleset: PR 필수 (승인 인원 0 — 1인 저장소라 self-approve 불가 문제 회피), required status check `verify`, 브랜치 최신화 필수, force-push 금지, 삭제 금지, linear history는 강제하지 않음(merge commit으로 PHASE 경계 보존).
-- admin bypass는 끄는 것을 권장. 켜 두면 긴급 시 우회는 되지만 규칙이 의미를 잃는다.
-- workflow: `verify`의 concurrency group을 `verify-${{ github.ref }}`로 분리하고, `deploy`만 `group: pages, cancel-in-progress: false`.
-- `deploy` job은 `actions/download-artifact`로 `dist-${{ github.sha }}`를 받아 배포 (재빌드 제거).
-- 위 workflow 변경은 그 자체로 PR → verify를 거쳐 들어간다.
+workflow (`.github/workflows/deploy-pages.yml`, PR `ops/workflow-hardening`):
 
-이 섹션은 검토 결과이며, ruleset과 workflow는 아직 바꾸지 않았다.
+- workflow 전체 concurrency 삭제.
+- `verify`: `group: verify-${{ github.ref }}`, `cancel-in-progress: true` — 같은 브랜치의 더 새 push만 이전 verify를 취소한다.
+- `deploy`: `group: pages`, `cancel-in-progress: false` — 시작된 production 배포는 끝까지 간다.
+- `deploy`는 다시 빌드하지 않는다. verify가 올린 `dist-${{ github.sha }}` artifact를 내려받아 그대로 배포한다.
+- artifact 업로드에 `include-hidden-files: true`. 기본값은 숨김 파일을 빼서, 2026-10-05 production run의 `dist-e135f69…` artifact에는 `.nojekyll`이 없었다(확인함). 이 상태로 재빌드만 없앴다면 불완전한 빌드를 배포했을 것이다.
+- frozen URL 검사는 `scripts/check-frozen.sh` 하나로, verify의 빌드와 deploy가 내려받은 artifact에 각각 실행한다.
+
+`main` ruleset (workflow PR이 merge된 뒤 적용):
+
+- PR 필수, 승인 인원 0
+- required status check `verify`, 브랜치 최신화 필수
+- force-push 금지, 삭제 금지
+- bypass actor 없음 (admin 포함)
 
 ## 5. Known issues (PHASE G로 carry over)
 
