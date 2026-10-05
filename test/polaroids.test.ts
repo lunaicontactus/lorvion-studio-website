@@ -4,9 +4,10 @@ import { POLAROIDS, columnsFor, scatter } from '@/data/polaroids'
 import { ARCHIVE_LANDSCAPE, ARCHIVE_PORTRAIT } from '@/data/archive'
 
 describe('the polaroids are a record, not a picture', () => {
-  it('starts from what the site really has: the five games and the days of making', () => {
-    expect(POLAROIDS.filter((p) => p.category === 'game')).toHaveLength(5)
-    expect(POLAROIDS.filter((p) => p.category === 'dev').length).toBeGreaterThanOrEqual(6)
+  it("holds the crew's own: a draft given up, a try, the working sheets (PHASE G)", () => {
+    expect(POLAROIDS.filter((p) => p.category === 'draft').length).toBeGreaterThanOrEqual(1)
+    expect(POLAROIDS.filter((p) => p.category === 'try').length).toBeGreaterThanOrEqual(1)
+    expect(POLAROIDS.filter((p) => p.category === 'working').length).toBeGreaterThanOrEqual(1)
   })
 
   it('every photo has its own id and a file that exists', () => {

@@ -276,11 +276,13 @@ for (const view of [
       await expect(page.locator('.prop--archive[data-prop="music-box"]')).toHaveClass(/is-playing/, { timeout: 3000 })
       await page.keyboard.press('Escape')
       await expect(page.locator('[data-panel-root]')).toBeHidden()
-      // The memory box: a real day of making, with its date and commit.
+      // The memory box: one of the crew's notes (PHASE G), signed, with the
+      // day and the commit it is about. Not a picture from the public archive.
       await tap('memory-box')
       await expect(page.locator('.prop--archive[data-prop="memory-box"]')).toBeVisible({ timeout: 6000 })
-      await expect(page.locator('.memory__img')).toBeVisible()
-      // The workbench's own line: a dotted date and the short commit.
+      await expect(page.locator('.memory__note--memo')).toBeVisible()
+      await expect(page.locator('.memory__img')).toHaveCount(0)
+      await expect(page.locator('.memory__by')).toHaveText(/— (MOMO|NUNU|RUKI|YOMI|POKO)/)
       await expect(page.locator('.memory__when')).toHaveText(/20\d\d\.\d\d\.\d\d · [0-9a-f]{7}/)
       await page.keyboard.press('Escape')
       await expect(page.locator('[data-panel-root]')).toBeHidden()
@@ -291,7 +293,9 @@ for (const view of [
       const cards = page.locator('[data-album] [data-polaroid]')
       await expect(page.locator('[data-album]')).toBeVisible({ timeout: 6000 })
       const n = await cards.count()
-      expect(n, 'the table is set from the record').toBeGreaterThanOrEqual(11)
+      // The crew's own (PHASE G): fewer than the old table, which repeated
+      // the works' pictures; none of them is on a public page (archive-g.spec).
+      expect(n, 'the table is set from the record').toBeGreaterThanOrEqual(3)
       const vw = page.viewportSize()!
       for (const box of await cards.evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } }))) {
         expect(box.x > 0 && box.x < vw.width && box.y > 0 && box.y < vw.height, 'a polaroid off the table').toBe(true)

@@ -23,7 +23,7 @@
  */
 import { PROJECTS, STATE_LABEL, coverOf, getProject, updatesOf, workHref, workPicture } from '@/data/projects'
 import { artworkFor, wallSrc } from '@/data/artwork'
-import { polaroidsOf } from '@/data/polaroids'
+import { developmentOf } from '@/data/publicArchive'
 import type { ProjectConfig } from '@/types/project'
 
 const esc = (s: string): string =>
@@ -126,7 +126,9 @@ function renderWork(main: HTMLElement, p: ProjectConfig): void {
     <p class="work-hero__state"><span class="record__status" data-state="${p.releaseState}">${STATE_LABEL[p.releaseState]}</span></p>
     ${p.statusNote ? `<p class="work-hero__note">${esc(p.statusNote)}</p>` : ''}`)
 
-  const traces = polaroidsOf(p.id)
+  // Its development pictures from the public archive (PHASE G); the gallery
+  // above is the game, these are the making.
+  const traces = developmentOf(p.id)
   const updates = updatesOf(p)
   const index = PROJECTS.findIndex((x) => x.id === p.id)
   const prev = PROJECTS[(index + PROJECTS.length - 1) % PROJECTS.length]!
@@ -191,15 +193,15 @@ function renderWork(main: HTMLElement, p: ProjectConfig): void {
       </ol>
     </section>` : ''}
 
-    ${p.links.length || traces.length ? `
     <section class="work-sec" aria-labelledby="links-h">
       <h2 class="work-sec__h" id="links-h">LINKS</h2>
       ${p.links.some((l) => l.href) ? `<p class="work-links work-links--foot">${p.links.filter((l) => l.href).map((l) =>
         `<a class="work-link" href="${l.href}">${esc(l.label)} <span aria-hidden="true">↗</span></a>`).join('')}</p>` : ''}
       ${p.links.filter((l) => !l.href).map((l) => `<p class="work-plan">${esc(l.label)}</p>`).join('')}
-      ${traces.length ? `<p class="work-traces"><button class="work-traces__go" type="button" data-traces>
-        작업 흔적 보기 <span class="work-traces__n">폴라로이드 ${traces.length}장</span></button></p>` : ''}
-    </section>` : ''}
+      <p class="work-traces">${traces.length ? `<button class="work-traces__go" type="button" data-traces>
+        작업 흔적 보기 <span class="work-traces__n">${traces.length}장</span></button>` : ''}
+        <a class="work-traces__archive" href="/archive.html#${traces.length ? 'development' : 'concept'}">기록실에서 보기 <span aria-hidden="true">→</span></a></p>
+    </section>
 
     <nav class="work-next" aria-label="다른 작품">
       <a href="${workHref(prev.id)}"><span aria-hidden="true">←</span> ${esc(prev.title)}</a>
@@ -217,13 +219,13 @@ function renderWork(main: HTMLElement, p: ProjectConfig): void {
   }
   const traceBtn = body.querySelector<HTMLButtonElement>('[data-traces]')
   traceBtn?.addEventListener('click', () => viewer.open(traces.map((t) => ({
-    src: t.src, w: 1, h: 1, caption: t.title ?? p.title, tag: t.date ?? '작업 흔적', polaroid: true,
+    src: t.full, w: t.w, h: t.h, caption: t.title, tag: t.date ?? '작업 흔적', polaroid: false,
   })), 0, traceBtn))
 }
 
 // ── The viewer: one picture at a time ─────────────────────────────────────
 
-interface Shot {
+export interface Shot {
   readonly src: string
   readonly w: number
   readonly h: number
@@ -232,7 +234,7 @@ interface Shot {
   readonly polaroid: boolean
 }
 
-function makeViewer(): { el: HTMLElement; open: (shots: readonly Shot[], at: number, from: HTMLElement) => void } {
+export function makeViewer(): { el: HTMLElement; open: (shots: readonly Shot[], at: number, from: HTMLElement) => void } {
   const el = document.createElement('div')
   el.className = 'work-view'
   el.hidden = true

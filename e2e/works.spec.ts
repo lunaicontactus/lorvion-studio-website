@@ -118,10 +118,12 @@ test.describe('desktop', () => {
     await expect(page.locator('[data-view-count]')).toHaveText('1 / 1')
   })
 
-  test('the traces are the work\'s own polaroids', async ({ page }) => {
+  test('the traces are the work\'s own development pictures, from the public archive', async ({ page }) => {
     await page.goto('/works/liminal.html', { waitUntil: 'load' })
+    await expect(page.locator('.work-traces__archive')).toHaveAttribute('href', '/archive.html#development')
     await page.locator('[data-traces]').click()
-    await expect(page.locator('.work-view.is-polaroid')).toBeVisible()
+    await expect(page.locator('.work-view')).toBeVisible()
+    await expect(page.locator('.work-view__img')).toHaveAttribute('src', /\/works\/liminal\/case04-3d-/)
     await expect(page.locator('.work-view__img')).toHaveJSProperty('complete', true)
     expect(await page.locator('.work-view__img').evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0)
     await page.keyboard.press('Escape')

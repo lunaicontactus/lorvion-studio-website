@@ -86,7 +86,9 @@ describe('the PC desktop and the first visit', () => {
   const panels = readFileSync('src/ui/panels.ts', 'utf8')
 
   it('links only to pages that exist', () => {
-    expect(panels).not.toMatch(/href="\/archive\.html"/)
+    // ARCHIVE is a page since PHASE G.
+    expect(panels).toMatch(/href="\/archive\.html" data-desk-item="archive"/)
+    expect(existsSync('archive.html')).toBe(true)
     expect(panels).toMatch(/href="\/contact\.html" data-desk-item="mail"/)
     expect(existsSync('contact.html')).toBe(true)
   })
