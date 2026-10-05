@@ -115,6 +115,10 @@ const WIP_SIZE: Readonly<Record<string, readonly [number, number]>> = {
   'wip-states': [1400, 1096], 'wip-glasses': [1400, 228], 'wip-wall': [1400, 1170],
 }
 
+/** The card's picture for a workbench sheet (scripts/archive_images.py). */
+const wipThumb = (asset: string): string =>
+  `${P}/wip-${(asset.split('/').pop() ?? '').replace(/\.webp$/, '').replace(/_/g, '-')}-thumb.webp`
+
 /** Builds still being blocked out: not in any work's gallery. */
 const GREYBOX: readonly ArchivePicture[] = ([
   ['liminal', 'case04-3d-landing', '3D 조사 · 그레이박스', 1600, 900],
@@ -133,7 +137,7 @@ const DEVELOPMENT: readonly ArchivePicture[] = [
     const size = WIP_SIZE[e.id]
     return e.asset && size
       ? [{ kind: 'picture' as const, id: e.id, category: 'development' as const, title: e.title, note: e.description,
-          date: e.date, source: e.commit, thumb: e.asset, full: e.asset, w: size[0], h: size[1] }]
+          date: e.date, source: e.commit, thumb: wipThumb(e.asset), full: e.asset, w: size[0], h: size[1] }]
       : []
   }),
   ...GREYBOX,

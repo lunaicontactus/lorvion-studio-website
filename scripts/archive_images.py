@@ -10,7 +10,7 @@ Two rooms, two folders, never the same file in both (test/archive-g.test.ts):
   public/assets/images/public-archive/  the PUBLIC ARCHIVE page (/archive.html)
   public/assets/images/archive/secret/  SECRET STORAGE's polaroids
 
-Two sizes each: `<name>-thumb.webp` (at most 640 wide) and `<name>-full.webp`
+Two sizes each: `<name>-thumb.webp` (inside 600 x 450) and `<name>-full.webp`
 (at most 1600 on the long side). Prints each picture's full size, for
 src/data/publicArchive.ts and src/data/polaroids.ts.
 """
@@ -22,6 +22,7 @@ CREW = f'{ROOT}/assets/crew-reboot'
 EARLY = f'{ROOT}/assets/archive/early-prototype/wormup'
 LEGACY = f'{ROOT}/assets/archive/legacy'
 V1 = f'{ROOT}/public/assets/images/dokkaebi'
+WIP = f'{ROOT}/public/assets/images/wip'
 
 PUBLIC = {
     # CHARACTERS — the five turnarounds the crew is built from (the user's own sheets).
@@ -61,9 +62,10 @@ def save(im: Image.Image, out_dir: str, name: str) -> None:
     full = im.copy()
     full.thumbnail((1600, 1600), Image.LANCZOS)
     full.save(f'{out_dir}/{name}-full.webp', 'WEBP', quality=86, method=6)
+    # The card shows a picture whole inside a 4:3 frame about 300 px wide, so
+    # the thumb fits 600 x 450 (twice that) whatever its shape.
     thumb = im.copy()
-    if thumb.width > 640:
-        thumb = thumb.resize((640, round(thumb.height * 640 / thumb.width)), Image.LANCZOS)
+    thumb.thumbnail((600, 450), Image.LANCZOS)
     thumb.save(f'{out_dir}/{name}-thumb.webp', 'WEBP', quality=82, method=6)
     print(f'{name}: {full.width}x{full.height}')
 
@@ -88,6 +90,13 @@ def main() -> None:
     for name, src in PUBLIC.items():
         save(Image.open(src), out, name)
     save(first_crew(), out, 'crew-first-3d')
+    # The workbench's sheets keep their one file as the full picture; the
+    # archive's cards get a thumb of each.
+    for f in sorted(os.listdir(WIP)):
+        if f.endswith('.webp'):
+            im = Image.open(f'{WIP}/{f}')
+            im.thumbnail((600, 450), Image.LANCZOS)
+            im.save(f'{out}/wip-{f[:-5].replace("_", "-")}-thumb.webp', 'WEBP', quality=82, method=6)
     out = f'{ROOT}/public/assets/images/archive/secret'
     for name, src in SECRET.items():
         save(Image.open(src), out, name)
