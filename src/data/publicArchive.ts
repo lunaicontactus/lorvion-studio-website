@@ -51,6 +51,11 @@ export interface ArchivePicture {
   readonly h: number
   /** The work it belongs to, if one: that work's page can show it too. */
   readonly projectId?: string
+  /**
+   * A label on the card and in the viewer, for what must not be mistaken for
+   * the work as it is now: `EARLY PROTOTYPE` on the WORM UP! runner.
+   */
+  readonly badge?: string
 }
 
 /** A work's gallery, pointed at rather than copied. */
@@ -145,12 +150,22 @@ const DEVELOPMENT: readonly ArchivePicture[] = [
 
 const OLD: readonly ArchivePicture[] = [
   { id: 'crew-first-3d', title: '처음 만든 3D 크루', note: '지금의 크루 이전, 처음 움직여 본 다섯. 털과 얼굴을 다시 만들었다.', date: '2026.09.09', source: '96665cb', w: 1600, h: 419 },
-  { id: 'wormup-runner-keyart', projectId: 'wormup', title: 'WORM UP! · 모바일 러너 키아트', note: 'Steam 내러티브판 이전, 산을 오르던 러너 시절.', date: '2026.10.03', source: '25d9015', w: 900, h: 1600 },
-  { id: 'wormup-runner-icon', projectId: 'wormup', title: 'WORM UP! · 러너 앱 아이콘', date: '2026.10.03', source: '25d9015', w: 1024, h: 1024 },
-  { id: 'wormup-runner-couple', projectId: 'wormup', title: 'WORM UP! · 러너 이야기 컷 · 시작', date: '2026.10.03', source: '25d9015', w: 893, h: 1600 },
-  { id: 'wormup-runner-kidnap', projectId: 'wormup', title: 'WORM UP! · 러너 이야기 컷', date: '2026.10.03', source: '25d9015', w: 893, h: 1600 },
-  { id: 'wormup-runner-climb', projectId: 'wormup', title: 'WORM UP! · 러너 이야기 컷 · 산 아래', date: '2026.10.03', source: '25d9015', w: 893, h: 1600 },
-  { id: 'wormup-runner-crow', projectId: 'wormup', title: 'WORM UP! · 50번째 스테이지의 까마귀', date: '2026.10.03', source: '25d9015', w: 768, h: 1344 },
+  // WORM UP! as it began: a mobile runner, a different game from the Steam
+  // narrative WORM UP! of today (the work's page, and CONCEPT ART above).
+  // Every card says so, on the picture and in the viewer. Dated by when each
+  // picture was made: the story cuts, icon and boss by their commit in the
+  // runner's own repository (~/Projects/worm-up), the key art by its first
+  // commit on this site.
+  ...([
+    ['wormup-runner-keyart', '모바일 러너 키아트', '초기 프로토타입. 산을 오르는 모바일 러너였고, 지금의 WORM UP!(Steam 내러티브판)과는 다른 게임이다.', '2026.09.05', '3bb8970', 900, 1600],
+    ['wormup-runner-icon', '러너 앱 아이콘', '초기 프로토타입의 iOS 아이콘. 지금의 Steam판과는 관계없다.', '2026.07.12', 'ab25c5d', 1024, 1024],
+    ['wormup-runner-couple', '러너 이야기 컷 · 시작', '초기 프로토타입의 이야기 컷. 지금의 Steam판에는 없다.', '2026.07.10', '735b687', 893, 1600],
+    ['wormup-runner-kidnap', '러너 이야기 컷', '초기 프로토타입의 이야기 컷. 지금의 Steam판에는 없다.', '2026.07.10', '735b687', 893, 1600],
+    ['wormup-runner-climb', '러너 이야기 컷 · 산 아래', '초기 프로토타입의 이야기 컷. 지금의 Steam판에는 없다.', '2026.07.10', '735b687', 893, 1600],
+    ['wormup-runner-crow', '러너 50번째 스테이지의 까마귀', '초기 프로토타입의 보스. 지금의 Steam판에는 없다.', '2026.07.12', 'de47253', 768, 1344],
+  ] as const).map(([id, what, note, date, source, w, h]) => ({
+    id, projectId: 'wormup', badge: 'EARLY PROTOTYPE', title: `WORM UP! 초기 프로토타입 · ${what}`, note, date, source, w, h,
+  })),
   { id: 'mark-symbol-v01', title: 'EUNGARAGE 예전 심볼', note: '차고 문 로고 이전의 별자리 행성.', date: '2026.07.25', source: 'd21112f', w: 420, h: 312 },
   { id: 'mark-saturn', title: 'EUNGARAGE 예전 마크', note: '고리 달린 행성.', date: '2026.07.25', source: 'd21112f', w: 514, h: 295 },
 ].map((o) => ({ ...o, kind: 'picture' as const, category: 'old' as const, ...own(o.id) }))

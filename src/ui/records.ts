@@ -21,7 +21,8 @@ function card(e: ArchiveEntry, k: number): string {
     case 'picture':
       return `
         <li><button class="work-shot records-card" type="button" data-record-shot="${k}" aria-label="${esc(e.title)} 크게 보기">
-          <span class="records-card__pic"><img src="${e.thumb}" alt="" loading="lazy" decoding="async" width="${e.w}" height="${e.h}"></span>
+          <span class="records-card__pic"><img src="${e.thumb}" alt="" loading="lazy" decoding="async" width="${e.w}" height="${e.h}">${
+            e.badge ? `<span class="records-card__badge" data-badge>${esc(e.badge)}</span>` : ''}</span>
           <span class="work-shot__cap records-card__t">${esc(e.title)}</span>
           ${e.note ? `<span class="records-card__note">${esc(e.note)}</span>` : ''}
           ${e.date || e.source ? `<span class="records-card__when">${[e.date, e.source].filter(Boolean).map((x) => esc(x!)).join(' · ')}</span>` : ''}
@@ -71,7 +72,7 @@ export function mountRecords(root: ParentNode = document): void {
     if (!pictures.length) continue
     const shots: Shot[] = pictures.map((p) => ({
       src: p.full, w: p.w, h: p.h, caption: p.title,
-      tag: [p.date, p.source].filter(Boolean).join(' · '), polaroid: false,
+      tag: [p.badge, p.date, p.source].filter(Boolean).join(' · '), polaroid: false,
     }))
     const shelf = host.querySelector(`[data-shelf="${s.category.id}"]`)
     for (const btn of shelf?.querySelectorAll<HTMLButtonElement>('[data-record-shot]') ?? []) {

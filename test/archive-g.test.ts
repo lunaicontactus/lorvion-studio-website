@@ -67,6 +67,19 @@ describe('PUBLIC ARCHIVE (PHASE G)', () => {
     }
   })
 
+  it('never lets the WORM UP! runner pass for the Steam game: every runner card says EARLY PROTOTYPE', () => {
+    const runner = pictures.filter((p) => p.id.startsWith('wormup-runner-'))
+    expect(runner.length).toBeGreaterThanOrEqual(1)
+    for (const p of runner) {
+      expect(p.category, p.id).toBe('old')
+      expect(p.badge, p.id).toBe('EARLY PROTOTYPE')
+      expect(p.title, p.id).toContain('초기 프로토타입')
+      expect(p.note, p.id).toMatch(/초기 프로토타입/)
+    }
+    // The Steam WORM UP! is the work itself, never labelled as a prototype.
+    expect(pictures.find((p) => p.id === 'concept-wormup')?.badge).toBeUndefined()
+  })
+
   it('is a live, indexed page with a place in the nav', () => {
     const route = ROUTES.find((r) => r.path === '/archive.html')
     expect(route?.live).toBe(true)

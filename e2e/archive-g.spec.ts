@@ -74,6 +74,20 @@ test.describe('PUBLIC ARCHIVE — reading it', () => {
     await expect(first).toBeFocused()
   })
 
+  test('the WORM UP! runner is marked EARLY PROTOTYPE on the card and in the viewer', async ({ page }) => {
+    await page.goto('/archive.html', { waitUntil: 'load' })
+    const runner = page.locator('#old [data-record-shot]', { hasText: 'WORM UP!' })
+    expect(await runner.count()).toBeGreaterThanOrEqual(1)
+    for (const card of await runner.all()) await expect(card.locator('[data-badge]')).toHaveText('EARLY PROTOTYPE')
+    await runner.first().scrollIntoViewIfNeeded()
+    await runner.first().click()
+    await expect(page.locator('.work-view__tag')).toContainText('EARLY PROTOTYPE')
+    await expect(page.locator('[data-view-cap]')).toContainText('초기 프로토타입')
+    await page.keyboard.press('Escape')
+    // The Steam WORM UP! in CONCEPT ART carries no such label.
+    await expect(page.locator('#concept [data-badge]')).toHaveCount(0)
+  })
+
   test('the keyboard reaches each shelf from the index', async ({ page }) => {
     await page.goto('/archive.html', { waitUntil: 'load' })
     const link = page.locator('.records-index__a[href="#old"]')

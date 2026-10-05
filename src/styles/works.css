@@ -400,7 +400,9 @@ body.is-viewing{overflow:hidden}
 .records-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .records-grid li:only-child{grid-column:auto;max-width:none}
 .records-card{align-content:start;text-decoration:none}
-.records-card__pic{display:grid;place-items:center;aspect-ratio:4/3;overflow:hidden;background:#efe3c8;border-radius:2px}
+.records-card__pic{position:relative;display:grid;place-items:center;aspect-ratio:4/3;overflow:hidden;background:#efe3c8;border-radius:2px}
+/* What must not be taken for the work as it is now (the WORM UP! runner). */
+.records-card__badge{position:absolute;left:6px;top:6px;padding:4px 7px 3px;border-radius:3px;background:#3b2718;color:#f6ead0;font:800 .6rem/1 var(--mono);letter-spacing:.12em;box-shadow:0 2px 6px rgba(0,0,0,.35)}
 .records-card .records-card__pic img{width:100%;height:100%;aspect-ratio:auto;object-fit:contain;background:transparent}
 .records-card__t{font-weight:800}
 .records-card__note{font-size:.8rem;line-height:1.5;color:#5a4128;word-break:keep-all}
