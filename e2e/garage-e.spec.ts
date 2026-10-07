@@ -73,9 +73,17 @@ async function sample(page: Page): Promise<Sample> {
       const hit = el.querySelector<HTMLElement>('.npc__hit')
       if (!hit || Number(el.style.opacity || 1) < 0.5) continue
       const r = hit.getBoundingClientRect()
-      const cx = r.x + r.width / 2
+      // The middle of the box, kept on the screen: a finger touches the half
+      // of a dokkaebi that is visible. Chrome hit-tests x >= innerWidth - 0.5 as
+      // outside the page (elementFromPoint gives null), and a dokkaebi walking
+      // off the right edge has its middle exactly on it for one frame —
+      // positions are whole world units, and at 1440x900 the room's edge is
+      // world x 2760. Sampled there, a reachable dokkaebi read as "→nothing"
+      // (runner run 37257478848); the last on-screen column was its own hit box.
+      const mid = r.x + r.width / 2
+      const cx = Math.min(mid, innerWidth - 1)
       const cy = r.y + r.height / 2
-      if (cx < 0 || cx > innerWidth || cy < 60 || cy > innerHeight) continue
+      if (mid < 0 || cx < r.x || cy < 60 || cy > innerHeight) continue
       const got = document.elementFromPoint(cx, cy)
       if (!got?.closest('[data-npc]')) unreachable.push(`${el.dataset['npc']}→${(got?.closest('[data-object]') as HTMLElement | null)?.dataset['object'] ?? got?.className ?? 'nothing'}`)
     }
