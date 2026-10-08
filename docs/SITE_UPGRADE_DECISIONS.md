@@ -27,5 +27,6 @@
 
 ## 운영 규칙
 
-- 라이브 배포는 사용자 승인 후에만. 브랜치 `site-upgrade`에서 구현·테스트·캡처.
+- 라이브 배포는 사용자 승인 후에만. A–F는 브랜치 `site-upgrade`에서 구현·테스트·캡처했고, 2026-10-05 `e135f69`(tag `prod-2026-10-05`)로 배포·LOCK.
+- PHASE G부터는 `main`에서 PHASE별 브랜치를 만든다 (`phase-g-archive`). rollback은 revert commit, force-push 금지. 자세한 운영 기준은 `docs/OPERATIONS.md`.
 - 각 PHASE 끝에 보고 후 다음 단계로.
