@@ -2,7 +2,7 @@ import { sitemapXml } from '@/data/sitemap'
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { PROJECTS, getProject, updatesOf, workPicture } from '@/data/projects'
-import { POLAROIDS, polaroidsOf } from '@/data/polaroids'
+import { developmentOf } from '@/data/publicArchive'
 
 /**
  * WORKS: the five works as the studio's own records say they are, and the
@@ -92,13 +92,14 @@ describe('the works, as their records say', () => {
     }
   })
 
-  it('keeps the traces on the archive polaroids, each belonging to its work', () => {
+  it("takes a work's traces from the public archive, none of them a gallery picture (PHASE G)", () => {
     for (const p of PROJECTS) {
-      const own = polaroidsOf(p.id)
-      expect(own.length, p.id).toBeGreaterThanOrEqual(1)
-      for (const t of own) expect(existsSync(`public${t.src}`), t.id).toBe(true)
+      const shown = new Set(p.gallery.map((g) => workPicture(p.id, g.name, 'full')))
+      for (const t of developmentOf(p.id)) {
+        expect(existsSync(`public${t.full}`), t.id).toBe(true)
+        expect(shown.has(t.full), `${t.id} is already in ${p.id}'s gallery`).toBe(false)
+      }
     }
-    expect(new Set(POLAROIDS.map((p) => p.id)).size).toBe(POLAROIDS.length)
   })
 })
 
@@ -176,8 +177,8 @@ describe('LUMIORA, as its current canon has it', () => {
 
   it('keeps its greybox out of the public gallery, and in the archive', () => {
     for (const g of lumiora.gallery) expect(g.caption, g.name).not.toContain('그레이박스')
-    const traces = polaroidsOf('lumiora')
-    expect(traces.some((t) => (t.title ?? '').includes('그레이박스'))).toBe(true)
+    const traces = developmentOf('lumiora')
+    expect(traces.some((t) => t.title.includes('그레이박스'))).toBe(true)
   })
 })
 

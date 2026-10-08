@@ -72,17 +72,15 @@ for (const vp of [
       await expect(page.locator('[data-panel]')).toContainText('EUNGARAGE OS')
 
       // The monitor's desktop (SITE UPGRADE PHASE D): each work's icon is
-      // its page; MAIL is the contact page; ARCHIVE has no page yet and says
-      // so; TRASH is a joke. No link to a page that does not exist.
+      // its page; MAIL is the contact page; ARCHIVE is the public record room
+      // (PHASE G); TRASH is a joke. No link to a page that does not exist.
       for (const id of ['lunai', 'liminal', 'wormup', 'lumiora', 'rubato']) {
         await expect(page.locator(`[data-game="${id}"]`)).toHaveAttribute('href', `/works/${id}.html`)
       }
       await expect(page.locator('[data-desk-item="mail"]')).toHaveAttribute('href', '/contact.html')
-      await page.locator('[data-desk-item="archive"]').click()
-      await expect(page.locator('[data-desk-say]')).toHaveText('자료 정리 중.')
+      await expect(page.locator('[data-desk-item="archive"]')).toHaveAttribute('href', '/archive.html')
       await page.locator('[data-desk-item="trash"]').click()
       await expect(page.locator('[data-desk-say]')).toHaveText('그건 진짜 버린 거야.')
-      await expect(page.locator('[data-panel] a[href="/archive.html"]')).toHaveCount(0)
       await expect(page.locator('[data-game]')).toHaveCount(5)
 
       await page.keyboard.press('Escape')

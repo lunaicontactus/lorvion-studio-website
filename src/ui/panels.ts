@@ -32,7 +32,8 @@ import { RADIO_ENTRIES, STATIONS } from '@/data/garage/radio'
 import { PLACE_PROPS, SIGNPOST_ARMS, type Place, type PlaceId } from '@/data/playground'
 import type { ArchivePlace } from '@/data/archive'
 import { WORKBENCH_ENTRIES } from '@/data/garage/workbench'
-import { POLAROIDS, columnsFor, scatter, type Polaroid } from '@/data/polaroids'
+import { POLAROIDS, columnsFor, fullOf, scatter, type Polaroid } from '@/data/polaroids'
+import { MEMOS, MEMO_AUTHOR } from '@/data/memos'
 import type { WipPiece } from '@/data/garage/workbench'
 import type { CabinetPaper } from '@/data/garage/cabinet'
 import { GarageDiscoveryPool, hashString } from '@/systems/discovery'
@@ -146,6 +147,8 @@ export class Panels {
     { spent: readSpent() },
   )
   #tvChannel = 0
+  /** Which of the crew's notes is on top of the memory box; -1 until first opened. */
+  #memo = -1
   #station = -1
   /** What is growing out of which thing, for the fit on open and on resize. */
   #prop: { readonly id: string; readonly def: PropDef | null; readonly anchor: 'above' | null; readonly aspect: number | null } | null = null
@@ -504,9 +507,9 @@ export class Panels {
           <span class="desk__pic"${pic(p) ? ` style="background-image:url('${pic(p)}')"` : ' data-empty'}></span>
           <span class="desk__name">${esc(p.title)}</span>
         </a>`).join('')}
-        <button class="desk__icon desk__icon--sys" type="button" data-desk-item="archive">
+        <a class="desk__icon desk__icon--sys" href="/archive.html" data-desk-item="archive">
           <span class="desk__glyph desk__glyph--folder" aria-hidden="true"></span><span class="desk__name">ARCHIVE</span>
-        </button>
+        </a>
         <a class="desk__icon desk__icon--sys" href="/contact.html" data-desk-item="mail">
           <span class="desk__glyph desk__glyph--mail" aria-hidden="true"></span><span class="desk__name">MAIL</span>
         </a>
@@ -524,7 +527,6 @@ export class Panels {
       say.textContent = line
       say.classList.add('is-in')
     }
-    view.querySelector('[data-desk-item="archive"]')?.addEventListener('click', () => speak('자료 정리 중.'))
     view.querySelector('[data-desk-item="trash"]')?.addEventListener('click', () => speak('그건 진짜 버린 거야.'))
     // Out of the room through the monitor: the screen folds to a line, then
     // the page. A modified click is the visitor's own (a new tab).
@@ -564,8 +566,10 @@ export class Panels {
         }
       }))
     }
-    const mail = view.querySelector<HTMLAnchorElement>('[data-desk-item="mail"]')
-    mail?.addEventListener('click', (e) => leave(mail, e))
+    // MAIL and, since PHASE G, ARCHIVE: the public record room is a page.
+    for (const a of view.querySelectorAll<HTMLAnchorElement>('a[data-desk-item]')) {
+      a.addEventListener('click', (e) => leave(a, e))
+    }
   }
 
   /** One work, still inside the monitor. Leaving the room is a deliberate act. */
@@ -1332,15 +1336,18 @@ export class Panels {
    * invented.
    */
   openMemoryBox(place: ArchivePlace, def: PropDef): void {
-    const piece = this.#draw('workbench') as WipPiece | null
+    // The crew's own notes (PHASE G): a different one on top each time. The
+    // workbench's pictures are the public archive's now, not the box's.
+    this.#memo = this.#memo < 0 ? Math.floor(Math.random() * MEMOS.length) : (this.#memo + 1) % Math.max(MEMOS.length, 1)
+    const memo = MEMOS[this.#memo]
     this.#show(
       'archive',
       place.label,
       Panels.#furniture(place.id, def, `
-        ${Panels.#region(def.surface, 'prop__surface memory', piece ? `
-           <img class="memory__img" src="${piece.asset}" alt="${esc(piece.title)}" decoding="async">
-           <p class="memory__note" data-memory="${piece.id}">${esc(piece.description)}
-             <span class="memory__when">${esc(piece.date)} · ${esc(piece.commit)}</span></p>` : `
+        ${Panels.#region(def.surface, 'prop__surface memory', memo ? `
+           <p class="memory__note memory__note--memo" data-memory="${memo.id}">${esc(memo.text)}
+             <span class="memory__by">— ${MEMO_AUTHOR[memo.by]}</span>
+             <span class="memory__when">${esc(memo.date)} · ${esc(memo.commit)}</span></p>` : `
            <p class="memory__note">상자는 비어 있다.</p>`, 'data-memorybox')}`,
         'prop--archive'),
       { id: place.id, def },
@@ -1402,7 +1409,7 @@ export class Panels {
       if (!n) return
       at = ((i % n) + n) % n
       const p = photos[at]!
-      img.src = p.src
+      img.src = fullOf(p)
       img.alt = p.title ?? `사진 ${at + 1}`
       title.textContent = p.title ?? ''
       title.hidden = !p.title

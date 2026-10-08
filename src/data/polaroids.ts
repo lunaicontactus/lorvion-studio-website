@@ -1,30 +1,24 @@
 /**
- * The polaroids on the archive's table (WORLD 2.1, PHASE A).
+ * The polaroids on the secret storage's table (WORLD 2.1; SITE UPGRADE PHASE G).
  *
- * Not one finished picture: a record that grows. Every photo is one entry
- * here — a game, a day of making it, an early sketch, a test screen — and
- * the table lays out however many there are.
+ * The secret storage is the crew's own box behind the garage, so the table
+ * holds only what the PUBLIC ARCHIVE (/archive.html, src/data/publicArchive.ts)
+ * does not: a design given up, a try that taught something, the working sheets
+ * nobody was meant to see. Never the works' own pictures, never the archive's
+ * (test/archive-g.test.ts) — before PHASE G every photo here was also on a
+ * public page.
  *
  * To add one:
- *   1. put the image in `public/assets/images/polaroids/` (webp or jpg,
- *      any shape — the frame crops to a square, like a real polaroid);
+ *   1. put the image in `public/assets/images/archive/secret/` (webp or jpg,
+ *      any shape — the frame crops to a square, like a real polaroid), or
+ *      add its source to scripts/archive_images.py;
  *   2. add an entry to `ADDED` below. Only `id` and `src` are required.
  *
  * The rest is optional and simply left off the card when it is missing: no
  * title means the photo alone, no date means no date line. An empty list is
  * fine too — the table says the record is still being kept, and that is all.
- *
- * What is here to start with is only what the site already has for real:
- * the five works' own pictures, a couple of working screens from each
- * (the works' galleries, src/data/projects.ts), and the working record the
- * workbench keeps (each with the day and the commit it came from). Nothing
- * is invented.
  */
-import { PROJECTS, workPicture } from '@/data/projects'
-import { artworkFor, wallSrc } from '@/data/artwork'
-import { WORKBENCH_ENTRIES } from '@/data/garage/workbench'
-
-export type PolaroidCategory = 'game' | 'dev' | 'sketch' | 'memory'
+export type PolaroidCategory = 'draft' | 'try' | 'working'
 
 export interface Polaroid {
   readonly id: string
@@ -35,58 +29,38 @@ export interface Polaroid {
   /** As written on the back: `2026.09.16`. */
   readonly date?: string
   readonly category?: PolaroidCategory
-  /** The work it belongs to, if one: a work's page shows its own (src/ui/works.ts). */
-  readonly projectId?: string
 }
 
 /**
  * Photos added by hand. Newest first reads best on the table, but any order
  * works. Example:
  *
- *   { id: 'lunai-first-sketch', src: '/assets/images/polaroids/lunai_first_sketch.webp',
- *     title: 'LUNAI 첫 스케치', date: '2026.03.02', category: 'sketch' },
+ *   { id: 'lunai-first-sketch', src: '/assets/images/archive/secret/lunai_first_sketch.webp',
+ *     title: 'LUNAI 첫 스케치', date: '2026.03.02', category: 'draft' },
  */
 const ADDED: readonly Polaroid[] = []
 
-/** The five works, each by its own picture (the wall print, or the work's hero). */
-const GAMES: readonly Polaroid[] = PROJECTS.flatMap((p) => {
-  const art = artworkFor(p.id)
-  const src = p.hero ? workPicture(p.id, p.hero.name, 'thumb') : art ? wallSrc(art) : null
-  return src ? [{ id: `game-${p.id}`, src, title: p.title, note: p.taglineKo, category: 'game' as const, projectId: p.id }] : []
-})
+const S = '/assets/images/archive/secret'
 
-/**
- * The making, kept here rather than on the works' own pages: a screen of a
- * running build, a greybox of a world still being blocked out. This is what
- * the archive is for — the works show the work, these show how it was made.
- */
-const TRACES: readonly Polaroid[] = [
-  { id: 'trace-lunai-album', project: 'lunai', name: 'album', title: '감정 음악 앨범 화면' },
-  { id: 'trace-lunai-room', project: 'lunai', name: 'room-chat', title: '캐릭터의 방, 만드는 중' },
-  { id: 'trace-liminal-hub', project: 'liminal', name: 'hub-backyard', title: '관리국 뒤뜰, 게임 화면' },
-  { id: 'trace-liminal-3d', project: 'liminal', name: 'case04-3d-landing', title: '3D 조사 · 그레이박스' },
-  { id: 'trace-liminal-3d-window', project: 'liminal', name: 'case04-3d-window', title: '기억의 층 · 그레이박스' },
-  { id: 'trace-lumiora-garden', project: 'lumiora', name: 'flow-garden', title: '물살이 되는 셈여림 · 그레이박스' },
-  { id: 'trace-lumiora-weave', project: 'lumiora', name: 'glass-weave', title: '이어지고 끊기는 다리 · 그레이박스' },
-  { id: 'trace-lumiora-cathedral', project: 'lumiora', name: 'pitch-cathedral', title: '선율의 높이 · 그레이박스' },
-  { id: 'trace-rubato-title', project: 'rubato', name: 'title', title: 'RUBATO 타이틀 화면' },
-  { id: 'trace-rubato-cafe', project: 'rubato', name: 'cafe-scene', title: '빈의 카페, 게임 화면' },
-].map((t) => ({
-  id: t.id, src: workPicture(t.project, t.name, 'thumb'), title: t.title,
-  note: PROJECTS.find((p) => p.id === t.project)?.title ?? '', category: 'dev' as const, projectId: t.project,
-}))
+/** From the crew's rebuild (assets/crew-reboot, its GENERATION_LOG and NECK_COMPRESSION). */
+const KEPT: readonly Polaroid[] = [
+  { id: 'momo-redesign', src: `${S}/momo-redesign-thumb.webp`, category: 'draft', date: '2026.09.12',
+    title: '다시 그리다 그만둔 모모', note: '머리를 줄였더니 귀가 같이 작아지고 털이 매끈해졌다. 원래 그림을 지키기로 했다.' },
+  { id: 'momo-shortpile', src: `${S}/momo-shortpile-thumb.webp`, category: 'try', date: '2026.09.13',
+    title: '짧은 털 시험', note: '긴 털은 입체로 옮기면 조각조각 떠다녔다. 이 시험 뒤로 다섯 모두 짧고 촘촘한 털.' },
+  { id: 'momo-ring-views', src: `${S}/momo-ring-views-thumb.webp`, category: 'working', date: '2026.09.13',
+    title: '턱 밑 링, 네 방향', note: '위가 그때, 아래가 링을 뗀 뒤.' },
+  { id: 'crew-scale-130', src: `${S}/crew-scale-130-thumb.webp`, category: 'working', date: '2026.09.13',
+    title: '차고 크기에서 목 숨기기', note: '차고에 서는 키에서는 목이 길어 보였다. 머리를 몸 쪽으로 내렸다.' },
+  { id: 'room-before-after', src: `${S}/room-before-after-thumb.webp`, category: 'working', date: '2026.09.13',
+    title: '차고에 세워 본 전과 후', note: '위가 전, 아래가 후. 목을 숨기고 요미의 없던 꼬리를 지웠다.' },
+]
 
-/** The days of making, from the workbench's own record. */
-const MAKING: readonly Polaroid[] = WORKBENCH_ENTRIES.flatMap((w) =>
-  w.asset
-    ? [{ id: `dev-${w.id}`, src: w.asset, title: w.title, note: w.description, date: w.date, category: 'dev' as const }]
-    : [])
+export const POLAROIDS: readonly Polaroid[] = [...ADDED, ...KEPT]
 
-export const POLAROIDS: readonly Polaroid[] = [...ADDED, ...MAKING, ...TRACES, ...GAMES]
-
-/** A work's own photos, for its page. */
-export function polaroidsOf(projectId: string): readonly Polaroid[] {
-  return POLAROIDS.filter((p) => p.projectId === projectId)
+/** The full-size picture for a card, where there is one beside the thumb. */
+export function fullOf(p: Polaroid): string {
+  return p.src.replace(/-thumb\.webp$/, '-full.webp')
 }
 
 /**
