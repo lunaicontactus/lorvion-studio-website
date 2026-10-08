@@ -16,6 +16,7 @@ export const CHARACTERS: readonly CharacterConfig[] = [
     name: 'MOMO',
     nameKo: '모모',
     trait: 'Makes things at the bench. First to say hello.',
+    traitKo: '작업대에서 무언가를 만든다. 가장 먼저 인사한다.',
     art: {
       front: `${ART}/momo_front.webp`,
       side: `${ART}/momo_side.webp`,
@@ -34,6 +35,7 @@ export const CHARACTERS: readonly CharacterConfig[] = [
     name: 'RUKI',
     nameKo: '루키',
     trait: 'Repairs the machines. Says little; keeps noodles by the cushions.',
+    traitKo: '기계를 고친다. 말수가 적고, 쿠션 옆에 컵라면을 둔다.',
     art: {
       front: `${ART}/ruki_front.webp`,
       side: `${ART}/ruki_side.webp`,
@@ -52,6 +54,7 @@ export const CHARACTERS: readonly CharacterConfig[] = [
     name: 'YOMI',
     nameKo: '요미',
     trait: 'Opens the fridge, peers at the locked door. Touches first.',
+    traitKo: '냉장고를 열고, 잠긴 문을 들여다본다. 먼저 만져 본다.',
     art: {
       front: `${ART}/yomi_front.webp`,
       side: `${ART}/yomi_side.webp`,
@@ -70,6 +73,7 @@ export const CHARACTERS: readonly CharacterConfig[] = [
     name: 'POKO',
     nameKo: '포코',
     trait: 'The television is its place. Looks before it acts.',
+    traitKo: '텔레비전 앞이 자리다. 움직이기 전에 먼저 본다.',
     art: {
       front: `${ART}/poko_front.webp`,
       side: `${ART}/poko_side.webp`,
@@ -88,6 +92,7 @@ export const CHARACTERS: readonly CharacterConfig[] = [
     name: 'NUNU',
     nameKo: '누누',
     trait: 'The big cushion is its place. In no hurry.',
+    traitKo: '큰 쿠션이 자리다. 서두르는 법이 없다.',
     art: {
       front: `${ART}/nunu_front.webp`,
       side: `${ART}/nunu_side.webp`,
