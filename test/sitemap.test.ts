@@ -58,8 +58,8 @@ describe('the site map', () => {
   it('lists every live, indexed page and every work in the sitemap, and nothing else', () => {
     const map = sitemapXml(PROJECTS.map((p) => p.id))
     for (const p of PROJECTS) expect(map).toContain(`https://eungarage.com/works/${p.id}.html`)
-    for (const p of ['/', '/works.html', '/archive.html', '/studio.html', '/support.html', '/contact.html']) expect(map).toContain(`<loc>https://eungarage.com${p}</loc>`)
-    for (const p of ['/404.html', '/games.html', '/press.html']) expect(map).not.toContain(p)
+    for (const p of ['/', '/works.html', '/archive.html', '/studio.html', '/support.html', '/contact.html', '/press.html']) expect(map).toContain(`<loc>https://eungarage.com${p}</loc>`)
+    for (const p of ['/404.html', '/games.html']) expect(map).not.toContain(p)
   })
 
   it('gives the garage a hidden list of every page, for a visitor without scripts', () => {

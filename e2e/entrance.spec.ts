@@ -107,7 +107,8 @@ test('the pages that hold the same content still work on their own', async ({ pa
   expect(
     await page.evaluate(() => getComputedStyle(document.querySelector('main p.intro')!).position),
   ).toBe('static')
-  await expect(page.locator('.fb-block')).toHaveCount(3)
+  // PHASE H: how the work is made, the crew, what is being made, contact.
+  await expect(page.locator('[data-fallback-studio] > section')).toHaveCount(4)
   await expect(page.locator('body')).toContainText('eungarage@gmail.com')
 
   await page.goto('/support.html', { waitUntil: 'load' })

@@ -15,6 +15,14 @@
 .info-back a{display:inline-flex;align-items:center;gap:.4em;min-height:44px;color:var(--wk-cream);text-decoration:none}
 .info-back a:hover{text-decoration:underline;text-underline-offset:4px}
 
+/* The garage behind the info pages, out of focus: blurred 16px and turned down
+   to 30%, a 240-px copy of the room reads exactly like the 3,600-px painting
+   (754 KB on a phone) the works pages use. Made by resizing, nothing drawn. */
+body.works-page.info-page::before{background-image:url('/assets/images/garage/room_landscape_backdrop.webp')}
+@media (orientation:portrait){
+  body.works-page.info-page::before{background-image:url('/assets/images/garage/room_portrait_backdrop.webp')}
+}
+
 /* Whose document this is, and the other LUNAI documents (PHASE H). */
 .doc-owner{margin:14px 0 0;color:var(--wk-cream);font-size:.92rem}
 .doc-nav{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:10px}
