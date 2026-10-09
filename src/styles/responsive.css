@@ -18,8 +18,6 @@
 }
 @media(max-width:560px){
   .contact h2{font-size:16vw}
-  .subpage{padding-top:118px}
-  .subpage h1{font-size:15vw}
 }
 @media(prefers-reduced-motion:reduce){
   *{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}

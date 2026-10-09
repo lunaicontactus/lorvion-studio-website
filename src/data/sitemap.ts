@@ -11,10 +11,9 @@
  *
  * Imported by vite.config.ts, so no `@/` imports in this file.
  *
- * A route is in the nav or the footer only when its page exists. PRESS is
- * planned (docs/SITE_IA.md) and is listed here so the plan is in the code,
- * but nothing links to it until its page is built. ARCHIVE went live in
- * PHASE G.
+ * A route is in the nav or the footer only when its page exists; a planned
+ * route is listed here so the plan is in the code, and nothing links to it
+ * until its page is built. ARCHIVE went live in PHASE G, PRESS in PHASE H.
  */
 
 export const ORIGIN = 'https://eungarage.com'
@@ -42,7 +41,7 @@ export const ROUTES: readonly Route[] = [
   { path: '/studio.html', group: 'studio', role: '스튜디오 소개', live: true, indexed: true },
   { path: '/support.html', group: 'support', role: '작품별 고객지원(현재 서비스 중인 LUNAI)', live: true, indexed: true },
   { path: '/contact.html', group: 'contact', role: '문의 — 게임 지원 · 비즈니스 · 언론 · 기타', live: true, indexed: true },
-  { path: '/press.html', group: 'press', role: 'PRESS KIT — 언론 · 크리에이터 · 파트너', live: false, indexed: false },
+  { path: '/press.html', group: 'press', role: 'PRESS KIT — 언론 · 크리에이터 · 파트너', live: true, indexed: true },
   { path: '/privacy.html', group: 'legal', role: 'LUNAI 개인정보처리방침', live: true, indexed: true },
   { path: '/terms.html', group: 'legal', role: 'LUNAI 이용약관', live: true, indexed: true },
   { path: '/community-guidelines.html', group: 'legal', role: 'LUNAI 커뮤니티 이용규칙', live: true, indexed: true },

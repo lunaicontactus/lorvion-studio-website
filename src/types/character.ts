@@ -54,6 +54,8 @@ export interface CharacterConfig {
   readonly nameKo: string
   /** One line of character for the DEX card, not for the world. */
   readonly trait: string
+  /** The same line in Korean, for the studio page (docs/CREW_REBOOT.md). */
+  readonly traitKo: string
   readonly art: CharacterArt
   /** Walk speed in CSS px per second. */
   readonly speed: number

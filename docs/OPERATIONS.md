@@ -1,27 +1,33 @@
 # EUNGARAGE 운영 기준
 
-최종 갱신: 2026-10-08 (PHASE G 배포 후).
+최종 갱신: 2026-10-10 — PHASE H PR(#22) 안에서, merge 직전 상태로 작성. PHASE H의 merge SHA · deploy run · live smoke는 merge 뒤에만 알 수 있으므로 여기 미리 적지 않고 release `prod-2026-10-10` 노트에 기록한다.
 
 ## 1. Production checkpoint (LOCK)
 
+이 문서를 쓴 시점(PHASE H merge 직전)의 production:
+
 | 항목 | 값 |
 |---|---|
-| 현재 production | **`f3e8668`** (main) — SITE UPGRADE A–G. PHASE G = PR #18 merge |
-| tag / release | **`prod-2026-10-08`** — https://github.com/lunaicontactus/lorvion-studio-website/releases/tag/prod-2026-10-08 |
-| production deploy run | **37770097362** — verify(unit 323/323 · e2e 375/375) → verify가 만든 artifact 그대로 배포 |
-| live bundle | `main-CsRwaxqn.js` |
-| live smoke | **69/69** (desktop · 390×844 · 844×390 · WebKit) |
-| 이전 checkpoint | `prod-2026-10-05` / `e135f69` (SITE UPGRADE A–F) |
+| production | **`fa1c46b`** (main) — PHASE G + production bugfix #21 · #24 (+ test fix #23) |
+| production deploy run | **37962557707** — verify(unit 323/323 · e2e 398/398) → verify가 만든 artifact 그대로 배포 |
+| live bundle | `main-CyHa7JIF.js` |
+| live smoke | **69/69** + 기록 서랍 가로 측정(844×390 · 812×375 · 390×844 · 1440×900, 서류 45가지 모두 사건 탭 덮지 않음) |
+| 마지막 tag | `prod-2026-10-08` / `f3e8668` (PHASE G) |
+| 다음 tag | PHASE H merge · 배포 · live smoke가 끝나면 `prod-2026-10-10`. SHA · run · 결과는 그 release 노트에 |
 
 checkpoint 이력:
 
 | tag | commit | 내용 | deploy run | e2e | live smoke |
 |---|---|---|---|---|---|
+| — | `fa1c46b` | PR #24 기록 서랍 가로 수정(사건 파일 탭 덮임 · 51px overflow) | 37962557707 | 398/398 | 69/69 |
+| — | `29d01ab` | PR #23 e2e test only (사이트 콘텐츠 그대로, live bundle 동일 `main-kxHXsD0r.js`) | 37954040967 | 390/390 | — |
+| — | `ed9b3e5` | PR #21 휴대폰에서 LUNAI 개인정보처리방침 본문이 안 보이던 버그 | 37943151636 | 390/390 | 69/69 + 개인정보 live(세로 · 가로 · 데스크톱) |
+| — | `532c2f2` | PR #20 문서만. verify 1건 실패(`#playground` false failure → #23)로 배포 생략, live 영향 없음 | 37853641845 | 374/375 | 69/69 |
 | `prod-2026-10-08` | `f3e8668` | PHASE G PUBLIC ARCHIVE / SECRET STORAGE | 37770097362 | 375/375 | 69/69 |
 | — | `58e3aad` | PR #19 workflow hardening (사이트 콘텐츠는 `e135f69`과 byte 단위 동일) | 37754414329 | 365/365 | 38/38 |
 | `prod-2026-10-05` | `e135f69` | SITE UPGRADE A–F + post-F polish | 37238738529 | 365/365 | 38/38 |
 
-새 production이 나갈 때마다 `prod-YYYY-MM-DD` tag와 release를 만들고 이 표를 갱신한다. 콘텐츠가 같은 재배포(운영·문서 PR)는 tag를 만들지 않고 이력 표에만 적는다.
+새 PHASE가 production에 나가면 `prod-YYYY-MM-DD` tag와 release를 만든다. bugfix · 문서 · 운영 PR은 tag 없이 이력 표에만 적는다.
 
 ## 2. 작업 흐름
 
@@ -88,14 +94,18 @@ git push origin rollback/<사유>
 
 | # | 내용 | 예정 |
 |---|---|---|
-| 1 | LUNAI 앱 정책 페이지 5개(privacy · terms · account-deletion · community-guidelines · support)의 "EUNGARAGE · LUNAI" 표기 정리 | PHASE H |
+| 1 | **법적 문서 질문**: *operator naming differs across legal documents; retained intentionally pending legal review.* 개인정보처리방침은 운영 주체를 "EUNGARAGE 루나아이 운영팀"으로 적고, 이용약관 · 커뮤니티 이용규칙은 "운영자"라고만 적는다. 본문 변경은 법적 변경이라 하지 않았다 | 법적 검토 |
 | 2 | 라디오 NIGHT `ambient.m4a` 루프 지점 0.43초 무음 + 하드 재시작(원본 파일 문제). 공개 기록실 SOUND에도 같은 파일 | 청취 판정 후 REQUIRED AUDIO FIX 여부 |
 | 3 | 실제 iPhone Safari QA 미실시 | DEVICE QA |
+| 4 | works · archive 페이지는 차고 원본 그림(약 700KB)을 흐린 배경으로 받는다. 정보 페이지는 240px 사본으로 줄였다 | PHASE K |
 
 ### 해결된 known issue
 
 | 내용 | 해결 |
 |---|---|
-| 가로 화면 기록 서랍(cabinet) 51px overflow, 그리고 같은 영역에서 꺼낸 서류가 LIMINAL 사건 파일 탭을 덮던 문제 | `fix/landscape-records-drawer` — 휴대폰 가로(높이 ≤ 520)에서는 캐비닛 전체가 보이고, 서류와 서류철을 캐비닛 옆 두 칸에 놓는다. 서류 45가지 × 줄 늘림 0~2 모두 탭을 덮지 않는다(`e2e/drawer-landscape.spec.ts`) |
+| LUNAI 정책 페이지 5개의 "EUNGARAGE · LUNAI" 표기 — 실제 원인은 문자열이 아니라 LUNAI 시절 검은 기업형 화면 셸 | PHASE H(#22) — 정보 페이지 셸 통일, LUNAI = 제품 · EUNGARAGE = 만든 곳으로 제목 · 표기 정리. 법적 본문은 그대로(SHA-256 고정) |
+| 휴대폰에서 LUNAI 개인정보처리방침 본문이 보이지 않음(reveal 18% 규칙) | PR #21 `ed9b3e5` |
+| 가로 화면 기록 서랍(cabinet) 51px overflow, 같은 영역에서 꺼낸 서류가 LIMINAL 사건 파일 탭을 덮던 문제 | PR #24 `fa1c46b` — 휴대폰 가로(높이 ≤ 520)에서 캐비닛 전체 + 옆 두 칸(서류 · 서류철). 서류 45가지 × 줄 늘림 0~2 모두 탭을 덮지 않는다(`e2e/drawer-landscape.spec.ts`) |
+| `#playground` 도착 e2e false failure | PR #23 `29d01ab` (test only) |
 
 선택 오디오 자산(OPTIONAL, `docs/SITE_UPGRADE_PHASE_F.md`)은 known issue가 아니라 백로그로 유지한다.
