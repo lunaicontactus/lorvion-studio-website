@@ -24,7 +24,8 @@ export const BRAND_FILES: readonly { label: string; note: string; href: string; 
   { label: '로고 · 어두운 바탕용', note: 'WEBP · 1871×360 · 투명 배경', href: `${B}/eungarage_logo_lockup_light.webp`, preview: `${B}/eungarage_logo_lockup_light.webp`, dark: true },
   { label: '짧은 로고 · 밝은 바탕용', note: 'WEBP · 671×128 · 투명 배경', href: `${B}/eungarage_logo_nav.webp`, preview: `${B}/eungarage_logo_nav.webp`, dark: false },
   { label: '짧은 로고 · 어두운 바탕용', note: 'WEBP · 671×128 · 투명 배경', href: `${B}/eungarage_logo_nav_light.webp`, preview: `${B}/eungarage_logo_nav_light.webp`, dark: true },
-  { label: '아이콘', note: 'PNG · 512×512', href: '/assets/images/icon-512.png', preview: '/assets/images/icon-512.png', dark: false },
+  // The preview is the 192 px icon (the 512 px one is 265 KB for a 44 px picture).
+  { label: '아이콘', note: 'PNG · 512×512', href: '/assets/images/icon-512.png', preview: '/assets/images/icon-192.png', dark: false },
 ]
 
 function works(): string {

@@ -23,11 +23,17 @@
 - 문자열 자체는 "스튜디오 · 제품"이라는 뜻이고, 개인정보처리방침의 운영 주체 "EUNGARAGE 루나아이 운영팀"과 맞는다.
 - 그래서 문자열 일괄 치환이 아니라 **셸(디자인 · 머리말 · 제목)** 을 바꿨다.
 
-**감사 중 발견한 production 버그 (PHASE H와 분리).**
-- 증상: 휴대폰에서 LUNAI 개인정보처리방침 본문이 끝까지 스크롤해도 보이지 않는다(opacity 0).
-- 원인: reveal이 요소 자기 높이의 18%가 화면에 들어오기를 기다린다. 본문은 6,000px인데 844px 화면에서 1,081px가 필요하다.
-- 처리: 별도 bugfix PR #21(`fix/reveal-tall-pages`)로 고쳤다. 라이브를 바꾸므로 사용자 승인 대기.
-- PHASE H 쪽: 정보 페이지는 읽는 페이지라 scroll-reveal 자체를 빼서, #21과 상관없이 바로 보인다.
+**감사 · 검증 중 발견한 production 버그 — 각각 별도 PR로 먼저 고쳐 main에 넣었다.**
+
+1. **PR #21** (`ed9b3e5`) — 휴대폰에서 LUNAI 개인정보처리방침 본문이 보이지 않음.
+   - 원인: reveal이 요소 자기 높이의 18%가 화면에 들어오기를 기다렸다. 6,000px 본문이 844px 화면에서는 1,081px가 필요하다.
+   - 수정 후 live 확인: 세로 · 가로 · 데스크톱에서 제목, 본문, 마지막 13항까지 보임.
+2. **PR #24** — 휴대폰 가로에서 기록 서랍의 서류가 LIMINAL 사건 파일 탭을 덮고, 캐비닛이 51px 화면 밖으로 넘침(기존 known issue 4).
+   - PHASE H full e2e의 유일한 실패(garage-d phone sideways)가 이것이었다.
+   - 수정: 가로 · 짧은 화면에서는 캐비닛 전체 + 옆 두 칸(서류 · 서류철).
+3. **PR #23** (`29d01ab`, test only) — `#playground` 도착 테스트가 0.5초만 보이는 차고를 기다리던 false failure.
+
+PHASE H 쪽: 정보 페이지는 읽는 페이지라 scroll-reveal 자체를 쓰지 않는다.
 
 ## 변경한 페이지
 
@@ -75,10 +81,10 @@
 | support | eyebrow / H1 | EUNGARAGE · LUNAI / LUNAI SUPPORT | EUNGARAGE · SUPPORT / 고객지원 (LUNAI는 섹션 제목) |
 
 - "만드는 앱"은 제작 관계를 말한 것이고, 운영 주체를 새로 선언하지 않는다.
-- **사용자 판단이 필요한 법적 의미 문제 (수정하지 않음):**
+- **Known legal-content question (수정하지 않음, 사용자 지시 2026-10-09):** *operator naming differs across legal documents; retained intentionally pending legal review.*
   - 개인정보처리방침은 운영 주체를 "EUNGARAGE 루나아이 운영팀"으로 명시한다.
-  - 이용약관 · 커뮤니티 이용규칙은 "운영자"라고만 적고 주체를 밝히지 않는다.
-  - 맞추려면 약관 본문 변경 = 법적 변경이므로 결정을 받아야 한다.
+  - 이용약관 · 커뮤니티 이용규칙은 "운영자"라고만 적는다.
+  - 단순 브랜드 불일치로 보고 통일하지 않는다. 본문에 운영 주체를 넣는 것은 법적 내용 변경이므로 이번 PHASE 범위가 아니다.
 
 ## PRESS에 사용한 실제 자료
 
@@ -149,11 +155,17 @@
 - `docs/shots/phaseH/before/` (desktop · mobile, production)
 - `docs/shots/phaseH/after/` (desktop · mobile · landscape, 9페이지)
 
-## 새로 발견한 known issues
+## Known issues
 
-1. **[production 버그, PR #21 승인 대기]** 휴대폰에서 LUNAI 개인정보처리방침 본문이 보이지 않음(reveal 18% 규칙).
-2. **[법적 판단 필요]** 이용약관 · 커뮤니티 이용규칙은 운영 주체를 밝히지 않음. 개인정보처리방침은 "EUNGARAGE 루나아이 운영팀".
-3. **[PHASE K]** works · archive 페이지는 아직 차고 원본 그림(754KB)을 흐린 배경으로 받는다. 정보 페이지에서 쓴 작은 사본으로 바꿀 수 있다.
-4. `src/data/characters.ts`의 portrait는 아직 예전 크루 그림(`dokka/`)을 가리킨다. 이번 페이지들은 쓰지 않는다.
+**해결됨**
+- 정책 페이지 "EUNGARAGE · LUNAI" 표기(기존 1) — 이 PHASE: 셸 · 제목 · 제품 표기 정리
+- 휴대폰 개인정보 본문 미표시 — PR #21
+- 가로 기록 서랍 51px · 사건 파일 탭 덮임(기존 4) — PR #24
+- `#playground` 도착 e2e false failure — PR #23
 
-기존 known issues 2~4(NIGHT 루프 · iPhone Safari QA · 가로 서랍 51px)는 그대로 이월. 1번(정책 페이지 표기)은 이 PHASE에서 해결 — 사용자 확인 대기.
+**남음**
+1. *Operator naming differs across legal documents; retained intentionally pending legal review.* (법적 판단 대기)
+2. NIGHT `ambient.m4a` 루프 0.43초 무음 / 하드 재시작 — 원본 파일 문제
+3. 실제 iPhone Safari QA 미실시
+4. [PHASE K] works · archive 페이지는 차고 원본 그림(754KB)을 흐린 배경으로 받는다. 정보 페이지처럼 작은 사본으로 줄일 수 있다.
+5. `src/data/characters.ts`의 portrait는 예전 크루 그림(`dokka/`)을 가리킨다. 공개 페이지에서는 쓰지 않는다.
