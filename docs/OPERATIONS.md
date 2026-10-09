@@ -91,6 +91,11 @@ git push origin rollback/<사유>
 | 1 | LUNAI 앱 정책 페이지 5개(privacy · terms · account-deletion · community-guidelines · support)의 "EUNGARAGE · LUNAI" 표기 정리 | PHASE H |
 | 2 | 라디오 NIGHT `ambient.m4a` 루프 지점 0.43초 무음 + 하드 재시작(원본 파일 문제). 공개 기록실 SOUND에도 같은 파일 | 청취 판정 후 REQUIRED AUDIO FIX 여부 |
 | 3 | 실제 iPhone Safari QA 미실시 | DEVICE QA |
-| 4 | 가로 화면 기록 서랍(cabinet) 51px overflow | PHASE I |
+
+### 해결된 known issue
+
+| 내용 | 해결 |
+|---|---|
+| 가로 화면 기록 서랍(cabinet) 51px overflow, 그리고 같은 영역에서 꺼낸 서류가 LIMINAL 사건 파일 탭을 덮던 문제 | `fix/landscape-records-drawer` — 휴대폰 가로(높이 ≤ 520)에서는 캐비닛 전체가 보이고, 서류와 서류철을 캐비닛 옆 두 칸에 놓는다. 서류 45가지 × 줄 늘림 0~2 모두 탭을 덮지 않는다(`e2e/drawer-landscape.spec.ts`) |
 
 선택 오디오 자산(OPTIONAL, `docs/SITE_UPGRADE_PHASE_F.md`)은 known issue가 아니라 백로그로 유지한다.

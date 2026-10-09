@@ -286,10 +286,35 @@
 .prop--cabinet .drawer__files{display:flex;flex-wrap:wrap;gap:.5em;list-style:none;margin:0;padding:0}
 .prop--cabinet .file{opacity:1;transform:none}
 .prop--cabinet .file__tab{display:inline-flex;align-items:center;gap:.4em;min-height:44px;padding:.5em .9em;border-radius:.4em .4em 0 0;background:#d9c6a2;color:#3f3024;font:700 clamp(8px,2.4cqi,11px)/1 var(--mono);letter-spacing:.1em;text-decoration:none;border:0;cursor:pointer;box-shadow:0 -2px 0 rgba(0,0,0,.15) inset}
+/* A phone on its side (src/data/props.ts trayBeside, src/ui/panels.ts #fit):
+   the cabinet whole on the left, the paper and the folder in two columns
+   beside it. Each column grows with its own text and never reaches the other. */
+.prop--cabinet.is-tray .drawer__lift{
+  left:calc(100% + var(--tray-gap,14px)) !important;top:0 !important;
+  width:var(--tray-col,240px) !important;height:100% !important;
+  container-type:normal;overflow-y:auto;overscroll-behavior:contain;
+}
+.prop--cabinet.is-tray .paper{width:100%;font-size:12px;padding:14px 16px;background-image:none}
+.prop--cabinet.is-tray .paper--case{padding:14px 16px}
+.prop--cabinet.is-tray .paper__photo{max-height:96px}
+.prop--cabinet.is-tray .drawer__folder{
+  left:calc(100% + var(--tray-gap,14px) * 2 + var(--tray-col,240px)) !important;top:0 !important;
+  width:var(--tray-col,240px) !important;height:100% !important;
+  align-content:start;padding:0;overflow-y:auto;overscroll-behavior:contain;
+}
+.prop--cabinet.is-tray .drawer__label{font-size:11px}
+/* Two tabs to a row, so the folder is four rows of 44 px and fits the window
+   (five rows were 300 px against 261-290); a long name wraps inside its tab. */
+.prop--cabinet.is-tray .drawer__files{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.prop--cabinet.is-tray .file--case{grid-column:1 / -1}
+.prop--cabinet.is-tray .file__tab{width:100%;box-sizing:border-box;font-size:11px;line-height:1.25;white-space:normal;justify-content:space-between}
+
 /* LIMINAL's case file (PHASE D): its own tab, a darker file, and the paper
    it brings up — one case, a picture, a line, the way to the work. */
 .prop--cabinet .file__tab--case{background:#2c2f3a;color:#e9e2d4;box-shadow:0 -2px 0 rgba(0,0,0,.35) inset}
-.prop--cabinet .file__tab--case:hover,.prop--cabinet .file__tab--case:focus-visible{background:#3a3e4c}
+/* One class more than the plain tabs' hover below, which otherwise wins by
+   coming later and left the dark tab pale with pale text after a tap. */
+.prop--cabinet .file__tab.file__tab--case:hover,.prop--cabinet .file__tab.file__tab--case:focus-visible{background:#3a3e4c;color:#e9e2d4}
 .prop--cabinet .paper--case{background-color:#f1ece2;background-image:none;padding:4cqi 5cqi}
 .prop--cabinet .paper__office{margin:0 0 .6em;font:700 .7em/1.2 var(--mono);letter-spacing:.14em;color:#7b2f2a}
 .prop--cabinet .paper--case .paper__title{margin-bottom:.8em}

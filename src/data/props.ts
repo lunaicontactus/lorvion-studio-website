@@ -39,6 +39,13 @@ export interface PropDef {
    */
   readonly reserveBelow?: number
   /**
+   * On a short landscape window (a phone on its side) what the thing holds is
+   * laid out in two columns beside it, not on it: the cut-out is shown whole and
+   * the columns can grow with their text without covering each other. The
+   * cabinet: its paper on one side, its folder of tabs on the other.
+   */
+  readonly trayBeside?: boolean
+  /**
    * The part of the cut-out that is the thing as painted in the room (after
    * PHASE F). Given, the cut-out opens out of the painted thing itself — that
    * part starts at the thing's own height on screen and over its own middle —
@@ -85,6 +92,11 @@ export const PROPS: Readonly<Record<string, PropDef>> = {
     // The paper rises out of the right-hand drawer and stands over the doors.
     surface: { x: 0.2, y: 0.06, w: 0.62, h: 0.76 },
     min: { w: 300, h: 340 },
+    // A phone on its side: the paper and the folder go beside the cabinet. On
+    // it, the folder's fixed 44 px tabs outgrew the doors and rose under the
+    // paper, over LIMINAL's case tab, and the zoom into the paper pushed the
+    // cabinet 51 px off the bottom (SITE UPGRADE known issue, fixed 10-09).
+    trayBeside: true,
     parts: {
       drawer: { x: 0.55, y: 0.22, w: 0.35, h: 0.16 },
       doors: { x: 0.17, y: 0.4, w: 0.73, h: 0.42 },

@@ -371,6 +371,32 @@ export class Panels {
     if (!def) return
     const ratio = def.h / def.w
     const s = def.surface
+    // A phone on its side, for a thing that lays its contents out beside it:
+    // the whole cut-out on the left, two columns on the right, the three
+    // centred together. Nothing is zoomed past the window.
+    const tray = !!def.trayBeside && vh <= 520 && vw > vh
+    el.classList.toggle('is-tray', tray)
+    if (tray) {
+      const gap = 14
+      // Everything stays left of the panel's close button, which sits in the
+      // top right corner: a column under it would give part of a tab to it.
+      const close = this.#body.closest('[data-panel-root]')?.querySelector<HTMLElement>('.panel__close')?.getBoundingClientRect()
+      const right = close && close.width > 0 ? Math.min(vw - 12, close.left - 8) : vw - 12
+      const left = 12
+      const room = right - left
+      let wTray = Math.min(availH * 0.96 / ratio, room * 0.4)
+      const col = Math.max(150, Math.min(250, Math.floor((room - wTray - gap * 2) / 2)))
+      wTray = Math.min(wTray, room - col * 2 - gap * 2)
+      const whole = wTray + gap + col + gap + col
+      // The cut-out's own centre, so that the three together fill left..right.
+      const cx = left + (room - whole) / 2 + wTray / 2
+      el.style.setProperty('--w', `${Math.round(wTray)}px`)
+      el.style.setProperty('--tray-col', `${col}px`)
+      el.style.setProperty('--tray-gap', `${gap}px`)
+      el.style.setProperty('--tx', `${(cx - vw / 2).toFixed(1)}px`)
+      el.style.setProperty('--ty', `${midShift.toFixed(1)}px`)
+      return
+    }
     // A tall window keeps room under the cut-out when the thing asks for it;
     // a wide one has room beside it already.
     const below = def.reserveBelow && vh > vw ? Math.min(def.reserveBelow, availH * 0.46) : 0
