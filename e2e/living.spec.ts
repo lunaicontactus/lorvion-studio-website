@@ -292,11 +292,21 @@ test.describe('desktop', () => {
   })
 
   test('feet make a sound, one at a time, and only while walking', async ({ page }) => {
-    test.setTimeout(90_000)
+    test.setTimeout(150_000)
     await spyOnPlay(page)
     await enter(page)
     await page.locator(NAV_SOUND).click()
     await expect(page.locator(NAV_SOUND)).toHaveAttribute('data-state', 'on')
+    // The watch starts once somebody is walking where the visitor can see.
+    // An unseeded room can be at its jobs and cushions for half a minute: of
+    // 16 rooms watched (2026-10-10) two had 0.1 s of walking on screen in 30 s,
+    // so they heard nothing — runner run 37978981569 read that as silent feet.
+    // Every room with walking on screen (7.8-23.3 s) had its steps.
+    await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('[data-npc][data-state="WALK"]:not(.is-away)')]
+      .some((el) => {
+        const a = el.querySelector('.npc__art')!.getBoundingClientRect()
+        return a.right > 0 && a.left < innerWidth && a.bottom > 0 && a.top < innerHeight
+      })), { message: 'nobody walked on screen in a minute', timeout: 60_000, intervals: [250] }).toBe(true)
     const steps = await page.evaluate(async () => {
       const t0 = performance.now()
       // Stretches with nobody walking, as time windows. A step is judged by
