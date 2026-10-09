@@ -45,6 +45,15 @@ async function enter(page: Page, opts: { readonly sound?: boolean; readonly hash
   }, opts.sound === true)
   await page.goto(`/${opts.hash ?? ''}`, { waitUntil: 'load' })
   await page.locator('[data-alley-enter]').click()
+  // Arriving on #playground the room is only passed through: the garage shows
+  // for about half a second (470-490 ms measured, also at 6x CPU throttle) and
+  // the visitor is outside. An expect() retrying about once a second can miss
+  // that window entirely — runner run 37853641845 read it hidden 44 times — so
+  // that arrival waits for where it ends up, not for the glimpse on the way.
+  if (opts.hash === '#playground') {
+    await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 20_000 })
+    return
+  }
   await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 20_000 })
 }
 
