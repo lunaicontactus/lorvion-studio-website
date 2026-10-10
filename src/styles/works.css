@@ -179,7 +179,7 @@ html:has(body.works-page){background:#170f0a}
 .record--rubato .record__seal{left:128px;top:188px;z-index:2;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#c2453c,#7e1f1b);box-shadow:0 2px 4px rgba(0,0,0,.35)}
 .record--rubato .record__ticket{
   right:22px;top:-14px;padding:6px 12px 6px 16px;background:#f7ecd4;color:#7e1f1b;
-  border-left:2px dashed rgba(126,31,27,.5);font:800 .6rem/1 var(--mono);letter-spacing:.14em;
+  border-left:2px dashed rgba(126,31,27,.5);font:800 .64rem/1 var(--mono);letter-spacing:.14em;
   transform:rotate(4deg);box-shadow:0 3px 6px rgba(0,0,0,.25);
 }
 
@@ -216,7 +216,7 @@ html:has(body.works-page){background:#170f0a}
 .work-tags > div:nth-child(odd){transform:rotate(-.6deg)}
 .work-tags > div:nth-child(even){transform:rotate(.5deg)}
 .work-tags .work-tags__wide{grid-column:1/-1}
-.work-tags dt{font:700 .6rem/1 var(--mono);letter-spacing:.2em;color:#8a5a2c;margin-bottom:5px}
+.work-tags dt{font:700 .64rem/1 var(--mono);letter-spacing:.2em;color:#8a5a2c;margin-bottom:5px}
 .work-tags dd{margin:0;font-weight:700;font-size:.92rem;line-height:1.4}
 .work-links{display:flex;flex-wrap:wrap;gap:10px;margin:0}
 .work-hero__state{margin:0}
@@ -327,7 +327,7 @@ a.work-link:hover{background:#5a3c22}
 .work-next a:hover{text-decoration:underline;text-underline-offset:4px}
 
 /* The viewer: one picture, the room dark behind it. */
-.work-view{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:20px}
+.work-view{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:max(20px,env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px))}
 .work-view[hidden]{display:none}
 .work-view__shade{position:absolute;inset:0;background:rgba(12,8,5,.9);backdrop-filter:blur(6px)}
 .work-view__fig{position:relative;margin:0;max-width:min(92vw,1400px);display:grid;gap:12px;justify-items:center}
@@ -402,7 +402,7 @@ body.is-viewing{overflow:hidden}
 .records-card{align-content:start;text-decoration:none}
 .records-card__pic{position:relative;display:grid;place-items:center;aspect-ratio:4/3;overflow:hidden;background:#efe3c8;border-radius:2px}
 /* What must not be taken for the work as it is now (the WORM UP! runner). */
-.records-card__badge{position:absolute;left:6px;top:6px;padding:4px 7px 3px;border-radius:3px;background:#3b2718;color:#f6ead0;font:800 .6rem/1 var(--mono);letter-spacing:.12em;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.records-card__badge{position:absolute;left:6px;top:6px;padding:4px 7px 3px;border-radius:3px;background:#3b2718;color:#f6ead0;font:800 .64rem/1 var(--mono);letter-spacing:.12em;box-shadow:0 2px 6px rgba(0,0,0,.35)}
 .records-card .records-card__pic img{width:100%;height:100%;aspect-ratio:auto;object-fit:contain;background:transparent}
 .records-card__t{font-weight:800}
 .records-card__note{font-size:.8rem;line-height:1.5;color:#5a4128;word-break:keep-all}

@@ -49,7 +49,7 @@ export default defineConfig({
       // rather than adding to it — which is how the live-origin audit, which
       // hits production and is meant to run from its own config, started
       // running here and failing against a build that is not this one.
-      testIgnore: [/live\.spec\.ts/, /gameshell\.spec\.ts/],
+      testIgnore: [/live\.spec\.ts/, /gameshell\.spec\.ts/, /webkit-i\.spec\.ts/],
       use: { ...devices['Desktop Chrome'] },
     },
     {
@@ -63,9 +63,11 @@ export default defineConfig({
     // camera tests stay on one engine because they are about input, not paint.
     // What the first frame shows is the other cross-engine question — the
     // entrance plate is preloaded per orientation, and engines pick differently.
+    // PHASE I's simulated iPhone (webkit-i) runs here and only here: WebKit
+    // with a phone's size, touch and user agent. It is not a real iPhone.
     {
       name: 'webkit',
-      testMatch: /(outline|first-paint|works-route)\.spec\.ts/,
+      testMatch: /(outline|first-paint|works-route|webkit-i)\.spec\.ts/,
       use: { ...devices['Desktop Safari'] },
     },
     {

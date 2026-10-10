@@ -50,14 +50,14 @@ const WOOD_EDGE = 6
  *
  * Everything is in world units; the camera scales the room.
  */
-function hangPrint(obj: { rect: { w: number; h: number }; artwork?: string }, pad: number): HTMLElement | null {
+function hangPrint(obj: { rect: { w: number; h: number }; artwork?: string }, padL: number, padT: number): HTMLElement | null {
   const piece = obj.artwork ? artworkById(obj.artwork) : undefined
   if (!piece) return null
   if (piece.mount === 'frame') {
     const frame = wallFrameFor(piece.id)
-    return frame ? hangFrame(piece, frame, obj.rect, pad) : null
+    return frame ? hangFrame(piece, frame, obj.rect, padL, padT) : null
   }
-  return hangWood(piece, obj.rect, pad)
+  return hangWood(piece, obj.rect, padL, padT)
 }
 
 /** Show a sheet only once every picture in it has arrived. */
@@ -86,7 +86,7 @@ function whenLoaded(sheet: HTMLElement, imgs: readonly HTMLImageElement[]): void
  * is felt (the mount); the picture is never stretched or cut to fill it.
  * `rect` is the whole frame, ornament to name plate.
  */
-function hangFrame(piece: Artwork, frame: WallFrame, rect: { w: number; h: number }, pad: number): HTMLElement {
+function hangFrame(piece: Artwork, frame: WallFrame, rect: { w: number; h: number }, padL: number, padT: number): HTMLElement {
   const sheet = document.createElement('span')
   sheet.className = 'frame'
   sheet.dataset['artwork'] = piece.id
@@ -96,7 +96,7 @@ function hangFrame(piece: Artwork, frame: WallFrame, rect: { w: number; h: numbe
   // The felt below the ornament, as fractions of the frame: what has to cover
   // the painted poster underneath (checked in e2e/gallery.spec.ts).
   sheet.dataset['body'] = [frame.body.x, frame.body.y, frame.body.w, frame.body.h].join(' ')
-  Object.assign(sheet.style, { left: `${pad}px`, top: `${pad}px`, width: `${rect.w}px`, height: `${rect.h}px` })
+  Object.assign(sheet.style, { left: `${padL}px`, top: `${padT}px`, width: `${rect.w}px`, height: `${rect.h}px` })
 
   // The window, a unit bigger all round than the hole so the felt's lip
   // laps over the mount's edge rather than leaving a hairline of wall.
@@ -151,7 +151,7 @@ function hangFrame(piece: Artwork, frame: WallFrame, rect: { w: number; h: numbe
  * aspect at least as big as the painted one both ways. The name goes on a
  * small memo pinned over its corner.
  */
-function hangWood(piece: Artwork, rect: { w: number; h: number }, pad: number): HTMLElement {
+function hangWood(piece: Artwork, rect: { w: number; h: number }, padL: number, padT: number): HTMLElement {
   const project = getProject(piece.projectId)
   const edge = WOOD_EDGE
   const bleed = 4
@@ -176,8 +176,8 @@ function hangWood(piece: Artwork, rect: { w: number; h: number }, pad: number): 
   sheet.dataset['aspect'] = aspect.toFixed(4)
   sheet.setAttribute('aria-hidden', 'true')
   Object.assign(sheet.style, {
-    left: `${pad + Math.round((rect.w - w) / 2)}px`,
-    top: `${pad + Math.round((rect.h - h) / 2)}px`,
+    left: `${padL + Math.round((rect.w - w) / 2)}px`,
+    top: `${padT + Math.round((rect.h - h) / 2)}px`,
     width: `${w}px`, height: `${h}px`,
     transform: `rotate(${piece.tilt}deg)`,
   })
@@ -585,10 +585,10 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       // the picture inside it stays the size the data says.
       const pad = hitPadding(obj)
       Object.assign(el.style, {
-        left: `${obj.rect.x - pad}px`,
-        top: `${obj.rect.y - pad}px`,
-        width: `${obj.rect.w + pad * 2}px`,
-        height: `${obj.rect.h + pad * 2}px`,
+        left: `${obj.rect.x - pad.l}px`,
+        top: `${obj.rect.y - pad.t}px`,
+        width: `${obj.rect.w + pad.l + pad.r}px`,
+        height: `${obj.rect.h + pad.t + pad.b}px`,
         zIndex: String(depthOf(stackBase(obj))),
       })
 
@@ -613,7 +613,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         self.className = 'thing__self'
         self.setAttribute('aria-hidden', 'true')
         Object.assign(self.style, {
-          left: `${pad}px`, top: `${pad}px`, width: `${obj.rect.w}px`, height: `${obj.rect.h}px`,
+          left: `${pad.l}px`, top: `${pad.t}px`, width: `${obj.rect.w}px`, height: `${obj.rect.h}px`,
         })
         // How far it comes forward: a few world units whatever its size, so a
         // fridge moves as little as a radio and its edge never smears.
@@ -633,7 +633,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         // sockets across the lower face: the lock, visible as a lock.
         const seam = document.createElement('span')
         seam.className = 'thing__seam'
-        Object.assign(seam.style, { left: `${pad}px`, top: `${pad}px`, width: `${obj.rect.w}px`, height: `${obj.rect.h}px` })
+        Object.assign(seam.style, { left: `${pad.l}px`, top: `${pad.t}px`, width: `${obj.rect.w}px`, height: `${obj.rect.h}px` })
         if (obj.outline) seam.style.clipPath = `url(#clip-${obj.id})`
         el.append(seam)
         const plank = document.createElement('span')
@@ -643,7 +643,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         // a phone's small cabinet as well as a desktop's; placed on the lower
         // face of the door, centred.
         Object.assign(plank.style, {
-          left: `${pad + obj.rect.w / 2}px`, top: `${pad + Math.round(obj.rect.h * 0.8)}px`,
+          left: `${pad.l + obj.rect.w / 2}px`, top: `${pad.t + Math.round(obj.rect.h * 0.8)}px`,
         })
         for (let k = 0; k < 3; k++) {
           const star = document.createElement('i')
@@ -655,12 +655,12 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       }
 
       // A real piece of work, hung over the painted poster it replaces.
-      const print = hangPrint(obj, pad)
+      const print = hangPrint(obj, pad.l, pad.t)
       if (print) el.append(print)
       if (obj.painted) {
         // Where the painted poster is, in the thing's own units.
         const p = obj.painted
-        el.dataset['painted'] = [p.x - obj.rect.x + pad, p.y - obj.rect.y + pad, p.w, p.h].join(' ')
+        el.dataset['painted'] = [p.x - obj.rect.x + pad.l, p.y - obj.rect.y + pad.t, p.w, p.h].join(' ')
       }
 
       if (obj.art) {
@@ -672,7 +672,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         art.decoding = 'async'
         const fit = (img: HTMLImageElement): void => {
           Object.assign(img.style, {
-            left: `${pad}px`, top: `${pad}px`, width: `${obj.rect.w}px`, height: `${obj.rect.h}px`,
+            left: `${pad.l}px`, top: `${pad.t}px`, width: `${obj.rect.w}px`, height: `${obj.rect.h}px`,
           })
         }
         fit(art)
@@ -1068,16 +1068,24 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
   }
 
   /**
-   * Padding around a thing's artwork, in world units. Starts at HIT_PADDING and
-   * grows if the object would otherwise be smaller than a fingertip, but never
-   * so far that it reaches a neighbour: a target that steals its neighbour's
-   * taps is worse than a small one.
+   * Padding around a thing's artwork, in world units, side by side. Starts at
+   * HIT_PADDING all round and grows if the object would otherwise be smaller
+   * than a fingertip, but never so far that it reaches a neighbour: a target
+   * that steals its neighbour's taps is worse than a small one.
+   *
+   * The same on every side, as far as the nearest neighbour allows. Where one
+   * side is hemmed in and the thing is still under a fingertip that way, the
+   * free side gives the rest (PHASE I): at 320 px wide the archive cabinet
+   * was 38×38 because the secret door 5 px under it held all four sides back.
    */
-  const hitPadding = (obj: WorldObject): number => {
+  const hitPadding = (obj: WorldObject): { l: number; t: number; r: number; b: number } => {
     const shortest = Math.min(obj.rect.w, obj.rect.h)
+    const fingertip = MIN_TOUCH / Math.max(scale, 0.01)
     // Ceil, not round: half a pixel short of a fingertip is still short.
-    const needed = Math.ceil((MIN_TOUCH / Math.max(scale, 0.01) - shortest) / 2)
+    const needed = Math.ceil((fingertip - shortest) / 2)
     let want = Math.min(Math.max(HIT_PADDING, needed), MAX_HIT_PADDING)
+    // How far each side may reach before it meets a neighbour halfway.
+    const room = { l: MAX_HIT_PADDING, t: MAX_HIT_PADDING, r: MAX_HIT_PADDING, b: MAX_HIT_PADDING }
     for (const other of world.objects) {
       if (other === obj) continue
       const gapX =
@@ -1087,10 +1095,34 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         Math.max(obj.rect.y, other.rect.y) -
         Math.min(obj.rect.y + obj.rect.h, other.rect.y + other.rect.h)
       // Only a neighbour that overlaps on the other axis can actually collide.
-      if (gapX < 0 && gapY >= 0) want = Math.min(want, Math.floor(gapY / 2))
-      if (gapY < 0 && gapX >= 0) want = Math.min(want, Math.floor(gapX / 2))
+      if (gapX < 0 && gapY >= 0) {
+        want = Math.min(want, Math.floor(gapY / 2))
+        if (other.rect.y >= obj.rect.y + obj.rect.h) room.b = Math.min(room.b, Math.floor(gapY / 2))
+        else room.t = Math.min(room.t, Math.floor(gapY / 2))
+      }
+      if (gapY < 0 && gapX >= 0) {
+        want = Math.min(want, Math.floor(gapX / 2))
+        if (other.rect.x >= obj.rect.x + obj.rect.w) room.r = Math.min(room.r, Math.floor(gapX / 2))
+        else room.l = Math.min(room.l, Math.floor(gapX / 2))
+      }
     }
-    return Math.max(0, want)
+    const base = Math.max(0, want)
+    // One axis: both sides at the shared padding, then, if that is still
+    // short of a fingertip, the rest from whichever side has room for it.
+    const axis = (size: number, a: number, b: number): [number, number] => {
+      let pa = base
+      let pb = base
+      let short = Math.ceil(fingertip - size - pa - pb)
+      if (short <= 0) return [pa, pb]
+      const moreB = Math.max(0, Math.min(short, b - pb))
+      pb += moreB
+      short -= moreB
+      pa += Math.max(0, Math.min(short, a - pa))
+      return [pa, pb]
+    }
+    const [l, r] = axis(obj.rect.w, room.l, room.r)
+    const [t, b] = axis(obj.rect.h, room.t, room.b)
+    return { l, t, r, b }
   }
 
   // ── Layout ───────────────────────────────────────────────────────────────

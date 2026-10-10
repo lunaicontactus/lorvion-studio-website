@@ -26,7 +26,7 @@
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:2px 2px 0 var(--ink)}
 .game__hud{display:flex;gap:18px}
 .game__hudItem{display:grid;justify-items:end;gap:3px}
-.game__hudLabel{font:700 .56rem/1 var(--pixel-font);letter-spacing:.14em;color:#94b9ea}
+.game__hudLabel{font:700 .64rem/1 var(--pixel-font);letter-spacing:.14em;color:#94b9ea}
 .game__hudItem b{font:700 1.15rem/1 var(--pixel-font);font-variant-numeric:tabular-nums;color:#fff4cf;text-shadow:2px 2px 0 var(--ink)}
 /* The one control that is always there, so it is the one that has to be
    reachable with a thumb: 44 at the least, like every hit area here. */
@@ -201,7 +201,7 @@
 @media (max-height:540px) and (hover:none){
   .game__box.pixel-game{grid-template-rows:minmax(0,1fr)}
   .pixel-game__pad--controls{
-    position:absolute;left:0;right:0;bottom:8px;margin:0 10px;
+    position:absolute;left:env(safe-area-inset-left,0px);right:env(safe-area-inset-right,0px);bottom:max(8px,env(safe-area-inset-bottom,0px));margin:0 10px;
     pointer-events:none;
   }
   .pixel-game__pad--controls .pixel-pad__btn{pointer-events:auto;min-width:58px;min-height:52px;opacity:.94}

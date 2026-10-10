@@ -89,11 +89,14 @@
   transform:scale(var(--lift,1.02));
   filter:brightness(1.05) drop-shadow(0 4px 5px rgba(40,22,8,.45));
 }
-/* Keyboard focus: the same lift, and a warm glow that says "here". */
+/* Keyboard focus: the same lift, and a ring that follows the thing's own
+   outline — cream on the inside, dark on the outside — so it reads on the
+   warm wall as well as the dark floor. A 6 px warm glow alone was all but
+   invisible on a warm painting (PHASE I, I-17). */
 .thing:focus-visible .thing__self{
   opacity:1;
   transform:scale(var(--lift,1.02));
-  filter:brightness(1.08) drop-shadow(0 0 6px rgba(255,214,140,.95)) drop-shadow(0 4px 6px rgba(40,22,8,.4));
+  filter:brightness(1.08) drop-shadow(0 0 1.5px #fff6dc) drop-shadow(0 0 1.5px #fff6dc) drop-shadow(0 0 1.5px #fff6dc) drop-shadow(0 0 1px #2a1608) drop-shadow(0 0 8px rgba(255,190,100,.95));
 }
 /* Pressed: it gives under the finger — whatever else it was doing. */
 .thing.is-pressed .thing__self,
@@ -110,7 +113,7 @@
 /* Placed things (the radio, the parcel) react as their own picture. */
 .thing__art{transform-origin:50% 80%;transition:transform 160ms cubic-bezier(.2,.9,.3,1.2), filter 160ms ease}
 .thing:hover .thing__art,.thing.is-active .thing__art{transform:scale(1.035);filter:brightness(1.06) drop-shadow(0 4px 5px rgba(40,22,8,.45))}
-.thing:focus-visible .thing__art{transform:scale(1.035);filter:brightness(1.08) drop-shadow(0 0 6px rgba(255,214,140,.95))}
+.thing:focus-visible .thing__art{transform:scale(1.035);filter:brightness(1.08) drop-shadow(0 0 1.5px #fff6dc) drop-shadow(0 0 1.5px #fff6dc) drop-shadow(0 0 1.5px #fff6dc) drop-shadow(0 0 1px #2a1608) drop-shadow(0 0 8px rgba(255,190,100,.95))}
 .thing.is-pressed .thing__art{transform:scale(.975);filter:brightness(.96);transition-duration:70ms}
 
 /* Touch has no hover state to leave, so nothing may linger. */
