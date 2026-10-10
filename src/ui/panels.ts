@@ -214,8 +214,11 @@ export class Panels {
   }
 
   #trap(e: KeyboardEvent): void {
+    // Rendered, not "has an offsetParent": a position:fixed control (the
+    // close button) has none, and the parcel panel — whose only control it is —
+    // let Tab walk out into the page behind (PHASE I, I-2).
     const f = [...this.#shell.querySelectorAll<HTMLElement>('button, a[href], input, [tabindex]:not([tabindex="-1"])')].filter(
-      (el) => !el.hasAttribute('disabled') && el.offsetParent !== null,
+      (el) => !el.hasAttribute('disabled') && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden',
     )
     if (!f.length) return
     const first = f[0]!
@@ -347,7 +350,12 @@ export class Panels {
       const h = el.offsetHeight || 120
       let ty = at.top - h / 2 - 10 - vh / 2
       ty = Math.max(top + h / 2 - vh / 2, ty)
-      el.style.setProperty('--tx', `${fx.toFixed(1)}px`)
+      // Kept on the screen sideways too, with its tail still over the box: a
+      // box near the edge of a phone took half the tag off it (PHASE I, I-15).
+      const half = (el.offsetWidth || 280) / 2
+      const tx = Math.max(12 + half - vw / 2, Math.min(vw / 2 - 12 - half, fx))
+      el.style.setProperty('--tail', `${Math.max(-half + 18, Math.min(half - 18, fx - tx)).toFixed(1)}px`)
+      el.style.setProperty('--tx', `${tx.toFixed(1)}px`)
       el.style.setProperty('--ty', `${ty.toFixed(1)}px`)
       el.style.setProperty('--fs', '0.6')
       return
@@ -417,6 +425,24 @@ export class Panels {
     el.style.setProperty('--w', `${Math.round(w)}px`)
     el.style.setProperty('--tx', `${tx.toFixed(1)}px`)
     el.style.setProperty('--ty', `${ty.toFixed(1)}px`)
+    if (def.reserveBelow) {
+      // What is left of the window for the shelf's card: under the cut-out on
+      // a tall window, beside it from 20% (13% when short) down on a wide one.
+      const h = w * ratio
+      const cutTop = vh / 2 + ty - h / 2
+      const from = vw >= vh ? cutTop + h * (vh <= 520 ? 0.13 : 0.2) : cutTop + h + 10
+      el.style.setProperty('--card-room', `${Math.max(140, Math.floor(vh - from - 12))}px`)
+    }
+    // A control the window cannot show is not one to reach (PHASE I, I-5): on
+    // a phone the zoom into the tube leaves the channel knobs off the side, and
+    // Tab still stopped on them. The numbers on the bezel change the channel.
+    const k = def.parts?.['knobs']
+    if (k) {
+      const h = w * ratio
+      const kx = vw / 2 + tx - w / 2 + k.x * w
+      const ky = vh / 2 + ty - h / 2 + k.y * h
+      el.classList.toggle('is-knobs-out', kx < 0 || kx + k.w * w > vw || ky < top || ky + k.h * h > vh)
+    }
     if (def.body && at && at.height > 0) {
       // Out of the painted thing (after PHASE F): its body starts at the
       // thing's own height and over the thing's own middle.
@@ -847,6 +873,10 @@ export class Panels {
     this.#touch('radio')
     const def = PROPS['radio']!
     const parts = def.parts!
+    // The stations sit in a row across the grille, not hung over the dial at
+    // their frequencies: there four buttons shared a dial 150 px wide on a
+    // phone, at 5.6 px type and 34 px tall (PHASE I, I-6). The needle still
+    // shows where on the dial each one is.
     this.#show(
       'radio',
       'NIGHT RADIO',
@@ -856,9 +886,8 @@ export class Panels {
         ${Panels.#region(parts['dial']!, 'radio__dial', `
            <span class="radio__needle" data-radio-needle aria-hidden="true"></span>
            <span class="radio__glow" aria-hidden="true"></span>`)}
-        <div class="radio__stations" role="radiogroup" aria-label="방송국" style="left:${parts['dial']!.x * 100}%;width:${parts['dial']!.w * 100}%;top:${(parts['dial']!.y - 0.075) * 100}%">
-          ${STATIONS.map((st, i) => `<button class="radio__st" type="button" role="radio" aria-checked="false" data-station="${i}"
-             style="--at:${(dialPosition(Number(st.freq)) * 100).toFixed(1)}%"><b>${st.freq}</b><span>${st.name}</span></button>`).join('')}
+        <div class="radio__stations" role="radiogroup" aria-label="방송국" style="left:${(parts['grille']!.x + 0.05) * 100}%;width:${(parts['grille']!.w - 0.1) * 100}%;bottom:${(1 - (parts['dial']!.y - 0.075)) * 100}%">
+          ${STATIONS.map((st, i) => `<button class="radio__st" type="button" role="radio" aria-checked="false" data-station="${i}"><b>${st.freq}</b><span>${st.name}</span></button>`).join('')}
         </div>
         ${Panels.#region(parts['left']!, 'radio__knob radio__knob--power', `
            <button class="radio__power" type="button" data-radio-power aria-pressed="false" aria-label="소리 켜기"><span class="radio__mark" aria-hidden="true"></span></button>`)}
@@ -887,7 +916,9 @@ export class Panels {
       radio.dataset['on'] = String(on)
       const st = STATIONS[this.#station]
       radio.dataset['station'] = st?.id ?? ''
-      for (const b of this.#body.querySelectorAll<HTMLElement>('[data-station]')) {
+      // The station buttons only: the radio itself carries data-station too (just
+      // above), and got an aria-checked it may not have (axe, PHASE I, I-12).
+      for (const b of this.#body.querySelectorAll<HTMLElement>('.radio__st[data-station]')) {
         b.setAttribute('aria-checked', String(Number(b.dataset['station']) === this.#station))
       }
       if (st) needle.style.setProperty('--at', `${(dialPosition(Number(st.freq)) * 100).toFixed(1)}%`)
@@ -920,7 +951,7 @@ export class Panels {
       segment()
       paint()
     }
-    for (const b of this.#body.querySelectorAll<HTMLElement>('[data-station]')) {
+    for (const b of this.#body.querySelectorAll<HTMLElement>('.radio__st[data-station]')) {
       b.addEventListener('click', () => withSound(() => tuneTo(Number(b.dataset['station']))))
     }
     this.#body.querySelector('[data-radio-next]')!.addEventListener('click', () => withSound(() => tuneTo(this.#station + 1)))

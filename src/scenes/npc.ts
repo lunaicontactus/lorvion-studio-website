@@ -410,6 +410,13 @@ export function mountNpc(
           break
         }
       }
+      // What is kept is still a fingertip (PHASE I, I-16): a box cut to 35-40
+      // px at 320-412 wide grows on past the head or the feet, away from the
+      // thing, rather than staying under 44.
+      if (!off && bottom - top < min) {
+        if (bottom < y) top = bottom - min
+        else bottom = top + min
+      }
       hit.style.width = `${w}px`
       hit.style.height = `${bottom - top}px`
       hit.style.bottom = `${y - bottom}px`

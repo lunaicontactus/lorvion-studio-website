@@ -50,8 +50,11 @@ body.works-page.info-page::before{background-image:url('/assets/images/garage/ro
 .info-page .doc a:hover{color:#4f2508}
 .info-page :where(.doc) :where(a,button,summary):focus-visible{outline:3px solid #b5651d;outline-offset:3px;border-radius:2px}
 .info-page .doc strong{color:#2a1a0e}
-.info-page .doc table{width:100%;border-collapse:collapse;margin-top:14px;display:block;overflow:auto}
-.info-page .doc th,.info-page .doc td{border:1px solid rgba(59,39,24,.22);padding:11px 12px;text-align:left;min-width:160px;color:var(--wk-ink);vertical-align:top}
+/* The table fits the page at any width rather than scrolling inside it: a
+   scrolling box no keyboard could reach (axe, PHASE I, I-13). Its cells wrap. */
+.info-page .doc table{width:100%;border-collapse:collapse;margin-top:14px;table-layout:auto}
+.info-page .doc th,.info-page .doc td{border:1px solid rgba(59,39,24,.22);padding:11px 12px;text-align:left;color:var(--wk-ink);vertical-align:top;word-break:keep-all;overflow-wrap:anywhere}
+@media (max-width:520px){ .info-page .doc th,.info-page .doc td{padding:8px 7px;font-size:.88rem;line-height:1.55} }
 .info-page .doc th{background:rgba(59,39,24,.06);color:#2a1a0e}
 
 /* Cards and boxes on the paper: patches sewn on. */
@@ -108,7 +111,7 @@ body.works-page.info-page::before{background-image:url('/assets/images/garage/ro
 /* PRESS */
 .press-facts{margin:12px 0 0;display:grid;gap:4px}
 .press-facts div{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:baseline}
-.press-facts dt{font:700 .62rem/1.5 var(--mono);letter-spacing:.14em;color:#8a5a2c}
+.press-facts dt{font:700 .64rem/1.5 var(--mono);letter-spacing:.14em;color:#8a5a2c}
 .press-facts dd{margin:0}
 .press-works{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:16px}
 .press-work{display:grid;grid-template-columns:150px 1fr;gap:18px;padding:16px;border-radius:6px;background:#fbf5e6;border:1px solid rgba(59,39,24,.16)}
@@ -158,7 +161,7 @@ body.works-page.info-page::before{background-image:url('/assets/images/garage/ro
 .fb-game__tag--ko{opacity:.72;font-size:.92rem;margin-top:2px}
 .fb-facts{margin:16px 0 0;display:grid;gap:6px}
 .fb-facts div{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:baseline}
-.fb-facts dt{font:600 .6rem/1.4 var(--mono);letter-spacing:.16em;color:#9298a9}
+.fb-facts dt{font:600 .64rem/1.4 var(--mono);letter-spacing:.16em;color:#9298a9}
 .fb-facts dd{margin:0;color:#c4c8d2;font-size:.92rem}
 .fb-links{margin:16px 0 0;display:flex;flex-wrap:wrap;gap:14px}
 .fb-links a,.fb-mail{text-decoration:underline;text-underline-offset:4px;color:#dfe3ec}
@@ -166,10 +169,15 @@ body.works-page.info-page::before{background-image:url('/assets/images/garage/ro
 .fb-block h2{font:600 .68rem/1 var(--mono);letter-spacing:.2em;color:#9298a9;margin:0 0 16px}
 .fb-list,.fb-crew{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:9px}
 .fb-list li,.fb-crew li{color:#c4c8d2}
-.fb-list span{font:600 .6rem/1 var(--mono);letter-spacing:.12em;color:#9298a9;margin-left:10px}
+.fb-list span{font:600 .64rem/1 var(--mono);letter-spacing:.12em;color:#9298a9;margin-left:10px}
 .fb-crew li{display:grid;grid-template-columns:90px 1fr;gap:12px}
 .fb-crew b{font:600 .72rem/1.5 var(--mono);letter-spacing:.1em;color:#fff}
 @media (max-width:720px){
   .fb-game{grid-template-columns:1fr}
   .fb-crew li{grid-template-columns:1fr;gap:2px}
 }
+
+/* A link that is a line of its own (a mail address under 문의, the studio's
+   address in the press facts) is a target, not a word in a sentence: a
+   fingertip tall (PHASE I, I-7). */
+.info-page main p > a:only-child,.info-page main dd > a:only-child{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}

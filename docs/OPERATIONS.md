@@ -1,24 +1,26 @@
 # EUNGARAGE 운영 기준
 
-최종 갱신: 2026-10-10 — PHASE H PR(#22) 안에서, merge 직전 상태로 작성. PHASE H의 merge SHA · deploy run · live smoke는 merge 뒤에만 알 수 있으므로 여기 미리 적지 않고 release `prod-2026-10-10` 노트에 기록한다.
+최종 갱신: 2026-10-10 — PHASE I PR 안에서, merge 직전 상태로 작성. PHASE I의 merge SHA · deploy run · live smoke는 merge 뒤에만 알 수 있으므로 여기 미리 적지 않고 release `prod-2026-10-10-phase-i` 노트에 기록한다.
 
 ## 1. Production checkpoint (LOCK)
 
-이 문서를 쓴 시점(PHASE H merge 직전)의 production:
+이 문서를 쓴 시점(PHASE I merge 직전)의 production:
 
 | 항목 | 값 |
 |---|---|
-| production | **`fa1c46b`** (main) — PHASE G + production bugfix #21 · #24 (+ test fix #23) |
-| production deploy run | **37962557707** — verify(unit 323/323 · e2e 398/398) → verify가 만든 artifact 그대로 배포 |
-| live bundle | `main-CyHa7JIF.js` |
-| live smoke | **69/69** + 기록 서랍 가로 측정(844×390 · 812×375 · 390×844 · 1440×900, 서류 45가지 모두 사건 탭 덮지 않음) |
-| 마지막 tag | `prod-2026-10-08` / `f3e8668` (PHASE G) |
-| 다음 tag | PHASE H merge · 배포 · live smoke가 끝나면 `prod-2026-10-10`. SHA · run · 결과는 그 release 노트에 |
+| production | **`6008d66`** (main) — PHASE H(#22 `66fb0d6`) + test fix #25 |
+| production deploy run | **37995194051** — verify(unit 336/336 · e2e 432/432) → verify가 만든 artifact 그대로 배포 |
+| live bundle | `main-CtoPCRbU.js` |
+| live smoke | regression 69/69 · PHASE H 50/50 · 개인정보처리방침 휴대폰 세로/가로/데스크톱 · 기록 서랍 측정 |
+| 마지막 tag | `prod-2026-10-10` / `6008d66` (PHASE H) |
+| 다음 tag | PHASE I merge · 배포 · live smoke가 끝나면 `prod-2026-10-10-phase-i`. SHA · run · 결과는 그 release 노트에 |
 
 checkpoint 이력:
 
 | tag | commit | 내용 | deploy run | e2e | live smoke |
 |---|---|---|---|---|---|
+| `prod-2026-10-10` | `6008d66` | PHASE H(#22 `66fb0d6`) + PR #25 e2e test only(발소리 확인이 누군가 걸어 들어온 뒤부터) | 37995194051 | 432/432 | 69/69 + PHASE H 50/50 |
+| — | `66fb0d6` | PR #22 PHASE H merge. verify 1건 실패(발소리 false failure → #25)로 배포 생략, live 영향 없음 | 37978981569 | 431/432 | — |
 | — | `fa1c46b` | PR #24 기록 서랍 가로 수정(사건 파일 탭 덮임 · 51px overflow) | 37962557707 | 398/398 | 69/69 |
 | — | `29d01ab` | PR #23 e2e test only (사이트 콘텐츠 그대로, live bundle 동일 `main-kxHXsD0r.js`) | 37954040967 | 390/390 | — |
 | — | `ed9b3e5` | PR #21 휴대폰에서 LUNAI 개인정보처리방침 본문이 안 보이던 버그 | 37943151636 | 390/390 | 69/69 + 개인정보 live(세로 · 가로 · 데스크톱) |
@@ -96,8 +98,9 @@ git push origin rollback/<사유>
 |---|---|---|
 | 1 | **법적 문서 질문**: *operator naming differs across legal documents; retained intentionally pending legal review.* 개인정보처리방침은 운영 주체를 "EUNGARAGE 루나아이 운영팀"으로 적고, 이용약관 · 커뮤니티 이용규칙은 "운영자"라고만 적는다. 본문 변경은 법적 변경이라 하지 않았다 | 법적 검토 |
 | 2 | 라디오 NIGHT `ambient.m4a` 루프 지점 0.43초 무음 + 하드 재시작(원본 파일 문제). 공개 기록실 SOUND에도 같은 파일 | 청취 판정 후 REQUIRED AUDIO FIX 여부 |
-| 3 | 실제 iPhone Safari QA 미실시 | DEVICE QA |
+| 3 | 실제 iPhone Safari QA 미실시. PHASE I에서 Playwright WebKit(휴대폰 크기 · 터치 · iPhone UA)로 **시뮬레이션** QA만 했다. 실기기만 답할 수 있는 항목과 5분 체크리스트: `docs/SITE_UPGRADE_PHASE_I.md` | DEVICE QA |
 | 4 | works · archive 페이지는 차고 원본 그림(약 700KB)을 흐린 배경으로 받는다. 정보 페이지는 240px 사본으로 줄였다 | PHASE K |
+| 5 | 진열장(작업 기록 진열장)의 그려진 물건 14개 중 일부는 휴대폰에서 폭 15–41px(그림 크기 그대로, 이웃과 맞닿아 있어 넓힐 수 없음). 44px 대체 경로: 하나를 고르면 나오는 카드의 ‹ › 가 14개 전부를 차례로 보여 준다(WCAG 2.5.8 equivalent). `e2e/touch-i.spec.ts`가 대체 경로를 검사 | 목록형 보기 검토(선택) |
 
 ### 해결된 known issue
 
@@ -107,5 +110,6 @@ git push origin rollback/<사유>
 | 휴대폰에서 LUNAI 개인정보처리방침 본문이 보이지 않음(reveal 18% 규칙) | PR #21 `ed9b3e5` |
 | 가로 화면 기록 서랍(cabinet) 51px overflow, 같은 영역에서 꺼낸 서류가 LIMINAL 사건 파일 탭을 덮던 문제 | PR #24 `fa1c46b` — 휴대폰 가로(높이 ≤ 520)에서 캐비닛 전체 + 옆 두 칸(서류 · 서류철). 서류 45가지 × 줄 늘림 0~2 모두 탭을 덮지 않는다(`e2e/drawer-landscape.spec.ts`) |
 | `#playground` 도착 e2e false failure | PR #23 `29d01ab` (test only) |
+| 모바일 · 반응형 · 접근성 감사 18건(TV VIEW PROJECT 클릭 불가, 택배 패널 Tab 탈출, 홈의 보이지 않는 링크 11개, 모바일 메뉴 가두기 · 바깥 탭 · 짧은 가로, 라디오 5.6px 글자, 10px 미만 글자(710개 화면 상태에서 1,344건), footer 대비 3.66:1 등) | PHASE I — `docs/SITE_UPGRADE_PHASE_I.md` |
 
 선택 오디오 자산(OPTIONAL, `docs/SITE_UPGRADE_PHASE_F.md`)은 known issue가 아니라 백로그로 유지한다.

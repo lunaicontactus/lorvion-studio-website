@@ -175,7 +175,7 @@ ${groups}
 export function renderPageIndex(): string {
   const links = [...NAV, ...FOOTER.flatMap((g) => g.links)]
     .filter((l, i, all) => l.href !== '/' && all.findIndex((m) => m.href === l.href) === i)
-  return `<nav class="visually-hidden" aria-label="EUNGARAGE 페이지">
+  return `<nav class="visually-hidden page-links" aria-label="EUNGARAGE 페이지">
 ${links.map((l) => `    <a href="${l.href}">${esc(l.label)}</a>`).join('\n')}
     <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>
   </nav>`

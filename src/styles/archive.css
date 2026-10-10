@@ -247,10 +247,10 @@ body.is-healing .site-nav{opacity:0;pointer-events:none;transition:opacity 900ms
 .prop--archive .memory{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:.4em;padding:3%;container-type:inline-size;align-items:center;justify-items:center}
 .prop--archive .memory__img{max-width:100%;max-height:100%;width:auto;height:auto;border:.5cqi solid #fbf5e6;box-shadow:0 6px 16px rgba(10,8,20,.6);transform:rotate(-1.2deg);background:#2b231d}
 .prop--archive .memory__note{margin:0;text-align:center;color:#fff6e4;text-shadow:0 1px 3px rgba(10,8,20,.8);font:600 clamp(10px,3.6cqi,14px)/1.4 var(--sans)}
-.prop--archive .memory__when{display:block;font:600 clamp(9px,3cqi,12px)/1.3 var(--mono);letter-spacing:.08em;opacity:.8}
+.prop--archive .memory__when{display:block;font:600 clamp(10px,3cqi,12px)/1.3 var(--mono);letter-spacing:.08em;opacity:.8}
 /* A crew note (PHASE G): a scrap of paper on the lid, in the room's own ink. */
 .prop--archive .memory__note--memo{grid-row:1 / -1;max-width:86%;padding:.9em 1.1em .8em;border-radius:2px;background:#f6ead0;color:#3a2614;text-shadow:none;text-align:left;font:600 clamp(11px,4.4cqi,16px)/1.55 var(--sans);box-shadow:0 6px 14px rgba(10,8,20,.55);transform:rotate(-1.4deg)}
-.prop--archive .memory__by{display:block;margin-top:.5em;text-align:right;font:800 clamp(9px,3.2cqi,12px)/1 var(--mono);letter-spacing:.1em;color:#8a5a2c}
+.prop--archive .memory__by{display:block;margin-top:.5em;text-align:right;font:800 clamp(10px,3.2cqi,12px)/1 var(--mono);letter-spacing:.1em;color:#8a5a2c}
 .prop--archive .memory__note--memo .memory__when{margin-top:.35em;text-align:right;color:#8a5a2c;opacity:.75}
 .prop--archive .musicbox{position:absolute;inset:0;display:grid;place-items:center;container-type:inline-size}
 .prop--archive .musicbox__line{margin:0;text-align:center;color:#fff6e4;text-shadow:0 1px 3px rgba(10,8,20,.8);font:600 clamp(10px,4cqi,14px)/1.4 var(--sans)}
@@ -264,7 +264,9 @@ body.is-healing .site-nav{opacity:0;pointer-events:none;transition:opacity 900ms
    falls, the stitching in gold instead of brown. */
 .panel-layer[data-kind~="album"] .panel{
   width:min(96vw,1120px);
-  height:min(calc(100vh - var(--nav-h,78px) - 24px),760px);
+  /* svh, the height with the phone's toolbar showing: with vh the table ran
+     under Safari's bottom bar (PHASE I). The cards below size from it too. */
+  height:min(calc(100svh - var(--nav-h,78px) - 24px),760px);
   max-height:none;
   overflow:hidden;
   background:
@@ -281,7 +283,7 @@ body.is-healing .site-nav{opacity:0;pointer-events:none;transition:opacity 900ms
 /* One card size for the whole table, from the table's own height and width,
    and the table's inner edge kept half a card in: every card lies wholly on
    it, however many there are. */
-.album{position:relative;height:100%;--card:clamp(72px,min(11.5vw,calc((100vh - var(--nav-h,78px) - 150px) / 4.4)),150px)}
+.album{position:relative;height:100%;--card:clamp(72px,min(11.5vw,calc((100svh - var(--nav-h,78px) - 150px) / 4.4)),150px)}
 .album__table{position:absolute;inset:calc(var(--card) * .78) calc(var(--card) * .56);transition:opacity 260ms ease,filter 260ms ease}
 .album.is-viewing .album__table{opacity:.25;filter:blur(2px);pointer-events:none}
 .album__empty{
@@ -317,7 +319,7 @@ body.is-healing .site-nav{opacity:0;pointer-events:none;transition:opacity 900ms
 .polaroid__photo img{display:block;width:100%;height:100%;object-fit:cover;max-width:none}
 .polaroid__cap{
   display:block;margin-top:calc(var(--w) * .05);
-  color:#4a3b2c;font:600 clamp(9px,1vw,12px)/1.25 var(--sans);text-align:center;
+  color:#4a3b2c;font:600 clamp(10px,1vw,12px)/1.25 var(--sans);text-align:center;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 
@@ -332,7 +334,7 @@ body.is-healing .site-nav{opacity:0;pointer-events:none;transition:opacity 900ms
 }
 .album__view[hidden]{display:none}
 .polaroid--big{
-  --w:min(440px,62vw,calc((100vh - var(--nav-h,78px) - 170px) * .78));
+  --w:min(440px,62vw,calc((100svh - var(--nav-h,78px) - 170px) * .78));
   position:relative;left:auto;top:auto;
   grid-column:2;grid-row:1;
   transform:rotate(-1.2deg);
@@ -368,13 +370,13 @@ body.is-healing .site-nav{opacity:0;pointer-events:none;transition:opacity 900ms
 @media (max-height:460px){
   .panel-layer[data-kind~="album"] .panel__inner{padding:12px 14px 14px}
   .panel-layer[data-kind~="album"] .panel__title{margin-bottom:4px}
-  .album{--card:clamp(56px,calc((100vh - var(--nav-h,78px) - 90px) / 2.9),110px)}
+  .album{--card:clamp(56px,calc((100svh - var(--nav-h,78px) - 90px) / 2.9),110px)}
   /* The close button sits in the top-right corner; the table stops short of it. */
   .album__table{right:calc(var(--card) * .56 + 30px)}
   /* A short screen holds the photo sideways: the picture, and what is
      written on it beside it rather than under it. */
   .polaroid--big{
-    --h:calc(100vh - var(--nav-h,78px) - 118px);
+    --h:calc(100svh - var(--nav-h,78px) - 118px);
     width:auto;height:var(--h);
     display:grid;grid-template-columns:auto minmax(120px,190px);gap:12px;align-items:start;
     padding:8px 12px 8px 8px;

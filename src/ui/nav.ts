@@ -46,9 +46,25 @@ export function mountNav(root: ParentNode = document): () => void {
         setOpen(false)
         toggle.focus()
       }
+      // While the menu is open it is the page: Tab goes round its links and the
+      // button that closes it, never into the page behind (PHASE I, I-4).
+      if (e.key === 'Tab' && isOpen()) {
+        const stops = [toggle, ...links.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => el.getClientRects().length > 0)
+        const at = stops.indexOf(document.activeElement as HTMLElement)
+        const next = at === -1 ? 0 : (at + (e.shiftKey ? -1 : 1) + stops.length) % stops.length
+        e.preventDefault()
+        stops[next]?.focus()
+      }
     }
     document.addEventListener('keydown', onKey)
     off.push(() => document.removeEventListener('keydown', onKey))
+
+    // A tap on the menu's own background, beside the links, closes it.
+    const onBackdrop = (e: MouseEvent): void => {
+      if (isOpen() && e.target === links) setOpen(false)
+    }
+    links.addEventListener('click', onBackdrop)
+    off.push(() => links.removeEventListener('click', onBackdrop))
 
     const onLink = (): void => setOpen(false)
     for (const a of links.querySelectorAll('a')) {

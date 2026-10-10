@@ -44,8 +44,8 @@
 }
 .panel__body{position:relative;z-index:1}
 .panel__close{
-  position:absolute;top:12px;right:12px;
-  width:38px;height:38px;
+  position:absolute;top:9px;right:9px;
+  width:44px;height:44px;
   border:0;border-radius:50%;
   background:rgba(180,150,110,.28);
   color:#5a4634;font-size:15px;cursor:pointer;
