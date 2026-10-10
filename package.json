@@ -18,6 +18,7 @@
     "brand:scan": "node scripts/brand-scan.mjs dist"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@eslint/js": "^9.15.0",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.4.1",
