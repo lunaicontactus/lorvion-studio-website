@@ -1,24 +1,23 @@
 # EUNGARAGE 운영 기준
 
-최종 갱신: 2026-10-10 — PHASE I PR 안에서, merge 직전 상태로 작성. PHASE I의 merge SHA · deploy run · live smoke는 merge 뒤에만 알 수 있으므로 여기 미리 적지 않고 release `prod-2026-10-10-phase-i` 노트에 기록한다.
+최종 갱신: 2026-10-10 — PHASE I 배포 · live smoke 완료 후. 이 문서 갱신은 docs-only PR이다: PR의 `verify`는 돌고, merge commit은 `[skip ci]`라 `main`에서 같은 사이트를 다시 verify · 배포하지 않는다(사이트 파일 변경 0). 그래서 `main` HEAD는 이 문서 commit이고, production 배포는 아래 `f862f29`의 run 그대로다.
 
 ## 1. Production checkpoint (LOCK)
 
-이 문서를 쓴 시점(PHASE I merge 직전)의 production:
-
 | 항목 | 값 |
 |---|---|
-| production | **`6008d66`** (main) — PHASE H(#22 `66fb0d6`) + test fix #25 |
-| production deploy run | **37995194051** — verify(unit 336/336 · e2e 432/432) → verify가 만든 artifact 그대로 배포 |
-| live bundle | `main-CtoPCRbU.js` |
-| live smoke | regression 69/69 · PHASE H 50/50 · 개인정보처리방침 휴대폰 세로/가로/데스크톱 · 기록 서랍 측정 |
-| 마지막 tag | `prod-2026-10-10` / `6008d66` (PHASE H) |
-| 다음 tag | PHASE I merge · 배포 · live smoke가 끝나면 `prod-2026-10-10-phase-i`. SHA · run · 결과는 그 release 노트에 |
+| production | **`f862f29`** (main) — PHASE I, PR #26 merge (branch head `0167162`) |
+| production deploy run | **38050217933** — verify(lint · typecheck · unit 339/339 · build · brand scan · e2e 496/496 · frozen URL) → verify가 만든 `dist-f862f296…` artifact 그대로 배포(재빌드 없음, `.nojekyll` 포함) |
+| live bundle | `main-DJ3w7pHA.js` · `main-CcRcfwo1.css` (cache-busted 요청으로 artifact와 일치 확인) |
+| live smoke | regression 69/69 · PHASE H 50/50 · PHASE I 20/20 · PHASE I spec을 production에 64/64(axe 0, 키보드, 6개 화면 터치 계약, WebKit 시뮬레이션) · LUNAI 문서 4개 법적 본문 동일 |
+| 마지막 tag | **`prod-2026-10-10-phase-i`** / `f862f29` |
+| 이전 checkpoint | `prod-2026-10-10` / `6008d66` (PHASE H) |
 
 checkpoint 이력:
 
 | tag | commit | 내용 | deploy run | e2e | live smoke |
 |---|---|---|---|---|---|
+| `prod-2026-10-10-phase-i` | `f862f29` | PHASE I 모바일 · 반응형 · 접근성(PR #26) | 38050217933 | 496/496 | 69/69 + H 50/50 + I 20/20 + I spec 64/64 |
 | `prod-2026-10-10` | `6008d66` | PHASE H(#22 `66fb0d6`) + PR #25 e2e test only(발소리 확인이 누군가 걸어 들어온 뒤부터) | 37995194051 | 432/432 | 69/69 + PHASE H 50/50 |
 | — | `66fb0d6` | PR #22 PHASE H merge. verify 1건 실패(발소리 false failure → #25)로 배포 생략, live 영향 없음 | 37978981569 | 431/432 | — |
 | — | `fa1c46b` | PR #24 기록 서랍 가로 수정(사건 파일 탭 덮임 · 51px overflow) | 37962557707 | 398/398 | 69/69 |
@@ -38,6 +37,7 @@ checkpoint 이력:
 - 브랜치에서 구현·검증한다. 사용자 승인 전에는 merge하지 않는다.
 - 배포는 PR → `verify` 통과 → merge 순서다. merge로 `main`이 바뀌면 workflow가 다시 verify한 뒤 그 빌드를 Pages로 배포한다.
 - PR의 최신 commit 메시지에 `[skip ci]`가 있으면 GitHub가 verify를 건너뛴다. 최종 검증을 받을 commit에는 넣지 않는다.
+- **문서만 바꾸는 PR**(사이트 파일 변경 0): PR의 verify는 그대로 받고, merge commit 제목에 `[skip ci]`를 넣어 `main`에서 같은 사이트를 다시 verify · 배포하지 않는다. 사이트 파일이 하나라도 바뀌면 이렇게 하지 않는다.
 
 ## 3. Rollback — revert PR 방식
 
@@ -98,7 +98,7 @@ git push origin rollback/<사유>
 |---|---|---|
 | 1 | **법적 문서 질문**: *operator naming differs across legal documents; retained intentionally pending legal review.* 개인정보처리방침은 운영 주체를 "EUNGARAGE 루나아이 운영팀"으로 적고, 이용약관 · 커뮤니티 이용규칙은 "운영자"라고만 적는다. 본문 변경은 법적 변경이라 하지 않았다 | 법적 검토 |
 | 2 | 라디오 NIGHT `ambient.m4a` 루프 지점 0.43초 무음 + 하드 재시작(원본 파일 문제). 공개 기록실 SOUND에도 같은 파일 | 청취 판정 후 REQUIRED AUDIO FIX 여부 |
-| 3 | 실제 iPhone Safari QA 미실시. PHASE I에서 Playwright WebKit(휴대폰 크기 · 터치 · iPhone UA)로 **시뮬레이션** QA만 했다. 실기기만 답할 수 있는 항목과 5분 체크리스트: `docs/SITE_UPGRADE_PHASE_I.md` | DEVICE QA |
+| 3 | **REAL IPHONE SAFARI QA: NOT YET PERFORMED.** PHASE I은 Playwright WebKit(휴대폰 크기 · 터치 · iPhone UA) **시뮬레이션**만 했다(PR과 production 모두 통과). 실기기만 답할 수 있는 항목과 5분 체크리스트: `docs/SITE_UPGRADE_PHASE_I.md` §8 | 사용자 실기기 확인 |
 | 4 | works · archive 페이지는 차고 원본 그림(약 700KB)을 흐린 배경으로 받는다. 정보 페이지는 240px 사본으로 줄였다 | PHASE K |
 | 5 | 진열장(작업 기록 진열장)의 그려진 물건 14개 중 일부는 휴대폰에서 폭 15–41px(그림 크기 그대로, 이웃과 맞닿아 있어 넓힐 수 없음). 44px 대체 경로: 하나를 고르면 나오는 카드의 ‹ › 가 14개 전부를 차례로 보여 준다(WCAG 2.5.8 equivalent). `e2e/touch-i.spec.ts`가 대체 경로를 검사 | 목록형 보기 검토(선택) |
 
@@ -110,6 +110,10 @@ git push origin rollback/<사유>
 | 휴대폰에서 LUNAI 개인정보처리방침 본문이 보이지 않음(reveal 18% 규칙) | PR #21 `ed9b3e5` |
 | 가로 화면 기록 서랍(cabinet) 51px overflow, 같은 영역에서 꺼낸 서류가 LIMINAL 사건 파일 탭을 덮던 문제 | PR #24 `fa1c46b` — 휴대폰 가로(높이 ≤ 520)에서 캐비닛 전체 + 옆 두 칸(서류 · 서류철). 서류 45가지 × 줄 늘림 0~2 모두 탭을 덮지 않는다(`e2e/drawer-landscape.spec.ts`) |
 | `#playground` 도착 e2e false failure | PR #23 `29d01ab` (test only) |
-| 모바일 · 반응형 · 접근성 감사 18건(TV VIEW PROJECT 클릭 불가, 택배 패널 Tab 탈출, 홈의 보이지 않는 링크 11개, 모바일 메뉴 가두기 · 바깥 탭 · 짧은 가로, 라디오 5.6px 글자, 10px 미만 글자(710개 화면 상태에서 1,344건), footer 대비 3.66:1 등) | PHASE I — `docs/SITE_UPGRADE_PHASE_I.md` |
+| TV VIEW PROJECT 클릭 · 탭 불가(지지직 레이어가 위에 있음) | PHASE I `f862f29` |
+| 택배 패널에서 Tab이 밖으로 빠짐 · 홈의 보이지 않는 키보드 정지 11개 | PHASE I `f862f29` — 가두기는 `getClientRects`로, 링크는 포커스되면 보이는 띠 |
+| 모바일 메뉴: Tab 탈출 · 바깥 탭 무반응 · 짧은 가로에서 링크 잘림 | PHASE I `f862f29` |
+| 44px 미만 터치 대상 3,602건 · 10px 미만 글자 1,344건(710개 화면 상태) · footer 대비 3.66:1 · axe 위반 27건(라디오 ARIA, 개인정보 표 스크롤 포함) | PHASE I `f862f29` — 0 · 0 · 6.1:1 · 0 (진열장 그림 물건은 known issue 5의 대체 경로) |
+| TV 손잡이가 화면 밖인데 포커스 · safe-area 없음 · 택배 태그 · 진열장 카드가 화면 밖 · 물건 포커스 표시 약함 | PHASE I `f862f29` |
 
 선택 오디오 자산(OPTIONAL, `docs/SITE_UPGRADE_PHASE_F.md`)은 known issue가 아니라 백로그로 유지한다.

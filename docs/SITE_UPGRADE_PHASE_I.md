@@ -1,6 +1,6 @@
 # SITE UPGRADE — PHASE I REPORT (MOBILE / RESPONSIVE / ACCESSIBILITY)
 
-브랜치 `phase-i-mobile-accessibility` (main `6008d66` = `prod-2026-10-10`에서). 수정 전 감사는 `SITE_UPGRADE_PHASE_I_AUDIT.md`. merge SHA · deploy run · live smoke는 merge 뒤에 release `prod-2026-10-10-phase-i` 노트에 적는다.
+브랜치 `phase-i-mobile-accessibility` (main `6008d66` = `prod-2026-10-10`에서). 수정 전 감사는 `SITE_UPGRADE_PHASE_I_AUDIT.md`. **production: PR #26 → `f862f29`, run 38050217933, tag `prod-2026-10-10-phase-i`** (§12).
 
 **실제 iPhone은 테스트하지 않았다.** 이 문서의 "WebKit"은 전부 Playwright WebKit 시뮬레이션이다(§8).
 
@@ -172,3 +172,17 @@ live에서는 같은 경로를 smoke로 다시 돈다(데스크톱 · 휴대폰 
 - works · archive 배경 700KB — PHASE K
 - 법적 문서 운영 주체 표기 — 법적 검토(known issue 1)
 - 진열장 물건 목록형 보기 — 선택(known issue 5)
+
+## 12. Production (2026-10-10)
+
+| 항목 | 결과 |
+|---|---|
+| PR #26 | head `0167162`, PR verify 496/496 → merge commit **`f862f29`** |
+| production run | **38050217933** — lint · typecheck · unit 339/339 · build · brand scan · e2e 496/496 · frozen URL → `dist-f862f296…` artifact 그대로 배포(재빌드 없음, `.nojekyll` 포함) |
+| live bundle | `main-DJ3w7pHA.js` · `main-CcRcfwo1.css` — artifact · 로컬 빌드와 같은 이름(cache-busted 요청) |
+| regression smoke | 69/69 (ENTER · 차고 · 크루 · PC · TV · 라디오 · 냉장고 · 서랍 · 비밀문 · 놀이터 · 미니게임 · Works 5 · 공개 기록실 · 비밀 보관소 …) |
+| PHASE H smoke | 50/50 (Studio · Support · Contact · Press · LUNAI 문서 4 · 404, 데스크톱 · 세로 · 가로 · WebKit) |
+| PHASE I smoke | 20/20 — 키보드만으로 골목 → 차고 → PC → Escape 복귀, Works → LUNAI → 뷰어 → Escape 복귀 → Shift+Tab; LIMINAL 사건 파일 키보드 열기 · 닫기 · 복귀(3개 화면); 진열장 ‹ › 14개 순환(3개 화면); 택배 가두기; 라디오 글자; production DOM(main · nav · footer · h1 · 현재 페이지 · 이름 · alt · aria-expanded · aria-pressed); 개인정보 표 · footer 대비 6.12:1; 메뉴 배경 탭 차단; safe-area CSS; WebKit TV 탭 · 568×320 메뉴 |
+| PHASE I spec을 production에 | 64/64 — axe 0(390 · 1440), 패널 8종 가두기, 6개 화면 터치 계약, 회전, reduced motion, WebKit 시뮬레이션 |
+| 법적 본문 | LUNAI 문서 4개 production 텍스트 해시 = PHASE H 이전 production |
+| REAL IPHONE SAFARI QA | **NOT YET PERFORMED** (§8 체크리스트) |
