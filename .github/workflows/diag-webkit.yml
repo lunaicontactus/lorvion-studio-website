@@ -1,0 +1,20 @@
+# TEMPORARY diagnostic (PHASE L): one WebKit journey on Linux with a trace. Not for merge.
+name: diag-webkit
+on:
+  pull_request:
+    branches: ["main"]
+    paths: [".github/workflows/diag-webkit.yml", "e2e/diag-l.spec.ts"]
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx vite build
+      - run: npx playwright install --with-deps webkit chromium
+      - run: npx playwright test e2e/diag-l.spec.ts --project=webkit --project=chromium --trace on --reporter=list || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: diag-results, path: test-results/, retention-days: 3 }
