@@ -13,8 +13,8 @@ const state = (page: Page): Promise<unknown> => page.evaluate(() => {
     hash: location.hash, bootError: document.documentElement.dataset['bootError'] ?? null,
   }
 })
-for (const mode of ['journey-b-stars', 'stars-only', 'journey-b-stars']) {
-  test(`out and back by keyboard, sound via ${mode}`, async ({ page }) => {
+for (const [n, mode] of ['journey-b-stars', 'stars-only', 'journey-b-stars'].entries()) {
+  test(`out and back by keyboard, ${mode} #${n}`, async ({ page }) => {
     const log: string[] = []
     page.on('console', (m) => log.push(`console.${m.type()}: ${m.text()}`))
     page.on('pageerror', (e) => log.push(`pageerror: ${e.message}`))
