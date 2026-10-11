@@ -13,26 +13,31 @@ const state = (page: Page): Promise<unknown> => page.evaluate(() => {
     hash: location.hash, bootError: document.documentElement.dataset['bootError'] ?? null,
   }
 })
-for (const mode of ['radio', 'toggle', 'journey-b']) {
+for (const mode of ['journey-b-stars', 'stars-only', 'journey-b-stars']) {
   test(`out and back by keyboard, sound via ${mode}`, async ({ page }) => {
     const log: string[] = []
     page.on('console', (m) => log.push(`console.${m.type()}: ${m.text()}`))
     page.on('pageerror', (e) => log.push(`pageerror: ${e.message}`))
-    await page.addInitScript(() => { try { localStorage.clear(); localStorage.setItem('eungarage:garageHinted', 'true') } catch { /* private mode */ } })
+    await page.addInitScript(() => {
+      try {
+        if (sessionStorage.getItem('d')) return
+        sessionStorage.setItem('d', '1'); localStorage.clear(); localStorage.setItem('eungarage:garageHinted', 'true')
+        for (const id of ['mugunghwa', 'snack', 'parcel']) localStorage.setItem(`eungarage.progress.${id}`, JSON.stringify({ best: 100, stars: 1, plays: 1 }))
+      } catch { /* private mode */ }
+    })
     await page.goto('/?npcseed=7', { waitUntil: 'load' })
     await page.locator('[data-alley-enter]').click()
     await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 20000 })
     await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
     await page.waitForTimeout(1500)
     const open = async (id: string): Promise<void> => { const t = page.locator(`[data-object="${id}"]`); await t.focus(); await page.waitForTimeout(450); await t.press('Enter'); await page.waitForTimeout(1200) }
-    if (mode === 'toggle') await page.locator('[data-sound-toggle]').first().click()
-    if (mode === 'radio' || mode === 'journey-b') {
-      for (const id of mode === 'journey-b' ? ['tv', 'radio', 'fridge'] : ['radio']) {
+        if (mode === 'journey-b-stars') {
+      for (const id of ['tv', 'radio', 'fridge']) {
         await open(id)
         if (id === 'radio') await page.locator('[data-station="1"]').click()
         await page.keyboard.press('Escape'); await page.waitForTimeout(500)
       }
-      if (mode === 'journey-b') { await open('cabinet'); await page.locator('[data-case-file]').click(); await page.waitForTimeout(800); await page.keyboard.press('Escape'); await page.waitForTimeout(500) }
+      { await open('cabinet'); await page.locator('[data-case-file]').click(); await page.waitForTimeout(800); await page.keyboard.press('Escape'); await page.waitForTimeout(500) }
     }
     console.log('SOUND', mode, await page.evaluate(() => document.querySelector('[data-sound-toggle]')?.getAttribute('aria-pressed')))
     const door = page.locator('[data-object="outside-door"]')
