@@ -9,7 +9,7 @@ const fps = (page: Page): Promise<unknown> => page.evaluate(() => new Promise((r
   const step = (): void => { frames++; if (performance.now() - t0 < 2000) requestAnimationFrame(step); else { po.disconnect(); resolve({ fps: Math.round(frames / 2), long, longMs: Math.round(longMs), anims: document.getAnimations().length }) } }
   requestAnimationFrame(step)
 }))
-for (const [n, mode] of ['no-sockets', 'no-seam', 'no-sockets', 'no-seam'].entries()) {
+for (const [n, mode] of ['stars', 'stars', 'stars'].entries()) {
   test(`${mode} #${n}`, async ({ page }) => {
     page.on('crash', () => console.log(`CRASH ${mode} #${n}`))
     await page.addInitScript((m) => {
@@ -18,8 +18,7 @@ for (const [n, mode] of ['no-sockets', 'no-seam', 'no-sockets', 'no-seam'].entri
         sessionStorage.setItem('d', '1'); localStorage.clear(); localStorage.setItem('eungarage:garageHinted', 'true')
         if (m !== 'nostars') for (const id of ['mugunghwa', 'snack', 'parcel']) localStorage.setItem(`eungarage.progress.${id}`, JSON.stringify({ best: 100, stars: 1, plays: 1 }))
         localStorage.setItem('eungarage:save', JSON.stringify({ v: 3, visitCount: 2, secretProgress: 3 }))
-        const css = m === 'no-sockets' ? '.spot__socket{display:none !important}' : '.thing__seam{display:none !important}'
-        document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = css; document.head.append(st) })
+
       } catch { /* private mode */ }
     }, mode)
     await page.goto('/?npcseed=7', { waitUntil: 'load' })

@@ -1,4 +1,4 @@
-# TEMPORARY diagnostic (PHASE L): one WebKit journey on Linux with a trace. Not for merge.
+# TEMPORARY diagnostic (PHASE L): one WebKit journey on Linux. Not for merge.
 name: diag-webkit
 on:
   pull_request:
@@ -6,15 +6,20 @@ on:
     paths: [".github/workflows/diag-webkit.yml", "e2e/diag-l.spec.ts", "playwright.config.ts"]
 jobs:
   diag:
+    strategy:
+      fail-fast: false
+      matrix:
+        code: [current, phase-i-f862f29]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - if: matrix.code == 'phase-i-f862f29'
+        run: git checkout f862f29 -- src index.html works.html works archive.html vite.config.ts public
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npx vite build
-      - run: npx playwright install --with-deps webkit chromium
-      - run: npx playwright test e2e/diag-l.spec.ts --project=webkit --trace on --reporter=list || true
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with: { name: diag-results, path: test-results/, retention-days: 3 }
+      - run: npx playwright install --with-deps webkit
+      - run: DEBUG=pw:browser npx playwright test e2e/diag-l.spec.ts --project=webkit --reporter=list > diag.txt 2>&1 || true
+      - run: grep -E "GARAGE|PLAYGROUND|BACK|CRASH|passed|failed" diag.txt | cut -c1-300; echo ----; grep -iE "crash|abort|assert|signal|oom|out of memory|SIGSEGV|SIGKILL|segmentation|killed|ERROR" diag.txt | grep -v "Error Context" | sort | uniq -c | sort -rn | head -40
