@@ -1,23 +1,23 @@
 # EUNGARAGE 운영 기준
 
-최종 갱신: 2026-10-11 — PHASE L PR 안에서. PHASE J · K는 배포 · live smoke까지 끝난 사실이고, PHASE L의 merge SHA · run · 최종 tag는 merge 뒤에만 알 수 있으므로 release 노트와 그 뒤 docs-only PR에 적는다.
+최종 갱신: 2026-10-12 — SITE UPGRADE A–L 완료, 최종 배포 · live smoke · tag 뒤. 이 갱신은 docs-only PR이고 merge commit은 `[skip ci]`(사이트 파일 변경 0)라, `main` HEAD는 이 문서 commit이고 production 배포는 아래 `a46b529`의 run 그대로다.
 
 ## 1. Production checkpoint (LOCK)
 
-이 문서를 쓴 시점(PHASE L merge 직전)의 production:
-
 | 항목 | 값 |
 |---|---|
-| production | **`e98a466`** (main) — PHASE K, PR #29 merge (branch head `ae376c5`) |
-| production deploy run | **38118167112** — verify(lint · typecheck · unit 349/349 · build · brand scan · e2e 515/515 · frozen URL) → `dist-e98a466…` artifact 그대로 배포(재빌드 없음, `.nojekyll` 포함) |
+| production | **`a46b529`** (main) — PHASE L, PR #30 merge (branch head `9dcb03a`) |
+| production deploy run | **38153906764** — verify(lint · typecheck · unit 349/349 · build · brand scan · e2e 545/545, Chromium + Firefox + WebKit · frozen URL) → `dist-a46b529…` artifact 그대로 배포(재빌드 없음, `.nojekyll` 포함) |
 | live bundle | `main-CJAmBQqF.js` · `main-D9Lej7H9.css` · 홈만 `world-BXByOmgr.js` (cache-busted 요청으로 artifact와 일치 확인) |
-| live smoke | regression 69/69 · PHASE H 50/50 · PHASE I 20/20 · PHASE J 메타데이터 27/27 · PHASE K 예산 + PHASE L 여정 + SEO spec을 production에 Chromium · Firefox · WebKit 46/46 · LUNAI 문서 4개 법적 본문 동일 |
-| 마지막 tag | `prod-2026-10-10-phase-i` / `f862f29` — J · K는 L과 함께 최종 tag로 묶는다 |
+| live smoke | regression 69/69 · PHASE H 50/50 · PHASE I 20/20 · PHASE J 메타데이터 27/27 · production에 spec(최종 여정 · 예산 · SEO 크롤 · prerender · axe/키보드 · 터치 계약 · WebKit 휴대폰) 113/113, 세 엔진 · LUNAI 문서 4개 법적 본문 동일 |
+| 마지막 tag | **`prod-2026-10-12-final`** / `a46b529` |
+| 이전 checkpoint | `prod-2026-10-10-phase-i` / `f862f29` (PHASE I) |
 
 checkpoint 이력:
 
 | tag | commit | 내용 | deploy run | e2e | live smoke |
 |---|---|---|---|---|---|
+| `prod-2026-10-12-final` | `a46b529` | PHASE L 최종 QA(PR #30): route 정본 · 여정 A–F 세 엔진 · 화면 매트릭스 · 증거. 사이트 코드 변경 없음. verify 3번 실패 → 원인 증명(test bug 2 + Linux WebKit 환경 1, known issue 5) | 38153906764 | 545/545 | 69 + 50 + 20 + J 27 + spec 113 |
 | — | `e98a466` | PHASE K 성능(PR #29): 흐린 배경 작은 사본, 차고 청크 분리, 작은 로고, 예산 | 38118167112 | 515/515 | 69 + 50 + 20 + J 27 + spec 46 |
 | — | `ef5e5fd` | PHASE J SEO(PR #28): 본문 prerender, 메타 · 공유 카드 · JSON-LD | 38108557936 | 508/508 | 69 + 50 + 20 + J 27 + spec 12 |
 | — | `d6693fb` | PR #27 문서만(PHASE I 운영 기록), merge `[skip ci]` — 배포 없음, 사이트 파일 변경 0 | — (PR verify 496/496) | — | — |

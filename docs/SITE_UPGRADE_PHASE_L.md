@@ -1,6 +1,6 @@
 # SITE UPGRADE — PHASE L REPORT (FINAL QA)
 
-브랜치 `phase-l-final-qa` (main `e98a466` = PHASE K production에서). 새 기능 없음. A–K로 만든 사이트 전체를 처음 온 사람처럼 다시 돌고, 남은 문제를 찾는다. merge SHA · run · 최종 tag는 merge 뒤 release 노트에 적는다.
+브랜치 `phase-l-final-qa` (main `e98a466` = PHASE K production에서). 새 기능 없음. A–K로 만든 사이트 전체를 처음 온 사람처럼 다시 돌고, 남은 문제를 찾는다. **production: PR #30 → `a46b529`, run 38153906764, tag `prod-2026-10-12-final`** (§12).
 
 ## 1. 기준
 
@@ -206,3 +206,14 @@ PHASE I 감사 하네스, 7개 화면 × 42 상태 = **293 상태**: 320×568 ·
 | `playwright.config.ts` | `final-l`을 Firefox · WebKit 프로젝트에도 |
 | `docs/SITE_UPGRADE_PHASE_L.md` · `docs/shots/phaseL/` | 이 보고서와 증거 |
 | `docs/OPERATIONS.md` | J · K production 기록, known issue 최종 목록 |
+
+## 12. Production (2026-10-12)
+
+| 항목 | 결과 |
+|---|---|
+| PR #30 | head `9dcb03a`, PR verify 545/545 (네 번째; 앞의 세 번은 §3의 원인) → merge **`a46b529`** |
+| production run | **38153906764** — unit 349/349 · e2e 545/545(세 엔진) · brand scan · frozen URL → `dist-a46b529…` 그대로 배포 |
+| live bundle | `main-CJAmBQqF.js` · `main-D9Lej7H9.css` · 홈 `world-BXByOmgr.js` (K와 같음 — L은 사이트 코드 변경 없음) |
+| 최종 live smoke | regression 69/69 · H 50/50 · I 20/20 · J 메타 27/27 · production spec 113/113(Chromium · Firefox · WebKit) · 법적 본문 동일 |
+| 최종 tag | `prod-2026-10-12-final` |
+| REAL IPHONE SAFARI QA | **NOT PERFORMED** (§9) |
