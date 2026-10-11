@@ -1,62 +1,41 @@
 import { test, expect, type Page } from '@playwright/test'
-// TEMPORARY diagnostic for PR #30: why Enter on the playground's garage door does not bring the room back on Linux WebKit.
+// TEMPORARY diagnostic for PR #30: Linux WebKit, playground with earned stars. Not for merge.
 test.use({ viewport: { width: 1440, height: 900 } })
-const state = (page: Page): Promise<unknown> => page.evaluate(() => {
-  const a = document.activeElement as HTMLElement | null
-  const pg = document.querySelector<HTMLElement>('[data-playground]')
-  return {
-    active: a ? `${a.tagName}.${a.className.split(' ')[0]}[${a.dataset['place'] ?? ''}]` : null,
-    pgHidden: pg?.hidden, pgClass: pg?.className, garageHidden: document.querySelector<HTMLElement>('[data-garage]')?.hidden,
-    crossingHidden: document.querySelector<HTMLElement>('[data-crossing]')?.hidden,
-    panelHidden: document.querySelector<HTMLElement>('[data-panel-root]')?.hidden ?? null,
-    inert: [...document.querySelectorAll('[inert]')].map((e) => `${e.tagName}#${e.id}.${String(e.className).split(' ')[0]}`),
-    hash: location.hash, bootError: document.documentElement.dataset['bootError'] ?? null,
-  }
-})
-for (const [n, mode] of ['journey-b-stars', 'stars-only', 'journey-b-stars'].entries()) {
-  test(`out and back by keyboard, ${mode} #${n}`, async ({ page }) => {
-    const log: string[] = []
-    page.on('console', (m) => log.push(`console.${m.type()}: ${m.text()}`))
-    page.on('pageerror', (e) => log.push(`pageerror: ${e.message}`))
-    await page.addInitScript(() => {
+const fps = (page: Page): Promise<unknown> => page.evaluate(() => new Promise((resolve) => {
+  let frames = 0; let long = 0; let longMs = 0
+  const po = new PerformanceObserver((l) => { for (const e of l.getEntries()) { long++; longMs += e.duration } })
+  try { po.observe({ type: 'longtask', buffered: false }) } catch { /* unsupported */ }
+  const t0 = performance.now()
+  const step = (): void => { frames++; if (performance.now() - t0 < 2000) requestAnimationFrame(step); else { po.disconnect(); resolve({ fps: Math.round(frames / 2), long, longMs: Math.round(longMs), anims: document.getAnimations().length }) } }
+  requestAnimationFrame(step)
+}))
+for (const [n, mode] of ['celebrated', 'uncelebrated', 'nostars', 'celebrated', 'uncelebrated', 'nostars'].entries()) {
+  test(`${mode} #${n}`, async ({ page }) => {
+    page.on('crash', () => console.log(`CRASH ${mode} #${n}`))
+    await page.addInitScript((m) => {
       try {
         if (sessionStorage.getItem('d')) return
         sessionStorage.setItem('d', '1'); localStorage.clear(); localStorage.setItem('eungarage:garageHinted', 'true')
-        for (const id of ['mugunghwa', 'snack', 'parcel']) localStorage.setItem(`eungarage.progress.${id}`, JSON.stringify({ best: 100, stars: 1, plays: 1 }))
+        if (m !== 'nostars') for (const id of ['mugunghwa', 'snack', 'parcel']) localStorage.setItem(`eungarage.progress.${id}`, JSON.stringify({ best: 100, stars: 1, plays: 1 }))
+        if (m === 'celebrated') localStorage.setItem('eungarage:save', JSON.stringify({ v: 3, visitCount: 2, secretProgress: 3 }))
       } catch { /* private mode */ }
-    })
+    }, mode)
     await page.goto('/?npcseed=7', { waitUntil: 'load' })
     await page.locator('[data-alley-enter]').click()
     await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 20000 })
     await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
-    await page.waitForTimeout(1500)
-    const open = async (id: string): Promise<void> => { const t = page.locator(`[data-object="${id}"]`); await t.focus(); await page.waitForTimeout(450); await t.press('Enter'); await page.waitForTimeout(1200) }
-        if (mode === 'journey-b-stars') {
-      for (const id of ['tv', 'radio', 'fridge']) {
-        await open(id)
-        if (id === 'radio') await page.locator('[data-station="1"]').click()
-        await page.keyboard.press('Escape'); await page.waitForTimeout(500)
-      }
-      { await open('cabinet'); await page.locator('[data-case-file]').click(); await page.waitForTimeout(800); await page.keyboard.press('Escape'); await page.waitForTimeout(500) }
-    }
-    console.log('SOUND', mode, await page.evaluate(() => document.querySelector('[data-sound-toggle]')?.getAttribute('aria-pressed')))
+    await page.waitForTimeout(3000)
+    console.log(mode, n, 'GARAGE', JSON.stringify(await fps(page)), await page.locator('[data-object="secret-door"]').getAttribute('class'))
     const door = page.locator('[data-object="outside-door"]')
     await door.focus(); await page.waitForTimeout(450); await door.press('Enter')
     await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 15000 })
     await expect(page.locator('[data-crossing]')).toBeHidden({ timeout: 15000 })
     await expect(page.locator('[data-playground]')).not.toHaveClass(/is-hushed/, { timeout: 15000 })
-    console.log('ARRIVED', JSON.stringify(await state(page)))
+    console.log(mode, n, 'PLAYGROUND', JSON.stringify(await fps(page)))
     await page.locator('[data-place="garage-door"]').focus()
     await page.waitForTimeout(500)
-    console.log('FOCUSED', JSON.stringify(await state(page)))
     await page.keyboard.press('Enter')
     await page.waitForTimeout(4000)
-    console.log('AFTER ENTER', JSON.stringify(await state(page)))
-    if (await page.locator('[data-garage]').isHidden()) {
-      await page.locator('[data-place="garage-door"]').click()
-      await page.waitForTimeout(4000)
-      console.log('AFTER CLICK', JSON.stringify(await state(page)))
-    }
-    console.log('LOG', log.join(' | ').slice(0, 2000))
+    console.log(mode, n, 'BACK', await page.locator('[data-garage]').isVisible())
   })
 }
