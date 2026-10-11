@@ -196,7 +196,11 @@ describe('the pages', () => {
     for (const p of PROJECTS) {
       const html = read(`works/${p.id}.html`)
       expect(html, p.id).toContain(`<title>${p.title} — EUNGARAGE</title>`)
-      expect(html, p.id).toContain(`<meta name="description" content="${p.taglineKo}">`)
+      // The record's line first, then what it is and where (PHASE J): never words the record does not have.
+      const desc = html.match(/<meta name="description" content="([^"]*)">/)?.[1] ?? ''
+      expect(desc.startsWith(p.taglineKo), `${p.id}: description starts with its line`).toBe(true)
+      expect(desc, `${p.id}: genre`).toContain(p.genre)
+      for (const x of p.platforms) expect(desc, `${p.id}: platform`).toContain(x)
       expect(html, p.id).toContain(`<link rel="canonical" href="https://eungarage.com/works/${p.id}.html">`)
       expect(html, p.id).toContain(`data-works-detail="${p.id}"`)
       expect(html, p.id).toMatch(new RegExp(`<h1[^>]*>${p.title.replace(/[!]/g, '\\$&')}</h1>`))
