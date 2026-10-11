@@ -66,6 +66,30 @@ async function closePanel(page: Page): Promise<void> {
   await page.waitForTimeout(500)
 }
 
+/** Out through the door to the playground, wait for it to arrive, and back through the arch. */
+async function outAndBack(page: Page): Promise<void> {
+  await openThing(page, 'outside-door')
+  await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 15_000 })
+  // Arrived: the night has lifted (WORLD 2.1). Until then the playground
+  // ignores a press on purpose (world.ts onPlace) — a fixed wait missed it.
+  await expect(page.locator('[data-crossing]')).toBeHidden({ timeout: 15_000 })
+  await expect(page.locator('[data-playground]')).not.toHaveClass(/is-hushed/, { timeout: 15_000 })
+  await page.locator('[data-place="garage-door"]').focus()
+  await page.waitForTimeout(500)
+  await page.keyboard.press('Enter')
+  await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 15_000 })
+  // Back in the room once it is running again, not only shown.
+  await expect(page.locator('[data-garage]')).not.toHaveClass(/is-paused/, { timeout: 15_000 })
+  await page.waitForTimeout(800)
+}
+
+/** The secret door, its three stars seeded, into the storage. */
+async function intoStorage(page: Page): Promise<void> {
+  await openThing(page, 'secret-door').catch(() => undefined)
+  if (!(await page.locator('[data-archive]').isVisible())) await page.locator('[data-object="secret-door"]').press('Enter')
+  await expect(page.locator('[data-archive]')).toBeVisible({ timeout: 15_000 })
+}
+
 test.describe('L-1 every route', () => {
   test('answers, is named, names itself as canonical, has the site around it, and logs nothing wrong', async ({ page, request, baseURL }) => {
     test.setTimeout(180_000)
@@ -118,10 +142,25 @@ test.describe('L-2 journeys, by mouse', () => {
     expect(w.problems).toEqual([])
   })
 
-  test('B — the room: TV → radio → fridge → cabinet → LIMINAL case → playground → secret door', async ({ page }) => {
+  /**
+   * Linux WebKit (the CI runner's WebKit, software-rendered) loses its web
+   * process during the animated crossing to the playground when the secret
+   * door is unlocked — exit code 0, no signal, no page error. Proven on the
+   * runner (diagnostic PR #31): with the three stars and motion it ends
+   * 2–4 times in 4; without the stars, never (11 runs); with reduced motion,
+   * never (3 runs); hiding every star picture does not change it; the PHASE I
+   * code (f862f29) does the same, so it is older than J, K and L. macOS
+   * WebKit (Apple's port) does the whole path 10 times in 10. So there, and
+   * only there, journey B goes out and back without the stars, and B′ below
+   * walks the secret door with reduced motion. docs/SITE_UPGRADE_PHASE_L.md §3.
+   */
+  const linuxWebkit = (browserName: string): boolean => browserName === 'webkit' && process.platform === 'linux'
+
+  test('B — the room: TV → radio → fridge → cabinet → LIMINAL case → playground → secret door', async ({ page, browserName }) => {
     test.setTimeout(180_000)
+    const stars = !linuxWebkit(browserName)
     const w = watch(page)
-    await seed(page, true)
+    await seed(page, stars)
     await enterGarage(page)
     for (const id of ['tv', 'radio', 'fridge']) {
       await openThing(page, id)
@@ -132,28 +171,23 @@ test.describe('L-2 journeys, by mouse', () => {
     await press(page, '[data-case-file]', false)
     await expect(page.locator('[data-case-go]')).toBeVisible()
     await closePanel(page)
-    // Out to the playground and back.
-    await openThing(page, 'outside-door')
-    await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 15_000 })
-    // Arrived: the night has lifted (WORLD 2.1). Until then the playground
-    // ignores a press on purpose — a fixed wait missed it on CI WebKit, where
-    // the crossing ran past 1.5 s (PR #30, run 38124486785).
-    await expect(page.locator('[data-crossing]')).toBeHidden({ timeout: 15_000 })
-    await expect(page.locator('[data-playground]')).not.toHaveClass(/is-hushed/, { timeout: 15_000 })
-    await page.locator('[data-place="garage-door"]').focus()
-    await page.waitForTimeout(500)
-    await page.keyboard.press('Enter')
-    await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 15_000 })
-    // Back in the room once it is running again, not only shown.
-    await expect(page.locator('[data-garage]')).not.toHaveClass(/is-paused/, { timeout: 15_000 })
-    await page.waitForTimeout(800)
+    await outAndBack(page)
     // The secret door (its three stars are seeded) into the storage.
-    await openThing(page, 'secret-door').catch(() => undefined)
-    if (!(await page.locator('[data-archive]').isVisible())) {
-      await page.locator('[data-object="secret-door"]').press('Enter')
-    }
-    await expect(page.locator('[data-archive]')).toBeVisible({ timeout: 15_000 })
+    if (stars) await intoStorage(page)
     expect(w.problems).toEqual([])
+  })
+
+  test('B′ — with less motion: the stars earned, out to the playground and back, through the secret door', async ({ browser }) => {
+    test.setTimeout(150_000)
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', baseURL: test.info().project.use.baseURL })
+    const page = await ctx.newPage()
+    const w = watch(page)
+    await seed(page, true)
+    await enterGarage(page)
+    await outAndBack(page)
+    await intoStorage(page)
+    expect(w.problems).toEqual([])
+    await ctx.close()
   })
 
   test('C — the works and the archive: five works, their pictures, the records, an early prototype', async ({ page }) => {

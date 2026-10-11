@@ -27,12 +27,13 @@
 
 ## 3. L-2 · L-3 여정과 브라우저
 
-`e2e/final-l.spec.ts`, **Chromium · Firefox · WebKit 18/18** (로컬, production에서도):
+`e2e/final-l.spec.ts`, **Chromium · Firefox · WebKit 30/30** (10개 × 3엔진, 로컬):
 
 | 여정 | 방법 | 내용 |
 |---|---|---|
 | A 처음 방문 | 마우스 | 골목 ENTER → 차고 → TV → nav WORKS(방 안에서는 PC가 열림) → 데스크톱 LIMINAL → 작품 페이지 → WORKS → LUNAI → 차고로 |
-| B 세계 탐색 | 마우스 + 키보드로 물건 열기 | TV → 라디오(방송국) → 냉장고 → 서랍 → LIMINAL 사건 파일 → 놀이터 왕복 → 비밀문 → 비밀 보관소 |
+| B 세계 탐색 | 마우스 + 키보드로 물건 열기 | TV → 라디오(방송국) → 냉장고 → 서랍 → LIMINAL 사건 파일 → 놀이터 왕복 → 비밀문 → 비밀 보관소 (Linux WebKit만 비밀문 전까지, 아래) |
+| B′ 덜 움직이게 | reduced motion | 별 3개 → 놀이터 왕복 → 비밀문 → 비밀 보관소 |
 | C 작품 · 기록 | 마우스 | 작품 5개 각각 갤러리 뷰어 열고 → 다음 → 닫기 → 기록실 EARLY PROTOTYPE · 뷰어 |
 | D 회사 정보 | 마우스 | Studio → Press → Contact(메일 4종) → Support |
 | E LUNAI 문서 | 마우스 | Support → 개인정보 → 이용약관 → 커뮤니티 → 계정 삭제 |
@@ -43,12 +44,20 @@
 모든 여정에서 uncaught error · console error · 실패한 first-party 요청 **0**.
 
 - 키보드 여정은 처음에 WebKit에서 건너뛰었다가 되살렸다: Safari의 기본 Tab은 링크와 버튼을 건너뛰고, Option+Tab이 실제 Safari 키보드 사용자가 누르는 키다.
-- 여정 B는 첫 PR verify(run 38124486785, 541/542)에서 **WebKit만 실패**했다(test bug, 증명됨):
-  - 놀이터에 도착하는 동안("밤이 걷히는" crossing)은 입력을 일부러 무시한다(`src/app/world.ts` `onPlace`: `if (crossing) return`, WORLD 2.1).
-  - 로컬 측정에서 그 시간은 놀이터가 보인 뒤 약 1.77초. 테스트는 고정 1.5초(+포커스 0.5초)만 기다렸고, 더 느린 CI WebKit에서 crossing 중에 Enter를 눌렀다.
-  - 재현: crossing 중 누르면 Chromium · WebKit 모두 무시, 도착 뒤 누르면 둘 다 차고로 돌아옴.
-  - 수정: 기존 `outside.spec`처럼 도착(crossing 사라짐 · `is-hushed` 해제)을, 돌아온 뒤에는 `is-paused` 해제를 기다린다. 3개 엔진 × 3회 9/9, 전체 27/27.
-  - 제품 동작은 바꾸지 않았다.
+- **여정 B — PR verify 두 번 실패(WebKit만, 541/542 두 번).** 원인을 끝까지 쫓았다.
+  - **1차 가설 · 수정(맞지만 부족):** 놀이터는 도착하는 동안(crossing) 입력을 일부러 무시한다(`src/app/world.ts` `onPlace`, WORLD 2.1). 테스트가 고정 1.5초를 기다려서 CI WebKit에서 그 안에 눌렀다. 도착을 기다리도록 고쳤다 — 두 번째 run(38130307202)도 같은 자리에서 실패.
+  - **진짜 원인 — Linux WebKit 렌더러 종료, 환경 문제.** 임시 진단 PR #31(CI와 같은 Ubuntu 러너, 머지 안 하고 닫음)에서 확인:
+    - 별 3개(비밀문 열림) + 애니메이션 crossing → **web process가 사라짐**(exit 0, signal 없음, 페이지 오류 없음). 4회 중 2–4회.
+    - 별 없음: 11회 모두 정상. reduced motion(crossing 애니메이션 없음): 3/3 정상.
+    - 별 그림(문 틈 빛 · 문 별 · 간판 소켓)을 모두 숨겨도 계속 → 특정 CSS가 원인이 아님.
+    - **PHASE I 코드(`f862f29`)도 3/3 같은 증상** → J · K · L보다 오래된 상태.
+    - **macOS WebKit(Apple 포트): 같은 경로 10/10 정상**(데스크톱 5 · 휴대폰 5). Chromium · Firefox도 정상.
+    - 결론: CI의 Linux WebKit(소프트웨어 렌더링) 포트에서만 나는 엔진 종료. 사이트 코드 오류로 볼 근거 없음.
+    - **실제 iPhone Safari에서 같은 일이 없는지는 확인하지 못했다** → known issue 5, 체크리스트 §9에 항목 추가.
+  - **테스트 처리(건너뛰기 아님, 근거와 함께 분리):**
+    - 여정 B는 Linux WebKit에서만 별 없이 놀이터 왕복까지 간다(다른 엔진 · macOS WebKit은 별 + 비밀문까지 전부).
+    - 새 여정 **B′**(별 + reduced motion + 놀이터 왕복 + 비밀문 → 비밀 보관소)를 세 엔진 모두에서 돌린다.
+    - 새 B · B′: Linux WebKit 6/6(진단 러너), 로컬 세 엔진 6/6.
 - 오류 경로는 production에서 처음 실패했다(test bug). 모르는 주소가 정상적으로 404를 내고, Chromium · WebKit이 그 사실을 주소 없이 console에 남기기 때문이다. 그 한 줄만, 다른 404가 없을 때만 예외로 했다.
 
 ## 4. L-4 화면 매트릭스
@@ -169,6 +178,7 @@ PHASE I 감사 하네스, 7개 화면 × 42 상태 = **293 상태**: 320×568 ·
 7. **회전**: 가로로 돌려 차고 · 메뉴(모든 항목) · 서랍(왼쪽 캐비닛 + 오른쪽 두 칸)이 맞게 바뀌는지.
 8. **소리**: 오른쪽 위 소리 버튼 → 차고 노래가 들리는지 → 라디오 `91.7` → 다시 끄면 멈추는지.
 9. **safe area**: 가로에서 미니게임 하나 → 조작 버튼이 가장자리 · 홈 인디케이터에 걸리지 않는지.
+10. **(가능하면) 별 3개 상태**: 미니게임 셋에서 별을 모은 뒤 놀이터에 나갔다 돌아오기 → 탭이 멈추거나 "문제가 반복적으로 발생" 화면이 뜨지 않는지(known issue 5).
 
 결과는 `docs/OPERATIONS.md` known issue 3에 적는다.
 
@@ -178,6 +188,7 @@ PHASE I 감사 하네스, 7개 화면 × 42 상태 = **293 상태**: 320×568 ·
 2. NIGHT `ambient.m4a` 루프 지점 0.43초 무음 + 하드 재시작 — 원본 파일.
 3. 실제 iPhone Safari QA 미실시 — §9.
 4. 진열장 그림 물건 일부가 휴대폰에서 15–41 px — 44 px ‹ › 대체 경로.
+5. CI의 Linux WebKit에서, 비밀문이 열린 상태(별 3개)로 애니메이션과 함께 놀이터로 나가면 web process가 종료됨. PHASE I 이전부터 있던 상태이고 macOS WebKit · Chromium · Firefox · reduced motion에서는 없음. 실제 Safari 영향 미확인 → 실기기 체크 §9-10.
 
 해결되어 빠진 것: 700 KB 흐린 배경(PHASE K), 스크립트로만 그려지던 본문 · 공유 미리보기(PHASE J), PHASE I의 18건.
 

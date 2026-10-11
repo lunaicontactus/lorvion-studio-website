@@ -106,6 +106,7 @@ PHASE L(최종 QA)에서 실제 상태로 다시 확인한 목록.
 | 2 | 라디오 NIGHT `ambient.m4a` 루프 지점 0.43초 무음 + 하드 재시작(원본 파일 문제). 공개 기록실 SOUND에도 같은 파일 | 청취 판정 후 원본 교체 여부 |
 | 3 | **REAL IPHONE SAFARI QA: NOT PERFORMED.** Playwright WebKit(휴대폰 크기 · 터치 · iPhone UA) **시뮬레이션**만 했다. 실기기만 답할 수 있는 항목과 5분 체크리스트: `docs/SITE_UPGRADE_PHASE_L.md` §9 | 사용자 실기기 확인 |
 | 4 | 진열장(작업 기록 진열장)의 그려진 물건 14개 중 일부는 휴대폰에서 폭 15–41px(그림 크기 그대로, 이웃과 맞닿아 있어 넓힐 수 없음). 44px 대체 경로: 하나를 고르면 나오는 카드의 ‹ › 가 14개 전부를 차례로 보여 준다(WCAG 2.5.8 equivalent). `e2e/touch-i.spec.ts` · production smoke가 대체 경로를 검사 | 목록형 보기 검토(선택) |
+| 5 | **CI의 Linux WebKit**(Playwright, 소프트웨어 렌더링)에서 비밀문이 열린 상태(별 3개)로 **애니메이션과 함께 놀이터로 나가면 web process가 종료**된다(exit 0, 페이지 오류 없음, 4회 중 2–4회). 별이 없거나 reduced motion이면 없음, 별 그림을 숨겨도 그대로, PHASE I 코드(`f862f29`)도 같음, **macOS WebKit 10/10 · Chromium · Firefox 정상** → 환경(엔진 포트) 문제로 판단. `e2e/final-l.spec.ts`는 Linux WebKit에서만 그 조합을 피하고(여정 B), 같은 경로를 reduced motion으로 돈다(B′). 실제 Safari 영향 미확인 | 실기기 체크(`docs/SITE_UPGRADE_PHASE_L.md` §9-10) |
 
 ### 해결된 known issue
 
