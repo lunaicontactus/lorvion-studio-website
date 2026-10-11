@@ -43,6 +43,12 @@
 모든 여정에서 uncaught error · console error · 실패한 first-party 요청 **0**.
 
 - 키보드 여정은 처음에 WebKit에서 건너뛰었다가 되살렸다: Safari의 기본 Tab은 링크와 버튼을 건너뛰고, Option+Tab이 실제 Safari 키보드 사용자가 누르는 키다.
+- 여정 B는 첫 PR verify(run 38124486785, 541/542)에서 **WebKit만 실패**했다(test bug, 증명됨):
+  - 놀이터에 도착하는 동안("밤이 걷히는" crossing)은 입력을 일부러 무시한다(`src/app/world.ts` `onPlace`: `if (crossing) return`, WORLD 2.1).
+  - 로컬 측정에서 그 시간은 놀이터가 보인 뒤 약 1.77초. 테스트는 고정 1.5초(+포커스 0.5초)만 기다렸고, 더 느린 CI WebKit에서 crossing 중에 Enter를 눌렀다.
+  - 재현: crossing 중 누르면 Chromium · WebKit 모두 무시, 도착 뒤 누르면 둘 다 차고로 돌아옴.
+  - 수정: 기존 `outside.spec`처럼 도착(crossing 사라짐 · `is-hushed` 해제)을, 돌아온 뒤에는 `is-paused` 해제를 기다린다. 3개 엔진 × 3회 9/9, 전체 27/27.
+  - 제품 동작은 바꾸지 않았다.
 - 오류 경로는 production에서 처음 실패했다(test bug). 모르는 주소가 정상적으로 404를 내고, Chromium · WebKit이 그 사실을 주소 없이 console에 남기기 때문이다. 그 한 줄만, 다른 404가 없을 때만 예외로 했다.
 
 ## 4. L-4 화면 매트릭스

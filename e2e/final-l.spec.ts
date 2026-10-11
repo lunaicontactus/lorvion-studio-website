@@ -135,12 +135,18 @@ test.describe('L-2 journeys, by mouse', () => {
     // Out to the playground and back.
     await openThing(page, 'outside-door')
     await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 15_000 })
-    await page.waitForTimeout(1500)
+    // Arrived: the night has lifted (WORLD 2.1). Until then the playground
+    // ignores a press on purpose — a fixed wait missed it on CI WebKit, where
+    // the crossing ran past 1.5 s (PR #30, run 38124486785).
+    await expect(page.locator('[data-crossing]')).toBeHidden({ timeout: 15_000 })
+    await expect(page.locator('[data-playground]')).not.toHaveClass(/is-hushed/, { timeout: 15_000 })
     await page.locator('[data-place="garage-door"]').focus()
     await page.waitForTimeout(500)
     await page.keyboard.press('Enter')
     await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 15_000 })
-    await page.waitForTimeout(1500)
+    // Back in the room once it is running again, not only shown.
+    await expect(page.locator('[data-garage]')).not.toHaveClass(/is-paused/, { timeout: 15_000 })
+    await page.waitForTimeout(800)
     // The secret door (its three stars are seeded) into the storage.
     await openThing(page, 'secret-door').catch(() => undefined)
     if (!(await page.locator('[data-archive]').isVisible())) {
