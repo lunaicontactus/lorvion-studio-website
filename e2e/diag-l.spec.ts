@@ -1,6 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
 // TEMPORARY diagnostic for PR #30: Linux WebKit, playground with earned stars. Not for merge.
-test.use({ viewport: { width: 1440, height: 900 } })
 const fps = (page: Page): Promise<unknown> => page.evaluate(() => new Promise((resolve) => {
   let frames = 0; let long = 0; let longMs = 0
   const po = new PerformanceObserver((l) => { for (const e of l.getEntries()) { long++; longMs += e.duration } })
@@ -9,8 +8,10 @@ const fps = (page: Page): Promise<unknown> => page.evaluate(() => new Promise((r
   const step = (): void => { frames++; if (performance.now() - t0 < 2000) requestAnimationFrame(step); else { po.disconnect(); resolve({ fps: Math.round(frames / 2), long, longMs: Math.round(longMs), anims: document.getAnimations().length }) } }
   requestAnimationFrame(step)
 }))
-for (const [n, mode] of ['hide-all', 'hide-all', 'hide-all', 'hide-all'].entries()) {
-  test(`${mode} #${n}`, async ({ page }) => {
+for (const [n, mode] of ['reduced', 'reduced', 'reduced', 'phone', 'phone', 'phone', 'desktop', 'desktop'].entries()) {
+  test(`${mode} #${n}`, async ({ browser }) => {
+    const ctx = await browser.newContext(mode === 'phone' ? { viewport: { width: 390, height: 844 } } : mode === 'reduced' ? { viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' } : { viewport: { width: 1440, height: 900 } })
+    const page = await ctx.newPage()
     page.on('crash', () => console.log(`CRASH ${mode} #${n}`))
     await page.addInitScript((m) => {
       try {
@@ -18,7 +19,6 @@ for (const [n, mode] of ['hide-all', 'hide-all', 'hide-all', 'hide-all'].entries
         sessionStorage.setItem('d', '1'); localStorage.clear(); localStorage.setItem('eungarage:garageHinted', 'true')
         if (m !== 'nostars') for (const id of ['mugunghwa', 'snack', 'parcel']) localStorage.setItem(`eungarage.progress.${id}`, JSON.stringify({ best: 100, stars: 1, plays: 1 }))
         localStorage.setItem('eungarage:save', JSON.stringify({ v: 3, visitCount: 2, secretProgress: 3 }))
-        document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = '.spot__socket,.thing__seam,.thing__stars{display:none !important}'; document.head.append(st) })
 
       } catch { /* private mode */ }
     }, mode)
