@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        code: [current, phase-i-f862f29]
+        code: [current]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
