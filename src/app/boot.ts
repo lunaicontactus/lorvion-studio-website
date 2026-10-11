@@ -16,7 +16,6 @@ import { setNewCrew } from '@/data/sprites'
 import { mountNav } from '@/ui/nav'
 import { mountReveal } from '@/ui/reveal'
 import { mountSoundToggle } from '@/ui/soundToggle'
-import { mountWorld } from '@/app/world'
 import { mountFallback } from '@/ui/fallback'
 import { mountWorks } from '@/ui/works'
 import { mountRecords } from '@/ui/records'
@@ -100,7 +99,21 @@ export function boot(): Teardown {
   }
 
   if (flags.alley && document.querySelector('[data-alley]')) {
-    teardowns.push(guard('world', () => mountWorld()))
+    // On demand (PHASE K): only the home page has the alley, and the rest of
+    // the site need not download or run the room. The build preloads this
+    // chunk on the home page (vite.config.ts preloadWorld).
+    let off: Teardown | undefined
+    let gone = false
+    void import('@/app/world')
+      .then((m) => { if (!gone) off = guard('world', () => m.mountWorld()) })
+      .catch((err: unknown) => {
+        log.error('"world" failed to load', err)
+        document.documentElement.dataset['bootError'] = 'world'
+      })
+    teardowns.push(() => {
+      gone = true
+      off?.()
+    })
   }
 
   for (const el of document.querySelectorAll<HTMLElement>('[data-year]')) {
