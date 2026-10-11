@@ -13,8 +13,8 @@ const state = (page: Page): Promise<unknown> => page.evaluate(() => {
     hash: location.hash, bootError: document.documentElement.dataset['bootError'] ?? null,
   }
 })
-for (let n = 0; n < 4; n++) {
-  test(`out and back by keyboard, try ${n}`, async ({ page }) => {
+for (const mode of ['radio', 'toggle', 'journey-b']) {
+  test(`out and back by keyboard, sound via ${mode}`, async ({ page }) => {
     const log: string[] = []
     page.on('console', (m) => log.push(`console.${m.type()}: ${m.text()}`))
     page.on('pageerror', (e) => log.push(`pageerror: ${e.message}`))
@@ -24,6 +24,17 @@ for (let n = 0; n < 4; n++) {
     await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 20000 })
     await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
     await page.waitForTimeout(1500)
+    const open = async (id: string): Promise<void> => { const t = page.locator(`[data-object="${id}"]`); await t.focus(); await page.waitForTimeout(450); await t.press('Enter'); await page.waitForTimeout(1200) }
+    if (mode === 'toggle') await page.locator('[data-sound-toggle]').first().click()
+    if (mode === 'radio' || mode === 'journey-b') {
+      for (const id of mode === 'journey-b' ? ['tv', 'radio', 'fridge'] : ['radio']) {
+        await open(id)
+        if (id === 'radio') await page.locator('[data-station="1"]').click()
+        await page.keyboard.press('Escape'); await page.waitForTimeout(500)
+      }
+      if (mode === 'journey-b') { await open('cabinet'); await page.locator('[data-case-file]').click(); await page.waitForTimeout(800); await page.keyboard.press('Escape'); await page.waitForTimeout(500) }
+    }
+    console.log('SOUND', mode, await page.evaluate(() => document.querySelector('[data-sound-toggle]')?.getAttribute('aria-pressed')))
     const door = page.locator('[data-object="outside-door"]')
     await door.focus(); await page.waitForTimeout(450); await door.press('Enter')
     await expect(page.locator('[data-playground]')).toBeVisible({ timeout: 15000 })
