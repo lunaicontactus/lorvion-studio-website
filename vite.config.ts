@@ -135,9 +135,32 @@ function prerender(): Plugin {
   }
 }
 
+/**
+ * PHASE K: the garage, the alley, the playground and the games are a chunk of
+ * their own (src/app/boot.ts imports src/app/world.ts on demand), so a works,
+ * archive or info page does not download or run them. The home page needs it
+ * at once: it gets the chunk as a modulepreload beside the main script, so it
+ * arrives in parallel rather than one round trip later.
+ */
+function preloadWorld(): Plugin {
+  return {
+    name: 'eungarage-preload-world',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        if (!html.includes('data-alley')) return html
+        const chunk = Object.values(ctx.bundle ?? {}).find((c) => c.type === 'chunk' && c.name === 'world')
+        if (!chunk) throw new Error('preload: no world chunk in the bundle')
+        return { html, tags: [{ tag: 'link', attrs: { rel: 'modulepreload', crossorigin: true, href: `/${chunk.fileName}` }, injectTo: 'head' }] }
+      },
+    },
+  }
+}
+
 export default defineConfig({
   appType: 'mpa',
-  plugins: [siteShell(), prerender()],
+  plugins: [siteShell(), prerender(), preloadWorld()],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

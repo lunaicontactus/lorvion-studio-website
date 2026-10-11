@@ -16,10 +16,13 @@
 }
 /* The ground is on the root, so the room can sit between it and the page. */
 html:has(body.works-page){background:#170f0a}
-/* The room itself, out of focus: this is still the garage. */
+/* The room itself, out of focus: this is still the garage. A small copy of
+   it (scripts/backdrops.py): blurred 16 px and at 30 %, 480 px of the room
+   reads the same as the 3,600-px painting, which was 695 KB (772 KB on a
+   phone) on every works and archive page (PHASE K). */
 .works-page::before{
   content:"";position:fixed;inset:-40px;z-index:-2;pointer-events:none;
-  background:url('/assets/images/garage/room_landscape.webp') 22% 40% / cover no-repeat;
+  background:url('/assets/images/garage/room_landscape_backdrop.webp') 22% 40% / cover no-repeat;
   filter:blur(16px) brightness(.3) saturate(1.2);
 }
 .works-page::after{
@@ -30,7 +33,7 @@ html:has(body.works-page){background:#170f0a}
     linear-gradient(180deg,rgba(23,15,10,.35),rgba(23,15,10,.75));
 }
 @media (orientation:portrait){
-  .works-page::before{background-image:url('/assets/images/garage/room_portrait.webp');background-position:50% 12%}
+  .works-page::before{background-image:url('/assets/images/garage/room_portrait_backdrop.webp');background-position:50% 12%}
 }
 .works-page .site-nav{background:linear-gradient(180deg,rgba(23,15,10,.92),rgba(23,15,10,0));color:var(--wk-cream)}
 .works-page .site-nav.scrolled{background:rgba(26,17,11,.9);border-bottom:1px solid rgba(236,196,128,.14)}

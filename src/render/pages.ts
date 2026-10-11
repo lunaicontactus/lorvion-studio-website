@@ -257,8 +257,8 @@ export const PRESS_MAILTO = `mailto:${SITE_CONFIG.email}?subject=%5B%EC%96%B8%EB
 
 const B = '/assets/images/brand'
 export const BRAND_FILES: readonly { label: string; note: string; href: string; preview: string; dark: boolean }[] = [
-  { label: '로고 · 밝은 바탕용', note: 'PNG · 1871×360 · 투명 배경', href: `${B}/eungarage_logo_lockup.png`, preview: `${B}/eungarage_logo_lockup.webp`, dark: false },
-  { label: '로고 · 어두운 바탕용', note: 'WEBP · 1871×360 · 투명 배경', href: `${B}/eungarage_logo_lockup_light.webp`, preview: `${B}/eungarage_logo_lockup_light.webp`, dark: true },
+  { label: '로고 · 밝은 바탕용', note: 'PNG · 1871×360 · 투명 배경', href: `${B}/eungarage_logo_lockup.png`, preview: `${B}/eungarage_logo_lockup_sm.webp`, dark: false },
+  { label: '로고 · 어두운 바탕용', note: 'WEBP · 1871×360 · 투명 배경', href: `${B}/eungarage_logo_lockup_light.webp`, preview: `${B}/eungarage_logo_lockup_light_sm.webp`, dark: true },
   { label: '짧은 로고 · 밝은 바탕용', note: 'WEBP · 671×128 · 투명 배경', href: `${B}/eungarage_logo_nav.webp`, preview: `${B}/eungarage_logo_nav.webp`, dark: false },
   { label: '짧은 로고 · 어두운 바탕용', note: 'WEBP · 671×128 · 투명 배경', href: `${B}/eungarage_logo_nav_light.webp`, preview: `${B}/eungarage_logo_nav_light.webp`, dark: true },
   // The preview is the 192 px icon (the 512 px one is 265 KB for a 44 px picture).
