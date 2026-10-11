@@ -300,7 +300,12 @@ test.describe('desktop', () => {
     // somebody else could be sitting in the chair — NUNU sits 40% of the
     // time, and it only takes one long stint to keep MOMO standing.
     test.setTimeout(240_000)
-    await enter(page)
+    // Pinned (PHASE L): unseeded, the room can go the whole window without a
+    // free glance round — a LOOK at something across the room is drawn with
+    // the standing frames. Measured: 1 seed in 18 never glanced in 170 s
+    // (npcseed=16), and run 38139346702 met that. Seed 7 glances at 12 s and
+    // reaches every state, every time.
+    await enter(page, '?npcseed=7')
     const seen = await page.evaluate(async () => {
       const imgs = [...document.querySelectorAll('[data-npc] img')] as HTMLImageElement[]
       const out = new Set<string>()
