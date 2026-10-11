@@ -10,7 +10,8 @@ const fps = (page: Page): Promise<unknown> => page.evaluate(() => new Promise((r
 }))
 for (const [n, mode] of ['reduced', 'reduced', 'reduced', 'phone', 'phone', 'phone', 'desktop', 'desktop'].entries()) {
   test(`${mode} #${n}`, async ({ browser }) => {
-    const ctx = await browser.newContext(mode === 'phone' ? { viewport: { width: 390, height: 844 } } : mode === 'reduced' ? { viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' } : { viewport: { width: 1440, height: 900 } })
+    const baseURL = test.info().project.use.baseURL
+    const ctx = await browser.newContext({ baseURL, ...(mode === 'phone' ? { viewport: { width: 390, height: 844 } } : mode === 'reduced' ? { viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' as const } : { viewport: { width: 1440, height: 900 } }) })
     const page = await ctx.newPage()
     page.on('crash', () => console.log(`CRASH ${mode} #${n}`))
     await page.addInitScript((m) => {
