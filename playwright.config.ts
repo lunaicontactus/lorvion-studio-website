@@ -67,7 +67,7 @@ export default defineConfig({
     // with a phone's size, touch and user agent. It is not a real iPhone.
     {
       name: 'webkit',
-      testMatch: /(outline|first-paint|works-route|webkit-i|final-l)\.spec\.ts/,
+      testMatch: /(outline|first-paint|works-route|webkit-i|final-l|diag-l)\.spec\.ts/,
       use: { ...devices['Desktop Safari'] },
     },
     {
