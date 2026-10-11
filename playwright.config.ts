@@ -67,12 +67,13 @@ export default defineConfig({
     // with a phone's size, touch and user agent. It is not a real iPhone.
     {
       name: 'webkit',
-      testMatch: /(outline|first-paint|works-route|webkit-i)\.spec\.ts/,
+      testMatch: /(outline|first-paint|works-route|webkit-i|final-l)\.spec\.ts/,
       use: { ...devices['Desktop Safari'] },
     },
     {
       name: 'firefox',
-      testMatch: /(outline|first-paint|works-route)\.spec\.ts/,
+      // PHASE L: the final journeys run in all three engines.
+      testMatch: /(outline|first-paint|works-route|final-l)\.spec\.ts/,
       use: { ...devices['Desktop Firefox'] },
     },
   ],

@@ -1,22 +1,26 @@
 # EUNGARAGE 운영 기준
 
-최종 갱신: 2026-10-10 — PHASE I 배포 · live smoke 완료 후. 이 문서 갱신은 docs-only PR이다: PR의 `verify`는 돌고, merge commit은 `[skip ci]`라 `main`에서 같은 사이트를 다시 verify · 배포하지 않는다(사이트 파일 변경 0). 그래서 `main` HEAD는 이 문서 commit이고, production 배포는 아래 `f862f29`의 run 그대로다.
+최종 갱신: 2026-10-11 — PHASE L PR 안에서. PHASE J · K는 배포 · live smoke까지 끝난 사실이고, PHASE L의 merge SHA · run · 최종 tag는 merge 뒤에만 알 수 있으므로 release 노트와 그 뒤 docs-only PR에 적는다.
 
 ## 1. Production checkpoint (LOCK)
 
+이 문서를 쓴 시점(PHASE L merge 직전)의 production:
+
 | 항목 | 값 |
 |---|---|
-| production | **`f862f29`** (main) — PHASE I, PR #26 merge (branch head `0167162`) |
-| production deploy run | **38050217933** — verify(lint · typecheck · unit 339/339 · build · brand scan · e2e 496/496 · frozen URL) → verify가 만든 `dist-f862f296…` artifact 그대로 배포(재빌드 없음, `.nojekyll` 포함) |
-| live bundle | `main-DJ3w7pHA.js` · `main-CcRcfwo1.css` (cache-busted 요청으로 artifact와 일치 확인) |
-| live smoke | regression 69/69 · PHASE H 50/50 · PHASE I 20/20 · PHASE I spec을 production에 64/64(axe 0, 키보드, 6개 화면 터치 계약, WebKit 시뮬레이션) · LUNAI 문서 4개 법적 본문 동일 |
-| 마지막 tag | **`prod-2026-10-10-phase-i`** / `f862f29` |
-| 이전 checkpoint | `prod-2026-10-10` / `6008d66` (PHASE H) |
+| production | **`e98a466`** (main) — PHASE K, PR #29 merge (branch head `ae376c5`) |
+| production deploy run | **38118167112** — verify(lint · typecheck · unit 349/349 · build · brand scan · e2e 515/515 · frozen URL) → `dist-e98a466…` artifact 그대로 배포(재빌드 없음, `.nojekyll` 포함) |
+| live bundle | `main-CJAmBQqF.js` · `main-D9Lej7H9.css` · 홈만 `world-BXByOmgr.js` (cache-busted 요청으로 artifact와 일치 확인) |
+| live smoke | regression 69/69 · PHASE H 50/50 · PHASE I 20/20 · PHASE J 메타데이터 27/27 · PHASE K 예산 + PHASE L 여정 + SEO spec을 production에 Chromium · Firefox · WebKit 46/46 · LUNAI 문서 4개 법적 본문 동일 |
+| 마지막 tag | `prod-2026-10-10-phase-i` / `f862f29` — J · K는 L과 함께 최종 tag로 묶는다 |
 
 checkpoint 이력:
 
 | tag | commit | 내용 | deploy run | e2e | live smoke |
 |---|---|---|---|---|---|
+| — | `e98a466` | PHASE K 성능(PR #29): 흐린 배경 작은 사본, 차고 청크 분리, 작은 로고, 예산 | 38118167112 | 515/515 | 69 + 50 + 20 + J 27 + spec 46 |
+| — | `ef5e5fd` | PHASE J SEO(PR #28): 본문 prerender, 메타 · 공유 카드 · JSON-LD | 38108557936 | 508/508 | 69 + 50 + 20 + J 27 + spec 12 |
+| — | `d6693fb` | PR #27 문서만(PHASE I 운영 기록), merge `[skip ci]` — 배포 없음, 사이트 파일 변경 0 | — (PR verify 496/496) | — | — |
 | `prod-2026-10-10-phase-i` | `f862f29` | PHASE I 모바일 · 반응형 · 접근성(PR #26) | 38050217933 | 496/496 | 69/69 + H 50/50 + I 20/20 + I spec 64/64 |
 | `prod-2026-10-10` | `6008d66` | PHASE H(#22 `66fb0d6`) + PR #25 e2e test only(발소리 확인이 누군가 걸어 들어온 뒤부터) | 37995194051 | 432/432 | 69/69 + PHASE H 50/50 |
 | — | `66fb0d6` | PR #22 PHASE H merge. verify 1건 실패(발소리 false failure → #25)로 배포 생략, live 영향 없음 | 37978981569 | 431/432 | — |
@@ -94,13 +98,14 @@ git push origin rollback/<사유>
 
 ## 5. Known issues
 
+PHASE L(최종 QA)에서 실제 상태로 다시 확인한 목록.
+
 | # | 내용 | 예정 |
 |---|---|---|
 | 1 | **법적 문서 질문**: *operator naming differs across legal documents; retained intentionally pending legal review.* 개인정보처리방침은 운영 주체를 "EUNGARAGE 루나아이 운영팀"으로 적고, 이용약관 · 커뮤니티 이용규칙은 "운영자"라고만 적는다. 본문 변경은 법적 변경이라 하지 않았다 | 법적 검토 |
-| 2 | 라디오 NIGHT `ambient.m4a` 루프 지점 0.43초 무음 + 하드 재시작(원본 파일 문제). 공개 기록실 SOUND에도 같은 파일 | 청취 판정 후 REQUIRED AUDIO FIX 여부 |
-| 3 | **REAL IPHONE SAFARI QA: NOT YET PERFORMED.** PHASE I은 Playwright WebKit(휴대폰 크기 · 터치 · iPhone UA) **시뮬레이션**만 했다(PR과 production 모두 통과). 실기기만 답할 수 있는 항목과 5분 체크리스트: `docs/SITE_UPGRADE_PHASE_I.md` §8 | 사용자 실기기 확인 |
-| 4 | works · archive 페이지는 차고 원본 그림(약 700KB)을 흐린 배경으로 받는다. 정보 페이지는 240px 사본으로 줄였다 | PHASE K |
-| 5 | 진열장(작업 기록 진열장)의 그려진 물건 14개 중 일부는 휴대폰에서 폭 15–41px(그림 크기 그대로, 이웃과 맞닿아 있어 넓힐 수 없음). 44px 대체 경로: 하나를 고르면 나오는 카드의 ‹ › 가 14개 전부를 차례로 보여 준다(WCAG 2.5.8 equivalent). `e2e/touch-i.spec.ts`가 대체 경로를 검사 | 목록형 보기 검토(선택) |
+| 2 | 라디오 NIGHT `ambient.m4a` 루프 지점 0.43초 무음 + 하드 재시작(원본 파일 문제). 공개 기록실 SOUND에도 같은 파일 | 청취 판정 후 원본 교체 여부 |
+| 3 | **REAL IPHONE SAFARI QA: NOT PERFORMED.** Playwright WebKit(휴대폰 크기 · 터치 · iPhone UA) **시뮬레이션**만 했다. 실기기만 답할 수 있는 항목과 5분 체크리스트: `docs/SITE_UPGRADE_PHASE_L.md` §9 | 사용자 실기기 확인 |
+| 4 | 진열장(작업 기록 진열장)의 그려진 물건 14개 중 일부는 휴대폰에서 폭 15–41px(그림 크기 그대로, 이웃과 맞닿아 있어 넓힐 수 없음). 44px 대체 경로: 하나를 고르면 나오는 카드의 ‹ › 가 14개 전부를 차례로 보여 준다(WCAG 2.5.8 equivalent). `e2e/touch-i.spec.ts` · production smoke가 대체 경로를 검사 | 목록형 보기 검토(선택) |
 
 ### 해결된 known issue
 
@@ -115,5 +120,9 @@ git push origin rollback/<사유>
 | 모바일 메뉴: Tab 탈출 · 바깥 탭 무반응 · 짧은 가로에서 링크 잘림 | PHASE I `f862f29` |
 | 44px 미만 터치 대상 3,602건 · 10px 미만 글자 1,344건(710개 화면 상태) · footer 대비 3.66:1 · axe 위반 27건(라디오 ARIA, 개인정보 표 스크롤 포함) | PHASE I `f862f29` — 0 · 0 · 6.1:1 · 0 (진열장 그림 물건은 known issue 5의 대체 경로) |
 | TV 손잡이가 화면 밖인데 포커스 · safe-area 없음 · 택배 태그 · 진열장 카드가 화면 밖 · 물건 포커스 표시 약함 | PHASE I `f862f29` |
+| works · archive · 작품 페이지가 흐린 배경용으로 차고 원본 그림(679 KB, 휴대폰 754 KB)을 받음 (구 known issue 4) | PHASE K `e98a466` — 480×160 / 120×286 사본(21 / 11 KB), 화면 차이 평균 1/255 미만. production에서 원본 요청 0 확인 |
+| 모든 페이지가 차고 엔진 JS(102 KB gzip)를 받음 | PHASE K `e98a466` — 홈만 차고 청크(preload), 다른 페이지 21 KB |
+| Works · 작품 · 기록실 · 스튜디오 · 프레스의 본문이 스크립트로만 그려짐(스크립트 없이 제목만), 느린 휴대폰에서 작품 페이지 CLS 0.18–0.51 | PHASE J `ef5e5fd` — 빌드가 같은 HTML을 넣음(prerender), CLS 0 |
+| 공유 미리보기: 8개 페이지 `og:url` 없음, 커뮤니티 이용규칙 `og:image` 상대 경로, 작품도 스튜디오 그림, 4개 페이지 설명이 제목 반복 | PHASE J `ef5e5fd` |
 
 선택 오디오 자산(OPTIONAL, `docs/SITE_UPGRADE_PHASE_F.md`)은 known issue가 아니라 백로그로 유지한다.
