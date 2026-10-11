@@ -21,5 +21,5 @@ jobs:
       - run: npm ci
       - run: npx vite build
       - run: npx playwright install --with-deps webkit
-      - run: DEBUG=pw:browser npx playwright test e2e/diag-l.spec.ts --project=webkit --reporter=list > diag.txt 2>&1 || true
+      - run: DEBUG=pw:browser npx playwright test e2e/diag-l.spec.ts --project=webkit -g "the room|less motion" --repeat-each=3 --reporter=list > diag.txt 2>&1 || true
       - run: grep -E "GARAGE|PLAYGROUND|BACK|CRASH|passed|failed" diag.txt | cut -c1-300; echo ----; grep -iE "crash|abort|assert|signal|oom|out of memory|SIGSEGV|SIGKILL|segmentation|killed|ERROR" diag.txt | grep -v "Error Context" | sort | uniq -c | sort -rn | head -40
