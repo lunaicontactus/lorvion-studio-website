@@ -16,82 +16,22 @@
  * work. The making is in the archive's polaroids, one small way in from each
  * page.
  *
- * The title and the one line are in each page's own markup (so they are there
- * without scripts, and for anything that reads the page before it runs); the
- * rest is built here. Pictures open on request, one at a time, in a viewer
+ * The title and the one line are in each page's own markup; the rest is
+ * written into the page by the build from src/render/pages.ts (PHASE J), so
+ * it is there without scripts too, and is only wired up here. Pictures open on request, one at a time, in a viewer
  * that keeps the keyboard where it was.
  */
-import { PROJECTS, STATE_LABEL, coverOf, getProject, updatesOf, workHref, workPicture } from '@/data/projects'
-import { artworkFor, wallSrc } from '@/data/artwork'
+import { getProject, workPicture } from '@/data/projects'
 import { developmentOf } from '@/data/publicArchive'
+import { workBodyHtml, workHeroHtml, worksIndexHtml } from '@/render/pages'
 import type { ProjectConfig } from '@/types/project'
-
-const esc = (s: string): string =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-
-/** The small picture a work is recognised by: the wall print, or its hero's thumbnail. */
-function thumbOf(p: ProjectConfig): string {
-  if (p.hero) return workPicture(p.id, p.hero.name, 'thumb')
-  const piece = artworkFor(p.id)
-  return piece ? wallSrc(piece) : ''
-}
-
-/** The cover's own size, so its box is its shape before it arrives. */
-function coverSize(p: ProjectConfig): { w: number; h: number } {
-  if (p.hero) return { w: p.hero.w, h: p.hero.h }
-  const piece = artworkFor(p.id)
-  return piece ? { w: piece.width, h: piece.height } : { w: 4, h: 3 }
-}
 
 // ── The index ──────────────────────────────────────────────────────────────
 
-/**
- * What each work is as a thing on the table. The trims are drawn in CSS
- * (src/styles/works.css); here is only which pieces each object has.
- */
-const TRIMS: Readonly<Record<string, { kind: string; label: string; bits: string }>> = {
-  lunai: {
-    kind: '감정 기록철', label: 'DIARY',
-    bits: '<i class="record__spine"></i><i class="record__band"></i><i class="record__moon"></i>',
-  },
-  liminal: {
-    kind: '사건 기록 파일', label: 'CASE FILE',
-    bits: '<i class="record__tab">경계관리국</i><i class="record__clip"></i><i class="record__stamp">기록</i>',
-  },
-  // The Steam game (PHASE C): a worm's life on paper, soil at its foot and a
-  // sprout coming up — the runner's trail map and its 200 · 13 badges are gone.
-  wormup: {
-    kind: '흙 묻은 일기', label: "WORM'S LIFE",
-    bits: '<i class="record__soil"></i><i class="record__sprout"></i>',
-  },
-  lumiora: {
-    kind: '빛나는 악보책', label: 'SCORE',
-    bits: '<i class="record__staff"></i><i class="record__glow"></i>',
-  },
-  rubato: {
-    kind: '오래된 악보와 편지', label: '1791 · WIEN',
-    bits: '<i class="record__seal"></i><i class="record__ticket">OPERA · 1791</i>',
-  },
-}
-
 function renderIndex(host: HTMLElement): void {
-  host.innerHTML = PROJECTS.map((p, i) => {
-    const t = TRIMS[p.id] ?? { kind: '', label: '', bits: '' }
-    return `
-    <li class="records__item" style="--i:${i}">
-      <a class="record record--${p.id}" href="${workHref(p.id)}" data-record="${p.id}" style="--accent:${p.accent}">
-        <span class="record__trim" aria-hidden="true">${t.bits}</span>
-        <span class="record__photo"><img src="${thumbOf(p)}" alt="" loading="${i < 2 ? 'eager' : 'lazy'}" decoding="async"></span>
-        <span class="record__body">
-          <span class="record__kind">${esc(t.kind)} <span aria-hidden="true">·</span> ${esc(t.label)}</span>
-          <span class="record__title">${esc(p.title)}</span>
-          <span class="record__line">${esc(p.taglineKo)}</span>
-          <span class="record__meta">${esc(p.genre)} · ${p.platforms.map((x) => `<span>${esc(x)}</span>`).join(' · ')}</span>
-          <span class="record__status" data-state="${p.releaseState}">${STATE_LABEL[p.releaseState]}</span>
-        </span>
-      </a>
-    </li>`
-  }).join('')
+  // Built into the page by the build (src/render/pages.ts); only when it is
+  // not (the dev shell's own fetch, a page from before PHASE J) is it built here.
+  if (!host.hasAttribute('data-prerendered')) host.innerHTML = worksIndexHtml()
 }
 
 // ── One work ───────────────────────────────────────────────────────────────
@@ -102,112 +42,16 @@ function renderWork(main: HTMLElement, p: ProjectConfig): void {
   const body = main.querySelector<HTMLElement>('[data-work-body]')
   if (!hero || !body) return
 
-  const cover = coverOf(p)
-  const size = coverSize(p)
-  const coverCaption = p.hero?.caption ?? `${p.title} 키 아트`
-  if (cover) {
-    hero.insertAdjacentHTML('afterbegin', `
-      <figure class="work-hero__frame">
-        <img src="${cover}" width="${size.w}" height="${size.h}" alt="${esc(`${p.title} — ${coverCaption}`)}" decoding="async" fetchpriority="high">
-        <figcaption class="work-hero__plate">${esc(p.title)}</figcaption>
-      </figure>`)
+  if (!main.hasAttribute('data-prerendered')) {
+    const h = workHeroHtml(p)
+    if (h.figure) hero.insertAdjacentHTML('afterbegin', h.figure)
+    const text = hero.querySelector<HTMLElement>('.work-hero__text')
+    text?.insertAdjacentHTML('afterbegin', h.kicker)
+    if (h.line) text?.querySelector('.work-hero__title')?.insertAdjacentHTML('afterend', h.line)
+    text?.insertAdjacentHTML('beforeend', h.tail)
+    body.innerHTML = workBodyHtml(p)
   }
-  const text = hero.querySelector<HTMLElement>('.work-hero__text')
-  text?.insertAdjacentHTML('afterbegin', `<p class="work-hero__kicker">${esc(p.kind)}</p>`)
-  // The work's one strongest sentence, once, under its name.
-  if (p.line) text?.querySelector('.work-hero__title')?.insertAdjacentHTML('afterend', `<p class="work-hero__line">${esc(p.line)}</p>`)
-  text?.insertAdjacentHTML('beforeend', `
-    <dl class="work-tags">
-      <div><dt>TYPE</dt><dd>${esc(p.kind)}</dd></div>
-      <div><dt>GENRE</dt><dd>${esc(p.genre)}</dd></div>
-      <div><dt>PLATFORM</dt><dd>${esc(p.platforms.join(' · '))}</dd></div>
-      ${p.perspective ? `<div><dt>PERSPECTIVE</dt><dd>${esc(p.perspective)}</dd></div>` : ''}
-    </dl>
-    <p class="work-hero__state"><span class="record__status" data-state="${p.releaseState}">${STATE_LABEL[p.releaseState]}</span></p>
-    ${p.statusNote ? `<p class="work-hero__note">${esc(p.statusNote)}</p>` : ''}`)
-
-  // Its development pictures from the public archive (PHASE G); the gallery
-  // above is the game, these are the making.
   const traces = developmentOf(p.id)
-  const updates = updatesOf(p)
-  const index = PROJECTS.findIndex((x) => x.id === p.id)
-  const prev = PROJECTS[(index + PROJECTS.length - 1) % PROJECTS.length]!
-  const next = PROJECTS[(index + 1) % PROJECTS.length]!
-
-  body.innerHTML = `
-    <section class="work-sec work-note" aria-labelledby="about-h">
-      <h2 class="work-sec__h" id="about-h">ABOUT</h2>
-      <div class="work-note__paper">${p.about.map((l) => `<p>${esc(l)}</p>`).join('')}</div>
-    </section>
-
-    <section class="work-sec" aria-labelledby="core-h">
-      <h2 class="work-sec__h" id="core-h">CORE EXPERIENCE</h2>
-      <ol class="work-cards">${p.core.map((c) => `
-        <li class="work-card"><b class="work-card__t">${esc(c.title)}</b><span class="work-card__x">${esc(c.text)}</span></li>`).join('')}
-      </ol>
-    </section>
-
-    ${(p.lists ?? []).map((list, n) => `
-    <section class="work-sec" aria-labelledby="list-h-${n}">
-      <h2 class="work-sec__h" id="list-h-${n}">${esc(list.title)}</h2>
-      <ol class="work-list">${list.rows.map((r, k) => `
-        <li class="work-list__row"><span class="work-list__n" aria-hidden="true">${k + 1}</span><b>${esc(r.name)}</b><span>${esc(r.text)}</span></li>`).join('')}
-      </ol>
-    </section>`).join('')}
-
-    <section class="work-sec" aria-labelledby="features-h">
-      <h2 class="work-sec__h" id="features-h">FEATURES</h2>
-      <ul class="work-features">${p.features.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
-    </section>
-
-    ${p.characters?.length ? `
-    <section class="work-sec" aria-labelledby="chars-h">
-      <h2 class="work-sec__h" id="chars-h">CHARACTERS</h2>
-      <ul class="work-chars">${p.characters.map((c) => `
-        <li class="work-char">
-          <img src="${workPicture(p.id, c.picture, 'thumb')}" width="${c.w}" height="${c.h}" alt="" loading="lazy" decoding="async">
-          <b class="work-char__n">${esc(c.name)}</b>${c.role ? `<span class="work-char__r">${esc(c.role)}</span>` : ''}
-        </li>`).join('')}
-      </ul>
-    </section>` : ''}
-
-    <section class="work-sec" aria-labelledby="gallery-h">
-      <h2 class="work-sec__h" id="gallery-h">GALLERY</h2>
-      <ul class="work-gallery">${p.gallery.map((g, k) => `
-        <li><button class="work-shot" type="button" data-shot="${k}" aria-label="${esc(g.caption)} 크게 보기">
-          <img src="${workPicture(p.id, g.name, 'thumb')}" alt="" loading="lazy" decoding="async">
-          <span class="work-shot__cap">${esc(g.caption)}</span>
-        </button></li>`).join('')}
-      </ul>
-    </section>
-
-    ${updates.length ? `
-    <section class="work-sec" aria-labelledby="updates-h">
-      <h2 class="work-sec__h" id="updates-h">UPDATE NOTES</h2>
-      <ol class="work-updates">${updates.map((u) => `
-        <li class="work-update">
-          <p class="work-update__head"><b>v${esc(u.version)}</b> <span>${esc(u.title)}</span>
-            <time datetime="${u.date.replace(/\./g, '-')}">${esc(u.date)}</time></p>
-          <ul>${u.changes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
-        </li>`).join('')}
-      </ol>
-    </section>` : ''}
-
-    <section class="work-sec" aria-labelledby="links-h">
-      <h2 class="work-sec__h" id="links-h">LINKS</h2>
-      ${p.links.some((l) => l.href) ? `<p class="work-links work-links--foot">${p.links.filter((l) => l.href).map((l) =>
-        `<a class="work-link" href="${l.href}">${esc(l.label)} <span aria-hidden="true">↗</span></a>`).join('')}</p>` : ''}
-      ${p.links.filter((l) => !l.href).map((l) => `<p class="work-plan">${esc(l.label)}</p>`).join('')}
-      <p class="work-traces">${traces.length ? `<button class="work-traces__go" type="button" data-traces>
-        작업 흔적 보기 <span class="work-traces__n">${traces.length}장</span></button>` : ''}
-        <a class="work-traces__archive" href="/archive.html#${traces.length ? 'development' : 'concept'}">기록실에서 보기 <span aria-hidden="true">→</span></a></p>
-    </section>
-
-    <nav class="work-next" aria-label="다른 작품">
-      <a href="${workHref(prev.id)}"><span aria-hidden="true">←</span> ${esc(prev.title)}</a>
-      <a href="/works.html">WORKS</a>
-      <a href="${workHref(next.id)}">${esc(next.title)} <span aria-hidden="true">→</span></a>
-    </nav>`
 
   const viewer = makeViewer()
   main.append(viewer.el)

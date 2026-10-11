@@ -43,7 +43,10 @@ describe('the brand', () => {
     const html = readFileSync('index.html', 'utf8')
     const raw = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)?.[1]
     expect(raw).toBeDefined()
-    const org = JSON.parse(raw!)
+    // The home page's graph: the studio, and the site it publishes (PHASE J).
+    const graph = (JSON.parse(raw!) as { '@graph': Record<string, unknown>[] })['@graph']
+    const org = graph.find((n) => n['@type'] === 'Organization') as Record<string, unknown>
+    expect(graph.find((n) => n['@type'] === 'WebSite')).toMatchObject({ url: 'https://eungarage.com/', publisher: { '@id': org['@id'] } })
     expect(org['@type']).toBe('Organization')
     expect(org.name).toBe('EUNGARAGE')
     expect(org.url).toBe('https://eungarage.com/')
