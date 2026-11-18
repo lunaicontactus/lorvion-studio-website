@@ -39,7 +39,7 @@ test.describe('desktop', () => {
     const errors = watch(page)
     await page.goto('/works.html', { waitUntil: 'load' })
     await expect(page).toHaveTitle('WORKS — EUNGARAGE')
-    await expect(page.locator('h1')).toHaveText('도깨비들이 만든 세계들')
+    await expect(page.locator('h1')).toHaveText('은가라지가 만드는 세계들')
     await expect(page.locator('body')).not.toContainText(/OUR\s*GAMES|SELECTED WORLDS/i)
     // Five works, each its own kind of object, each leading to its own page.
     const records = page.locator('[data-record]')

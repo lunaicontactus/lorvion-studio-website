@@ -108,8 +108,8 @@ describe('PRESS — only what is true', () => {
 })
 
 describe('STUDIO and the crew', () => {
-  it('has each of the five a line in Korean, from the crew canon', () => {
-    expect(CHARACTERS).toHaveLength(5)
+  it('has each of the six a line in Korean, from the crew canon', () => {
+    expect(CHARACTERS).toHaveLength(6)
     for (const c of CHARACTERS) expect(c.traitKo.length, c.id).toBeGreaterThan(8)
   })
 

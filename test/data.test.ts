@@ -7,19 +7,22 @@ import { ALLEY_LANDSCAPE, ALLEY_PORTRAIT, ALLEY_ART, PROP_ART, PROP_NAMES } from
 import { DESKTOP_WORLD, MOBILE_WORLD, CAPTIONS } from '@/data/world'
 import { OUTLINE_PATHS } from '@/data/outlines'
 
-describe('DOKKA CREW data', () => {
-  it('has the five approved characters, uniquely identified', () => {
-    expect(CHARACTERS).toHaveLength(5)
+describe('crew data (EUNGARAGE 2.0)', () => {
+  it('has the six characters of the user\'s sheets, uniquely identified, each with a staff role', () => {
+    expect(CHARACTERS).toHaveLength(6)
     const ids = CHARACTERS.map((c) => c.id)
-    expect(new Set(ids).size).toBe(5)
-    expect(ids).toEqual(expect.arrayContaining(['momo', 'ruki', 'yomi', 'poko', 'nunu']))
+    expect(new Set(ids).size).toBe(6)
+    expect(ids).toEqual(['momo', 'nunu', 'ruki', 'poko', 'yomi', 'reven'])
+    const staff = Object.fromEntries(CHARACTERS.map((c) => [c.id, c.staff]))
+    expect(staff).toEqual({ momo: '응가', nunu: '김로드', ruki: '최미나이', poko: '조피티', yomi: '이수노', reven: '임레븐' })
+    for (const c of CHARACTERS) expect(c.roleKo, c.id).toBeTruthy()
   })
 
   it('gives every character a distinct behaviour profile', () => {
     // If two characters shared speed and idle bias they would read as the same
     // random walker, which is exactly what the brief forbids.
     const profiles = CHARACTERS.map((c) => `${c.speed}:${c.idleBias}`)
-    expect(new Set(profiles).size).toBe(5)
+    expect(new Set(profiles).size).toBe(CHARACTERS.length)
   })
 
   it('keeps every field within a sane range', () => {

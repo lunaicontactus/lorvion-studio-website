@@ -42,6 +42,8 @@ export interface CharacterArt {
   readonly poses?: Partial<Record<CharacterState, string>>
   /** Natural pixel height, used to size the puppet without a layout read. */
   readonly nativeHeight: number
+  /** The large front picture, for cards and pages (not the room). */
+  readonly portrait?: string
 }
 
 /** How often a character picks each activity, relative to its siblings. */
@@ -56,6 +58,16 @@ export interface CharacterConfig {
   readonly trait: string
   /** The same line in Korean, for the studio page (docs/CREW_REBOOT.md). */
   readonly traitKo: string
+  /** The studio person this character stands for (직원명, EUNGARAGE 2.0). */
+  readonly staff?: string
+  /** Body colour, as the character sheet names it. */
+  readonly colour?: string
+  readonly role?: string
+  readonly roleKo?: string
+  /** The one line on the character's sheet. */
+  readonly line?: string
+  /** What it carries. */
+  readonly prop?: string
   readonly art: CharacterArt
   /** Walk speed in CSS px per second. */
   readonly speed: number

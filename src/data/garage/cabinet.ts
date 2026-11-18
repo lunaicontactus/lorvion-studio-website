@@ -32,7 +32,7 @@ const PAPERS: readonly Item[] = [
   { id: 'dev-0913-neck', kind: 'dev', title: '개발 메모 · 2026.09.13', description: '턱 아래에 링 같은 이음새가 보였다. 다섯 명 모두, 동작마다 지웠다.', weight: 2, rarity: 'common' },
   { id: 'dev-0916-glasses', kind: 'dev', title: '개발 메모 · 2026.09.16', description: 'POKO 안경이 흰 판처럼 얼굴을 덮고 있었다. 프레임마다 눈 위치를 재서 작고 둥근 안경으로 바꿨다.', weight: 2, rarity: 'common' },
   { id: 'lore-fire', kind: 'lore', title: '세계관 기록', description: '도깨비불은 차고 안에서 켜지 않는다. 퓨즈가 나간다.', weight: 2, rarity: 'common' },
-  { id: 'lore-night', kind: 'lore', title: '세계관 기록', description: '도깨비는 밤에 일하고 낮에는 셔터 안쪽에서 잔다. 대부분은 NUNU 이야기다.', weight: 2, rarity: 'common' },
+  { id: 'lore-night', kind: 'lore', title: '세계관 기록', description: '크루는 밤에 일하고 낮에는 셔터 안쪽에서 잔다. 대부분은 누누 이야기다.', weight: 2, rarity: 'common' },
   { id: 'sealed', kind: 'sealed', title: '봉인된 봉투', description: "겉면에 '별을 모은 이에게'라고 적혀 있다. 아직은 열리지 않는다.", weight: 1, rarity: 'rare' },
 ]
 

@@ -151,7 +151,7 @@ ${g.links.map((l) => `        <a href="${l.href}"${current(l, path).replace(' ar
   <div class="container footer-inner">
     <div class="footer-brand">
       <img class="footer-logo" src="/assets/images/brand/eungarage_logo_lockup_light_sm.webp" width="686" height="132" alt="EUNGARAGE" loading="lazy" decoding="async">
-      <p>밤마다 도깨비들이 게임을 만드는 작은 차고.</p>
+      <p>낮에는 평범한 차고, 밤에는 세계를 만드는 곳.</p>
     </div>
     <div class="footer-links">
 ${groups}

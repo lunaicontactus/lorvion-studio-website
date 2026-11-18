@@ -1,5 +1,5 @@
 /**
- * What each dokkaebi does with its time, as small jobs with a reason
+ * What each of the crew does with its time, as small jobs with a reason
  * (SITE UPGRADE PHASE E).
  *
  * Before this the room picked one thing at a time — walk somewhere, stand,
@@ -8,15 +8,13 @@
  * that makes sense in order and comes back to where it started: work at the
  * PC, stop, look over at the bench, go and work at the bench, back to the PC.
  * Once a routine starts it runs to the end; a touch, a hello or the visitor
- * opening something only borrows the dokkaebi for a moment.
+ * opening something only borrows them for a moment.
  *
- * Only what the frames support. There is no sleep, carry, eat, drink or clean
- * frame for anybody (src/data/sprites.ts), so nobody naps, carries a box or
- * drinks here: going to the fridge is standing at its open door, which is
- * what the frames can show. Who does what follows the crew canon
- * (docs/CREW_REBOOT.md): MOMO makes things, RUKI repairs and keeps a cup of
- * noodles by the cushions, YOMI opens the fridge and peers at the locked
- * door, POKO's place is in front of the television, NUNU's is a cushion.
+ * Only what the frames support: idle, walk, work, sit, a hop and a look
+ * (src/data/sprites.ts). Who does what follows the 2.0 crew sheets: MOMO plans
+ * in the middle of the room, NUNU codes at the PC, RUKI researches at the
+ * shelf, POKO writes at the story bench, YOMI listens by the radio, and REVEN
+ * the cat naps on the cushions.
  *
  * Places are named by the navigation graph's own ids (src/data/navigation.ts).
  * A step may list several; the first one that exists in this room and is free
@@ -53,48 +51,59 @@ export interface Routine {
 const BEAT: readonly [number, number] = [900, 2200]
 
 const ROUTINES: Readonly<Record<string, readonly Routine[]>> = {
-  // The maker. Does not drop what she is doing for long.
+  // MOMO plans in the middle of the room and goes to tell people about it.
   momo: [
-    { id: 'pc-to-bench', weight: 4, reads: 'PC에서 작업 → 멈춤 → 작업대를 봄 → 작업대에서 작업 → PC로 돌아옴',
-      steps: [{ go: ['pc-front'] }, { pause: BEAT }, { face: 'workbench' }, { go: ['workbench-b', 'workbench-a'] }, { back: true }] },
-    { id: 'fetch-from-shelf', weight: 2, reads: '작업 → 선반에 가서 찾음 → 두리번 → 작업 자리로',
-      steps: [{ go: ['pc-front', 'workbench-b'] }, { go: ['shelf-front', 'radio-side'] }, { search: true }, { back: true }] },
-    { id: 'fridge-break', weight: 1, reads: '작업 → 냉장고 → 작업 자리로',
-      steps: [{ go: ['workbench-b', 'pc-front'] }, { pause: BEAT }, { go: ['fridge-front'] }, { back: true }] },
+    { id: 'plan-and-tell', weight: 4, reads: '라운지에서 생각 → 기획 책상(PC) → 크루를 봄 → 라운지로',
+      steps: [{ go: ['mid-floor'] }, { search: true }, { go: ['pc-front', 'workbench-b'] }, { face: 'crew' }, { back: true }] },
+    { id: 'idea-to-story', weight: 2, reads: '아이디어 → 스토리 작업대로 가서 보여줌 → 라운지로',
+      steps: [{ go: ['mid-floor'] }, { pause: BEAT }, { go: ['workbench-b', 'workbench-a'] }, { pause: BEAT }, { back: true }] },
+    { id: 'lounge-think', weight: 2, reads: '쿠션에 앉아 고민 → 라운지로',
+      steps: [{ go: ['mid-floor'] }, { sit: ['cushions', 'by-the-bench', 'floor'] }, { pause: BEAT }, { back: true }] },
   ],
-  // Repairs things. Quiet. A cup of noodles by the cushions.
-  ruki: [
-    { id: 'repair', weight: 4, reads: '작업대 수리 → 떨어진 부품 확인 → 다시 수리',
-      steps: [{ go: ['workbench-a', 'workbench-b'] }, { search: true }, { pause: BEAT }, { go: ['workbench-a', 'workbench-b'] }] },
-    { id: 'noodle-break', weight: 2, reads: '작업 → 컵라면 있는 쿠션에 앉음 → 작업대로',
-      steps: [{ go: ['workbench-a', 'workbench-b'] }, { pause: BEAT }, { sit: ['cushions', 'by-the-bench', 'floor'] }, { back: true }] },
-    { id: 'radio-check', weight: 1, reads: '작업 → 라디오 상태 봄 → 작업대로',
-      steps: [{ go: ['workbench-a', 'pc-front'] }, { go: ['radio-side'] }, { back: true }] },
-  ],
-  // Opens the fridge, peers at the locked door. Touches first, thinks later.
-  yomi: [
-    { id: 'fridge-and-door', weight: 4, reads: '냉장고 → 잠긴 문을 봄 → 문 앞에서 두리번 → 냉장고로',
-      steps: [{ go: ['fridge-front'] }, { face: 'outside-door' }, { go: ['secret-front'] }, { search: true }, { go: ['fridge-front', 'mid-floor'] }] },
-    { id: 'shelf-round', weight: 2, reads: '선반 구경 → 두리번 → 서랍 → 냉장고',
-      steps: [{ go: ['shelf-front', 'radio-side'] }, { search: true }, { go: ['cabinet-front', 'pc-front'] }, { go: ['fridge-front', 'mid-floor'] }] },
-  ],
-  // The television is POKO's place. Watches the room before acting.
-  poko: [
-    { id: 'watch-and-check', weight: 4, reads: 'TV 보기 → 일하는 크루 쪽을 봄 → 다시 TV',
-      steps: [{ go: ['tv-left', 'tv-right'] }, { face: 'crew' }, { go: ['tv-left', 'tv-right'] }] },
-    { id: 'look-in-on-bench', weight: 2, reads: 'TV → 작업대 쪽으로 가서 봄 → TV로',
-      steps: [{ go: ['tv-right', 'tv-left'] }, { go: ['right-floor', 'mid-floor'] }, { face: 'workbench' }, { back: true }] },
-    { id: 'sit-by-tv', weight: 2, reads: 'TV 옆 바닥에 앉음 → TV를 봄 → TV 앞으로',
-      steps: [{ sit: ['right-boards'] }, { face: 'tv' }, { go: ['tv-left', 'tv-right'] }] },
-  ],
-  // The cushion is NUNU's. In no hurry.
+  // NUNU codes at the PC, checks the records for a bug, dozes on the cushion.
   nunu: [
-    { id: 'cushion-and-fridge', weight: 3, reads: '쿠션에 앉아 있다 → 일어나 냉장고 → 쿠션으로',
-      steps: [{ sit: ['big-cushion', 'left-cushion'] }, { pause: [1800, 3200] }, { go: ['fridge-front', 'radio-side'] }, { back: true }] },
-    { id: 'rug-watch', weight: 2, reads: '러그에 앉음 → 일하는 크루를 봄 → 계속 앉아 있음',
-      steps: [{ sit: ['rug', 'floor'] }, { face: 'crew' }, { sit: ['rug', 'floor'] }] },
-    { id: 'radio-listen', weight: 1, reads: '쿠션 → 라디오 옆에서 들음 → 쿠션으로',
-      steps: [{ sit: ['big-cushion', 'left-cushion'] }, { go: ['radio-side'] }, { back: true }] },
+    { id: 'code', weight: 5, reads: 'PC 작업 → 멈춤 → 다시 PC 작업',
+      steps: [{ go: ['pc-front'] }, { pause: BEAT }, { go: ['pc-front'] }] },
+    { id: 'bug-hunt', weight: 2, reads: 'PC → 두리번(버그 찾기) → 기록 서랍 확인 → PC로',
+      steps: [{ go: ['pc-front'] }, { search: true }, { go: ['cabinet-front', 'radio-side'] }, { back: true }] },
+    { id: 'doze', weight: 1, reads: 'PC → 쿠션에서 졸기 → PC로',
+      steps: [{ go: ['pc-front'] }, { sit: ['cushions', 'by-the-bench', 'floor'] }, { back: true }] },
+  ],
+  // RUKI looks things up at the shelf and checks them against the records.
+  ruki: [
+    { id: 'research', weight: 4, reads: '책장에서 자료 찾기 → 두리번 → 기록 서랍 → 책장으로',
+      steps: [{ go: ['shelf-front', 'radio-side'] }, { search: true }, { go: ['cabinet-front', 'pc-front'] }, { back: true }] },
+    { id: 'review', weight: 2, reads: '자료 → PC 쪽을 봄(검토) → 책장으로',
+      steps: [{ go: ['cabinet-front', 'radio-side'] }, { face: 'pc' }, { pause: BEAT }, { go: ['shelf-front', 'radio-side'] }] },
+    { id: 'read-sitting', weight: 2, reads: '쿠션에 앉아 노트 읽기 → 책장으로',
+      steps: [{ go: ['shelf-front', 'radio-side'] }, { sit: ['big-cushion', 'left-cushion', 'floor'] }, { pause: BEAT }, { back: true }] },
+  ],
+  // POKO writes at the story bench, stares into space, watches TV for ideas.
+  poko: [
+    { id: 'write', weight: 4, reads: '스토리 작업대에서 쓰기 → 멍하니 생각 → 다시 쓰기',
+      steps: [{ go: ['workbench-a', 'workbench-b'] }, { search: true }, { go: ['workbench-a', 'workbench-b'] }] },
+    { id: 'tv-for-ideas', weight: 2, reads: '작업대 → TV 보며 생각 → 작업대로',
+      steps: [{ go: ['workbench-a', 'workbench-b'] }, { go: ['tv-left', 'tv-right'] }, { face: 'crew' }, { back: true }] },
+    { id: 'nap', weight: 1, reads: '작업대 → 바닥에 앉아 낮잠 → 작업대로',
+      steps: [{ go: ['workbench-a', 'workbench-b'] }, { sit: ['right-boards', 'rug', 'floor'] }, { pause: [1800, 3200] }, { back: true }] },
+  ],
+  // YOMI listens at the radio, sways, and writes melodies on the cushion.
+  yomi: [
+    { id: 'listen', weight: 4, reads: '라디오 옆에서 음악 듣기 → 쿠션에서 흥얼 → 라디오로',
+      steps: [{ go: ['radio-side'] }, { pause: BEAT }, { sit: ['big-cushion', 'cushions', 'left-cushion'] }, { back: true }] },
+    { id: 'compose', weight: 2, reads: '쿠션에 앉아 작곡 → 라디오를 봄 → 라디오로',
+      steps: [{ go: ['radio-side'] }, { sit: ['cushions', 'big-cushion', 'floor'] }, { face: 'radio' }, { back: true }] },
+    { id: 'score-the-scene', weight: 1, reads: '라디오 → TV 장면을 봄 → 라디오로',
+      steps: [{ go: ['radio-side'] }, { go: ['tv-right', 'tv-left'] }, { back: true }] },
+  ],
+  // REVEN naps, visits the fridge, and follows whoever is working.
+  reven: [
+    { id: 'nap', weight: 4, reads: '쿠션에서 낮잠 → 기지개(일어남) → 쿠션으로',
+      steps: [{ sit: ['big-cushion', 'left-cushion', 'floor'] }, { pause: [1800, 3600] }, { sit: ['big-cushion', 'cushions', 'left-cushion'] }] },
+    { id: 'fridge-visit', weight: 2, reads: '냉장고 앞에서 간식 찾기 → 쿠션으로',
+      steps: [{ sit: ['big-cushion', 'left-cushion', 'floor'] }, { go: ['fridge-front'] }, { search: true }, { back: true }] },
+    { id: 'follow-crew', weight: 2, reads: '라운지 → 일하는 크루를 봄 → 러그에 앉음',
+      steps: [{ go: ['mid-floor', 'right-floor'] }, { face: 'crew' }, { sit: ['rug', 'by-the-bench', 'floor'] }] },
   ],
 }
 

@@ -21,15 +21,15 @@
       type="image/webp" fetchpriority="high">
 <script type="module" src="/src/main.ts"></script>
 
-<title>EUNGARAGE — 게임을 만드는 도깨비들의 밤 작업실</title>
-<meta name="description" content="다섯 도깨비가 게임을 만드는 작은 밤 작업실, EUNGARAGE. LUNAI · LIMINAL · WORM UP! · LUMIORA · RUBATO.">
+<title>EUNGARAGE — Little Garage, Big Worlds.</title>
+<meta name="description" content="낮에는 평범한 차고, 밤에는 세계를 만드는 곳. 말랑한 크루 여섯이 사는 작은 게임 스튜디오, EUNGARAGE. LUNAI · LIMINAL · WORM UP! · LUMIORA · RUBATO.">
 <link rel="canonical" href="https://eungarage.com/">
 <meta name="application-name" content="EUNGARAGE">
 <meta property="og:site_name" content="EUNGARAGE">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:type" content="website">
-<meta property="og:title" content="EUNGARAGE — 도깨비들의 밤 작업실">
-<meta property="og:description" content="Characters · Emotions · Worlds. 다섯 도깨비가 게임을 만드는 작은 작업실에 놀러 오세요.">
+<meta property="og:title" content="EUNGARAGE — Little Garage, Big Worlds.">
+<meta property="og:description" content="낮에는 평범한 차고, 밤에는 세계를 만드는 곳. 크루 여섯이 게임을 만드는 작은 차고에 놀러 오세요.">
 <meta property="og:url" content="https://eungarage.com/">
 <meta property="og:image" content="https://eungarage.com/assets/images/og-image.jpg">
 <meta property="og:image:type" content="image/jpeg">
@@ -37,8 +37,8 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="EUNGARAGE — 밤의 차고 앞, 불 켜진 작업실">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="EUNGARAGE — 도깨비들의 밤 작업실">
-<meta name="twitter:description" content="Characters · Emotions · Worlds. 다섯 도깨비가 게임을 만드는 작은 작업실에 놀러 오세요.">
+<meta name="twitter:title" content="EUNGARAGE — Little Garage, Big Worlds.">
+<meta name="twitter:description" content="낮에는 평범한 차고, 밤에는 세계를 만드는 곳. 크루 여섯이 게임을 만드는 작은 차고에 놀러 오세요.">
 <meta name="twitter:image" content="https://eungarage.com/assets/images/og-image.jpg">
 <meta name="twitter:image:alt" content="EUNGARAGE — 밤의 차고 앞, 불 켜진 작업실">
 <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://eungarage.com/#organization", "name": "EUNGARAGE", "url": "https://eungarage.com/", "logo": "https://eungarage.com/assets/images/brand/eungarage_logo_lockup.png", "email": "eungarage@gmail.com", "slogan": "Characters · Emotions · Worlds", "address": {"@type": "PostalAddress", "addressLocality": "Seoul", "addressCountry": "KR"}, "contactPoint": {"@type": "ContactPoint", "contactType": "customer support", "email": "eungarage@gmail.com", "url": "https://eungarage.com/support.html"}}, {"@type": "WebSite", "@id": "https://eungarage.com/#website", "name": "EUNGARAGE", "url": "https://eungarage.com/", "inLanguage": "ko", "publisher": {"@id": "https://eungarage.com/#organization"}}]}</script>
@@ -78,10 +78,11 @@
                flag, so the entrance never shows one crew and the room the
                other. The markup names both; src/app/boot.ts picks. -->
           <span class="alley__peek" data-alley-peek>
-            <img src="/assets/images/dokkaebi-v2/momo/idle/front/momo_idle_front_01.webp"
+            <img src="/assets/images/crew-mochi/momo/idle/front/momo_idle_front_01.webp"
+                 data-crew-mochi="/assets/images/crew-mochi/momo/idle/front/momo_idle_front_01.webp"
                  data-crew-v1="/assets/images/dokkaebi/momo/idle/front/momo_idle_front_01.webp"
                  data-crew-v2="/assets/images/dokkaebi-v2/momo/idle/front/momo_idle_front_01.webp"
-                 width="282" height="420" alt="" decoding="async" loading="lazy">
+                 width="468" height="420" alt="" decoding="async" loading="lazy">
           </span>
         </div>
 
@@ -133,7 +134,7 @@
 
     <!-- What this place is, in a line (SITE UPGRADE PHASE D): above the
          door's button, small, gone once the shutter starts to rise. -->
-    <p class="alley__tagline" data-alley-tagline>게임을 만드는 도깨비들의 밤 작업실<span class="alley__tagline-en" lang="en">Games made after dark</span></p>
+    <p class="alley__tagline" data-alley-tagline>낮에는 평범한 차고, 밤에는 세계를 만드는 곳<span class="alley__tagline-en" lang="en">Little Garage, Big Worlds.</span></p>
     <button class="alley__enter" type="button" data-alley-enter>
       <span class="alley__enter-dot" aria-hidden="true"></span>
       ENTER
@@ -151,7 +152,7 @@
 
   <!-- Outside the garage's door: the Dokkaebi Playground (PHASE 9). Built by
        src/scenes/playground.ts the way the garage is; this is the frame. -->
-  <section class="playground" id="playground" data-playground hidden aria-label="도깨비 놀이터">
+  <section class="playground" id="playground" data-playground hidden aria-label="차고 뒤 놀이터">
     <div class="playground__stage" data-playground-stage>
       <div class="playground__world" data-playground-world></div>
     </div>

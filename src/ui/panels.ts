@@ -1304,7 +1304,7 @@ export class Panels {
       Panels.#furniture('outside-door', def, `
         ${Panels.#region(def.surface, 'prop__surface dark', `
            <p class="dark__line">${tried ? '밖에서 여전히 작은 불빛이 움직인다.' : '문틈으로 밤공기가 들어온다.'}</p>
-           <p class="dark__sub">도깨비 놀이터로</p>`, 'data-dark data-outside-door')}
+           <p class="dark__sub">차고 뒤 놀이터로</p>`, 'data-dark data-outside-door')}
         ${Panels.#slice(def, parts['leaf']!, 'door__leaf', 'data-door-leaf')}`,
       ),
       { id: 'outside-door', def },

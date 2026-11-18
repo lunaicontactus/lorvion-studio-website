@@ -50,7 +50,7 @@ for (const size of SIZES) {
       await page.goto('/', { waitUntil: 'load' })
       const line = page.locator('[data-alley-tagline]')
       await expect(line).toBeVisible({ timeout: 6000 })
-      await expect(line).toContainText('게임을 만드는 도깨비들의 밤 작업실')
+      await expect(line).toContainText('낮에는 평범한 차고, 밤에는 세계를 만드는 곳')
       await expect(line).toContainText('Games made after dark')
       // A line, not a banner: it never covers the door or the button.
       const l = (await line.boundingBox())!

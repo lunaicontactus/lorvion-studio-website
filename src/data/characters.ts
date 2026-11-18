@@ -1,110 +1,93 @@
 /**
- * DOKKA CREW.
+ * The crew (EUNGARAGE 2.0).
  *
- * Names, art and the one line the no-script fallback page shows. Who does
- * what is the crew canon (docs/CREW_REBOOT.md); how that shows in the room is
- * src/data/behaviour.ts and src/data/routines.ts. The activity weights, zones
- * and click reactions below predate both and are not read by anything.
+ * Six mochi: five studio staff and the studio cat. Names, roles and looks
+ * are the user's character sheets (assets/crew-mochi/source/), which replace
+ * the dokkaebi crew of 2026-09 — the old crew's pictures stay on disk and
+ * `?mochiCrew=off` brings them back in the room without a deploy.
+ *
+ * `staff` is the person each one stands for in the studio (직원명), `role`
+ * what they do there, `line` the one thing they say on their sheet. How each
+ * shows in the room is src/data/behaviour.ts and src/data/routines.ts; the
+ * activity weights, zones and click reactions below predate both and are
+ * not read by anything.
  */
 import type { CharacterConfig } from '@/types/character'
 
-const ART = '/assets/images/dokka'
+const ART = '/assets/images/crew-mochi'
+const still = (id: string, view: 'front' | 'left' | 'back'): string =>
+  `${ART}/${id}/idle/${view}/${id}_idle_${view}_01.webp`
+const art = (id: string): CharacterConfig['art'] => ({
+  front: still(id, 'front'), side: still(id, 'left'), back: still(id, 'back'), nativeHeight: 420,
+  portrait: `${ART}/${id}/${id}_portrait.webp`,
+})
 
 export const CHARACTERS: readonly CharacterConfig[] = [
   {
-    id: 'momo',
-    name: 'MOMO',
-    nameKo: '모모',
-    trait: 'Makes things at the bench. First to say hello.',
-    traitKo: '작업대에서 무언가를 만든다. 가장 먼저 인사한다.',
-    art: {
-      front: `${ART}/momo_front.webp`,
-      side: `${ART}/momo_side.webp`,
-      back: `${ART}/momo_back.webp`,
-      nativeHeight: 420,
-    },
-    speed: 46,
-    preferredZones: ['centre', 'left', 'right'],
-    idleBias: 0.34,
+    id: 'momo', name: 'MOMO', nameKo: '모모', staff: '응가', colour: '핑크',
+    role: 'Studio lead · planning', roleKo: '대표 · 기획 · 총괄',
+    trait: 'Full of ideas. Bounces when a new game comes to mind.',
+    traitKo: '아이디어가 많고 활발하다. 새로운 게임을 떠올리면 신나서 통통 튄다.',
+    line: '좋은 생각 났어!', prop: '핑크 노트북',
+    art: art('momo'),
+    speed: 46, preferredZones: ['centre', 'left', 'right'], idleBias: 0.34,
     activityWeights: { idle: 5, walk: 4, look: 3, interact: 3, play: 2, sit: 2 },
-    clickReactions: ['question', 'heart', 'note', 'ellipsis'],
-    accent: '#e0908f',
+    clickReactions: ['spark', 'heart', 'note', 'exclaim'], accent: '#ff91c8',
   },
   {
-    id: 'ruki',
-    name: 'RUKI',
-    nameKo: '루키',
-    trait: 'Repairs the machines. Says little; keeps noodles by the cushions.',
-    traitKo: '기계를 고친다. 말수가 적고, 쿠션 옆에 컵라면을 둔다.',
-    art: {
-      front: `${ART}/ruki_front.webp`,
-      side: `${ART}/ruki_side.webp`,
-      back: `${ART}/ruki_back.webp`,
-      nativeHeight: 420,
-    },
-    speed: 72,
-    preferredZones: ['alley', 'door', 'right'],
-    idleBias: 0.12,
-    activityWeights: { walk: 6, run: 5, play: 4, look: 2, idle: 2, squat: 1 },
-    clickReactions: ['exclaim', 'spark', 'sweat', 'anger'],
-    accent: '#8fae86',
+    id: 'nunu', name: 'NUNU', nameKo: '누누', staff: '김로드', colour: '노랑',
+    role: 'Development · code · systems', roleKo: '개발 · 코딩 · 시스템',
+    trait: 'Careful and responsible. Sometimes dozes off at the keyboard.',
+    traitKo: '꼼꼼하고 책임감이 강하다. 가끔 피곤해서 키보드 앞에서 존다.',
+    line: '버그만 잡으면 끝이야!', prop: '핑크 게임 컨트롤러',
+    art: art('nunu'),
+    speed: 40, preferredZones: ['centre', 'left'], idleBias: 0.4,
+    activityWeights: { work: 8, idle: 3, sit: 2, walk: 1 },
+    clickReactions: ['sweat', 'ellipsis', 'exclaim', 'sleep'], accent: '#ffe99a',
   },
   {
-    id: 'yomi',
-    name: 'YOMI',
-    nameKo: '요미',
-    trait: 'Opens the fridge, peers at the locked door. Touches first.',
-    traitKo: '냉장고를 열고, 잠긴 문을 들여다본다. 먼저 만져 본다.',
-    art: {
-      front: `${ART}/yomi_front.webp`,
-      side: `${ART}/yomi_side.webp`,
-      back: `${ART}/yomi_back.webp`,
-      nativeHeight: 420,
-    },
-    speed: 38,
-    preferredZones: ['right', 'centre', 'door'],
-    idleBias: 0.3,
-    activityWeights: { idle: 4, walk: 3, interact: 5, sit: 3, squat: 2, play: 1 },
-    clickReactions: ['heart', 'note', 'ellipsis', 'sweat'],
-    accent: '#d9a95f',
+    id: 'ruki', name: 'RUKI', nameKo: '루키', staff: '최미나이', colour: '민트',
+    role: 'Research · review', roleKo: '리서치 · 자료 조사 · 검토',
+    trait: 'Curious and analytical. Does not let a small mistake slip.',
+    traitKo: '호기심이 많고 분석적이다. 작은 오류도 놓치지 않으려 한다.',
+    line: '일단 자료부터 찾아보자!', prop: '보라색 별 노트',
+    art: art('ruki'),
+    speed: 46, preferredZones: ['left', 'centre'], idleBias: 0.3,
+    activityWeights: { work: 6, look: 4, walk: 3, idle: 2 },
+    clickReactions: ['question', 'spark', 'note', 'exclaim'], accent: '#c9f5e0',
   },
   {
-    id: 'poko',
-    name: 'POKO',
-    nameKo: '포코',
-    trait: 'The television is its place. Looks before it acts.',
-    traitKo: '텔레비전 앞이 자리다. 움직이기 전에 먼저 본다.',
-    art: {
-      front: `${ART}/poko_front.webp`,
-      side: `${ART}/poko_side.webp`,
-      back: `${ART}/poko_back.webp`,
-      nativeHeight: 420,
-    },
-    speed: 34,
-    preferredZones: ['centre', 'left'],
-    idleBias: 0.46,
-    activityWeights: { work: 8, idle: 4, look: 2, walk: 1, interact: 2 },
-    clickReactions: ['ellipsis', 'question', 'spark', 'anger'],
-    accent: '#a08a72',
+    id: 'poko', name: 'POKO', nameKo: '포코', staff: '조피티', colour: '검정',
+    role: 'Story · worldbuilding', roleKo: '스토리 · 세계관 · 기획 보조',
+    trait: 'Imaginative and a little mischievous. Drifts off into stories.',
+    traitKo: '상상력이 풍부하고 장난기가 있다. 가끔 혼자 상상하다 멍해진다.',
+    line: '이야기, 더 재밌게 해볼까?', prop: '보라색 스토리 노트',
+    art: art('poko'),
+    speed: 38, preferredZones: ['right', 'centre'], idleBias: 0.42,
+    activityWeights: { work: 6, idle: 4, look: 2, sit: 2, walk: 1 },
+    clickReactions: ['ellipsis', 'question', 'spark', 'heart'], accent: '#d7b7ff',
   },
   {
-    id: 'nunu',
-    name: 'NUNU',
-    nameKo: '누누',
-    trait: 'The big cushion is its place. In no hurry.',
-    traitKo: '큰 쿠션이 자리다. 서두르는 법이 없다.',
-    art: {
-      front: `${ART}/nunu_front.webp`,
-      side: `${ART}/nunu_side.webp`,
-      back: `${ART}/nunu_back.webp`,
-      nativeHeight: 420,
-    },
-    speed: 26,
-    preferredZones: ['left', 'window', 'centre'],
-    idleBias: 0.62,
-    activityWeights: { sleep: 9, sit: 4, idle: 3, look: 1, walk: 1 },
-    clickReactions: ['sleep', 'ellipsis', 'question', 'sleep'],
-    accent: '#b9a6cf',
+    id: 'yomi', name: 'YOMI', nameKo: '요미', staff: '이수노', colour: '하늘',
+    role: 'Music · sound · mood', roleKo: '음악 · 사운드 · 분위기',
+    trait: 'Dreamy and soft. Sways when music plays.',
+    traitKo: '감성적이고 몽글몽글하다. 음악을 들으면 저절로 몸을 흔든다.',
+    line: '이 장면에 음악, 한번 들어볼래?', prop: '핑크 카세트 플레이어',
+    art: art('yomi'),
+    speed: 42, preferredZones: ['left', 'centre'], idleBias: 0.36,
+    activityWeights: { idle: 4, sit: 3, work: 3, walk: 2 },
+    clickReactions: ['note', 'heart', 'note', 'sleep'], accent: '#ddefff',
+  },
+  {
+    id: 'reven', name: 'REVEN', nameKo: '임레븐', staff: '임레븐', colour: '크림 · 연보라',
+    role: 'Studio cat', roleKo: '스튜디오 고양이 · 모두의 힐링 담당',
+    trait: 'Easy-going and affectionate. Naps beside whoever is working.',
+    traitKo: '느긋하고 애교가 많다. 차고를 자유롭게 돌아다니다 누군가의 옆에서 잔다.',
+    line: '냐~♡', prop: '털실 공',
+    art: art('reven'),
+    speed: 50, preferredZones: ['left', 'centre', 'right'], idleBias: 0.5,
+    activityWeights: { sit: 5, walk: 4, idle: 3 },
+    clickReactions: ['heart', 'heart', 'sleep', 'note'], accent: '#e8d6ff',
   },
 ] as const
 
