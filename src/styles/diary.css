@@ -1,0 +1,28 @@
+/* DIARY (EUNGARAGE 2.0, PART 11): a minihompy diary on cream note paper. */
+.diary-page{--d-ink:#3a2440;--d-pink:#ff91c8;--d-baby:#ffc6e0;--d-paper:#fff9fc}
+.diary-filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.diary-filter{min-height:44px;padding:8px 16px;border-radius:999px;border:2px solid var(--d-baby);background:#fff;color:var(--d-ink);font:700 .9rem/1 inherit;cursor:pointer}
+.diary-filter[aria-pressed="true"]{background:var(--d-pink);border-color:var(--d-pink);color:#2a1030}
+.diary-filter:focus-visible{outline:3px solid var(--d-pink);outline-offset:2px}
+.diary-list{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.diary-entry{scroll-margin-top:84px}
+.diary-note{border-radius:18px;background:var(--d-paper);color:var(--d-ink);border:2px solid var(--d-baby);
+  background-image:repeating-linear-gradient(transparent 0 31px,rgba(255,145,200,.18) 31px 32px);box-shadow:0 4px 14px rgba(0,0,0,.16)}
+.diary-note summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:baseline;padding:14px 18px;min-height:44px}
+.diary-note summary::-webkit-details-marker{display:none}
+.diary-note summary:focus-visible{outline:3px solid var(--d-pink);outline-offset:-3px;border-radius:16px}
+.diary-note time{font:800 .82rem/1.2 var(--mono,ui-monospace,monospace);color:#a03070}
+.diary-note__title{font-weight:800;font-size:1.05rem}
+.diary-note__tags{grid-column:2;display:flex;flex-wrap:wrap;gap:6px}
+.diary-tag,.diary-kind,.diary-status{font-size:.75rem;font-weight:700;padding:3px 9px;border-radius:999px;background:#ffe8f3;color:#7a1f57}
+.diary-kind{background:#efe4ff;color:#4b2a7a}
+.diary-status[data-status="doing"]{background:#fff2c2;color:#6a4b00}
+.diary-status[data-status="done"]{background:#d9f7e9;color:#1d5a40}
+.diary-note__page{padding:0 18px 18px 18px;line-height:1.75}
+.diary-note__page p{margin:0 0 10px;color:var(--d-ink)}
+.diary-note__page img{display:block;width:100%;height:auto;border-radius:14px;border:2px solid var(--d-baby);margin:8px 0 12px}
+.diary-note__page a{color:#8a2d63;font-weight:700}
+.diary-note__by{text-align:right;font-weight:700;color:#7a5a82}
+.diary-note.is-turning .diary-note__page{animation:diary-turn 520ms cubic-bezier(.3,.8,.3,1);transform-origin:0 0}
+@keyframes diary-turn{from{opacity:0;transform:perspective(900px) rotateX(-14deg) translateY(-6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.diary-note.is-turning .diary-note__page{animation:none}}

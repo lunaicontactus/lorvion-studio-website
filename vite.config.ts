@@ -104,12 +104,14 @@ function prerender(): Plugin {
     transformIndexHtml: {
       order: 'pre',
       async handler(html) {
-        const hosts = ['data-records', 'data-fallback-studio', 'data-press', 'data-records-index', 'data-records-shelves', 'data-works-detail']
+        const hosts = ['data-crew', 'data-diary', 'data-records', 'data-fallback-studio', 'data-press', 'data-records-index', 'data-records-shelves', 'data-works-detail']
         if (!hosts.some((h) => html.includes(` ${h}`))) return html
         const { r, d } = await load(dev)
         let out = html
         if (/\sdata-records[\s>]/.test(out)) out = fill(out, 'data-records', r.worksIndexHtml())
         if (out.includes(' data-fallback-studio')) out = fill(out, 'data-fallback-studio', r.studioHtml())
+        if (/\sdata-crew[\s>]/.test(out)) out = fill(out, 'data-crew', r.crewHtml())
+        if (/\sdata-diary[\s>]/.test(out)) out = fill(out, 'data-diary', r.diaryHtml())
         if (out.includes(' data-press>')) out = fill(out, 'data-press', r.pressHtml())
         if (out.includes(' data-records-index')) out = fill(out, 'data-records-index', r.recordsIndexHtml())
         if (out.includes(' data-records-shelves')) out = fill(out, 'data-records-shelves', r.recordsShelvesHtml())

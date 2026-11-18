@@ -156,4 +156,4 @@ export interface BehaviourProfile {
 }
 
 /** What a dokkaebi is doing when it says something. */
-export type ChatterMood = 'idle' | 'work' | 'sit' | 'greet' | 'touched'
+export type ChatterMood = 'idle' | 'work' | 'sit' | 'greet' | 'touched' | 'petted' | 'lifted'

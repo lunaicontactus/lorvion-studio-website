@@ -1,0 +1,65 @@
+/* CREW page (EUNGARAGE 2.0, PART 18): badges that turn over, then a section
+   per character. Pink sticker cards on the cream page; text stays dark on
+   light (contrast ≥ 7:1 for body text). */
+.crew-page{--crew-ink:#3a2440;--crew-pink:#ff91c8;--crew-baby:#ffc6e0;--crew-warm:#fff9fc}
+.badges{list-style:none;margin:8px 0 40px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:22px}
+.badge{display:grid;gap:10px;justify-items:center}
+.badge__card{position:relative;width:100%;max-width:300px;perspective:1100px;display:grid}
+.badge__side{
+  grid-area:1/1;box-sizing:border-box;width:100%;min-height:400px;
+  padding:16px 16px 18px;border-radius:22px;
+  background:var(--crew-warm);color:var(--crew-ink);
+  border:2px solid var(--crew-pink);
+  box-shadow:0 6px 18px rgba(52,36,71,.14),inset 0 0 0 5px #fff,inset 0 0 0 7px var(--crew-baby);
+}
+.badge__front{display:grid;justify-items:center;align-content:start;text-align:center;gap:2px}
+.badge__studio{margin:0 0 6px;font:800 11px/1 var(--mono, ui-monospace, monospace);letter-spacing:.16em;color:#9a5a86}
+.badge__pic{width:168px;height:168px;object-fit:contain;border-radius:50%;background:radial-gradient(circle at 50% 60%,var(--body),#fff 72%);padding:10px;box-sizing:border-box}
+.badge__name{margin:8px 0 0;font-size:1.35rem;line-height:1.2}
+.badge__name span{font-size:.8rem;letter-spacing:.12em;color:#7a5a82;margin-left:4px}
+.badge__staff{margin:2px 0 0;font-weight:800;color:#b03c7c}
+.badge__role{margin:0;font-size:.92rem}
+.badge__colour{margin:6px 0 0;font-size:.85rem;display:flex;align-items:center;gap:6px}
+.badge__swatch{width:14px;height:14px;border-radius:50%;background:var(--body);border:1.5px solid var(--crew-ink)}
+.badge__line{margin:10px 0 0;padding:8px 12px;border-radius:14px;background:#fff;border:1.5px dashed var(--crew-baby);font-weight:700}
+.badge__back dl{margin:0;display:grid;gap:4px}
+.badge__back dt{font-weight:800;font-size:.8rem;color:#b03c7c;margin-top:6px}
+.badge__back dd{margin:0;font-size:.92rem;line-height:1.5}
+.badge__more{margin:12px 0 0}
+.badge__more a{color:#8a2d63;font-weight:700}
+.badge__flip{
+  min-height:44px;padding:8px 18px;border-radius:999px;cursor:pointer;
+  background:#fff;color:var(--crew-ink);border:2px solid var(--crew-pink);font:700 .92rem/1 inherit;
+}
+.badge__flip:hover{background:#ffe8f3}
+.badge__flip:focus-visible{outline:3px solid var(--crew-pink);outline-offset:2px}
+/* Without the script: both sides show, one under the other, no button. */
+.crew:not(.is-live) .badge__card{display:grid;gap:10px}
+.crew:not(.is-live) .badge__side{grid-area:auto}
+.crew:not(.is-live) .badge__flip{display:none}
+/* With it: a card that turns. */
+.crew.is-live .badge__side{backface-visibility:hidden;-webkit-backface-visibility:hidden;transition:transform 520ms cubic-bezier(.3,.8,.3,1);cursor:pointer}
+.crew.is-live .badge__back{transform:rotateY(180deg)}
+.crew.is-live .badge__card.is-flipped .badge__front{transform:rotateY(-180deg)}
+.crew.is-live .badge__card.is-flipped .badge__back{transform:rotateY(0deg)}
+@media (prefers-reduced-motion:reduce){.crew.is-live .badge__side{transition:none}}
+
+.crew-detail{margin:0 0 28px;padding:22px clamp(16px,3vw,32px) 26px;border-radius:24px;background:var(--crew-warm);color:var(--crew-ink);border:2px solid var(--crew-baby);box-shadow:0 6px 18px rgba(0,0,0,.18);scroll-margin-top:84px}
+.crew-detail a{color:#8a2d63}
+.crew-detail p{color:var(--crew-ink)}
+.crew-detail p.eyebrow,.crew-page .crew-detail .eyebrow{color:#a03070}
+.crew-detail__head{display:grid;grid-template-columns:minmax(140px,240px) 1fr;gap:20px;align-items:center}
+.crew-detail__pic{width:100%;height:auto;max-width:240px}
+.crew-detail h2{margin:4px 0 8px}
+.crew-detail h2 span{font-size:.75em;letter-spacing:.1em;color:#7a5a82}
+.crew-detail h3{margin:22px 0 8px;font-size:1rem}
+.crew-detail__walk{display:flex;align-items:center;gap:10px;margin:10px 0 0;font-size:.85rem;color:#6b4a73}
+.crew-detail__walk img{width:117px;height:auto}
+.crew-detail__lines{margin:0;padding-left:1.2em;display:grid;gap:4px}
+.crew-detail__note{font-size:.88rem;color:#5d4466;margin:0 0 8px}
+.crew-detail__sheet{display:block;border-radius:16px;overflow:hidden;border:2px solid var(--crew-baby)}
+.crew-detail__sheet img{display:block;width:100%;height:auto}
+@media (max-width:600px){
+  .crew-detail__head{grid-template-columns:1fr;justify-items:center;text-align:center}
+  .crew-detail__walk{justify-content:center}
+}

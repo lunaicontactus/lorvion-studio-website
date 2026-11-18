@@ -14,6 +14,7 @@
  * Content comes from the central registries — PROJECTS, SITE_CONFIG, the
  * discovery pools — never from strings typed into a component.
  */
+import { mochiCrew } from '@/data/sprites'
 import { PROJECTS, STATE_LABEL, coverOf, workHref } from '@/data/projects'
 import { artworkFor, fullSrc, orientationOf, wallSrc } from '@/data/artwork'
 import { contactRows } from '@/data/site'
@@ -92,10 +93,13 @@ function shape(project: ProjectConfig): string {
 
 /** The approved crew's own face, for things that belong to one of them. */
 export function ownerPortrait(owner: string | undefined): string | null {
-  return owner ? `/assets/images/dokkaebi-v2/${owner}/idle/front/${owner}_idle_front_01.webp` : null
+  if (!owner) return null
+  return mochiCrew()
+    ? `/assets/images/crew-mochi/${owner}/${owner}_portrait.webp`
+    : `/assets/images/dokkaebi-v2/${owner}/idle/front/${owner}_idle_front_01.webp`
 }
 
-const OWNER_NAME: Readonly<Record<string, string>> = { momo: 'MOMO', nunu: 'NUNU', ruki: 'RUKI', yomi: 'YOMI', poko: 'POKO' }
+const OWNER_NAME: Readonly<Record<string, string>> = { momo: 'MOMO', nunu: 'NUNU', ruki: 'RUKI', yomi: 'YOMI', poko: 'POKO', reven: 'REVEN' }
 
 /** Ids the pool has spent this visit, kept for the length of the tab. */
 const SPENT_KEY = 'eungarage:discoverySpent'

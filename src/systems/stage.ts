@@ -15,13 +15,13 @@
 import type { NpcHandle } from '@/scenes/npc'
 
 /**
- * Who is in when the visitor arrives, in the wide room: MOMO at the
- * monitor, RUKI at the bench, NUNU on the rug — somebody working, somebody
- * making, somebody resting, all three in the first view. POKO and YOMI are
- * out, and walk in as the others walk out (YOMI's places, the shelf and the
- * door, are at the two ends of the room anyway).
+ * Who is in when the visitor arrives, in the wide room (EUNGARAGE 2.0,
+ * PART 33): everyone. MOMO planning in the middle, NUNU at the PC, RUKI at
+ * the shelf, POKO at the story bench, YOMI by the radio, REVEN asleep on the
+ * cushion. After the first stretch the stage keeps five of them in and
+ * sends one out on an errand at a time, so the room still changes.
  */
-export const OPENING_CAST: readonly string[] = ['momo', 'ruki', 'nunu']
+export const OPENING_CAST: readonly string[] = ['momo', 'nunu', 'ruki', 'poko', 'yomi', 'reven']
 
 /** Between one departure and the next. */
 const LEAVE_EVERY = { min: 24_000, max: 50_000 }

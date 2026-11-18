@@ -240,6 +240,11 @@ const MOCHI_FRAMES: Sheet['frames'] = { idle: 4, walk: 8, work: 6, sit: 4, wave:
 const MOCHI: Readonly<Record<string, Sheet>> = {
   // @mochi-metrics-start
   momo: { frames: MOCHI_FRAMES, walkFps: 8.99, aspect: 468 / 420, figureRatio: 0.8857, bodyWidth: 0.7842, tempo: 1 },
+  nunu: { frames: MOCHI_FRAMES, walkFps: 7.64, aspect: 534 / 420, figureRatio: 0.8857, bodyWidth: 0.8352, tempo: 1.2 },
+  ruki: { frames: MOCHI_FRAMES, walkFps: 8.99, aspect: 468 / 420, figureRatio: 0.8857, bodyWidth: 0.8013, tempo: 0.95 },
+  poko: { frames: MOCHI_FRAMES, walkFps: 7.91, aspect: 464 / 420, figureRatio: 0.8857, bodyWidth: 0.819, tempo: 1.2 },
+  yomi: { frames: MOCHI_FRAMES, walkFps: 8.54, aspect: 470 / 420, figureRatio: 0.8857, bodyWidth: 0.8213, tempo: 1.1 },
+  reven: { frames: MOCHI_FRAMES, walkFps: 9.89, aspect: 494 / 420, figureRatio: 0.8833, bodyWidth: 0.8279, tempo: 1 },
   // @mochi-metrics-end
 }
 

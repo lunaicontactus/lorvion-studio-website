@@ -100,7 +100,7 @@ async function feet(page: Page, who = MOMO): Promise<{ x: number; y: number }> {
 async function pose(page: Page, who = MOMO): Promise<string> {
   return page.evaluate((sel) => {
     const img = document.querySelector(`${sel} img`) as HTMLImageElement
-    const m = /\/dokkaebi(?:-v2)?\/\w+\/(\w+)\/(\w+)\//.exec(img.src)
+    const m = /\/(?:dokkaebi(?:-v2)?|crew-mochi)\/\w+\/(\w+)\/(\w+)\//.exec(img.src)
     return m ? `${m[1]}:${m[2]}` : 'still'
   }, who)
 }
@@ -312,7 +312,7 @@ test.describe('desktop', () => {
       const t0 = Date.now()
       while (Date.now() - t0 < 170000) {
         for (const img of imgs) {
-          const m = /\/dokkaebi(?:-v2)?\/\w+\/(\w+)\//.exec(img.src)
+          const m = /\/(?:dokkaebi(?:-v2)?|crew-mochi)\/\w+\/(\w+)\//.exec(img.src)
           if (m) out.add(m[1]!)
         }
         await new Promise((r) => setTimeout(r, 150))

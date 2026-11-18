@@ -20,6 +20,8 @@ import { mountFallback } from '@/ui/fallback'
 import { mountWorks } from '@/ui/works'
 import { mountRecords } from '@/ui/records'
 import { mountPress } from '@/ui/press'
+import { mountCrew } from '@/ui/crew'
+import { mountDiary } from '@/ui/diary'
 
 type Teardown = () => void
 
@@ -68,6 +70,8 @@ export function boot(): Teardown {
     guard('works', () => mountWorks()),
     guard('records', () => mountRecords()),
     guard('press', () => mountPress()),
+    guard('crew', () => mountCrew()),
+    guard('diary', () => mountDiary()),
     guard('reveal', () => mountReveal()),
     guard('sound-toggle', () => mountSoundToggle()),
   )

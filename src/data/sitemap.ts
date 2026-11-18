@@ -19,7 +19,7 @@
 export const ORIGIN = 'https://eungarage.com'
 export const CONTACT_EMAIL = 'eungarage@gmail.com'
 
-export type RouteGroup = 'home' | 'works' | 'archive' | 'studio' | 'support' | 'contact' | 'press' | 'legal' | 'system'
+export type RouteGroup = 'home' | 'works' | 'crew' | 'diary' | 'archive' | 'studio' | 'support' | 'contact' | 'press' | 'legal' | 'system'
 
 export interface Route {
   /** The URL path. */
@@ -37,6 +37,8 @@ export const ROUTES: readonly Route[] = [
   { path: '/', group: 'home', role: '골목 입구 → 차고(포인트&클릭) → 놀이터 · 비밀 보관소', live: true, indexed: true },
   { path: '/works.html', group: 'works', role: 'WORKS — 작품 5개 목록', live: true, indexed: true },
   // Each work's page: /works/<id>.html, one per entry in src/data/projects.ts.
+  { path: '/crew.html', group: 'crew', role: 'CREW — 크루 여섯의 사원증과 캐릭터 시트 (2.0)', live: true, indexed: true },
+  { path: '/diary.html', group: 'diary', role: 'DIARY — 개발일지 (2.0)', live: true, indexed: true },
   { path: '/archive.html', group: 'archive', role: 'PUBLIC ARCHIVE — 공식 기록실', live: true, indexed: true },
   { path: '/studio.html', group: 'studio', role: '스튜디오 소개', live: true, indexed: true },
   { path: '/support.html', group: 'support', role: '작품별 고객지원(현재 서비스 중인 LUNAI)', live: true, indexed: true },
@@ -65,6 +67,8 @@ export interface Link {
  */
 const NAV_ALL: readonly Link[] = [
   { label: 'Works', href: '/works.html', group: 'works' },
+  { label: 'Crew', href: '/crew.html', group: 'crew' },
+  { label: 'Diary', href: '/diary.html', group: 'diary' },
   { label: 'Archive', href: '/archive.html', group: 'archive' },
   { label: 'Studio', href: '/studio.html', group: 'studio' },
   { label: 'Support', href: '/support.html', group: 'support' },
@@ -79,6 +83,8 @@ const FOOTER_ALL: readonly { readonly title: string; readonly links: readonly Li
     links: [
       { label: 'Garage', href: '/' },
       { label: 'Works', href: '/works.html' },
+      { label: 'Crew', href: '/crew.html' },
+      { label: 'Diary', href: '/diary.html' },
       { label: 'Archive', href: '/archive.html' },
       { label: 'Studio', href: '/studio.html' },
       { label: 'Press', href: '/press.html' },

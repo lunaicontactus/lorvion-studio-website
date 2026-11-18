@@ -30,7 +30,7 @@ async function faces(page: Page): Promise<number> {
       .filter((e) => !e.classList.contains('is-away'))
       .filter((e) => {
         const src = (e.querySelector('img') as HTMLImageElement | null)?.src ?? ''
-        const m = /\/dokkaebi(?:-v2)?\/\w+\/\w+\/(\w+)\//.exec(src)
+        const m = /\/(?:dokkaebi(?:-v2)?|crew-mochi)\/\w+\/\w+\/(\w+)\//.exec(src)
         // No frame yet is not a face, and not a failure either — the sample
         // loop below starts once somebody is actually rendered.
         return m !== null && m[1] !== 'back'
@@ -75,7 +75,7 @@ async function fewestFaces(page: Page, ms: number): Promise<number> {
         .filter((e) => !e.classList.contains('is-away'))
         .filter((e) => {
           const src = (e.querySelector('img') as HTMLImageElement | null)?.src ?? ''
-          const m = /\/dokkaebi(?:-v2)?\/\w+\/\w+\/(\w+)\//.exec(src)
+          const m = /\/(?:dokkaebi(?:-v2)?|crew-mochi)\/\w+\/\w+\/(\w+)\//.exec(src)
           return m !== null && m[1] !== 'back'
         }).length
     const frame = (): Promise<void> =>
