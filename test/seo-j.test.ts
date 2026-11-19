@@ -15,7 +15,7 @@ const PAGES = [
   ...readdirSync('works').filter((f) => f.endsWith('.html')).map((f) => `works/${f}`),
 ]
 /** Pages that are not for search: the not-found page, and the old /games.html that forwards to /works.html. */
-const NOINDEX = ['404.html', 'games.html']
+const NOINDEX = ['404.html', 'games.html', 'admin.html']
 const INDEXED = PAGES.filter((p) => !NOINDEX.includes(p))
 const route = (p: string): string => (p === 'index.html' ? `${B}/` : `${B}/${p}`)
 

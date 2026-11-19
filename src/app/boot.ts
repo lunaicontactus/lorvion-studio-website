@@ -109,6 +109,7 @@ export function boot(): Teardown {
     ['[data-stars]', 'stars', () => import('@/ui/stars').then((m) => m.mountStars)],
     ['[data-radio]', 'radio', () => import('@/ui/radio').then((m) => m.mountRadio)],
     ['[data-settings]', 'settings', () => import('@/ui/settings').then((m) => m.mountSettings)],
+    ['[data-admin]', 'admin', () => import('@/ui/admin').then((m) => m.mountAdmin)],
   ]
   for (const [sel, name, load] of PAGES) {
     if (!document.querySelector(sel)) continue

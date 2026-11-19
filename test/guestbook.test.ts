@@ -24,3 +24,13 @@ describe('the server client', () => {
     expect(friendly(new Error('network'))).toMatch(/서버/)
   })
 })
+
+describe('the admin page output', () => {
+  it('escapes notes and star names in the moderation lists', async () => {
+    const { gbRowHtml, starRowHtml } = await import('@/ui/admin')
+    const gb = gbRowHtml({ id: 1, nickname: '<b>x</b>', message: '<script>1</script>', sticker: 'star', status: 'pending', reply: '<i>r</i>', reports: 0, created_at: '2026-11-19T00:00:00Z' })
+    expect(gb).not.toMatch(/<script>|<b>x|<i>r/)
+    const st = starRowHtml({ code: 'STAR-ABCDEF', kind: 'event', name: '<img onerror=1>', message: '<svg>', color: 'gold', grade: 1, status: 'approved', is_public: true, reports: 0, created_at: '2026-11-19T00:00:00Z' })
+    expect(st).not.toMatch(/<img onerror|<svg>/)
+  })
+})

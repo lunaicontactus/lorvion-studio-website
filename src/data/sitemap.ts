@@ -53,6 +53,7 @@ export const ROUTES: readonly Route[] = [
   { path: '/terms.html', group: 'legal', role: 'LUNAI 이용약관', live: true, indexed: true },
   { path: '/community-guidelines.html', group: 'legal', role: 'LUNAI 커뮤니티 이용규칙', live: true, indexed: true },
   { path: '/account-deletion.html', group: 'legal', role: 'LUNAI 계정 삭제 안내', live: true, indexed: true },
+  { path: '/admin.html', group: 'system', role: '운영 (2.0, 관리자만 · noindex · 링크 없음)', live: true, indexed: false },
   { path: '/games.html', group: 'system', role: '예전 주소 → /works.html', live: true, indexed: false },
   { path: '/404.html', group: 'system', role: '없는 주소', live: true, indexed: false },
 ]
