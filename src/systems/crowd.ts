@@ -120,6 +120,8 @@ export class Crowd {
   private readonly saidAt = new Map<string, number>()
   private speaking = new Set<string>()
   private readonly fidgeting = new Set<string>()
+  /** The one standing figure stepping aside right now, if any. */
+  private shuffler: string | null = null
   // Never, rather than zero. Zero means "one just happened at start-up", so
   // the first greeting of a session would have waited out SOCIAL_GAP on top
   // of SOCIAL_NOT_BEFORE — a minute of the crew pointedly ignoring each other.
@@ -144,6 +146,7 @@ export class Crowd {
     this.walking.delete(id)
     this.speaking.delete(id)
     this.fidgeting.delete(id)
+    if (this.shuffler === id) this.shuffler = null
     for (const [slot, b] of this.bookings) if (b.by === id) this.bookings.delete(slot)
   }
 
@@ -231,6 +234,25 @@ export class Crowd {
 
   endFidget(id: string): void {
     this.fidgeting.delete(id)
+  }
+
+  /**
+   * Stepping aside while standing about (keeping its distance from somebody
+   * who has come too close). It is on its feet, so it is movement on the
+   * floor like a walk: with six in the room, two walkers and two standing
+   * figures shuffling at once was four things crossing the boards (CI, 2.0).
+   * One at a time; the next waits the fraction of a second it takes.
+   */
+  mayShuffle(id: string): boolean {
+    if (this.shuffler === null || this.shuffler === id) {
+      this.shuffler = id
+      return true
+    }
+    return false
+  }
+
+  endShuffle(id: string): void {
+    if (this.shuffler === id) this.shuffler = null
   }
 
   /** The nearest other member along the boards within `r`, if any. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readdirSync, readFileSync } from 'node:fs'
-import { FOOTER, groupOf, NAV, renderFooter, renderNav, renderPageIndex, ROUTES, sitemapXml } from '@/data/sitemap'
+import { FOOTER, groupOf, NAV, NAV_UTIL, renderFooter, renderNav, renderPageIndex, ROUTES, sitemapXml } from '@/data/sitemap'
 import { PROJECTS } from '@/data/projects'
 
 /**
@@ -34,6 +34,16 @@ describe('the site map', () => {
     // GAMES is the works index under its 2.0 name, not a second page.
     expect(NAV.find((l) => l.label === 'Games')?.href).toBe('/works.html')
     expect(renderNav('/')).not.toMatch(/OUR GAMES/i)
+  })
+
+  it('keeps STUDIO and SUPPORT in the bar of every page, after the tabs', () => {
+    // SUPPORT is LUNAI's store-listed support address; the garage has no footer.
+    expect(NAV_UTIL.map((l) => l.href)).toEqual(['/studio.html', '/support.html'])
+    for (const path of ['/', '/works.html', '/crew.html', '/support.html']) {
+      const html = renderNav(path)
+      expect(html).toContain('href="/support.html"')
+      expect(html.indexOf('href="/settings.html"')).toBeLessThan(html.indexOf('href="/studio.html"'))
+    }
   })
 
   it('every page carries the markers, not its own copy of the nav or footer', () => {

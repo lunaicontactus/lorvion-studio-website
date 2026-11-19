@@ -153,7 +153,8 @@ test.describe('desktop', () => {
 
   test('the top nav opens the thing it names', async ({ page }) => {
     await enter(page)
-    await page.locator('.nav-links a', { hasText: 'Works' }).click()
+    // 2.0: GAMES is the works tab — in the room, the PC.
+    await page.locator('.nav-links a', { hasText: 'Games' }).click()
     await expect(page.locator('[data-game]')).toHaveCount(5, { timeout: 5000 })
     await page.keyboard.press('Escape')
     await expect(page.locator(panel)).toBeHidden()
@@ -181,7 +182,7 @@ test.describe('desktop', () => {
     })
     await page.goto('/', { waitUntil: 'load' })
     await expect(page.locator('[data-garage]')).toBeHidden()
-    await page.locator('.nav-links a', { hasText: 'Works' }).click()
+    await page.locator('.nav-links a', { hasText: 'Games' }).click()
     await expect(page.locator('[data-garage]')).toBeVisible({ timeout: 10000 })
     await expect(page.locator('[data-game]')).toHaveCount(5, { timeout: 8000 })
   })

@@ -941,7 +941,7 @@ export function mountNpc(
     // off the thing it came to use.
     if (crowd && (state === 'IDLE' || state === 'LOOK' || state === 'CHOOSE_TARGET')) {
       const sep = crowd.separation(id, x, y)
-      if (sep.x !== 0 || sep.y !== 0) {
+      if ((sep.x !== 0 || sep.y !== 0) && crowd.mayShuffle(id)) {
         // Brisk enough to be out of the way before a walker arrives. At 26
         // a second a dokkaebi took most of a second to clear its own width,
         // which is long enough to be photographed standing inside somebody.
@@ -959,10 +959,12 @@ export function mountNpc(
         place()
       } else if (shuffling) {
         shuffling = false
+        crowd.endShuffle(id)
         pose('idle')
       }
     } else if (shuffling) {
       shuffling = false
+      crowd?.endShuffle(id)
     }
 
     switch (state) {

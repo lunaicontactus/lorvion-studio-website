@@ -11,6 +11,9 @@
 .nav-links a{position:relative;padding:9px 0}
 .nav-links a:after{content:"";position:absolute;left:0;bottom:2px;width:100%;height:1px;background:white;transform:scaleX(0);transform-origin:right;transition:transform .4s var(--ease)}
 .nav-links a:hover:after{transform:scaleX(1);transform-origin:left}
+/* STUDIO · SUPPORT after the tabs: smaller and quieter, set off by a hairline. */
+.nav-links .nav-util{font-size:.64rem;opacity:.78;letter-spacing:.05em}
+.nav-links .nav-util--first{margin-left:4px;padding-left:12px;border-left:1px solid currentColor;border-left-color:color-mix(in srgb,currentColor 35%,transparent)}
 .menu-toggle{display:none;background:none;border:0;color:white;padding:10px;cursor:pointer}
 .menu-toggle span{display:block;width:24px;height:1px;background:white;margin:6px 0;transition:.3s}
 
@@ -53,7 +56,7 @@
 
 /* The site's mute switch: the same preference the garage radio uses. Function
    layer, always in the nav, never hidden behind hover. */
-.sound-toggle{display:inline-grid;place-items:center;width:44px;height:44px;margin-left:auto;margin-right:4px;
+.sound-toggle{display:inline-grid;place-items:center;width:44px;height:44px;flex-shrink:0;margin-left:auto;margin-right:4px;
   border:0;border-radius:999px;background:transparent;color:inherit;cursor:pointer}
 .nav-inner .sound-toggle{order:2}
 .sound-toggle:hover,.sound-toggle:focus-visible{background:rgba(127,127,127,.14)}
@@ -65,6 +68,11 @@
 
 /* Every way out of the bar is a fingertip tall (PHASE I, I-7): the links, the
    name, the menu button. The bar is taller than 44 px already. */
-.nav-links a{display:inline-flex;align-items:center;min-height:44px}
+.nav-links a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}
 .site-nav .brand{display:inline-flex;align-items:center;min-height:44px}
 .menu-toggle{min-width:44px;min-height:44px}
+
+/* The bar is the full width on every page (2.0): the reading column of the
+   info pages is 900 px, and twelve tabs, STUDIO, SUPPORT and the sound switch
+   in 900 px pushed the switch off the right edge at 1440. */
+.site-nav .nav-inner.container{max-width:var(--max)}

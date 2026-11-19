@@ -71,7 +71,7 @@ export const CREW_PROFILES: readonly CrewProfile[] = [
     likes: ['음악', '새로운 멜로디'],
     habits: ['음악 듣기', '리듬 타기', '카세트 조작', '작곡하기', '음악에 맞춰 춤추기', '졸기'],
     lines: ['이 장면에는 어떤 음악이 좋을까?', '잠깐, 멜로디가 떠올랐어!', '같이 음악 들을래?'],
-    related: [{ label: '차고의 라디오 켜기', href: '/#radio' }],
+    related: [{ label: 'RADIO — 요미가 고른 곡 듣기', href: '/radio.html' }],
     spot: '음악 코너 · 라디오 옆', sheet: SHEET('yomi'),
   },
   {

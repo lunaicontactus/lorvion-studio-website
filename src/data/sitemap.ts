@@ -91,6 +91,16 @@ const NAV_ALL: readonly Link[] = [
 ]
 export const NAV: readonly Link[] = NAV_ALL.filter((l) => isLive(l.href))
 
+/**
+ * After the tabs, small: the studio's own page and SUPPORT. SUPPORT is LUNAI's
+ * store-listed support address and the garage page has no footer, so it has
+ * to be in the bar to be one click from every page.
+ */
+export const NAV_UTIL: readonly Link[] = ([
+  { label: 'Studio', href: '/studio.html', group: 'studio' },
+  { label: 'Support', href: '/support.html', group: 'support' },
+] as const satisfies readonly Link[]).filter((l) => isLive(l.href))
+
 /** The footer: the studio's pages, then LUNAI's documents, then the address. */
 const FOOTER_ALL: readonly { readonly title: string; readonly links: readonly Link[] }[] = [
   {
@@ -145,7 +155,10 @@ const SOUND_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden=
 export function renderNav(path: string): string {
   const home = groupOf(path) === 'home'
   const logo = home ? 'eungarage_logo_nav.webp' : 'eungarage_logo_nav_light.webp'
-  const links = NAV.map((l) => `      <a href="${l.href}"${current(l, path)}>${esc(l.label)}</a>`).join('\n')
+  const links = [
+    ...NAV.map((l) => `      <a href="${l.href}"${current(l, path)}>${esc(l.label)}</a>`),
+    ...NAV_UTIL.map((l, i) => `      <a class="nav-util${i === 0 ? ' nav-util--first' : ''}" href="${l.href}"${current(l, path)}>${esc(l.label)}</a>`),
+  ].join('\n')
   return `<nav class="site-nav">
   <div class="container nav-inner">
     <a class="brand" href="/" aria-label="EUNGARAGE home">
@@ -194,7 +207,7 @@ ${groups}
  * no footer, and a crawler or a visitor without scripts still finds the rest.
  */
 export function renderPageIndex(): string {
-  const links = [...NAV, ...FOOTER.flatMap((g) => g.links)]
+  const links = [...NAV, ...NAV_UTIL, ...FOOTER.flatMap((g) => g.links)]
     .filter((l, i, all) => l.href !== '/' && all.findIndex((m) => m.href === l.href) === i)
   return `<nav class="visually-hidden page-links" aria-label="EUNGARAGE 페이지">
 ${links.map((l) => `    <a href="${l.href}">${esc(l.label)}</a>`).join('\n')}

@@ -96,7 +96,9 @@ test.describe('L-1 every route', () => {
     const origin = new URL(baseURL!).origin
     const xml = await (await request.get('/sitemap.xml')).text()
     const routes = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!.replace(SITE, ''))
-    expect(routes).toHaveLength(16)
+    // 16 before 2.0, and the seven minihompy pages of EUNGARAGE 2.0 (admin is not indexed).
+    expect(routes).toHaveLength(23)
+    for (const p of ['/crew.html', '/diary.html', '/guestbook.html', '/arcade.html', '/stars.html', '/radio.html', '/settings.html']) expect(routes).toContain(p)
     const w = watch(page)
     const bad: string[] = []
     for (const r of [...routes, '/404.html']) {

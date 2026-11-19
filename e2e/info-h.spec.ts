@@ -97,10 +97,10 @@ test.describe('INFO PAGES — reading them', () => {
     await expect(page.locator('.cta-button')).toHaveAttribute('href', 'mailto:eungarage@gmail.com?subject=[LUNAI] 고객지원 문의')
   })
 
-  test('STUDIO: the five works with their state, the crew of five, and the ways to reach them', async ({ page }) => {
+  test('STUDIO: the five works with their state, the crew of six, and the ways to reach them', async ({ page }) => {
     await page.goto('/studio.html', { waitUntil: 'load' })
     await expect(page.locator('.studio-work')).toHaveCount(5)
-    await expect(page.locator('.studio-crew__one')).toHaveCount(5)
+    await expect(page.locator('.studio-crew__one')).toHaveCount(6)
     for (const img of await page.locator('.studio-crew__one img').all()) {
       await img.scrollIntoViewIfNeeded()
       await expect(img).toHaveJSProperty('complete', true)

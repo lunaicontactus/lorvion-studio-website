@@ -339,18 +339,29 @@ test.describe('desktop', () => {
     // one frame long is caught the same as a spell ten seconds long, and the
     // position belongs to the state rather than to whenever the next query
     // happened to land.
-    await watchStates(page)
+    //
+    // The whole crew is watched (EUNGARAGE 2.0). MOMO is the planner now and
+    // spends her first minute at the middle of the floor, so watching her
+    // alone timed out one run in three; every one of them must stand in
+    // front of a thing when it works at it, so every one is checked.
+    await watchStates(page, '*')
     await enter(page, '?npcseed=7')
     await page.waitForFunction(
       () => window.__npcStates?.some((s) => s.state === 'WORK' || s.state === 'INTERACT'),
       undefined, { timeout: 60_000 })
-    const at = await page.evaluate(() =>
-      window.__npcStates.find((s) => s.state === 'WORK' || s.state === 'INTERACT')!)
-    // On the floor in front of it, never up on the furniture.
-    expect(at.y).toBeGreaterThan(980)
-    // Every place in the room that stands in front of something.
-    const fronts = [1578, 2116, 2252, 2470, 2830, 2942, 3062, 3306]
-    expect(Math.min(...fronts.map((f) => Math.abs(at.x - f)))).toBeLessThan(20)
+    await page.waitForTimeout(500)
+    const all = await page.evaluate(() =>
+      window.__npcStates.filter((s) => s.state === 'WORK' || s.state === 'INTERACT'))
+    expect(all.length).toBeGreaterThan(0)
+    // Every place in the room that stands in front of something
+    // (src/data/navigation.ts: shelf, cabinet, radio, PC, the bench's two,
+    // fridge, the TV's two, the parcel, the door).
+    const fronts = [330, 980, 1176, 1578, 2116, 2252, 2470, 2830, 2942, 3062, 3306]
+    for (const at of all) {
+      // On the floor in front of it, never up on the furniture.
+      expect(at.y, `${at.who} ${at.state}`).toBeGreaterThan(980)
+      expect(Math.min(...fronts.map((f) => Math.abs(at.x - f))), `${at.who} ${at.state} at ${at.x}`).toBeLessThan(20)
+    }
   })
 
   test('somebody says something, and never two of them at once', async ({ page }) => {
