@@ -149,13 +149,12 @@ function current(link: Link, path: string): string {
 const SOUND_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path class="sound-toggle__on" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="sound-toggle__off" d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'
 
 /**
- * The nav for the page at `path`. EUNGARAGE 2.0: every page has the light
- * pink bar now (src/styles/theme-pink.css), so every page takes the dark
- * logo. Under `?pinkRoom=off` the felt pages invert it back to light.
+ * The nav for the page at `path`. The garage's own bar is light, so it takes
+ * the dark logo; every other page is dark and takes the light one.
  */
 export function renderNav(path: string): string {
-  void path
-  const logo = 'eungarage_logo_nav.webp'
+  const home = groupOf(path) === 'home'
+  const logo = home ? 'eungarage_logo_nav.webp' : 'eungarage_logo_nav_light.webp'
   const links = [
     ...NAV.map((l) => `      <a href="${l.href}"${current(l, path)}>${esc(l.label)}</a>`),
     ...NAV_UTIL.map((l, i) => `      <a class="nav-util${i === 0 ? ' nav-util--first' : ''}" href="${l.href}"${current(l, path)}>${esc(l.label)}</a>`),
@@ -185,7 +184,7 @@ ${g.links.map((l) => `        <a href="${l.href}"${current(l, path).replace(' ar
   return `<footer class="site-footer">
   <div class="container footer-inner">
     <div class="footer-brand">
-      <img class="footer-logo" src="/assets/images/brand/eungarage_logo_lockup_sm.webp" width="686" height="132" alt="EUNGARAGE" loading="lazy" decoding="async">
+      <img class="footer-logo" src="/assets/images/brand/eungarage_logo_lockup_light_sm.webp" width="686" height="132" alt="EUNGARAGE" loading="lazy" decoding="async">
       <p>낮에는 평범한 차고, 밤에는 세계를 만드는 곳.</p>
     </div>
     <div class="footer-links">

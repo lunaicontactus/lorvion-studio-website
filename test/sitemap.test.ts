@@ -66,9 +66,9 @@ describe('the site map', () => {
     expect(renderFooter('/terms.html')).toContain('<a href="/terms.html" aria-current="page">Terms</a>')
   })
 
-  it('gives every page the dark logo on the 2.0 light bar', () => {
+  it('gives the garage the dark logo and every other page the light one', () => {
     expect(renderNav('/')).toContain('eungarage_logo_nav.webp')
-    expect(renderNav('/studio.html')).toContain('eungarage_logo_nav.webp')
+    expect(renderNav('/studio.html')).toContain('eungarage_logo_nav_light.webp')
   })
 
   it('lists every live, indexed page and every work in the sitemap, and nothing else', () => {
