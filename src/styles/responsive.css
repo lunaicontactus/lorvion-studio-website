@@ -12,6 +12,10 @@
      that as a transition (Firefox does) paints the menu over the entrance for
      the first 350ms. Nothing transitions until the page has loaded. */
   body.loading .nav-links{transition:none}
+  /* STUDIO · SUPPORT (2.0): a line above them instead of the bar's divider,
+     and room under the last one so it never ends on the window's edge. */
+  .nav-links .nav-util--first{margin-left:0;padding-left:0;border-left:0;margin-top:6px;border-top:1px solid color-mix(in srgb,currentColor 30%,transparent)}
+  .nav-links a:last-child{margin-bottom:12px}
   .menu-toggle{display:block;z-index:2}
   .menu-toggle.open span:first-child{transform:translateY(3.5px) rotate(45deg)}
   .menu-toggle.open span:last-child{transform:translateY(-3.5px) rotate(-45deg)}

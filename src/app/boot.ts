@@ -91,6 +91,19 @@ export function boot(): Teardown {
   // character is built against one set and drawn from the other.
   setNewCrew(flags.newCrew)
   setMochiCrew(flags.mochiCrew)
+  // The room module reads this when it loads (src/data/world.ts), and the
+  // page styles key off it: one attribute, no import of the room here.
+  document.documentElement.dataset['room'] = flags.pinkRoom ? 'pink' : 'felt'
+  // The alley's first paint is in the HTML, in pink; the felt alley is the
+  // same files one folder up.
+  if (!flags.pinkRoom) {
+    for (const el of document.querySelectorAll<HTMLImageElement | HTMLSourceElement>('[data-alley] img, [data-alley] source')) {
+      for (const attr of ['src', 'srcset'] as const) {
+        const v = el.getAttribute(attr)
+        if (v?.includes('/alley/pink/')) el.setAttribute(attr, v.replace('/alley/pink/', '/alley/'))
+      }
+    }
+  }
   // The one character drawn in the markup rather than by the room: whoever
   // leans round the door while the shutter is still going up. It has to be
   // the same crew as the room behind it, including on the rollback path.

@@ -111,9 +111,13 @@ export interface AlleyPlate {
 }
 
 const DIR = '/assets/images/alley'
+/** EUNGARAGE 2.0: the pink night grade of the wall, shutter and sign
+ *  (scripts/pink_grade.py + scripts/pink_night.py). index.html names these
+ *  directly for the first paint; `?pinkRoom=off` swaps back (src/app/boot.ts). */
+const NIGHT = `${DIR}/pink`
 
 export const ALLEY_LANDSCAPE: AlleyPlate = {
-  base: { src: `${DIR}/alley_base_desktop.webp`, w: 2560, h: 1440 },
+  base: { src: `${NIGHT}/alley_base_desktop.webp`, w: 2560, h: 1440 },
   shutter: { left: 36.4, top: 18.5, width: 27.2 },
   sign: { left: 42, top: 7, width: 16 },
   // Put down where they were carried in, not arranged: the door line stays
@@ -137,7 +141,7 @@ export const ALLEY_LANDSCAPE: AlleyPlate = {
 }
 
 export const ALLEY_PORTRAIT: AlleyPlate = {
-  base: { src: `${DIR}/alley_base_mobile.webp`, w: 1170, h: 2080 },
+  base: { src: `${NIGHT}/alley_base_mobile.webp`, w: 1170, h: 2080 },
   shutter: { left: 22, top: 34.2, width: 56 },
   sign: { left: 33, top: 20, width: 34 },
   props: {
@@ -158,8 +162,8 @@ export const ALLEY_PORTRAIT: AlleyPlate = {
 export const ALLEY_ART = {
   /** `drum` is how much of the shutter's height is the roll housing at the top.
    *  The housing stays put; only the slats below it roll up into it. */
-  shutter: { src: `${DIR}/alley_shutter.webp`, w: 1100, h: 1211, drum: 0.175 },
-  sign: { src: `${DIR}/alley_sign.webp`, w: 760, h: 481 },
+  shutter: { src: `${NIGHT}/alley_shutter.webp`, w: 1100, h: 1211, drum: 0.175 },
+  sign: { src: `${NIGHT}/alley_sign.webp`, w: 760, h: 481 },
   parcelStack: { src: `${DIR}/alley_prop_parcel_stack.webp`, w: 496, h: 491 },
   zeroCola: { src: `${DIR}/alley_prop_zero_cola.webp`, w: 449, h: 480 },
   packetRamen: { src: `${DIR}/alley_prop_packet_ramen.webp`, w: 335, h: 432 },

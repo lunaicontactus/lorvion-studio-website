@@ -30,6 +30,11 @@ export interface Flags {
    * which of them).
    */
   mochiCrew: boolean
+  /**
+   * The 2.0 pink night room (the felt painting, recoloured) and the pink
+   * pages around it. On by default; `?pinkRoom=off` is the felt garage.
+   */
+  pinkRoom: boolean
   /** Verbose system logging. */
   debug: boolean
 }
@@ -42,6 +47,7 @@ const DEFAULTS: Flags = {
   miniGames: false,
   newCrew: true,
   mochiCrew: true,
+  pinkRoom: true,
   debug: false,
 }
 

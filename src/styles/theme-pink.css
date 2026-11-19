@@ -1,0 +1,195 @@
+/* ── EUNGARAGE 2.0 — pink night minihompy theme ────────────────────────────
+   The mockups' look (pastel pink and lavender, white cards with a stitched
+   pink edge, pill tabs, gingham ground, hearts) laid over the existing pages
+   without rebuilding them: the same markup, the same scripts, new colours.
+
+   Every rule is behind `html:not([data-room="felt"])`, so `?pinkRoom=off`
+   shows the felt site exactly as it was (src/app/boot.ts writes data-room).
+
+   Contrast (all measured against the colour they sit on):
+     --pk-ink      #4a2440 on #fff7fb  12.6:1   body text, headings
+     --pk-ink-soft #6e3f63 on #fff0f6   7.6:1   secondary text
+     --pk-link     #b02e70 on #ffffff   5.6:1   links, current tab
+     --pk-accent   #e2589b              decoration only, never small text
+   ──────────────────────────────────────────────────────────────────────── */
+:root:not([data-room="felt"]){
+  --pk-bg:#fff0f6;
+  --pk-bg-lav:#f4ecff;
+  --pk-card:#fffafd;
+  --pk-ink:#4a2440;
+  --pk-ink-soft:#6e3f63;
+  --pk-link:#b02e70;
+  --pk-accent:#e2589b;
+  --pk-pink:#ffc2dc;
+  --pk-pink-soft:#ffe1ee;
+  --pk-lav:#cdb6ff;
+  --pk-line:#f3b6d3;
+  --pk-stitch:#ec97c0;
+  --pk-shadow:0 10px 30px rgba(176,46,112,.12);
+  --pk-round:"SF Pro Rounded",ui-rounded,"Hiragino Maru Gothic ProN","Arial Rounded MT Bold","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  /* the gingham the minihompy pages stand on */
+  --pk-gingham:
+    linear-gradient(90deg,rgba(255,170,206,.16) 50%,transparent 50%),
+    linear-gradient(rgba(255,170,206,.16) 50%,transparent 50%);
+}
+
+/* ── The ground of every info page ──────────────────────────────────────── */
+html:not([data-room="felt"]):has(body.works-page){background:var(--pk-bg)}
+html:not([data-room="felt"]) body.works-page{
+  --wk-ground:var(--pk-bg);
+  --wk-ink:var(--pk-ink);
+  --wk-cream:var(--pk-ink);
+  --wk-paper:var(--pk-card);
+  --wk-felt:#ffe3f0;
+  --wk-felt-dark:#f8d2e6;
+  --wk-thread:rgba(226,88,155,.55);
+  --wk-muted:var(--pk-ink-soft);
+  color:var(--pk-ink);
+  background-color:var(--pk-bg);
+  background-image:var(--pk-gingham);
+  background-size:30px 30px;
+}
+html:not([data-room="felt"]) .works-page::before{
+  background-image:url('/assets/images/garage/pink/room_landscape_backdrop.webp');
+  filter:blur(18px) brightness(1.18) saturate(.9);
+  opacity:.32;
+}
+@media (orientation:portrait){
+  html:not([data-room="felt"]) .works-page::before{background-image:url('/assets/images/garage/pink/room_portrait_backdrop.webp')}
+}
+html:not([data-room="felt"]) .works-page::after{
+  background:
+    radial-gradient(ellipse 60% 45% at 12% 0%,rgba(255,194,220,.55),transparent 70%),
+    radial-gradient(ellipse 55% 45% at 92% 100%,rgba(205,182,255,.45),transparent 70%),
+    linear-gradient(180deg,rgba(255,247,251,.55),rgba(255,240,246,.82));
+}
+
+/* ── Nav: a white bar with pill tabs ────────────────────────────────────── */
+html:not([data-room="felt"]) .site-nav,
+html:not([data-room="felt"]) .works-page .site-nav,
+html:not([data-room="felt"]) .page-cozy .site-nav{
+  color:var(--pk-ink);
+  background:linear-gradient(180deg,rgba(255,250,253,.96) 0%,rgba(255,250,253,.9) 72%,rgba(255,250,253,0) 100%);
+}
+html:not([data-room="felt"]) .site-nav.scrolled,
+html:not([data-room="felt"]) .works-page .site-nav.scrolled,
+html:not([data-room="felt"]) .page-cozy .site-nav.scrolled{
+  background:rgba(255,250,253,.94);border-bottom:2px dashed var(--pk-line);backdrop-filter:blur(14px)
+}
+html:not([data-room="felt"]) .nav-links,
+html:not([data-room="felt"]) .page-cozy .nav-links a,
+html:not([data-room="felt"]) .nav-links a{color:var(--pk-ink-soft);font-family:var(--pk-round);font-weight:700;letter-spacing:.04em}
+@media (min-width:1241px){html:not([data-room="felt"]) .nav-links{gap:clamp(2px,.45vw,10px)}}
+html:not([data-room="felt"]) .nav-links a{border-radius:999px;padding:9px 7px;transition:background .2s,color .2s}
+html:not([data-room="felt"]) .nav-links a:after{display:none}
+html:not([data-room="felt"]) .nav-links a:hover,
+html:not([data-room="felt"]) .nav-links a:focus-visible{color:var(--pk-link);background:var(--pk-pink-soft)}
+/* #8a1d55 on #ffd6e8: 6.7:1 (the brighter pink measured 4.3:1). */
+html:not([data-room="felt"]) .nav-links a[aria-current]{color:#8a1d55;background:#ffd6e8;box-shadow:inset 0 0 0 1.5px rgba(176,46,112,.28)}
+html:not([data-room="felt"]) .nav-links .nav-util{opacity:1;color:var(--pk-ink-soft);font-weight:600}
+html:not([data-room="felt"]) .nav-links .nav-util--first{border-left-color:var(--pk-line)}
+html:not([data-room="felt"]) .sound-toggle,
+html:not([data-room="felt"]) .page-cozy .sound-toggle{color:var(--pk-link);background:var(--pk-pink-soft)}
+html:not([data-room="felt"]) .menu-toggle,
+html:not([data-room="felt"]) .page-cozy .menu-toggle{color:var(--pk-ink)}
+html:not([data-room="felt"]) .menu-toggle span,
+html:not([data-room="felt"]) .page-cozy .menu-toggle span{background:var(--pk-ink)}
+html:not([data-room="felt"]) :where(a,button,[tabindex],summary):focus-visible{outline-color:var(--pk-link)}
+/* The garage page's own logo is the dark one; every page now has a light bar. */
+html:not([data-room="felt"]) .works-page .brand-logo{filter:none}
+html:not([data-room="felt"]) .site-nav .brand::after{
+  content:"♡";margin-left:6px;color:var(--pk-accent);font:700 1.05rem/1 var(--pk-round);transform:translateY(-6px)
+}
+@media (max-width:1240px){
+  html:not([data-room="felt"]) .nav-links,
+  html:not([data-room="felt"]) .page-cozy .nav-links{
+    background:linear-gradient(180deg,rgba(255,244,250,.98),rgba(246,236,255,.98));color:var(--pk-ink)
+  }
+  html:not([data-room="felt"]) .nav-links a{font-size:1.08rem;padding:8px 22px}
+}
+
+/* ── Page heads ─────────────────────────────────────────────────────────── */
+html:not([data-room="felt"]) .info-page .subpage .eyebrow,
+html:not([data-room="felt"]) .info-page .subpage-head .eyebrow{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;
+  background:var(--pk-card);border:1.5px dashed var(--pk-stitch);color:var(--pk-link);
+  font:800 .72rem/1.2 var(--pk-round);letter-spacing:.12em
+}
+html:not([data-room="felt"]) .info-page .subpage .eyebrow::after,
+html:not([data-room="felt"]) .info-page .subpage-head .eyebrow::after{content:"♡";color:var(--pk-accent)}
+html:not([data-room="felt"]) .info-page .subpage h1{color:var(--pk-ink);font-family:var(--pk-round);font-weight:900;letter-spacing:-.01em}
+html:not([data-room="felt"]) .info-page .subpage .intro,
+html:not([data-room="felt"]) .info-page .subpage-head .meta-row{color:var(--pk-ink-soft)}
+html:not([data-room="felt"]) .info-page .subpage-head .meta-row b{color:var(--pk-ink)}
+html:not([data-room="felt"]) .info-back a,
+html:not([data-room="felt"]) .info-page .info-back a{
+  display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:999px;
+  background:var(--pk-card);border:1.5px solid var(--pk-line);color:var(--pk-link);font-weight:700
+}
+html:not([data-room="felt"]) .info-page :where(.subpage-head,.info-back) a:focus-visible{outline:3px solid var(--pk-link)}
+
+/* ── GAMES (works.html and each work's page): the same heads, in pink ───── */
+html:not([data-room="felt"]) .works::before{background:var(--pk-bg)}
+html:not([data-room="felt"]) .works__back{color:var(--pk-ink-soft)}
+html:not([data-room="felt"]) .works__back a{
+  padding:0 16px;border-radius:999px;background:var(--pk-card);border:1.5px solid var(--pk-line);color:var(--pk-link);font-family:var(--pk-round);font-weight:700
+}
+html:not([data-room="felt"]) .works-head__kicker{color:var(--pk-link);font-family:var(--pk-round);letter-spacing:.16em}
+html:not([data-room="felt"]) .works-head__title{color:var(--pk-ink);text-shadow:none;font-family:var(--pk-round);font-weight:900}
+html:not([data-room="felt"]) .works-head__title::after{border-top-color:var(--pk-stitch)}
+html:not([data-room="felt"]) .works-head__line{color:var(--pk-ink-soft)}
+html:not([data-room="felt"]) .work-hero__kicker{color:var(--pk-link);font-family:var(--pk-round);letter-spacing:.14em}
+html:not([data-room="felt"]) .work-hero__title{color:var(--pk-ink);font-family:var(--pk-round);font-weight:900}
+html:not([data-room="felt"]) .work-hero__line{color:var(--pk-ink)}
+html:not([data-room="felt"]) .work-sec__h{
+  background:var(--pk-card);color:var(--pk-link);border-radius:999px;font-family:var(--pk-round);
+  outline-color:var(--pk-stitch);box-shadow:0 4px 12px rgba(176,46,112,.14)
+}
+html:not([data-room="felt"]) .work-sec__h .records-shelf__ko{color:var(--pk-ink-soft)}
+html:not([data-room="felt"]) .record{box-shadow:0 14px 28px rgba(176,46,112,.2),0 2px 0 rgba(255,255,255,.3) inset}
+html:not([data-room="felt"]) .record:hover,
+html:not([data-room="felt"]) .record:focus-visible{box-shadow:0 22px 40px rgba(176,46,112,.28)}
+
+/* ── Paper becomes a stitched card ──────────────────────────────────────── */
+html:not([data-room="felt"]) .info-page .doc{
+  background:var(--pk-card) !important;color:var(--pk-ink);border-radius:26px;
+  border:2px solid var(--pk-line);
+  box-shadow:inset 0 0 0 7px var(--pk-card),inset 0 0 0 9px var(--pk-pink-soft),var(--pk-shadow);
+  outline:2px dashed var(--pk-stitch);outline-offset:-14px;
+}
+html:not([data-room="felt"]) .info-page .doc::before,
+html:not([data-room="felt"]) .info-page .doc::after{display:none}
+html:not([data-room="felt"]) .info-page .doc section{border-top-color:rgba(236,151,192,.45)}
+html:not([data-room="felt"]) .info-page .doc :is(h2,h3,strong){color:var(--pk-ink)}
+html:not([data-room="felt"]) .info-page .doc h2{font-family:var(--pk-round)}
+html:not([data-room="felt"]) .info-page .doc :is(p,li){color:var(--pk-ink)}
+html:not([data-room="felt"]) .info-page .doc a{color:var(--pk-link)}
+html:not([data-room="felt"]) .info-page .doc a:hover{color:#861f53}
+html:not([data-room="felt"]) .info-page :where(.doc) :where(a,button,summary):focus-visible{outline-color:var(--pk-link)}
+
+html:not([data-room="felt"]) .info-button--quiet{color:var(--pk-link) !important;border-color:var(--pk-line)}
+html:not([data-room="felt"]) .info-button--quiet:hover{background:var(--pk-pink-soft)}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+html:not([data-room="felt"]) .site-footer,
+html:not([data-room="felt"]) .works-page .site-footer{
+  background:linear-gradient(180deg,#fde8f3,#f2e8ff);border-top:2px dashed var(--pk-line);color:var(--pk-ink)
+}
+html:not([data-room="felt"]) .footer-brand p,
+html:not([data-room="felt"]) .footer-links,
+html:not([data-room="felt"]) .footer-copy{color:var(--pk-ink-soft)}
+html:not([data-room="felt"]) .footer-group__title{color:var(--pk-link)}
+html:not([data-room="felt"]) .footer-group a:hover,
+html:not([data-room="felt"]) .footer-group a[aria-current="page"]{color:var(--pk-link)}
+html:not([data-room="felt"]) .footer-copy{border-top-color:var(--pk-line)}
+/* The felt pages are dark: the one dark logo, turned light for them. */
+html[data-room="felt"] .works-page .brand-logo,
+html[data-room="felt"] .footer-logo{filter:invert(1) hue-rotate(180deg) brightness(1.1)}
+
+/* ── The garage page: the alley bar and the room's own ground ───────────── */
+html:not([data-room="felt"]) .garage{background:#f3d3e6}
+html:not([data-room="felt"]) .page-links:focus-within{background:var(--pk-card);color:var(--pk-ink);border:2px dashed var(--pk-stitch)}
+html:not([data-room="felt"]) .page-links:focus-within a{color:var(--pk-ink)}
+@media (max-width:560px){
+  html:not([data-room="felt"]) .site-nav .brand::after{font-size:.85rem;margin-left:3px;transform:translateY(-4px)}
+}

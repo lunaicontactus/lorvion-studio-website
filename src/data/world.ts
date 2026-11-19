@@ -171,11 +171,28 @@ export const CAPTIONS: Readonly<Record<string, string>> = {
   'picture-rubato': 'RUBATO',
 }
 
-/** The painted room behind everything, one plate per orientation. */
-export const ROOM_ART = {
-  landscape: { src: `${ART}/room_landscape.webp`, w: 3600, h: 1200 },
-  portrait: { src: `${ART}/room_portrait.webp`, w: 1100, h: 2619 },
+/**
+ * The painted room behind everything, one plate per orientation.
+ *
+ * EUNGARAGE 2.0: the pink night grade of the same painting
+ * (scripts/pink_grade.py — the same pixels recoloured, so every rectangle in
+ * this file still sits on its thing). It stands in until the studio's own
+ * pink garage plate is painted. `?pinkRoom=off` shows the felt room.
+ */
+const PLATES = {
+  felt: {
+    landscape: { src: `${ART}/room_landscape.webp`, w: 3600, h: 1200 },
+    portrait: { src: `${ART}/room_portrait.webp`, w: 1100, h: 2619 },
+  },
+  pink: {
+    landscape: { src: `${ART}/pink/room_landscape.webp`, w: 3600, h: 1200 },
+    portrait: { src: `${ART}/pink/room_portrait.webp`, w: 1100, h: 2619 },
+  },
 } as const
+
+/** Which plate: boot writes `data-room` on <html> from `?pinkRoom` before the room loads. */
+const felt = typeof document !== 'undefined' && document.documentElement.dataset['room'] === 'felt'
+export const ROOM_ART = felt ? PLATES.felt : PLATES.pink
 
 /** Keyed cut-outs of the same furniture, shown inside the panel it opens. */
 export const OBJECT_ART: Record<string, string> = {
