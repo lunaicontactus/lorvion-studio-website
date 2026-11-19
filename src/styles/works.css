@@ -372,6 +372,13 @@ body.is-viewing{overflow:hidden}
 /* A phone on its side: the table is short, so the objects sit two by two. */
 @media (max-height:500px) and (orientation:landscape){
   .records{grid-template-columns:repeat(2,minmax(0,1fr))}
+  /* Two by two at 568 wide is 263 px a card: the 128 px picture column and
+     the desk's padding left the words 110 px, and the cards ran 32 px past
+     the window — a phone then zoomed the whole page out to fit (2.0 CI). */
+  .record{grid-template-columns:76px minmax(0,1fr);gap:12px;min-height:0;padding:18px 16px 16px}
+  .record--lunai{padding-left:28px}
+  .record__title{font-size:1.3rem}
+  .record :is(.record__kind,.record__status){overflow-wrap:anywhere}
   .work-hero{grid-template-columns:minmax(0,4fr) minmax(0,6fr)}
   .work-hero__frame img{max-height:70svh}
 }

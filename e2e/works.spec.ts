@@ -39,7 +39,7 @@ test.describe('desktop', () => {
     const errors = watch(page)
     await page.goto('/works.html', { waitUntil: 'load' })
     await expect(page).toHaveTitle('WORKS — EUNGARAGE')
-    await expect(page.locator('h1')).toHaveText('도깨비들이 만든 세계들')
+    await expect(page.locator('h1')).toHaveText('은가라지가 만드는 세계들')
     await expect(page.locator('body')).not.toContainText(/OUR\s*GAMES|SELECTED WORLDS/i)
     // Five works, each its own kind of object, each leading to its own page.
     const records = page.locator('[data-record]')
@@ -137,7 +137,7 @@ test.describe('desktop', () => {
     await page.goto('/', { waitUntil: 'load' })
     await page.locator('[data-alley-enter]').click()
     await page.waitForFunction(() => document.querySelectorAll('.thing').length > 0)
-    await page.locator('.nav-links a', { hasText: 'Works' }).click()
+    await page.locator('.nav-links a', { hasText: 'Games' }).click()
     // The desktop's icon is the work's page (PHASE D): the tube folds, then the page.
     const open = page.locator('[data-game="lumiora"]')
     await expect(open).toHaveAttribute('href', '/works/lumiora.html', { timeout: 8000 })
@@ -149,15 +149,18 @@ test.describe('desktop', () => {
     await expect(page).toHaveURL(/\/(index\.html)?(#.*)?$/)
   })
 
-  test('the nav says WORKS everywhere, and it leads to WORKS', async ({ page }) => {
+  // 2.0 (PART 3): the works tab is GAMES — one tab, after HOME and GARAGE, to the same page.
+  test('the nav says GAMES everywhere, and it leads to WORKS', async ({ page }) => {
     for (const path of ['/works.html', '/studio.html', '/support.html']) {
       await page.goto(path, { waitUntil: 'load' })
-      const link = page.locator('.nav-links a').first()
-      await expect(link).toHaveText(/works/i)
-      await expect(page.locator('.nav-links a', { hasText: /^Games$/ })).toHaveCount(0)
+      const tabs = page.locator('.nav-links a')
+      await expect(tabs.nth(2)).toHaveText(/^games$/i)
+      await expect(tabs.nth(2)).toHaveAttribute('href', '/works.html')
+      await expect(page.locator('.nav-links a[href="/works.html"]')).toHaveCount(1)
+      await expect(page.locator('.nav-links a', { hasText: /^Works$/i })).toHaveCount(0)
     }
     await page.goto('/studio.html', { waitUntil: 'load' })
-    await page.locator('.nav-links a', { hasText: 'Works' }).click()
+    await page.locator('.nav-links a', { hasText: 'Games' }).click()
     await expect(page).toHaveURL(/\/works\.html$/)
   })
 })

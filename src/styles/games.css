@@ -207,3 +207,21 @@
   .pixel-game__pad--controls .pixel-pad__btn{pointer-events:auto;min-width:58px;min-height:52px;opacity:.94}
   .pixel-game__pad--controls .pixel-pad__dir{flex-direction:column}
 }
+
+/* EUNGARAGE 2.0 — 김로드의 버그 잡기: nine little monitors as buttons. */
+.bug-game{display:grid;grid-template-rows:1fr auto;gap:10px;height:100%;min-height:min(68vh,560px);padding:12px;box-sizing:border-box;background:#17162f}
+.bug-game__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;min-height:0}
+.bug-cell{position:relative;display:grid;place-items:center;min-height:64px;border-radius:14px;border:3px solid #71629a;background:#0f0e22;cursor:pointer;
+  box-shadow:inset 0 0 0 3px #2a2650,0 4px 0 #342447;padding:6px}
+.bug-cell:focus-visible{outline:3px solid #ff91c8;outline-offset:2px}
+.bug-cell__no{position:absolute;left:8px;top:6px;font:700 12px/1 ui-monospace,monospace;color:#b8acd9}
+.bug-cell__icon{width:min(56%,72px);aspect-ratio:1}
+.bug-cell__icon svg{width:100%;height:100%;display:block}
+.bug-cell[data-kind="bug"] .bug-cell__icon{animation:bug-pop 220ms cubic-bezier(.3,.9,.4,1.4)}
+.bug-cell.is-squashed{animation:bug-squash 320ms ease-out}
+.bug-cell.is-oops{animation:bug-oops 360ms ease-out}
+@keyframes bug-pop{from{transform:scale(.3)}to{transform:scale(1)}}
+@keyframes bug-squash{40%{background:#ff91c8}100%{background:#0f0e22}}
+@keyframes bug-oops{25%{transform:translateX(-4px);background:#5a1f2a}75%{transform:translateX(4px)}100%{transform:none}}
+.bug-game__toast{margin:0;min-height:1.4em;text-align:center;color:#fff9fc;font-weight:700}
+@media (prefers-reduced-motion:reduce){.bug-cell,.bug-cell__icon{animation:none!important}}

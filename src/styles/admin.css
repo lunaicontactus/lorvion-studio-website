@@ -1,0 +1,18 @@
+/* ADMIN (EUNGARAGE 2.0): plain, legible, no decoration. */
+.admin-page .admin{color:#fff9fc}
+.adm-note,.adm-login,.adm-sec{padding:16px 18px;border-radius:16px;background:#fff9fc;color:#3a2440;margin:0 0 18px}
+.adm-login{display:grid;gap:10px;max-width:420px}
+.adm-login label,.adm-star-form label{display:grid;gap:4px;font-weight:700;font-size:.9rem}
+.admin input,.admin select{font:inherit;min-height:40px;padding:6px 10px;border-radius:10px;border:1.5px solid #c9a7c9;background:#fff;color:#3a2440}
+.admin button{min-height:40px;padding:6px 14px;border-radius:999px;border:1.5px solid #ff91c8;background:#fff;color:#3a2440;font:700 .88rem/1 inherit;cursor:pointer}
+.admin button[aria-pressed="true"]{background:#ff91c8}
+.adm-danger{border-color:#c2364a!important;color:#8a1626!important}
+.adm-tabs{display:flex;gap:6px;margin:0 0 10px}
+.adm-inline{display:inline-flex!important;align-items:center;gap:6px;grid-auto-flow:column}
+.adm-star-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-items:end;margin-bottom:12px}
+.adm-list{margin:0;padding-left:1.2em;display:grid;gap:10px}
+.adm-row p{margin:0 0 4px}
+.adm-msg{white-space:pre-wrap;word-break:break-word}
+.adm-reply{color:#7a1f57}
+.adm-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.adm-audit{font-size:.85rem}

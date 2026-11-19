@@ -4,6 +4,7 @@ import { resolve } from 'node:path'
 import { createServer, defineConfig, type Plugin, type ViteDevServer } from 'vite'
 import { renderFooter, renderNav, renderPageIndex, sitemapXml } from './src/data/sitemap'
 import type * as RenderModule from './src/render/pages'
+import type * as Render2Module from './src/render/pages2'
 import type * as ProjectsModule from './src/data/projects'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
@@ -61,7 +62,7 @@ function siteShell(): Plugin {
 }
 
 /** What src/render/pages.ts and the works' record export, as the prerender uses them. */
-type Render = typeof RenderModule
+type Render = typeof RenderModule & typeof Render2Module
 type Projects = typeof ProjectsModule
 
 /**
@@ -78,7 +79,7 @@ function prerender(): Plugin {
   let dev: ViteDevServer | undefined
   let mods: Promise<{ r: Render; d: Projects }> | undefined
   const load = (server?: ViteDevServer): Promise<{ r: Render; d: Projects }> => {
-    if (server) return Promise.all([server.ssrLoadModule('/src/render/pages.ts'), server.ssrLoadModule('/src/data/projects.ts')]).then(([r, d]) => ({ r: r as Render, d: d as Projects }))
+    if (server) return Promise.all([server.ssrLoadModule('/src/render/pages.ts'), server.ssrLoadModule('/src/render/pages2.ts'), server.ssrLoadModule('/src/data/projects.ts')]).then(([r, r2, d]) => ({ r: { ...r, ...r2 } as Render, d: d as Projects }))
     mods ??= (async () => {
       const s = await createServer({ configFile: false, root, appType: 'custom', logLevel: 'error',
         server: { middlewareMode: true, hmr: false, watch: null },
@@ -86,8 +87,8 @@ function prerender(): Plugin {
         optimizeDeps: { noDiscovery: true, include: [] },
         resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } } })
       try {
-        const [r, d] = await Promise.all([s.ssrLoadModule('/src/render/pages.ts'), s.ssrLoadModule('/src/data/projects.ts')])
-        return { r: r as Render, d: d as Projects }
+        const [r, r2, d] = await Promise.all([s.ssrLoadModule('/src/render/pages.ts'), s.ssrLoadModule('/src/render/pages2.ts'), s.ssrLoadModule('/src/data/projects.ts')])
+        return { r: { ...r, ...r2 } as Render, d: d as Projects }
       } finally { await s.close() }
     })()
     return mods
@@ -104,12 +105,16 @@ function prerender(): Plugin {
     transformIndexHtml: {
       order: 'pre',
       async handler(html) {
-        const hosts = ['data-records', 'data-fallback-studio', 'data-press', 'data-records-index', 'data-records-shelves', 'data-works-detail']
+        const hosts = ['data-crew', 'data-diary', 'data-arcade', 'data-radio', 'data-records', 'data-fallback-studio', 'data-press', 'data-records-index', 'data-records-shelves', 'data-works-detail']
         if (!hosts.some((h) => html.includes(` ${h}`))) return html
         const { r, d } = await load(dev)
         let out = html
         if (/\sdata-records[\s>]/.test(out)) out = fill(out, 'data-records', r.worksIndexHtml())
         if (out.includes(' data-fallback-studio')) out = fill(out, 'data-fallback-studio', r.studioHtml())
+        if (/\sdata-crew[\s>]/.test(out)) out = fill(out, 'data-crew', r.crewHtml())
+        if (/\sdata-diary[\s>]/.test(out)) out = fill(out, 'data-diary', r.diaryHtml())
+        if (/\sdata-arcade[\s>]/.test(out)) out = fill(out, 'data-arcade', r.arcadeHtml())
+        if (/\sdata-radio[\s>]/.test(out)) out = fill(out, 'data-radio', r.radioHtml())
         if (out.includes(' data-press>')) out = fill(out, 'data-press', r.pressHtml())
         if (out.includes(' data-records-index')) out = fill(out, 'data-records-index', r.recordsIndexHtml())
         if (out.includes(' data-records-shelves')) out = fill(out, 'data-records-shelves', r.recordsShelvesHtml())

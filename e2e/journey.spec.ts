@@ -16,9 +16,9 @@ import type { Page } from '@playwright/test'
  */
 
 const WINDOWS = [
-  { name: 'desktop', viewport: { width: 1440, height: 900 }, mobile: false, crew: 5 },
+  { name: 'desktop', viewport: { width: 1440, height: 900 }, mobile: false, crew: 6 },
   { name: 'phone portrait', viewport: { width: 390, height: 844 }, mobile: true, crew: 3 },
-  { name: 'phone landscape', viewport: { width: 844, height: 390 }, mobile: true, crew: 5 },
+  { name: 'phone landscape', viewport: { width: 844, height: 390 }, mobile: true, crew: 6 },
 ] as const
 
 async function fresh(page: Page): Promise<void> {

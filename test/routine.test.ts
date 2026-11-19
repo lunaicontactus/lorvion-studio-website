@@ -53,15 +53,17 @@ describe('1 · the action scheduler', () => {
     }
   })
 
-  it('each of them works where the canon puts them (docs/CREW_REBOOT.md)', () => {
+  it('each of them works where the canon puts them (EUNGARAGE 2.0 crew sheets)', () => {
     const where = (id: string): string => JSON.stringify(routinesFor(id).map((r) => r.steps))
-    expect(where('momo')).toMatch(/workbench/)
-    expect(where('ruki')).toMatch(/workbench-a/)
-    expect(where('ruki')).toMatch(/cushions/)
-    expect(where('yomi')).toMatch(/fridge-front/)
-    expect(where('yomi')).toMatch(/secret-front/)
-    expect(where('poko')).toMatch(/tv-left/)
-    expect(where('nunu')).toMatch(/big-cushion/)
+    // MOMO plans in the middle of the room, NUNU codes at the PC, RUKI looks
+    // things up at the shelf, POKO writes at the story bench, YOMI is by the
+    // radio, REVEN naps on the cushions.
+    expect(where('momo')).toMatch(/mid-floor/)
+    expect(where('nunu')).toMatch(/pc-front/)
+    expect(where('ruki')).toMatch(/shelf-front/)
+    expect(where('poko')).toMatch(/workbench-a/)
+    expect(where('yomi')).toMatch(/radio-side/)
+    expect(where('reven')).toMatch(/big-cushion/)
     // And they do not share one table of jobs.
     const shapes = CREW.map((id) => routinesFor(id).map((r) => r.id).join(','))
     expect(new Set(shapes).size).toBe(CREW.length)
@@ -106,8 +108,8 @@ describe('1 · the action scheduler', () => {
 
   it('jobs end where they began, or at the character\'s own place', () => {
     const own: Record<string, RegExp> = {
-      momo: /pc-front|workbench/, ruki: /workbench|cushions/, yomi: /fridge-front|mid-floor/,
-      poko: /tv-|right-floor/, nunu: /cushion|rug|floor/,
+      momo: /mid-floor/, nunu: /pc-front/, ruki: /shelf-front/, poko: /workbench/,
+      yomi: /radio-side/, reven: /cushion|rug|floor/,
     }
     for (const id of CREW) {
       for (const r of routinesFor(id)) {

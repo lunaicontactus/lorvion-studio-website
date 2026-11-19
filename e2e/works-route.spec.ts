@@ -9,7 +9,7 @@ test('the works open in this browser, and Back comes back', async ({ page }) => 
   page.on('pageerror', (e) => errors.push(String(e)))
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
   await page.goto('/works.html', { waitUntil: 'load' })
-  await expect(page.locator('h1')).toHaveText('도깨비들이 만든 세계들')
+  await expect(page.locator('h1')).toHaveText('은가라지가 만드는 세계들')
   await expect(page.locator('[data-record]')).toHaveCount(5)
   await page.locator('[data-record="lumiora"]').click()
   await expect(page).toHaveURL(/\/works\/lumiora\.html$/)

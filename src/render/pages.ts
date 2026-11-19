@@ -203,7 +203,7 @@ export function workBodyHtml(p: ProjectConfig): string {
 // ── Studio ─────────────────────────────────────────────────────────────────
 
 /** The approved crew's own face (the same frame src/ui/panels.ts ownerPortrait uses). */
-const face = (id: string): string => `/assets/images/dokkaebi-v2/${id}/idle/front/${id}_idle_front_01.webp`
+const face = (id: string): string => `/assets/images/crew-mochi/${id}/${id}_portrait.webp`
 
 /**
  * STUDIO (SITE UPGRADE PHASE H, docs/SITE_IA.md §8): who, how the work gets
@@ -219,8 +219,8 @@ export function studioHtml(): string {
       </a></li>`).join('')
   const crew = CHARACTERS.map((c) => `
       <li class="studio-crew__one">
-        <img src="${face(c.id)}" alt="" width="60" height="84" loading="lazy" decoding="async">
-        <span><b>${esc(c.name)}</b> ${esc(c.traitKo)}</span>
+        <img src="${face(c.id)}" alt="" width="64" height="64" loading="lazy" decoding="async">
+        <span><b>${esc(c.nameKo)} ${esc(c.name)}</b> <i class="studio-crew__role">${esc(c.staff ?? '')} · ${esc(c.roleKo ?? '')}</i> ${esc(c.traitKo)}</span>
       </li>`).join('')
   const mail = contactRows().find((r) => r.key === 'email')
   return `
@@ -230,8 +230,8 @@ export function studioHtml(): string {
       <p>만들면서 남은 그림과 시험 화면은 날짜와 함께 <a href="/archive.html">기록실</a>에 남겨 둡니다.</p>
     </section>
     <section aria-labelledby="studio-crew">
-      <h2 id="studio-crew">도깨비 크루</h2>
-      <p>밤마다 차고에서 일하는 다섯.</p>
+      <h2 id="studio-crew">차고 크루</h2>
+      <p>밤마다 차고에서 일하는 다섯, 그리고 스튜디오 고양이 하나.</p>
       <ul class="studio-crew">${crew}
       </ul>
     </section>
@@ -296,7 +296,7 @@ export function pressHtml(): string {
   return `
     <section aria-labelledby="press-about">
       <h2 id="press-about">EUNGARAGE</h2>
-      <p>밤마다 도깨비들이 게임을 만드는 작은 차고. 감정과 캐릭터, 그리고 그들이 사는 세계를 중심으로 게임을 만듭니다.</p>
+      <p>낮에는 평범한 차고, 밤에는 세계를 만드는 곳. 감정과 캐릭터, 그리고 그들이 사는 세계를 중심으로 게임을 만듭니다.</p>
       <dl class="press-facts">
         <div><dt>NAME</dt><dd>${esc(SITE_CONFIG.companyName)}</dd></div>
         <div><dt>BASED IN</dt><dd>${esc(SITE_CONFIG.location)}</dd></div>
@@ -378,3 +378,4 @@ export function recordsShelvesHtml(): string {
       </ul>
     </section>`).join('')
 }
+

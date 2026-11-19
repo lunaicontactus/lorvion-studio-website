@@ -124,7 +124,7 @@ test.describe('desktop', () => {
           .filter((e) => !e.classList.contains('is-away'))
           .filter((e) => {
             const src = (e.querySelector('img') as HTMLImageElement | null)?.src ?? ''
-            const m = /\/dokkaebi(?:-v2)?\/\w+\/\w+\/(\w+)\//.exec(src)
+            const m = /\/(?:dokkaebi(?:-v2)?|crew-mochi)\/\w+\/\w+\/(\w+)\//.exec(src)
             return m !== null && m[1] !== 'back'
           }).length
       const frame = (): Promise<void> => new Promise((r) => requestAnimationFrame(() => r()))

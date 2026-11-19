@@ -28,7 +28,7 @@ export interface ArchiveCategory {
 
 export const ARCHIVE_CATEGORIES: readonly ArchiveCategory[] = [
   { id: 'concept', label: 'CONCEPT ART', ko: '콘셉트 아트', line: '세계가 처음 한 장의 그림이 된 모습.' },
-  { id: 'characters', label: 'CHARACTERS', ko: '캐릭터', line: '차고 크루 다섯, 앞 · 옆 · 뒤. 지금의 도깨비는 이 그림에서 만들어졌다.' },
+  { id: 'characters', label: 'CHARACTERS', ko: '캐릭터', line: '2026년 9월의 도깨비 크루 다섯, 앞 · 옆 · 뒤. 지금의 모찌 크루 이전의 모습이다.' },
   { id: 'development', label: 'DEVELOPMENT', ko: '개발 기록', line: '만드는 중에 남은 것. 날짜와 커밋을 함께 적어 둔다.' },
   { id: 'screenshots', label: 'SCREENSHOTS', ko: '스크린샷', line: '실제 게임 화면은 각 작품 페이지에 모여 있다.' },
   { id: 'old', label: 'OLD DESIGNS', ko: '예전 디자인', line: '지금은 쓰지 않지만 지나온 모양들.' },

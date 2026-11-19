@@ -12,7 +12,7 @@ import { installVisibilityGate } from '@/systems/tick'
 import { registerVisit, save } from '@/systems/storage'
 import { installImageFallback } from '@/systems/assets'
 import { motion } from '@/systems/motion'
-import { setNewCrew } from '@/data/sprites'
+import { setMochiCrew, setNewCrew } from '@/data/sprites'
 import { mountNav } from '@/ui/nav'
 import { mountReveal } from '@/ui/reveal'
 import { mountSoundToggle } from '@/ui/soundToggle'
@@ -90,12 +90,41 @@ export function boot(): Teardown {
   // Which crew's frames the room asks for. Set before anything mounts, so no
   // character is built against one set and drawn from the other.
   setNewCrew(flags.newCrew)
+  setMochiCrew(flags.mochiCrew)
   // The one character drawn in the markup rather than by the room: whoever
   // leans round the door while the shutter is still going up. It has to be
   // the same crew as the room behind it, including on the rollback path.
   for (const img of document.querySelectorAll<HTMLImageElement>('[data-alley-peek] img')) {
-    const want = img.dataset[flags.newCrew ? 'crewV2' : 'crewV1']
+    const want = img.dataset[flags.mochiCrew ? 'crewMochi' : flags.newCrew ? 'crewV2' : 'crewV1']
     if (want && img.getAttribute('src') !== want) img.src = want
+  }
+
+  // EUNGARAGE 2.0 pages: each page's script is loaded on its own page only,
+  // so the rest of the site does not download it (the PHASE K budgets).
+  const PAGES: readonly [string, string, () => Promise<() => (() => void) | undefined>][] = [
+    ['[data-crew]', 'crew', () => import('@/ui/crew').then((m) => m.mountCrew)],
+    ['[data-diary]', 'diary', () => import('@/ui/diary').then((m) => m.mountDiary)],
+    ['[data-arcade]', 'arcade', () => import('@/ui/arcade').then((m) => m.mountArcade)],
+    ['[data-guestbook]', 'guestbook', () => import('@/ui/guestbook').then((m) => m.mountGuestbook)],
+    ['[data-stars]', 'stars', () => import('@/ui/stars').then((m) => m.mountStars)],
+    ['[data-radio]', 'radio', () => import('@/ui/radio').then((m) => m.mountRadio)],
+    ['[data-settings]', 'settings', () => import('@/ui/settings').then((m) => m.mountSettings)],
+    ['[data-admin]', 'admin', () => import('@/ui/admin').then((m) => m.mountAdmin)],
+  ]
+  for (const [sel, name, load] of PAGES) {
+    if (!document.querySelector(sel)) continue
+    let off: Teardown | undefined
+    let gone = false
+    void load()
+      .then((mount) => { if (!gone) off = guard(name, () => mount()) })
+      .catch((err: unknown) => {
+        log.error(`"${name}" failed to load`, err)
+        document.documentElement.dataset['bootError'] = name
+      })
+    teardowns.push(() => {
+      gone = true
+      off?.()
+    })
   }
 
   if (flags.alley && document.querySelector('[data-alley]')) {

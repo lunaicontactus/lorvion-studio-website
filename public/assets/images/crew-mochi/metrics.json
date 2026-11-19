@@ -1,0 +1,98 @@
+{
+  "momo": {
+    "frameWidth": 468,
+    "frameHeight": 420,
+    "figureHeight": 372,
+    "figureRatio": 0.8857,
+    "bodyWidth": 0.7842,
+    "aspect": "468 / 420",
+    "frames": {
+      "idle": 4,
+      "walk": 8,
+      "work": 6,
+      "sit": 4,
+      "wave": 6,
+      "look": 6
+    }
+  },
+  "nunu": {
+    "frameWidth": 534,
+    "frameHeight": 420,
+    "figureHeight": 372,
+    "frames": {
+      "idle": 4,
+      "walk": 8,
+      "work": 6,
+      "sit": 4,
+      "wave": 6,
+      "look": 6
+    },
+    "figureRatio": 0.8857,
+    "bodyWidth": 0.8352,
+    "aspect": "534 / 420"
+  },
+  "ruki": {
+    "frameWidth": 468,
+    "frameHeight": 420,
+    "figureHeight": 372,
+    "frames": {
+      "idle": 4,
+      "walk": 8,
+      "work": 6,
+      "sit": 4,
+      "wave": 6,
+      "look": 6
+    },
+    "figureRatio": 0.8857,
+    "bodyWidth": 0.8013,
+    "aspect": "468 / 420"
+  },
+  "poko": {
+    "frameWidth": 464,
+    "frameHeight": 420,
+    "figureHeight": 372,
+    "frames": {
+      "idle": 4,
+      "walk": 8,
+      "work": 6,
+      "sit": 4,
+      "wave": 6,
+      "look": 6
+    },
+    "figureRatio": 0.8857,
+    "bodyWidth": 0.819,
+    "aspect": "464 / 420"
+  },
+  "yomi": {
+    "frameWidth": 470,
+    "frameHeight": 420,
+    "figureHeight": 372,
+    "frames": {
+      "idle": 4,
+      "walk": 8,
+      "work": 6,
+      "sit": 4,
+      "wave": 6,
+      "look": 6
+    },
+    "figureRatio": 0.8857,
+    "bodyWidth": 0.8213,
+    "aspect": "470 / 420"
+  },
+  "reven": {
+    "frameWidth": 494,
+    "frameHeight": 420,
+    "figureHeight": 372,
+    "frames": {
+      "idle": 4,
+      "walk": 8,
+      "work": 6,
+      "sit": 4,
+      "wave": 6,
+      "look": 6
+    },
+    "figureRatio": 0.8833,
+    "bodyWidth": 0.8279,
+    "aspect": "494 / 420"
+  }
+}

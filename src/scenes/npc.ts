@@ -70,8 +70,9 @@ export interface NpcOptions {
   readonly random?: () => number
   /** Debug overlay. Off unless asked for. */
   readonly debug?: boolean
-  /** Someone touched the dokkaebi. It has already stopped and looked up. */
-  readonly onTouch?: (character: CharacterConfig) => void
+  /** Someone touched the character. It has already stopped and looked up.
+   *  `anchor` is its hit box, for anything the room shows beside it. */
+  readonly onTouch?: (character: CharacterConfig, anchor: HTMLElement) => void
   /**
    * CSS pixels per world unit. The room is scaled by the camera, so a hit box
    * sized in world units shrinks with it: at 360px wide a dokkaebi is 58 CSS
@@ -168,6 +169,14 @@ export interface NpcHandle {
   readonly mayTurn: boolean
   /** Look over at the room for a moment, then back to the job. */
   turnToCamera(ms?: number): void
+  /**
+   * The visitor's menu (EUNGARAGE 2.0): say something, be petted (the body
+   * presses down and springs back, eyes on the visitor), or be picked up
+   * (lifted where it stands, legs dangling, and set back down on the same
+   * spot — always floor it can stand on). False when it is away or the
+   * room is paused.
+   */
+  act(kind: 'talk' | 'pet' | 'lift'): boolean
   readonly id: string
   readonly state: NpcState
   /** On the move. The room drops its ambience while this is true. */
@@ -932,7 +941,7 @@ export function mountNpc(
     // off the thing it came to use.
     if (crowd && (state === 'IDLE' || state === 'LOOK' || state === 'CHOOSE_TARGET')) {
       const sep = crowd.separation(id, x, y)
-      if (sep.x !== 0 || sep.y !== 0) {
+      if ((sep.x !== 0 || sep.y !== 0) && crowd.mayShuffle(id)) {
         // Brisk enough to be out of the way before a walker arrives. At 26
         // a second a dokkaebi took most of a second to clear its own width,
         // which is long enough to be photographed standing inside somebody.
@@ -950,10 +959,12 @@ export function mountNpc(
         place()
       } else if (shuffling) {
         shuffling = false
+        crowd.endShuffle(id)
         pose('idle')
       }
     } else if (shuffling) {
       shuffling = false
+      crowd?.endShuffle(id)
     }
 
     switch (state) {
@@ -1545,7 +1556,7 @@ export function mountNpc(
     pokeReady = Date.now() + hold + POKE_GAP
     go('REACT', hold)
     say('touched', pokes === 1 ? 0.55 : 0.25)
-    opts.onTouch?.(character)
+    if (hit) opts.onTouch?.(character, hit)
     resume = setTimeout(() => {
       resume = null
     }, 2200)
@@ -1791,6 +1802,52 @@ export function mountNpc(
       lookAt = null
       pose('idle', facing)
       go('REACT', ms)
+      return true
+    },
+    act(kind: 'talk' | 'pet' | 'lift'): boolean {
+      if (away || state === 'PAUSED' || exiting || entering) return false
+      if (resume) clearTimeout(resume)
+      if (state !== 'REACT') {
+        back = state === 'WORK'
+          ? { state, wait, action: 'work', dir: workDir }
+          : state === 'SIT'
+            ? { state, wait, action: 'sit', dir: sitAt?.facing ?? 'front' }
+            : null
+        if (!back) {
+          unbook()
+          target = null
+          sitAt = null
+        }
+        crowd?.endWalk(id)
+      }
+      pose('idle', 'front')
+      art.classList.remove('is-tilt', 'is-sway', 'is-hop', 'is-pet', 'is-lifted', 'is-landing')
+      void art.offsetWidth
+      if (kind === 'talk') {
+        nudge('tilt', 1000)
+        go('REACT', 3000)
+        say('touched', 1)
+        return true
+      }
+      if (kind === 'pet') {
+        art.classList.add('is-pet')
+        sparkle()
+        go('REACT', 2200)
+        say('petted', 1)
+        setTimeout(() => art.classList.remove('is-pet'), 1500)
+        return true
+      }
+      el.classList.add('is-held')
+      art.classList.add('is-lifted')
+      go('REACT', 3000)
+      say('lifted', 1)
+      setTimeout(() => {
+        art.classList.remove('is-lifted')
+        el.classList.remove('is-held')
+        void art.offsetWidth
+        art.classList.add('is-landing')
+        setTimeout(() => art.classList.remove('is-landing'), 520)
+      }, 2100)
       return true
     },
     linger(ms: number): boolean {

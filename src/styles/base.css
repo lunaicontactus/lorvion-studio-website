@@ -46,3 +46,8 @@ img[data-asset-failed]{
 }
 
 /* Scene container: the crossfade every world transition rides on. */
+
+/* SETTINGS → 움직임 줄이기 (EUNGARAGE 2.0): the same as the system setting,
+   for a visitor who wants it here only. Scripts read it from motion.reduced. */
+:root[data-motion="reduced"] *,:root[data-motion="reduced"] *::before,:root[data-motion="reduced"] *::after{
+  animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}

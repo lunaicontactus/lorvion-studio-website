@@ -40,11 +40,27 @@ const ROOT = '/assets/images/dokkaebi'
  */
 const ROOT_V2 = '/assets/images/dokkaebi-v2'
 let useV2 = false
+/**
+ * The 2.0 crew: six mochi warped from the user's own character art
+ * (scripts/mochi_frames.py). On by default; `?mochiCrew=off` puts the
+ * dokkaebi back. When it is on, `useV2` is ignored.
+ */
+const ROOT_MOCHI = '/assets/images/crew-mochi'
+let useMochi = false
 
 /** Switch the crew. Called once at boot from the flags. */
 export function setNewCrew(on: boolean): void {
   useV2 = on
   cache.clear()
+}
+
+export function setMochiCrew(on: boolean): void {
+  useMochi = on
+  cache.clear()
+}
+
+export function mochiCrew(): boolean {
+  return useMochi
 }
 
 const cache = new Map<string, SpriteSet>()
@@ -138,7 +154,7 @@ const IDLE_ORDER = [1, 2, 3, 4, 3, 2]
 const DIRECTIONS: readonly SpriteDirection[] = ['front', 'back', 'left', 'right']
 
 function frame(id: string, action: SpriteAction, dir: SpriteDirection, n: number): string {
-  const root = useV2 ? ROOT_V2 : ROOT
+  const root = useMochi ? ROOT_MOCHI : useV2 ? ROOT_V2 : ROOT
   return `${root}/${id}/${action}/${dir}/${id}_${action}_${dir}_${String(n).padStart(2, '0')}.webp`
 }
 
@@ -149,7 +165,7 @@ function setFor(id: string, sheet: Sheet): SpriteSet {
     // An action with no frames rendered yet plays the standing ones, so the
     // room keeps working and a walk shows a character standing rather than a
     // hole where one was.
-    const have = useV2 ? v2For(id).frames : null
+    const have = useMochi ? null : useV2 ? v2For(id).frames : null
     const drawn: SpriteAction = have && have[action] === undefined ? 'idle' : action
     const count = sheet.frames[drawn]
     const order = drawn === 'idle'
@@ -213,7 +229,27 @@ function v2For(id: string): V2Sheet {
   return V2[id] ?? V2_IDLE_ONLY
 }
 
+/**
+ * The mochi crew's frames: one set of actions for all six (every action is
+ * drawn), measured off the frames by scripts/mochi_frames.py
+ * (public/assets/images/crew-mochi/metrics.json). The walk is two steps per
+ * eight frames, so its cadence follows the walking pace the same way the
+ * dokkaebi's did: 8.99fps at full pace.
+ */
+const MOCHI_FRAMES: Sheet['frames'] = { idle: 4, walk: 8, work: 6, sit: 4, wave: 6, look: 6 }
+const MOCHI: Readonly<Record<string, Sheet>> = {
+  // @mochi-metrics-start
+  momo: { frames: MOCHI_FRAMES, walkFps: 8.99, aspect: 468 / 420, figureRatio: 0.8857, bodyWidth: 0.7842, tempo: 1 },
+  nunu: { frames: MOCHI_FRAMES, walkFps: 7.64, aspect: 534 / 420, figureRatio: 0.8857, bodyWidth: 0.8352, tempo: 1.2 },
+  ruki: { frames: MOCHI_FRAMES, walkFps: 8.99, aspect: 468 / 420, figureRatio: 0.8857, bodyWidth: 0.8013, tempo: 0.95 },
+  poko: { frames: MOCHI_FRAMES, walkFps: 7.91, aspect: 464 / 420, figureRatio: 0.8857, bodyWidth: 0.819, tempo: 1.2 },
+  yomi: { frames: MOCHI_FRAMES, walkFps: 8.54, aspect: 470 / 420, figureRatio: 0.8857, bodyWidth: 0.8213, tempo: 1.1 },
+  reven: { frames: MOCHI_FRAMES, walkFps: 9.89, aspect: 494 / 420, figureRatio: 0.8833, bodyWidth: 0.8279, tempo: 1 },
+  // @mochi-metrics-end
+}
+
 function sheetFor(id: string): Sheet | null {
+  if (useMochi) return MOCHI[id] ?? null
   const base = SHEETS[id]
   if (!base) return null
   if (!useV2) return base

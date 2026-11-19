@@ -90,6 +90,7 @@
 .studio-crew{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 18px}
 .studio-crew__one{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:center}
 .studio-crew__one img{width:52px;height:auto;filter:drop-shadow(0 3px 4px rgba(59,39,24,.25))}
+.studio-crew__role{display:block;font-style:normal;font-size:.8rem;opacity:.75;margin:2px 0}
 .studio-crew__one b{font:800 .78rem/1 var(--mono);letter-spacing:.1em;margin-right:.4em}
 .studio-works{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
 .studio-work a{display:grid;grid-template-columns:minmax(110px,180px) 1fr auto;gap:4px 16px;align-items:center;min-height:48px;padding:8px 12px;border-radius:6px;background:#fbf5e6;border:1px solid rgba(59,39,24,.16);text-decoration:none !important;color:var(--wk-ink) !important}

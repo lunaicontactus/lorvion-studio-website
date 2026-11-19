@@ -3,7 +3,7 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', 'src/legacy/**', 'assets/**'] },
+  { ignores: ['dist/**', 'node_modules/**', '**/node_modules/**', 'src/legacy/**', 'assets/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -25,6 +25,7 @@ export default tseslint.config(
       'test/**/*.ts',
       'e2e/**/*.ts',
       'scripts/**/*.mjs',
+      'supabase/test/**/*.mjs',
     ],
     // These run in Node but pass callbacks into a page, so both sets apply.
     languageOptions: { globals: { ...globals.node, ...globals.browser } },

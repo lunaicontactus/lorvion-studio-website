@@ -6,6 +6,8 @@
  * anyone who changed it while reading.
  */
 
+import { readSettings } from '@/systems/settings'
+
 export type MotionListener = (reduced: boolean) => void
 
 const QUERY = '(prefers-reduced-motion: reduce)'
@@ -20,7 +22,13 @@ export class MotionPreference {
   }
 
   get reduced(): boolean {
-    return this.#mq?.matches ?? false
+    // The SETTINGS page can ask for less motion even when the system does not.
+    return readSettings().motion === 'reduce' || (this.#mq?.matches ?? false)
+  }
+
+  /** The visitor changed the SETTINGS page's motion choice. */
+  changed(): void {
+    this.#onChange()
   }
 
   subscribe(fn: MotionListener): () => void {

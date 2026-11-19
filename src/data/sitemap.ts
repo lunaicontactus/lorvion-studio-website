@@ -19,7 +19,7 @@
 export const ORIGIN = 'https://eungarage.com'
 export const CONTACT_EMAIL = 'eungarage@gmail.com'
 
-export type RouteGroup = 'home' | 'works' | 'archive' | 'studio' | 'support' | 'contact' | 'press' | 'legal' | 'system'
+export type RouteGroup = 'home' | 'works' | 'crew' | 'diary' | 'guestbook' | 'arcade' | 'stars' | 'radio' | 'settings' | 'archive' | 'studio' | 'support' | 'contact' | 'press' | 'legal' | 'system'
 
 export interface Route {
   /** The URL path. */
@@ -37,6 +37,13 @@ export const ROUTES: readonly Route[] = [
   { path: '/', group: 'home', role: '골목 입구 → 차고(포인트&클릭) → 놀이터 · 비밀 보관소', live: true, indexed: true },
   { path: '/works.html', group: 'works', role: 'WORKS — 작품 5개 목록', live: true, indexed: true },
   // Each work's page: /works/<id>.html, one per entry in src/data/projects.ts.
+  { path: '/crew.html', group: 'crew', role: 'CREW — 크루 여섯의 사원증과 캐릭터 시트 (2.0)', live: true, indexed: true },
+  { path: '/diary.html', group: 'diary', role: 'DIARY — 개발일지 (2.0)', live: true, indexed: true },
+  { path: '/guestbook.html', group: 'guestbook', role: 'GUESTBOOK — 방명록 (2.0, Supabase; 서버 연결 전에는 비활성 안내)', live: true, indexed: true },
+  { path: '/arcade.html', group: 'arcade', role: 'ARCADE — 미니게임 (2.0)', live: true, indexed: true },
+  { path: '/stars.html', group: 'stars', role: 'STARS — 밤하늘과 별빛 서버 (2.0)', live: true, indexed: true },
+  { path: '/radio.html', group: 'radio', role: 'RADIO — 음악 (2.0)', live: true, indexed: true },
+  { path: '/settings.html', group: 'settings', role: 'SETTINGS — 소리 · 움직임 · 진입 연출 (2.0)', live: true, indexed: true },
   { path: '/archive.html', group: 'archive', role: 'PUBLIC ARCHIVE — 공식 기록실', live: true, indexed: true },
   { path: '/studio.html', group: 'studio', role: '스튜디오 소개', live: true, indexed: true },
   { path: '/support.html', group: 'support', role: '작품별 고객지원(현재 서비스 중인 LUNAI)', live: true, indexed: true },
@@ -46,11 +53,12 @@ export const ROUTES: readonly Route[] = [
   { path: '/terms.html', group: 'legal', role: 'LUNAI 이용약관', live: true, indexed: true },
   { path: '/community-guidelines.html', group: 'legal', role: 'LUNAI 커뮤니티 이용규칙', live: true, indexed: true },
   { path: '/account-deletion.html', group: 'legal', role: 'LUNAI 계정 삭제 안내', live: true, indexed: true },
+  { path: '/admin.html', group: 'system', role: '운영 (2.0, 관리자만 · noindex · 링크 없음)', live: true, indexed: false },
   { path: '/games.html', group: 'system', role: '예전 주소 → /works.html', live: true, indexed: false },
   { path: '/404.html', group: 'system', role: '없는 주소', live: true, indexed: false },
 ]
 
-const isLive = (path: string): boolean => ROUTES.some((r) => r.path === path && r.live)
+const isLive = (path: string): boolean => path.startsWith('/#') || ROUTES.some((r) => r.path === path && r.live)
 
 export interface Link {
   readonly label: string
@@ -60,17 +68,38 @@ export interface Link {
 }
 
 /**
- * The top nav: WORKS first (DECISIONS #2), then the studio, its records, and
- * the two ways to reach the people. Always small; the garage is the page.
+ * The top nav (EUNGARAGE 2.0, PART 3): the minihompy tabs, in the brief's
+ * order. GAMES is the works index and PHOTO the public archive — the same
+ * pages under the 2.0 names, so nothing is duplicated. A tab whose page is
+ * not built yet is not shown (isLive). STUDIO, SUPPORT and PRESS stay in the
+ * footer: SUPPORT is LUNAI's store-listed support address and must stay
+ * reachable from every page.
  */
 const NAV_ALL: readonly Link[] = [
-  { label: 'Works', href: '/works.html', group: 'works' },
-  { label: 'Archive', href: '/archive.html', group: 'archive' },
-  { label: 'Studio', href: '/studio.html', group: 'studio' },
-  { label: 'Support', href: '/support.html', group: 'support' },
+  { label: 'Home', href: '/', group: 'home' },
+  { label: 'Garage', href: '/#garage' },
+  { label: 'Games', href: '/works.html', group: 'works' },
+  { label: 'Crew', href: '/crew.html', group: 'crew' },
+  { label: 'Diary', href: '/diary.html', group: 'diary' },
+  { label: 'Photo', href: '/archive.html', group: 'archive' },
+  { label: 'Guestbook', href: '/guestbook.html', group: 'guestbook' },
+  { label: 'Arcade', href: '/arcade.html', group: 'arcade' },
+  { label: 'Stars', href: '/stars.html', group: 'stars' },
+  { label: 'Radio', href: '/radio.html', group: 'radio' },
   { label: 'Contact', href: '/contact.html', group: 'contact' },
+  { label: 'Settings', href: '/settings.html', group: 'settings' },
 ]
 export const NAV: readonly Link[] = NAV_ALL.filter((l) => isLive(l.href))
+
+/**
+ * After the tabs, small: the studio's own page and SUPPORT. SUPPORT is LUNAI's
+ * store-listed support address and the garage page has no footer, so it has
+ * to be in the bar to be one click from every page.
+ */
+export const NAV_UTIL: readonly Link[] = ([
+  { label: 'Studio', href: '/studio.html', group: 'studio' },
+  { label: 'Support', href: '/support.html', group: 'support' },
+] as const satisfies readonly Link[]).filter((l) => isLive(l.href))
 
 /** The footer: the studio's pages, then LUNAI's documents, then the address. */
 const FOOTER_ALL: readonly { readonly title: string; readonly links: readonly Link[] }[] = [
@@ -78,7 +107,9 @@ const FOOTER_ALL: readonly { readonly title: string; readonly links: readonly Li
     title: 'EUNGARAGE',
     links: [
       { label: 'Garage', href: '/' },
-      { label: 'Works', href: '/works.html' },
+      { label: 'Games', href: '/works.html' },
+      { label: 'Crew', href: '/crew.html' },
+      { label: 'Diary', href: '/diary.html' },
       { label: 'Archive', href: '/archive.html' },
       { label: 'Studio', href: '/studio.html' },
       { label: 'Press', href: '/press.html' },
@@ -124,7 +155,10 @@ const SOUND_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden=
 export function renderNav(path: string): string {
   const home = groupOf(path) === 'home'
   const logo = home ? 'eungarage_logo_nav.webp' : 'eungarage_logo_nav_light.webp'
-  const links = NAV.map((l) => `      <a href="${l.href}"${current(l, path)}>${esc(l.label)}</a>`).join('\n')
+  const links = [
+    ...NAV.map((l) => `      <a href="${l.href}"${current(l, path)}>${esc(l.label)}</a>`),
+    ...NAV_UTIL.map((l, i) => `      <a class="nav-util${i === 0 ? ' nav-util--first' : ''}" href="${l.href}"${current(l, path)}>${esc(l.label)}</a>`),
+  ].join('\n')
   return `<nav class="site-nav">
   <div class="container nav-inner">
     <a class="brand" href="/" aria-label="EUNGARAGE home">
@@ -151,7 +185,7 @@ ${g.links.map((l) => `        <a href="${l.href}"${current(l, path).replace(' ar
   <div class="container footer-inner">
     <div class="footer-brand">
       <img class="footer-logo" src="/assets/images/brand/eungarage_logo_lockup_light_sm.webp" width="686" height="132" alt="EUNGARAGE" loading="lazy" decoding="async">
-      <p>밤마다 도깨비들이 게임을 만드는 작은 차고.</p>
+      <p>낮에는 평범한 차고, 밤에는 세계를 만드는 곳.</p>
     </div>
     <div class="footer-links">
 ${groups}
@@ -173,7 +207,7 @@ ${groups}
  * no footer, and a crawler or a visitor without scripts still finds the rest.
  */
 export function renderPageIndex(): string {
-  const links = [...NAV, ...FOOTER.flatMap((g) => g.links)]
+  const links = [...NAV, ...NAV_UTIL, ...FOOTER.flatMap((g) => g.links)]
     .filter((l, i, all) => l.href !== '/' && all.findIndex((m) => m.href === l.href) === i)
   return `<nav class="visually-hidden page-links" aria-label="EUNGARAGE 페이지">
 ${links.map((l) => `    <a href="${l.href}">${esc(l.label)}</a>`).join('\n')}

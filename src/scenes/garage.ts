@@ -11,6 +11,7 @@
  * painting — they draw no furniture of their own, and the only thing they show
  * is an outline tracing the object under the pointer.
  */
+import { readSettings } from '@/systems/settings'
 import { Camera } from '@/systems/camera'
 import { worldFor, ROOM_ART, CAPTIONS, DECOR } from '@/data/world'
 import { loadImage } from '@/systems/assets'
@@ -207,12 +208,11 @@ function hangWood(piece: Artwork, rect: { w: number; h: number }, padL: number, 
 const PHONE_CREW = 3
 /**
  * How many are on the floor at once. The rest are off the edge of the plate
- * and take turns coming in (src/systems/stage.ts). Three on a desk, where the
- * window shows about half of a room they are spread along — so two or three
- * of them, briefly fewer when the rotation has just sent somebody out; two
- * on a phone held upright, where the whole strip is in view.
+ * and take turns coming in (src/systems/stage.ts). Five on a desk (2.0: the
+ * six small mochi all open the room, then one at a time is out on an errand);
+ * two on a phone held upright, where the whole strip is in view.
  */
-const ON_STAGE = { landscape: 3, portrait: 2 }
+const ON_STAGE = { landscape: 5, portrait: 2 }
 
 /** Which light comes on in the room while the visitor has a thing open. */
 const REACT_LIGHT: Readonly<Record<string, string>> = {
@@ -235,6 +235,7 @@ const PARALLAX = { bg: 0.022, fg: 0.012 }
 // Smaller than a dokkaebi standing up, so it never reads as one of the cast.
 const BROOM_HEIGHT = { landscape: 148, portrait: 136 }
 import { CHARACTERS } from '@/data/characters'
+import { closeCrewMenu, openCrewMenu } from '@/ui/crewMenu'
 import { spritesFor } from '@/data/sprites'
 import type { WorldLayout, WorldObject } from '@/types/world'
 
@@ -867,7 +868,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         // sense between them — the walking budget, who has booked the fridge
         // door, how close two may stand, who may speak.
         crowd = new Crowd({ narrow: portrait })
-        const onStage = portrait ? ON_STAGE.portrait : ON_STAGE.landscape
+        // SETTINGS → 그래픽 품질 낮게: three on the floor instead of five.
+        const onStage = portrait ? ON_STAGE.portrait : readSettings().quality === 'low' ? 3 : ON_STAGE.landscape
         // Feet on boards. One gate for the whole crew, so two of them
         // walking is a little more sound than one and never a drum roll.
         footsteps = new Footsteps({ play: (v) => audio.play('crew_step', v) })
@@ -897,11 +899,17 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
             // Touching one stops it and makes it look up; the room's part is
             // to acknowledge that quietly. No bubble, no name tag, no panel —
             // the dokkaebi are not another menu.
-            onTouch: (touched) => {
+            onTouch: (touched, anchor) => {
               save.update((d) => {
                 if (!d.discoveredCharacters.includes(touched.id)) {
                   d.discoveredCharacters.push(touched.id)
                 }
+              })
+              // EUNGARAGE 2.0: a small offer beside it — talk, pet, pick up,
+              // or see its badge. The reaction above has already happened.
+              openCrewMenu(touched, anchor, {
+                act: (kind) => crew[i]?.act(kind) ?? false,
+                badgeHref: `/crew.html#${touched.id}`,
               })
             },
             keepClear,
@@ -1527,6 +1535,7 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
       return crew[0] ?? null
     },
     destroy(): void {
+      closeCrewMenu()
       for (const one of crew) one.destroy()
       ambient?.destroy()
       broom?.stop()

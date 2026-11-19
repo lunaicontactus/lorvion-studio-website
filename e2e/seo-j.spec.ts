@@ -20,7 +20,9 @@ test('sitemap, robots, every link, every anchor, every preview image', async ({ 
   const sitemap = await request.get('/sitemap.xml')
   expect(sitemap.status()).toBe(200)
   const routes = [...(await sitemap.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!)
-  expect(routes.length).toBe(16)
+  // 16 before 2.0, and the seven minihompy pages of EUNGARAGE 2.0 (admin is not indexed).
+  expect(routes.length).toBe(23)
+  for (const p of ['/crew.html', '/diary.html', '/guestbook.html', '/arcade.html', '/stars.html', '/radio.html', '/settings.html']) expect(routes).toContain(SITE + p)
 
   const links = new Map<string, string>() // url → first page it was seen on
   const anchors: { url: string; id: string; from: string }[] = []

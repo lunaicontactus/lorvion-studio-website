@@ -24,6 +24,12 @@ export interface Flags {
    * wired, so `?newCrew=off` puts them back without a deploy.
    */
   newCrew: boolean
+  /**
+   * The 2.0 crew: six mochi from the user's character sheets. On by
+   * default; `?mochiCrew=off` brings back the dokkaebi (`newCrew` then picks
+   * which of them).
+   */
+  mochiCrew: boolean
   /** Verbose system logging. */
   debug: boolean
 }
@@ -35,6 +41,7 @@ const DEFAULTS: Flags = {
   dokkaFire: false,
   miniGames: false,
   newCrew: true,
+  mochiCrew: true,
   debug: false,
 }
 

@@ -10,6 +10,7 @@
  * now". Adding a thing is a registry entry plus a case in `interfaceFor`; no
  * object gets its own listeners scattered through the file.
  */
+import { readSettings } from '@/systems/settings'
 import { mountAlley } from '@/scenes/alley'
 import { mountGarage, type GarageHandle } from '@/scenes/garage'
 import { mountPlayground, type PlaygroundHandle } from '@/scenes/playground'
@@ -52,6 +53,8 @@ const REACT_SFX: Readonly<Record<string, { readonly name: string; readonly volum
 
 /** Which nav link stands for which thing in the room. */
 const NAV_TARGETS: Readonly<Record<string, string>> = {
+  // GAMES is the 2.0 name of WORKS (the same page): in the room, the PC.
+  games: 'pc',
   works: 'pc',
   // STUDIO keeps its own page: the workbench is work in progress now, not
   // the studio's introduction. CONTACT is its own page too (SITE UPGRADE
@@ -868,6 +871,27 @@ export function mountWorld(): () => void {
   // The top nav and the room are the same site: WORKS is the PC.
   for (const link of document.querySelectorAll<HTMLAnchorElement>('.nav-links a')) {
     const key = (link.textContent ?? '').trim().toLowerCase()
+    if (key === 'garage') {
+      // GARAGE (/#garage) on the page that is the garage: walk in from the
+      // alley, or, already inside, put down whatever is open. Without this the
+      // click only changed the hash and nothing happened.
+      const onGarage = (e: MouseEvent): void => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+        e.preventDefault()
+        if (!inside) {
+          enterGarage()
+          return
+        }
+        if (interaction.state === 'OBJECT_OPEN' || interaction.state === 'OBJECT_FOCUSING') {
+          panels.stepBack()
+          popOpen()
+          interaction.dismiss()
+        }
+      }
+      link.addEventListener('click', onGarage)
+      off.push(() => link.removeEventListener('click', onGarage))
+      continue
+    }
     const target = NAV_TARGETS[key]
     if (!target) continue // STUDIO and SUPPORT keep their own pages.
     const onClick = (e: MouseEvent): void => {
@@ -917,7 +941,8 @@ export function mountWorld(): () => void {
     mountAlley(document, {
       // Somebody who has been here before gets the short door. Read at
       // ENTER: the count is written at boot (registerVisit), once a session.
-      returning: () => save.data.visitCount > 1,
+      returning: () => save.data.visitCount > 1 || readSettings().intro === 'short',
+      autoEnter: () => location.hash === '#garage',
       ready: roomReady,
       // The sound is on the picture (PHASE 7): the shutter as it goes up,
       // the room's air as its light comes on, its song under that a moment

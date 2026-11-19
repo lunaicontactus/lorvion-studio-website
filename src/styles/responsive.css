@@ -1,7 +1,8 @@
-@media(max-width:900px){
-  :root{--nav-h:68px}
-  .container{width:min(calc(100% - 32px),var(--max))}
-  .nav-links{position:fixed;inset:0;background:rgba(4,5,10,.97);display:flex;flex-direction:column;justify-content:center;gap:32px;font-size:1.3rem;opacity:0;visibility:hidden;pointer-events:none;transition:.35s}
+/* The menu folds into the button below 1240 px (EUNGARAGE 2.0): twelve
+   minihompy tabs do not fit beside the name on a laptop. Everything else of
+   the small-screen layout still starts at 900 px. */
+@media(max-width:1240px){
+  .nav-links{position:fixed;inset:0;background:rgba(4,5,10,.97);display:flex;flex-direction:column;justify-content:center;gap:14px;font-size:1.15rem;opacity:0;visibility:hidden;pointer-events:none;transition:.35s}
   .nav-links.open{opacity:1;visibility:visible;pointer-events:auto}
   /* Never pushed off the top or bottom of a short window: centred while it
      fits, scrolling from under the bar when it does not (PHASE I, I-4). */
@@ -11,9 +12,17 @@
      that as a transition (Firefox does) paints the menu over the entrance for
      the first 350ms. Nothing transitions until the page has loaded. */
   body.loading .nav-links{transition:none}
+  /* STUDIO · SUPPORT (2.0): a line above them instead of the bar's divider,
+     and room under the last one so it never ends on the window's edge. */
+  .nav-links .nav-util--first{margin-left:0;padding-left:0;border-left:0;margin-top:6px;border-top:1px solid color-mix(in srgb,currentColor 30%,transparent)}
+  .nav-links a:last-child{margin-bottom:12px}
   .menu-toggle{display:block;z-index:2}
   .menu-toggle.open span:first-child{transform:translateY(3.5px) rotate(45deg)}
   .menu-toggle.open span:last-child{transform:translateY(-3.5px) rotate(-45deg)}
+}
+@media(max-width:900px){
+  :root{--nav-h:68px}
+  .container{width:min(calc(100% - 32px),var(--max))}
   .about{padding:110px 0}
   .footer-inner{grid-template-columns:1fr}
   .footer-links{justify-content:flex-start}

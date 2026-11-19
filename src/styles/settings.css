@@ -1,0 +1,12 @@
+/* SETTINGS (EUNGARAGE 2.0). */
+.settings{display:grid;gap:14px}
+.setting{margin:0;padding:14px 16px;border-radius:18px;border:2px solid #ffc6e0;background:#fff9fc;color:#3a2440}
+.setting legend{font-weight:800;padding:0 6px;color:#3a2440;background:#fff9fc;border-radius:8px}
+.setting__note{margin:4px 0 10px;font-size:.88rem;color:#5d4466;line-height:1.55}
+.setting__opts{display:flex;flex-wrap:wrap;gap:8px}
+.setting__opts label{position:relative;display:inline-flex}
+.setting__opts input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.setting__opts span{display:inline-flex;align-items:center;min-height:44px;padding:8px 16px;border-radius:999px;border:2px solid #ffc6e0;background:#fff;font-weight:700}
+.setting__opts input:checked+span{background:#ff91c8;border-color:#ff91c8;color:#2a1030}
+.setting__opts input:focus-visible+span{outline:3px solid #7a1f57;outline-offset:2px}
+.settings__status{min-height:1.4em;font-weight:700}
