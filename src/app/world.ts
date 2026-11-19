@@ -903,6 +903,16 @@ export function mountWorld(): () => void {
     off.push(() => link.removeEventListener('click', onClick))
   }
 
+  // ── The minihompy frame (EUNGARAGE 2.0) ──────────────────────────────────
+  // A card and quick tabs around the room on a wide screen. Its own chunk:
+  // the info pages never load it, and the room does not wait for it.
+  let framed = true
+  off.push(() => { framed = false })
+  void import('@/ui/minihompy').then(({ mountMinihompy }) => {
+    if (!framed) return
+    off.push(mountMinihompy({ openThing: (id) => goTo(id) }))
+  }).catch(() => { /* the room is whole without its frame */ })
+
   // ── The room, fetched before it is asked for ─────────────────────────────
   // The painted room is the biggest file on the site, and it used to start
   // downloading only once the shutter was already up: for about a second
