@@ -6,8 +6,8 @@
 }
 .site-nav.scrolled{background:rgba(4,5,10,.74);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
 .nav-inner{height:100%;display:flex;align-items:center;justify-content:space-between;gap:24px}
-.brand{display:flex;align-items:center}
-.nav-links{display:flex;gap:31px;align-items:center;font-size:.82rem;letter-spacing:.12em;text-transform:uppercase;color:#d7d9e2}
+.brand{display:flex;align-items:center;flex-shrink:0}
+.nav-links{display:flex;gap:clamp(10px,1.2vw,22px);align-items:center;font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:#d7d9e2}
 .nav-links a{position:relative;padding:9px 0}
 .nav-links a:after{content:"";position:absolute;left:0;bottom:2px;width:100%;height:1px;background:white;transform:scaleX(0);transform-origin:right;transition:transform .4s var(--ease)}
 .nav-links a:hover:after{transform:scaleX(1);transform-origin:left}
@@ -45,7 +45,7 @@
 .page-cozy :where(a,button,[tabindex]):focus-visible{outline-color:var(--cozy-ember)}
 
 /* The mobile menu drops over the alley, so it needs the warm ground too. */
-@media (max-width:900px){
+@media (max-width:1240px){
   .page-cozy .nav-links{background:rgba(243,236,226,.97);color:var(--cozy-ink)}
 }
 

@@ -1,0 +1,27 @@
+/* RADIO (EUNGARAGE 2.0, PART 17): a pink cassette player. */
+.radio-page{--r-ink:#3a2440;--r-pink:#ff91c8;--r-baby:#ffc6e0;--r-paper:#fff9fc}
+.cassette{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;padding:18px;border-radius:26px;background:linear-gradient(160deg,#ffd6ea,#ffc6e0);color:var(--r-ink);border:3px solid var(--r-pink);box-shadow:0 10px 26px rgba(0,0,0,.25);margin:0 0 20px}
+.cassette__dj{width:140px;height:auto}
+.cassette__body{display:grid;gap:10px;min-width:0}
+.cassette__label{margin:0;font:900 .95rem/1.2 inherit;letter-spacing:.06em}
+.cassette__label span{font-weight:700;opacity:.75}
+.cassette__now{margin:0;padding:8px 12px;border-radius:12px;background:#fff9fc;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cassette__reels{display:flex;gap:40px;justify-content:center;padding:10px;border-radius:14px;background:#3a2440}
+.cassette__reels i{width:34px;height:34px;border-radius:50%;border:6px dotted #ffc6e0}
+.cassette.is-playing .cassette__reels i{animation:reel 2.4s linear infinite}
+@keyframes reel{to{transform:rotate(360deg)}}
+.cassette__bar{display:flex;align-items:center;gap:10px}
+.cassette__bar input{flex:1;accent-color:#c2367f;min-height:32px}
+.cassette__bar span{font:700 .8rem/1 ui-monospace,monospace;white-space:nowrap}
+.cassette__keys{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cassette__keys button{min-width:48px;min-height:48px;border-radius:14px;border:2px solid #fff;background:#fff9fc;color:var(--r-ink);font-size:1.1rem;cursor:pointer;box-shadow:0 3px 0 #e07ab0}
+.cassette__keys button:focus-visible,.playlist button:focus-visible{outline:3px solid #7a1f57;outline-offset:2px}
+.cassette__vol input{accent-color:#c2367f;width:120px;min-height:32px}
+.playlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.playlist button{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;text-align:left;min-height:48px;padding:10px 14px;border-radius:14px;border:2px solid var(--r-baby);background:var(--r-paper);color:var(--r-ink);font:inherit;cursor:pointer}
+.playlist button[aria-current="true"]{border-color:var(--r-pink);background:#ffe8f3}
+.playlist span{font-size:.85rem;opacity:.8}
+.playlist time{font:700 .8rem/1 ui-monospace,monospace}
+.radio-note{margin-top:14px;opacity:.85}
+@media (max-width:560px){.cassette{grid-template-columns:1fr;justify-items:center}.cassette__dj{width:110px}.cassette__body{width:100%}}
+@media (prefers-reduced-motion:reduce){.cassette.is-playing .cassette__reels i{animation:none}}

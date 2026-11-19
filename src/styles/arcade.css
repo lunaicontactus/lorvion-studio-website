@@ -1,0 +1,16 @@
+/* ARCADE (EUNGARAGE 2.0, PART 14): each game a little arcade cabinet. */
+.cabinets{list-style:none;margin:0 0 16px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}
+.cabinet{display:grid;gap:8px;align-content:start;padding:14px 14px 16px;border-radius:22px 22px 14px 14px;background:#2a1f45;color:#fff9fc;
+  border:3px solid var(--accent);box-shadow:0 0 0 4px #17162f,0 8px 22px rgba(0,0,0,.3)}
+.cabinet__screen{position:relative;display:grid;place-items:center;aspect-ratio:4/3;border-radius:12px;background:radial-gradient(circle at 50% 40%,#3b2d66,#17162f 75%);border:3px solid #0d0c1d;overflow:hidden}
+.cabinet__screen img{width:46%;height:auto;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5))}
+.cabinet__badge{position:absolute;left:8px;top:8px;padding:3px 8px;border-radius:999px;background:#ff91c8;color:#2a1030;font:800 11px/1.2 inherit}
+.cabinet__title{margin:4px 0 0;font-size:1.1rem;color:#fff9fc}
+.cabinet__hint{margin:0;font-size:.88rem;line-height:1.55;color:#ece4ff}
+.cabinet__meta,.cabinet__best{margin:0;font-size:.82rem;color:#d7c9ff}
+.cabinet__best b{color:#ffe08a}
+.cabinet__play{justify-self:start;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 22px;border-radius:999px;
+  background:#ffe08a;color:#2a1030;font:900 .95rem/1 inherit;letter-spacing:.08em;text-decoration:none;box-shadow:0 4px 0 #c99a1e}
+.cabinet__play:hover{background:#fff0b8}
+.cabinet__play:focus-visible{outline:3px solid #ff91c8;outline-offset:3px}
+.arcade-note{font-size:.85rem;opacity:.85}

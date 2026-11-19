@@ -10,6 +10,7 @@
  * now". Adding a thing is a registry entry plus a case in `interfaceFor`; no
  * object gets its own listeners scattered through the file.
  */
+import { readSettings } from '@/systems/settings'
 import { mountAlley } from '@/scenes/alley'
 import { mountGarage, type GarageHandle } from '@/scenes/garage'
 import { mountPlayground, type PlaygroundHandle } from '@/scenes/playground'
@@ -917,7 +918,8 @@ export function mountWorld(): () => void {
     mountAlley(document, {
       // Somebody who has been here before gets the short door. Read at
       // ENTER: the count is written at boot (registerVisit), once a session.
-      returning: () => save.data.visitCount > 1,
+      returning: () => save.data.visitCount > 1 || readSettings().intro === 'short',
+      autoEnter: () => location.hash === '#garage',
       ready: roomReady,
       // The sound is on the picture (PHASE 7): the shutter as it goes up,
       // the room's air as its light comes on, its song under that a moment

@@ -19,7 +19,7 @@
 export const ORIGIN = 'https://eungarage.com'
 export const CONTACT_EMAIL = 'eungarage@gmail.com'
 
-export type RouteGroup = 'home' | 'works' | 'crew' | 'diary' | 'archive' | 'studio' | 'support' | 'contact' | 'press' | 'legal' | 'system'
+export type RouteGroup = 'home' | 'works' | 'crew' | 'diary' | 'guestbook' | 'arcade' | 'stars' | 'radio' | 'settings' | 'archive' | 'studio' | 'support' | 'contact' | 'press' | 'legal' | 'system'
 
 export interface Route {
   /** The URL path. */
@@ -39,6 +39,11 @@ export const ROUTES: readonly Route[] = [
   // Each work's page: /works/<id>.html, one per entry in src/data/projects.ts.
   { path: '/crew.html', group: 'crew', role: 'CREW — 크루 여섯의 사원증과 캐릭터 시트 (2.0)', live: true, indexed: true },
   { path: '/diary.html', group: 'diary', role: 'DIARY — 개발일지 (2.0)', live: true, indexed: true },
+  { path: '/guestbook.html', group: 'guestbook', role: 'GUESTBOOK — 방명록 (2.0, Supabase; 서버 연결 전에는 비활성 안내)', live: true, indexed: true },
+  { path: '/arcade.html', group: 'arcade', role: 'ARCADE — 미니게임 (2.0)', live: true, indexed: true },
+  { path: '/stars.html', group: 'stars', role: 'STARS — 밤하늘과 별빛 서버 (2.0)', live: true, indexed: true },
+  { path: '/radio.html', group: 'radio', role: 'RADIO — 음악 (2.0)', live: true, indexed: true },
+  { path: '/settings.html', group: 'settings', role: 'SETTINGS — 소리 · 움직임 · 진입 연출 (2.0)', live: true, indexed: true },
   { path: '/archive.html', group: 'archive', role: 'PUBLIC ARCHIVE — 공식 기록실', live: true, indexed: true },
   { path: '/studio.html', group: 'studio', role: '스튜디오 소개', live: true, indexed: true },
   { path: '/support.html', group: 'support', role: '작품별 고객지원(현재 서비스 중인 LUNAI)', live: true, indexed: true },
@@ -52,7 +57,7 @@ export const ROUTES: readonly Route[] = [
   { path: '/404.html', group: 'system', role: '없는 주소', live: true, indexed: false },
 ]
 
-const isLive = (path: string): boolean => ROUTES.some((r) => r.path === path && r.live)
+const isLive = (path: string): boolean => path.startsWith('/#') || ROUTES.some((r) => r.path === path && r.live)
 
 export interface Link {
   readonly label: string
@@ -62,17 +67,26 @@ export interface Link {
 }
 
 /**
- * The top nav: WORKS first (DECISIONS #2), then the studio, its records, and
- * the two ways to reach the people. Always small; the garage is the page.
+ * The top nav (EUNGARAGE 2.0, PART 3): the minihompy tabs, in the brief's
+ * order. GAMES is the works index and PHOTO the public archive — the same
+ * pages under the 2.0 names, so nothing is duplicated. A tab whose page is
+ * not built yet is not shown (isLive). STUDIO, SUPPORT and PRESS stay in the
+ * footer: SUPPORT is LUNAI's store-listed support address and must stay
+ * reachable from every page.
  */
 const NAV_ALL: readonly Link[] = [
-  { label: 'Works', href: '/works.html', group: 'works' },
+  { label: 'Home', href: '/', group: 'home' },
+  { label: 'Garage', href: '/#garage' },
+  { label: 'Games', href: '/works.html', group: 'works' },
   { label: 'Crew', href: '/crew.html', group: 'crew' },
   { label: 'Diary', href: '/diary.html', group: 'diary' },
-  { label: 'Archive', href: '/archive.html', group: 'archive' },
-  { label: 'Studio', href: '/studio.html', group: 'studio' },
-  { label: 'Support', href: '/support.html', group: 'support' },
+  { label: 'Photo', href: '/archive.html', group: 'archive' },
+  { label: 'Guestbook', href: '/guestbook.html', group: 'guestbook' },
+  { label: 'Arcade', href: '/arcade.html', group: 'arcade' },
+  { label: 'Stars', href: '/stars.html', group: 'stars' },
+  { label: 'Radio', href: '/radio.html', group: 'radio' },
   { label: 'Contact', href: '/contact.html', group: 'contact' },
+  { label: 'Settings', href: '/settings.html', group: 'settings' },
 ]
 export const NAV: readonly Link[] = NAV_ALL.filter((l) => isLive(l.href))
 
@@ -82,7 +96,7 @@ const FOOTER_ALL: readonly { readonly title: string; readonly links: readonly Li
     title: 'EUNGARAGE',
     links: [
       { label: 'Garage', href: '/' },
-      { label: 'Works', href: '/works.html' },
+      { label: 'Games', href: '/works.html' },
       { label: 'Crew', href: '/crew.html' },
       { label: 'Diary', href: '/diary.html' },
       { label: 'Archive', href: '/archive.html' },

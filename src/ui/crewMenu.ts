@@ -50,11 +50,16 @@ export function openCrewMenu(character: CharacterConfig, anchor: HTMLElement, o:
     const m = menu.getBoundingClientRect()
     const vw = document.documentElement.clientWidth
     const vh = document.documentElement.clientHeight
-    let left = r.left + r.width / 2 - m.width / 2
-    left = Math.max(8, Math.min(vw - m.width - 8, left))
-    // Above the head when there is room, otherwise below the feet.
-    let top = r.top - m.height - 10
-    if (top < 64) top = Math.min(vh - m.height - 8, r.bottom + 10)
+    // Beside the character, not over its head: the head is where it talks.
+    let left = r.right + 12
+    if (left + m.width > vw - 8) left = r.left - m.width - 12
+    let top = r.top + r.height * 0.35 - m.height / 2
+    if (left < 8) {
+      // No room either side (a phone): under the bar, above the head.
+      left = Math.max(8, Math.min(vw - m.width - 8, r.left + r.width / 2 - m.width / 2))
+      top = r.top - m.height - 56
+    }
+    top = Math.max(72, Math.min(vh - m.height - 8, top))
     menu.style.left = `${Math.round(left)}px`
     menu.style.top = `${Math.round(top)}px`
   }

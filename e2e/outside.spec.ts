@@ -233,7 +233,7 @@ for (const view of [
       test.setTimeout(120_000)
       await enter(page)
       await goOut(page)
-      const games = [['poko-office', '요미의 과자 몰래 먹기'], ['snack-stall', '도깨비 야식 심부름'], ['parcel-office', '모모의 택배 배달']] as const
+      const games = [['poko-office', '요미의 과자 몰래 먹기'], ['snack-stall', '크루 야식 심부름'], ['parcel-office', '모모의 택배 배달']] as const
       for (const [i, [id, title]] of games.entries()) {
         const spot = page.locator(`[data-place="${id}"]`)
         await spot.focus()

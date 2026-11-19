@@ -27,7 +27,7 @@ const ROUND = 30
 
 export const SNACK_GAME: GameDef = {
   id: 'snack',
-  title: '도깨비 야식 심부름',
+  title: '크루 야식 심부름',
   hint: '말풍선 속 야식을 골라 건네주세요. 틀리면 시간이 깎여요.',
   controls: [
     { keys: '1 2 3 4', touch: '누르기', does: '골라서 건네기' },

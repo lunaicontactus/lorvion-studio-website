@@ -3,7 +3,7 @@
  * turn when a note opens. The notes are <details>, prerendered; this only
  * wires them. Opening a note by its address (diary.html#<id>) opens it.
  */
-import { diaryHtml } from '@/render/pages'
+import { diaryHtml } from '@/render/pages2'
 
 export function mountDiary(): (() => void) | undefined {
   const host = document.querySelector<HTMLElement>('[data-diary]')

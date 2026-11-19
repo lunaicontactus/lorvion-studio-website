@@ -11,6 +11,7 @@
  * painting — they draw no furniture of their own, and the only thing they show
  * is an outline tracing the object under the pointer.
  */
+import { readSettings } from '@/systems/settings'
 import { Camera } from '@/systems/camera'
 import { worldFor, ROOM_ART, CAPTIONS, DECOR } from '@/data/world'
 import { loadImage } from '@/systems/assets'
@@ -867,7 +868,8 @@ export function mountGarage(root: ParentNode = document, opts: GarageOptions = {
         // sense between them — the walking budget, who has booked the fridge
         // door, how close two may stand, who may speak.
         crowd = new Crowd({ narrow: portrait })
-        const onStage = portrait ? ON_STAGE.portrait : ON_STAGE.landscape
+        // SETTINGS → 그래픽 품질 낮게: three on the floor instead of five.
+        const onStage = portrait ? ON_STAGE.portrait : readSettings().quality === 'low' ? 3 : ON_STAGE.landscape
         // Feet on boards. One gate for the whole crew, so two of them
         // walking is a little more sound than one and never a drum roll.
         footsteps = new Footsteps({ play: (v) => audio.play('crew_step', v) })

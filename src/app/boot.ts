@@ -20,8 +20,6 @@ import { mountFallback } from '@/ui/fallback'
 import { mountWorks } from '@/ui/works'
 import { mountRecords } from '@/ui/records'
 import { mountPress } from '@/ui/press'
-import { mountCrew } from '@/ui/crew'
-import { mountDiary } from '@/ui/diary'
 
 type Teardown = () => void
 
@@ -70,8 +68,6 @@ export function boot(): Teardown {
     guard('works', () => mountWorks()),
     guard('records', () => mountRecords()),
     guard('press', () => mountPress()),
-    guard('crew', () => mountCrew()),
-    guard('diary', () => mountDiary()),
     guard('reveal', () => mountReveal()),
     guard('sound-toggle', () => mountSoundToggle()),
   )
@@ -101,6 +97,33 @@ export function boot(): Teardown {
   for (const img of document.querySelectorAll<HTMLImageElement>('[data-alley-peek] img')) {
     const want = img.dataset[flags.mochiCrew ? 'crewMochi' : flags.newCrew ? 'crewV2' : 'crewV1']
     if (want && img.getAttribute('src') !== want) img.src = want
+  }
+
+  // EUNGARAGE 2.0 pages: each page's script is loaded on its own page only,
+  // so the rest of the site does not download it (the PHASE K budgets).
+  const PAGES: readonly [string, string, () => Promise<() => (() => void) | undefined>][] = [
+    ['[data-crew]', 'crew', () => import('@/ui/crew').then((m) => m.mountCrew)],
+    ['[data-diary]', 'diary', () => import('@/ui/diary').then((m) => m.mountDiary)],
+    ['[data-arcade]', 'arcade', () => import('@/ui/arcade').then((m) => m.mountArcade)],
+    ['[data-guestbook]', 'guestbook', () => import('@/ui/guestbook').then((m) => m.mountGuestbook)],
+    ['[data-stars]', 'stars', () => import('@/ui/stars').then((m) => m.mountStars)],
+    ['[data-radio]', 'radio', () => import('@/ui/radio').then((m) => m.mountRadio)],
+    ['[data-settings]', 'settings', () => import('@/ui/settings').then((m) => m.mountSettings)],
+  ]
+  for (const [sel, name, load] of PAGES) {
+    if (!document.querySelector(sel)) continue
+    let off: Teardown | undefined
+    let gone = false
+    void load()
+      .then((mount) => { if (!gone) off = guard(name, () => mount()) })
+      .catch((err: unknown) => {
+        log.error(`"${name}" failed to load`, err)
+        document.documentElement.dataset['bootError'] = name
+      })
+    teardowns.push(() => {
+      gone = true
+      off?.()
+    })
   }
 
   if (flags.alley && document.querySelector('[data-alley]')) {

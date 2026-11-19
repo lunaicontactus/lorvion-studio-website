@@ -3,7 +3,7 @@
  * shows its character walking. The markup is prerendered (crewHtml); this
  * only wires it. Without scripts both badge sides show, stacked.
  */
-import { crewHtml } from '@/render/pages'
+import { crewHtml } from '@/render/pages2'
 import { motion } from '@/systems/motion'
 
 export function mountCrew(): (() => void) | undefined {

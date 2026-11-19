@@ -50,6 +50,11 @@ export interface AlleyOptions {
    * second time.
    */
   readonly returning?: () => boolean
+  /**
+   * Arrived by the GARAGE menu (/#garage, EUNGARAGE 2.0): straight in, no
+   * door to press and no ceremony. Read once, at mount.
+   */
+  readonly autoEnter?: () => boolean
 }
 
 /**
@@ -365,6 +370,10 @@ export function mountAlley(root: ParentNode = document, opts: AlleyOptions = {})
     }
   }
   scene.addEventListener('pointerdown', onScenePointer)
+  if (opts.autoEnter?.() === true) {
+    enter()
+    skip()
+  }
   document.addEventListener('keydown', onSceneKey)
   off.push(() => {
     scene.removeEventListener('pointerdown', onScenePointer)

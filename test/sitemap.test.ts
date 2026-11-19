@@ -18,15 +18,21 @@ describe('the site map', () => {
 
   it('links only pages that exist', () => {
     const live = new Set(ROUTES.filter((r) => r.live).map((r) => r.path))
-    for (const l of [...NAV, ...FOOTER.flatMap((g) => g.links)]) expect(live.has(l.href), l.href).toBe(true)
+    // An in-page address (/#garage) is the home page, opened at a place.
+    for (const l of [...NAV, ...FOOTER.flatMap((g) => g.links)]) expect(live.has(l.href.startsWith('/#') ? '/' : l.href), l.href).toBe(true)
     for (const r of ROUTES.filter((r) => r.live && r.path !== '/')) {
       expect(pages, r.path).toContain(r.path.slice(1))
     }
   })
 
-  it('keeps WORKS first in the nav, and no OUR GAMES', () => {
-    expect(NAV[0]!.label).toBe('Works')
-    expect(NAV.map((l) => l.label.toLowerCase())).not.toContain('games')
+  it('is the 2.0 minihompy tabs in the brief\'s order, and no OUR GAMES', () => {
+    // EUNGARAGE 2.0 PART 3.2. Tabs whose page is not built yet are left out.
+    const order = ['Home', 'Garage', 'Games', 'Crew', 'Diary', 'Photo', 'Guestbook', 'Arcade', 'Stars', 'Radio', 'Contact', 'Settings']
+    const labels = NAV.map((l) => l.label)
+    expect(labels.slice(0, 5)).toEqual(['Home', 'Garage', 'Games', 'Crew', 'Diary'])
+    expect([...labels].sort((a, b) => order.indexOf(a) - order.indexOf(b))).toEqual(labels)
+    // GAMES is the works index under its 2.0 name, not a second page.
+    expect(NAV.find((l) => l.label === 'Games')?.href).toBe('/works.html')
     expect(renderNav('/')).not.toMatch(/OUR GAMES/i)
   })
 
@@ -64,7 +70,7 @@ describe('the site map', () => {
 
   it('gives the garage a hidden list of every page, for a visitor without scripts', () => {
     const idx = renderPageIndex()
-    for (const l of NAV) expect(idx).toContain(`href="${l.href}"`)
+    for (const l of NAV.filter((l) => l.href !== '/')) expect(idx).toContain(`href="${l.href}"`)
     expect(idx).toContain('mailto:eungarage@gmail.com')
   })
 })
